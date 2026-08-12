@@ -76,7 +76,7 @@ img{max-width:100%;display:block}
 }
 .nav.scrolled{border-bottom:1px solid var(--border);background:rgba(4,22,26,0.82)}
 .brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:.5px}
-.brand img{width:38px;height:38px;filter:drop-shadow(0 0 8px var(--teal-glow))}
+.brand img{width:38px;height:38px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 0 8px var(--teal-glow))}
 .brand b{font-size:1.12rem}
 .brand span{font-family:var(--mono);font-size:.72rem;color:var(--teal);letter-spacing:2px}
 .nav-links{display:flex;gap:6px;align-items:center}
@@ -248,7 +248,7 @@ section{padding:clamp(70px,9vw,120px) clamp(16px,5vw,60px);position:relative}
 
 footer{padding:40px clamp(16px,5vw,60px);border-top:1px solid var(--border);text-align:center;color:var(--text-mute);font-size:.88rem}
 footer .fbrand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:12px;color:var(--text)}
-footer .fbrand img{width:30px;height:30px}
+footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 
 /* ============================================================
    滚动揭示动画
