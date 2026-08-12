@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>force99 · 个人作品站 | 物理教学 · 可视化 · 科技</title>
+<meta name="description" content="高中物理教师 force99 的个人作品站：文章、HTML 交互动画、教学视频与作品集。">
+<link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+  <a class="brand" href="index.html">
+    <img src="assets/img/logo.svg" alt="logo">
+    <span><b>force99</b><br><span>LXQ · PHYSICS</span></span>
+  </a>
+  <button class="nav-toggle" aria-label="菜单"><span></span><span></span><span></span></button>
+  <div class="nav-links">
+    <a href="#about">关于</a>
+    <a href="#works">作品</a>
+    <a href="articles.html">文章</a>
+    <a href="animations.html">动画</a>
+    <a href="videos.html">视频</a>
+    <a href="#contact" class="cta">联系我</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <canvas id="particles"></canvas>
+  <div class="prism-deco" aria-hidden="true">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0fb5a8"/><stop offset="1" stop-color="#0a6b66"/>
+        </linearGradient>
+        <linearGradient id="b" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#ff4d6d"/><stop offset=".3" stop-color="#ffe14d"/>
+          <stop offset=".6" stop-color="#4dff9e"/><stop offset="1" stop-color="#9b6dff"/>
+        </linearGradient>
+      </defs>
+      <line x1="6" y1="60" x2="78" y2="92" stroke="#eafffb" stroke-width="4" stroke-linecap="round"/>
+      <path d="M82 50 L150 158 L26 158 Z" fill="url(#p)" stroke="#7ff5e6" stroke-width="3" opacity=".9"/>
+      <g stroke-width="4" stroke-linecap="round">
+        <line x1="104" y1="104" x2="194" y2="70" stroke="#ff4d6d"/>
+        <line x1="104" y1="104" x2="194" y2="92" stroke="#ffe14d"/>
+        <line x1="104" y1="104" x2="194" y2="112" stroke="#4dff9e"/>
+        <line x1="104" y1="104" x2="194" y2="134" stroke="#4dd2ff"/>
+        <line x1="104" y1="104" x2="194" y2="154" stroke="#9b6dff"/>
+      </g>
+    </svg>
+  </div>
+  <div class="hero-inner">
+    <span class="eyebrow"><span class="dot"></span>PHYSICS · VISUALIZATION · TECH</span>
+    <h1>让物理<br><span class="grad">看得见、动起来</span></h1>
+    <p class="lead">我是 force99，一名高中物理教师。这里汇集我的教学文章、HTML 交互动画、微课视频与作品——用科技的方式，把抽象的规律讲清楚。</p>
+    <div class="hero-actions">
+      <a href="#works" class="btn btn-primary">浏览作品 →</a>
+      <a href="articles.html" class="btn btn-ghost">阅读教学文章</a>
+    </div>
+  </div>
+</header>
+
+<!-- 关于 -->
+<section id="about">
+  <div class="wrap about-grid">
+    <div class="about-text reveal">
+      <span class="kicker">ABOUT ME</span>
+      <h2 style="font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;margin-bottom:18px">关于 force99</h2>
+      <p>深耕高中物理教学，专注<strong style="color:var(--teal)">课堂效率提升</strong>与<strong style="color:var(--teal)">知识可视化</strong>。相信好的教学不是把知识讲难，而是把难点讲透、把过程讲活。</p>
+      <p>我习惯把每一个重难点做成可交互的网页动画，让学生能「动手调参数、亲眼看见规律」。这个站点就是这些作品的集合地。</p>
+      <div class="stats">
+        <div class="stat"><b>12+</b><span>年教龄</span></div>
+        <div class="stat"><b>40+</b><span>交互动画</span></div>
+        <div class="stat"><b>100+</b><span>教学文章</span></div>
+      </div>
+    </div>
+    <div class="about-card reveal d1">
+      <h3>💠 我能提供</h3>
+      <ul>
+        <li><span class="ic">📐</span><span>系统化的复习策略与重难点拆解文章</span></li>
+        <li><span class="ic">🎯</span><span>可调速、可交互的物理过程 HTML 动画</span></li>
+        <li><span class="ic">🎬</span><span>规范实验操作与微课视频</span></li>
+        <li><span class="ic">💡</span><span>低成本可视化演示装置设计方案</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 作品总览 -->
+<section id="works">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker">PORTFOLIO</span>
+      <h2>作品总览</h2>
+      <p>文章、HTML 动画、视频与作品，按类型自由筛选。点击任意卡片即可查看。</p>
+    </div>
+    <div class="filters reveal d1" id="filters"></div>
+    <div class="grid" id="workGrid"></div>
+  </div>
+</section>
+
+<!-- 联系 -->
+<section id="contact">
+  <div class="wrap">
+    <div class="contact-card reveal">
+      <h2>一起把物理教得更好</h2>
+      <p>欢迎交流教学想法、索取动画源文件，或探讨可视化教具设计。也可关注我的更新。</p>
+      <div class="contact-links">
+        <a href="mailto:force99@example.com">✉️ 邮件联系</a>
+        <a href="https://github.com/" target="_blank" rel="noopener">🐙 GitHub</a>
+        <a href="#works">📂 查看作品</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand">
+    <img src="assets/img/logo.svg" alt="logo"> force99 · LXQ Physics
+  </div>
+  <div>© 2026 force99. 用科技讲透物理 · Built with GitHub Pages</div>
+</footer>
+
+<script src="assets/js/works.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>
