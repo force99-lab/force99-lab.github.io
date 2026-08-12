@@ -44,6 +44,11 @@ const WORKS = [
     desc:"白光过三棱镜的色散过程，对应本站的科技视觉语言。",
     icon:"🌈", link:"animations/demo.html", date:"2026-03-30", tag:"光学"
   },
+  {
+    type:"animation", title:"波的叠加原理",
+    desc:"双波源反向传播、质点依次被带动与脉冲模式，直观演示波的叠加。",
+    icon:"🌊", link:"animations/波的叠加原理.html", date:"2026-08-13", tag:"波动"
+  },
 
   /* ---------------- 视频 ---------------- */
   {
