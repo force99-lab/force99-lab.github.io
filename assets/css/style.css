@@ -135,6 +135,10 @@ img{max-width:100%;display:block}
 .prism-deco{position:absolute;right:-60px;top:50%;transform:translateY(-50%);z-index:1;opacity:.9;animation:float 7s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(-50%)}50%{transform:translateY(-58%)}}
 .prism-deco svg{width:clamp(280px,40vw,560px);height:auto;filter:drop-shadow(0 0 40px rgba(15,181,168,.35))}
+/* 光路流动动画：让三棱镜的色散光看起来在"跑" */
+.prism-deco .beam{stroke-dasharray:9 13;animation:beamflow 1.1s linear infinite}
+.prism-deco .beam.ghost{stroke-dasharray:4 10;animation-duration:1.6s}
+@keyframes beamflow{to{stroke-dashoffset:-22}}
 
 /* ============================================================
    通用 section
