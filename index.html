@@ -33,24 +33,26 @@
 <header class="hero">
   <canvas id="particles"></canvas>
   <div class="prism-deco" aria-hidden="true">
-    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="p" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#0fb5a8"/><stop offset="1" stop-color="#0a6b66"/>
         </linearGradient>
-        <linearGradient id="b" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#ff4d6d"/><stop offset=".3" stop-color="#ffe14d"/>
-          <stop offset=".6" stop-color="#4dff9e"/><stop offset="1" stop-color="#9b6dff"/>
-        </linearGradient>
       </defs>
-      <line x1="6" y1="60" x2="78" y2="92" stroke="#eafffb" stroke-width="4" stroke-linecap="round"/>
-      <path d="M82 50 L150 158 L26 158 Z" fill="url(#p)" stroke="#7ff5e6" stroke-width="3" opacity=".9"/>
+      <!-- 白光入射（水平射入左侧面） -->
+      <line class="beam" x1="6" y1="82" x2="87" y2="82" stroke="#eafffb" stroke-width="4" stroke-linecap="round"/>
+      <!-- 棱镜（半透明，便于看到内光路） -->
+      <path d="M110 38 L168 150 L52 150 Z" fill="url(#p)" stroke="#7ff5e6" stroke-width="3" opacity=".55"/>
+      <!-- 棱镜内光路：入射线折向法线（近水平，接近最小偏向） -->
+      <line class="beam ghost" x1="87" y1="82" x2="133" y2="82" stroke="#eafffb" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+      <!-- 出射色散：整体向底边（厚端）偏折；紫光偏折最大、红光最小 -->
       <g stroke-width="4" stroke-linecap="round">
-        <line x1="104" y1="104" x2="194" y2="70" stroke="#ff4d6d"/>
-        <line x1="104" y1="104" x2="194" y2="92" stroke="#ffe14d"/>
-        <line x1="104" y1="104" x2="194" y2="112" stroke="#4dff9e"/>
-        <line x1="104" y1="104" x2="194" y2="134" stroke="#4dd2ff"/>
-        <line x1="104" y1="104" x2="194" y2="154" stroke="#9b6dff"/>
+        <line class="beam" x1="133" y1="82" x2="216" y2="90"  stroke="#ff4d6d"/>
+        <line class="beam" x1="133" y1="82" x2="216" y2="98"  stroke="#ffb14d"/>
+        <line class="beam" x1="133" y1="82" x2="216" y2="106" stroke="#ffe14d"/>
+        <line class="beam" x1="133" y1="82" x2="216" y2="114" stroke="#4dff9e"/>
+        <line class="beam" x1="133" y1="82" x2="216" y2="122" stroke="#4dd2ff"/>
+        <line class="beam" x1="133" y1="82" x2="216" y2="130" stroke="#9b6dff"/>
       </g>
     </svg>
   </div>
