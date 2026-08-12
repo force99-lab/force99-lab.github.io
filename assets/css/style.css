@@ -186,6 +186,8 @@ section{padding:clamp(70px,9vw,120px) clamp(16px,5vw,60px);position:relative}
 }
 .card:hover{transform:translateY(-8px);border-color:var(--border-strong);box-shadow:var(--shadow),0 0 0 1px var(--teal-glow)}
 .card .cover{height:170px;position:relative;display:grid;place-items:center;overflow:hidden}
+.card .cover.has-img{background-size:cover;background-position:center}
+.card .cover.has-img .ic{display:none}
 .card .cover .ic{font-size:3.4rem;filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))}
 .card .cover.grad-article{background:linear-gradient(135deg,#0a6b66,#0fb5a8)}
 .card .cover.grad-animation{background:linear-gradient(135deg,#3b2f8f,#9b6dff)}
