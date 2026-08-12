@@ -24,7 +24,7 @@
 │   ├── css/style.css     # 全部样式（设计系统）
 │   ├── js/works.js       # ⭐ 作品数据（添加作品只改这里）
 │   ├── js/main.js        # 粒子背景 / 滚动揭示 / 筛选 / 渲染
-│   └── img/logo.svg      # 棱镜色散 Logo
+│   └── img/logo.png      # 棱镜色散 Logo（PNG）
 ├── articles/             # 文章详情页（放 .html）
 │   └── sample.html       # 示例文章
 ├── animations/           # HTML 动画页（放 .html）
@@ -67,33 +67,37 @@
 
 ---
 
-## 部署到 GitHub Pages
+## 部署到 GitHub Pages（已上线）
 
-> 当前环境未连接 GitHub（`gh` 未安装、连接器断开），无法由我直接推送。
-> 下面两种方式任选其一，**方式 A 可让我代劳**（见文末）。
+✅ **站点已上线**：https://force99-lab.github.io/ （仓库 `force99-lab/force99-lab.github.io`，`main` 分支根目录，GitHub Pages 已开启）。
 
-### 方式 A：把仓库交给我代部署（推荐）
-提供以下信息，我即可创建仓库并推送、开启 Pages：
-1. 你的 **GitHub 用户名**
-2. 一个 **Personal Access Token**（勾选 `repo` 权限）：
-   生成地址：`GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token`
-3. 是否用 `用户名.github.io` 作为站点地址（用户页），或用普通仓库 `用户名/仓库名` + `/` 根路径。
+> 注：本机运行环境无法直连 `github.com` 的 Git 主机（`git push` 会被网络策略拦截），
+> 但能访问 `api.github.com`，因此部署走的是 **GitHub REST API** 方式。
+> 仓库内附 `deploy_via_api.py` 即为该部署脚本（不含任何凭据，token 通过环境变量传入）。
 
-> ⚠️ Token 仅用于本次推送，推送完成后可自行撤销。也可改为用 GitHub CLI 登录后再让我执行。
-
-### 方式 B：你自己部署（3 分钟）
-1. 在 GitHub 新建仓库（名随意，如 `force99-site`；若要用户页则必须叫 `用户名.github.io`）。
-2. 把本文件夹全部内容上传（拖到仓库的 Add file，或用 Git）：
+### 以后如何更新站点（从本环境，推荐）
+1. 改好本地文件后，运行：
    ```bash
-   git init
-   git add .
-   git commit -m "initial site"
+   REPO="force99-lab/force99-lab.github.io" \
+   GITHUB_TOKEN="你的token" \
+   BRANCH="main" \
+   python deploy_via_api.py
+   ```
+2. 脚本会把 `assets/ / articles/ / animations/ / videos/ / works/` 等全部文件通过 Contents API 上传并覆盖，
+   每次更新约 1 分钟构建完成后自动生效。
+
+### 用 Git 部署（在能直连 github.com 的机器上）
+1. 克隆或关联远程：
+   ```bash
+   git remote add origin https://github.com/force99-lab/force99-lab.github.io.git
    git branch -M main
-   git remote add origin https://github.com/用户名/仓库名.git
+   git pull origin main --rebase   # 先同步线上已有的提交历史
+   ```
+2. 本地改完提交后：
+   ```bash
    git push -u origin main
    ```
-3. 仓库 → **Settings → Pages → Source 选 `main` 分支 / `(root)`** → Save。
-4. 等待约 1 分钟，访问 `https://用户名.github.io/仓库名/` 即可。
+3. 若从未开启 Pages：仓库 → **Settings → Pages → Source 选 `main` / `(root)`** → Save。
 
 ---
 
