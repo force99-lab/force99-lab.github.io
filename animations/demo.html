@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平抛运动：合成与分解 · force99 动画</title>
+<link rel="icon" href="../assets/img/logo.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .stage{ max-width:920px; margin:0 auto; }
+  .canvas-wrap{ position:relative; background:linear-gradient(180deg,#062026,#04161a); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  canvas{ display:block; width:100%; height:auto; }
+  .controls{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:20px 0; }
+  .controls button{ padding:10px 20px; border-radius:999px; border:1px solid var(--border-strong); background:var(--surface); color:var(--text); cursor:pointer; font-weight:600; transition:.25s; }
+  .controls button:hover{ background:var(--surface-2); transform:translateY(-2px); }
+  .controls button.primary{ background:linear-gradient(135deg,var(--teal),var(--teal-deep)); color:#04161a; border-color:transparent; }
+  .controls label{ font-family:var(--mono); font-size:.85rem; color:var(--text-soft); display:flex; align-items:center; gap:8px; }
+  .controls input[type=range]{ accent-color:var(--teal); }
+  .legend{ display:flex; gap:22px; flex-wrap:wrap; margin-top:6px; font-size:.9rem; color:var(--text-soft); }
+  .legend i{ display:inline-block; width:14px; height:14px; border-radius:4px; margin-right:7px; vertical-align:-2px; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="../index.html"><img src="../assets/img/logo.svg" alt="logo"><span><b>force99</b><br><span>LXQ · PHYSICS</span></span></a>
+  <button class="nav-toggle" aria-label="菜单"><span></span><span></span><span></span></button>
+  <div class="nav-links">
+    <a href="../index.html#about">关于</a>
+    <a href="../index.html#works">作品</a>
+    <a href="../articles.html">文章</a>
+    <a href="../animations.html">动画</a>
+    <a href="../videos.html">视频</a>
+    <a href="../index.html#contact" class="cta">联系我</a>
+  </div>
+</nav>
+
+<section class="page-hero" style="padding-bottom:10px">
+  <div class="stage">
+    <span class="crumb">动画 / 力学</span>
+    <h1>平抛运动：合成与分解</h1>
+    <p>平抛可分解为「水平匀速」+「竖直自由落体」。调节初速度，观察两个分运动如何合成抛物线轨迹。</p>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="stage">
+    <div class="canvas-wrap"><canvas id="cv" width="900" height="520"></canvas></div>
+
+    <div class="controls">
+      <button class="primary" id="play">▶ 播放</button>
+      <button id="reset">↺ 重置</button>
+      <label>初速度 v₀
+        <input id="v0" type="range" min="2" max="12" step="0.5" value="6">
+        <span id="v0v">6.0</span> m/s
+      </label>
+      <label>速度倍率
+        <input id="sp" type="range" min="0.3" max="2" step="0.1" value="1">
+        <span id="spv">1.0</span>×
+      </label>
+    </div>
+
+    <div class="legend">
+      <span><i style="background:#4dd2ff"></i>实际轨迹（合运动）</span>
+      <span><i style="background:#ffe14d"></i>水平分运动（匀速）</span>
+      <span><i style="background:#ff4d6d"></i>竖直分运动（自由落体）</span>
+    </div>
+
+    <a class="back" href="../animations.html" style="display:inline-flex;gap:8px;align-items:center;margin-top:30px;color:var(--teal)">← 返回动画列表</a>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand"><img src="../assets/img/logo.svg" alt="logo"> force99 · LXQ Physics</div>
+  <div>© 2026 force99. 用科技讲透物理 · Built with GitHub Pages</div>
+</footer>
+
+<script>
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const g = 9.8, scale = 26, ox = 70, oy = H - 60;
+let t = 0, playing = false, raf, v0 = 6, speed = 1;
+
+const v0s = document.getElementById('v0'), sps = document.getElementById('sp');
+const v0v = document.getElementById('v0v'), spv = document.getElementById('spv');
+v0s.oninput = () => { v0 = +v0s.value; v0v.textContent = v0.toFixed(1); };
+sps.oninput = () => { speed = +sps.value; spv.textContent = speed.toFixed(1); };
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // 地面网格
+  ctx.strokeStyle='rgba(127,245,230,0.10)'; ctx.lineWidth=1;
+  for(let x=ox;x<W;x+=scale){ ctx.beginPath(); ctx.moveTo(x,oy); ctx.lineTo(x,oy-380); ctx.stroke(); }
+  for(let y=oy;y>oy-380;y-=scale){ ctx.beginPath(); ctx.moveTo(ox,y); ctx.lineTo(W,y); ctx.stroke(); }
+  ctx.strokeStyle='rgba(127,245,230,0.4)'; ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(W,oy); ctx.stroke();
+
+  const x = v0 * t;                 // 水平
+  const y = 0.5 * g * t * t;        // 竖直下落
+  const px = ox + x * scale, py = oy - y * scale;
+
+  // 已走过的合轨迹
+  ctx.strokeStyle='#4dd2ff'; ctx.lineWidth=3; ctx.beginPath();
+  for(let tt=0; tt<=t; tt+=0.02){
+    const xx = ox + v0*tt*scale, yy = oy - 0.5*g*tt*tt*scale;
+    tt===0?ctx.moveTo(xx,yy):ctx.lineTo(xx,yy);
+  }
+  ctx.stroke();
+
+  // 分运动投影线
+  ctx.setLineDash([5,5]);
+  ctx.strokeStyle='rgba(255,225,77,0.7)'; ctx.beginPath(); ctx.moveTo(px,oy); ctx.lineTo(px,py); ctx.stroke();
+  ctx.strokeStyle='rgba(255,77,109,0.7)'; ctx.beginPath(); ctx.moveTo(ox,py); ctx.lineTo(px,py); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 小球
+  ctx.fillStyle='#eafffb'; ctx.beginPath(); ctx.arc(px,py,8,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(77,210,255,0.6)'; ctx.beginPath(); ctx.arc(px,py,14,0,7); ctx.stroke();
+
+  // 读数
+  ctx.fillStyle='#b6d8d3'; ctx.font='14px JetBrains Mono, monospace';
+  ctx.fillText('t = '+t.toFixed(2)+' s', 16, 26);
+  ctx.fillText('v₀ = '+v0.toFixed(1)+' m/s', 16, 46);
+  ctx.fillText('x = '+x.toFixed(1)+' m', 16, 66);
+  ctx.fillText('y = '+y.toFixed(1)+' m', 16, 86);
+
+  if(py <= oy-2 && playing){
+    t += 0.016 * speed;
+    if(0.5*g*t*t > (oy-20)/scale){ playing=false; document.getElementById('play').textContent='▶ 播放'; }
+    raf = requestAnimationFrame(draw);
+  }
+}
+function reset(){ cancelAnimationFrame(raf); t=0; playing=false; document.getElementById('play').textContent='▶ 播放'; draw(); }
+document.getElementById('play').onclick = () => {
+  if(!playing && 0.5*g*t*t <= (oy-20)/scale){ playing=true; document.getElementById('play').textContent='⏸ 暂停'; draw(); }
+  else { playing=!playing; document.getElementById('play').textContent = playing?'⏸ 暂停':'▶ 播放'; if(playing) draw(); }
+};
+document.getElementById('reset').onclick = reset;
+reset();
+</script>
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
