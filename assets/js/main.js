@@ -66,10 +66,12 @@ function observeReveals(root=document){
 
 /* ---------- 作品卡片渲染 ---------- */
 function cardHTML(item){
+  const coverStyle = item.cover ? `style="background-image:url('${item.cover}');"` : '';
+  const coverCls = `cover ${TYPE_GRAD[item.type]}${item.cover ? ' has-img' : ''}`;
   return `
   <article class="card reveal" data-type="${item.type}">
     <a href="${item.link}" style="display:contents">
-      <div class="cover ${TYPE_GRAD[item.type]}">
+      <div class="${coverCls}" ${coverStyle}>
         <span class="type-tag">${TYPE_LABEL[item.type]}</span>
         <span class="ic">${item.icon}</span>
       </div>
