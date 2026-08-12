@@ -47,7 +47,7 @@ const WORKS = [
   {
     type:"animation", title:"波的叠加原理",
     desc:"双波源反向传播、质点依次被带动与脉冲模式，直观演示波的叠加。",
-    icon:"🌊", link:"animations/波的叠加原理.html", date:"2026-08-13", tag:"波动"
+    icon:"🌊", link:"animations/wave-superposition.html", date:"2026-08-13", tag:"波动"
   },
 
   /* ---------------- 视频 ---------------- */
