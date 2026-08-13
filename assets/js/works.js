@@ -53,7 +53,8 @@ const WORKS = [
   {
     type:"animation", title:"波的反射与驻波",
     desc:"行波遇壁反射，与入射波叠加形成驻波，直观呈现波节与波腹。",
-    icon:"〰️", link:"animations/wave-reflection-standing.html", date:"2026-08-13", tag:"波动"
+    icon:"〰️", cover:"assets/img/wave-reflection-standing-cover.png",
+    link:"animations/wave-reflection-standing.html", date:"2026-08-13", tag:"波动"
   },
 
   /* ---------------- 视频 ---------------- */
