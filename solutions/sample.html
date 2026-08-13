@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解题示例 · force99 作品站</title>
+<meta name="description" content="物理解题模板示例：分步拆解，从受力分析到临界问题。">
+<link rel="icon" href="assets/img/logo.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .solve-wrap{max-width:860px;margin:0 auto;padding:40px 0 20px}
+  .solve-meta{font-family:var(--mono);font-size:.82rem;color:var(--teal);letter-spacing:2px;margin-bottom:10px}
+  .solve-wrap h1{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;margin-bottom:18px;line-height:1.25}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px 28px;margin:22px 0;position:relative;overflow:hidden}
+  .panel::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(var(--teal),var(--c-cyan))}
+  .panel.problem::before{background:linear-gradient(var(--c-orange),var(--c-red))}
+  .panel h2{font-size:1.15rem;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+  .panel .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:1.5px;padding:4px 10px;border-radius:999px;background:rgba(4,22,26,.5);border:1px solid var(--border);color:var(--text-soft)}
+  .panel p{color:var(--text-soft);margin-bottom:12px}
+  .panel p:last-child{margin-bottom:0}
+  .step{display:flex;gap:14px;margin-bottom:16px;align-items:flex-start}
+  .step .num{flex:none;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#04161a;font-weight:700;display:grid;place-items:center;font-family:var(--mono);font-size:.9rem}
+  .step .txt{color:var(--text-soft);flex:1}
+  .step .txt b{color:var(--text)}
+  .eq{font-family:var(--mono);background:rgba(4,22,26,.45);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:10px 0;color:var(--c-cyan);overflow-x:auto}
+  .key{background:linear-gradient(150deg,rgba(255,184,77,.12),var(--surface));border:1px solid var(--border-strong);border-radius:var(--radius);padding:22px 26px;margin:22px 0}
+  .key h3{color:var(--c-orange);font-size:1.1rem;margin-bottom:12px}
+  .key ul{margin:0;padding-left:20px;color:var(--text-soft)}
+  .key li{margin-bottom:8px}
+  .back{display:inline-flex;align-items:center;gap:8px;margin-top:10px;color:var(--teal);font-weight:600;cursor:pointer}
+  .back:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="../index.html"><img src="assets/img/logo.png" alt="logo"><span><b>force99</b><br><span>LXQ · PHYSICS</span></span></a>
+  <button class="nav-toggle" aria-label="菜单"><span></span><span></span><span></span></button>
+  <div class="nav-links">
+    <a href="../index.html#about">关于</a>
+    <a href="../index.html#works">作品</a>
+    <a href="../articles.html">文章</a>
+    <a href="../animations.html">动画</a>
+    <a href="../solutions.html" class="active-nav">解题</a>
+    <a href="../videos.html">视频</a>
+    <a href="../index.html#contact" class="cta">联系我</a>
+  </div>
+</nav>
+
+<section class="page-hero" style="padding-bottom:10px">
+  <div class="wrap solve-wrap">
+    <span class="solve-meta">SOLUTION · 力学</span>
+    <h1>斜面上物块的受力与运动分析</h1>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="wrap solve-wrap">
+
+    <div class="panel problem">
+      <h2>📋 题目 <span class="tag">示例模板</span></h2>
+      <p>质量为 <b>m</b> 的物块静止于倾角 <b>θ</b> 的足够长固定斜面上，物块与斜面间动摩擦因数为 <b>μ</b>。现沿平行于斜面向上施加一恒力 <b>F</b>，求物块沿斜面向上运动时的加速度 <b>a</b>。</p>
+      <p style="color:var(--text-mute);font-size:.86rem">（本页为解题模板示例，替换为你自己的题目与解析即可。）</p>
+    </div>
+
+    <div class="panel">
+      <h2>🧠 解题思路</h2>
+      <div class="step"><span class="num">1</span><div class="txt"><b>选对象、建坐标。</b>以物块为研究对象，建立沿斜面向上为 <b>x</b> 正方向、垂直斜面向上为 <b>y</b> 正方向的坐标系。</div></div>
+      <div class="step"><span class="num">2</span><div class="txt"><b>受力分析。</b>物块受重力 <b>mg</b>、支持力 <b>N</b>、外力 <b>F</b>、滑动摩擦力 <b>f</b>。摩擦力方向沿斜面向下（与运动方向相反）。</div></div>
+      <div class="step"><span class="num">3</span><div class="txt"><b>正交分解。</b>将重力分解为沿斜面分量 <b>mg·sinθ</b> 与垂直分量 <b>mg·cosθ</b>。</div></div>
+      <div class="step"><span class="num">4</span><div class="txt"><b>列牛顿第二定律方程</b>并求解。</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>✍️ 列式与求解</h2>
+      <p><b>垂直斜面方向（无加速度）：</b></p>
+      <div class="eq">N − mg·cosθ = 0  ⟹  N = mg·cosθ</div>
+      <p><b>滑动摩擦力：</b></p>
+      <div class="eq">f = μN = μmg·cosθ</div>
+      <p><b>沿斜面方向（向上为正）：</b></p>
+      <div class="eq">F − mg·sinθ − f = ma</div>
+      <p><b>代入整理得：</b></p>
+      <div class="eq">a = (F − mg·sinθ − μmg·cosθ) / m</div>
+    </div>
+
+    <div class="key">
+      <h3>💡 关键提醒</h3>
+      <ul>
+        <li>坐标系优先沿运动/加速度方向建立，可少分解一个力。</li>
+        <li>摩擦力方向由<b>相对运动方向</b>判定，不要凭"习惯"默认向下。</li>
+        <li>若 <b>F &lt; mg·sinθ + μmg·cosθ</b>，物块不会向上运动——先判断运动趋势再列式。</li>
+      </ul>
+    </div>
+
+    <a class="back" href="../solutions.html">← 返回「解题」列表</a>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand"><img src="assets/img/logo.png" alt="logo"> force99 · LXQ Physics</div>
+  <div>© 2026 force99. 用科技讲透物理 · Built with GitHub Pages</div>
+</footer>
+
+<script src="../assets/js/works.js"></script>
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
