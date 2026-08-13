@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>七彩喷泉粒子动画</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #04060f;
+    color: #e0e8f0;
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0; left: 0;
+  }
+  .logo-overlay {
+    position: fixed;
+    top: 12px; left: 14px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.82;
+  }
+  .logo-overlay svg {
+    width: 130px;
+    height: auto;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+  }
+  .pattern-label {
+    position: fixed;
+    top: 14px; right: 14px;
+    background: rgba(8, 15, 35, 0.78);
+    border: 1px solid rgba(80, 140, 255, 0.18);
+    border-radius: 8px;
+    padding: 7px 14px;
+    z-index: 10;
+    pointer-events: none;
+    text-align: right;
+    max-width: 240px;
+  }
+  .pattern-label .idx { font-size: 10px; color: #6080a0; }
+  .pattern-label .name { font-size: 16px; font-weight: 700; color: #6ab0ff; letter-spacing: 1px; }
+  .pattern-label .desc { font-size: 10px; color: #80a0c0; margin-top: 1px; }
+  .pattern-label .color-row { font-size: 12px; margin-top: 4px; display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+  .pattern-label .swatch {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px currentColor;
+  }
+  .pattern-label .color-name { color: #ffb070; font-weight: 600; }
+  .pattern-label .mode-row { font-size: 10px; margin-top: 3px; color: #70a0c8; }
+  .pattern-label .mode-row .swinging { color: #4fc3f7; }
+  .pattern-label .mode-row .static { color: #ffab40; }
+
+  /* Controls panel */
+  .controls-overlay {
+    position: fixed;
+    top: 50%; right: 14px;
+    transform: translateY(-50%);
+    z-index: 20;
+    max-height: 88vh;
+    overflow-y: auto;
+    transition: opacity 0.35s, transform 0.35s;
+  }
+  .controls-overlay.hidden {
+    opacity: 0;
+    transform: translateY(-50%) translateX(280px);
+    pointer-events: none;
+  }
+  .controls {
+    width: 256px;
+    background: rgba(10, 18, 38, 0.92);
+    border-radius: 12px;
+    padding: 14px;
+    border: 1px solid rgba(80, 140, 255, 0.12);
+    backdrop-filter: blur(6px);
+  }
+  .controls-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(80, 140, 255, 0.1);
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+  .controls-header h2 {
+    font-size: 14px;
+    color: #6ab0ff;
+    letter-spacing: 1px;
+  }
+  .controls-hide {
+    background: none;
+    border: 1px solid rgba(80, 140, 255, 0.2);
+    color: #6ab0ff;
+    font-size: 11px;
+    width: 22px; height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .controls-hide:hover { background: rgba(30, 50, 85, 0.6); }
+  .controls-show {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    z-index: 21;
+    background: rgba(10, 18, 38, 0.85);
+    border: 1px solid rgba(80, 140, 255, 0.2);
+    color: #6ab0ff;
+    font-size: 20px;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: none;
+    align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .controls-show:hover { background: rgba(20, 38, 70, 0.95); }
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .pattern-btn {
+    padding: 6px 3px;
+    border: 1px solid rgba(80, 140, 255, 0.12);
+    background: rgba(18, 28, 50, 0.6);
+    color: #80a0c0;
+    font-size: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.2s;
+    font-family: inherit;
+    text-align: center;
+    font-weight: 600;
+  }
+  .pattern-btn:hover { background: rgba(28, 48, 85, 0.8); color: #a0c0e0; }
+  .pattern-btn.active {
+    background: rgba(30, 80, 160, 0.65);
+    color: #fff;
+    border-color: rgba(100, 180, 255, 0.35);
+  }
+  .control-group { margin-bottom: 10px; }
+  .control-group label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; margin-bottom: 4px; color: #9ab0cc;
+  }
+  .control-group label .val {
+    color: #ffd060; font-weight: bold;
+    font-family: 'Consolas', monospace; min-width: 36px; text-align: right;
+  }
+  input[type="range"] {
+    width: 100%; height: 5px;
+    -webkit-appearance: none;
+    background: rgba(35, 55, 85, 0.8);
+    border-radius: 3px; outline: none; cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: #4a9eff; border-radius: 50%;
+    cursor: pointer; box-shadow: 0 0 6px rgba(74, 158, 255, 0.6);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    background: #4a9eff; border-radius: 50%;
+    cursor: pointer; border: none;
+    box-shadow: 0 0 6px rgba(74, 158, 255, 0.6);
+  }
+  .toggle-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px; font-size: 12px; color: #9ab0cc;
+  }
+  .toggle-row input[type="checkbox"] {
+    width: 15px; height: 15px; cursor: pointer; accent-color: #4a9eff;
+  }
+  .btn-group { display: flex; gap: 8px; margin-top: 8px; }
+  button.action-btn {
+    flex: 1; padding: 7px 10px;
+    border: none; border-radius: 6px;
+    cursor: pointer; font-size: 12px;
+    font-family: inherit; font-weight: 600;
+    transition: all 0.2s;
+  }
+  .btn-play { background: #1565c0; color: white; }
+  .btn-play:hover { background: #1976d2; }
+  .btn-reset { background: #b71c1c; color: white; }
+  .btn-reset:hover { background: #c62828; }
+  .status-bar {
+    text-align: center; margin-top: 6px;
+    font-size: 11px; color: #6ab0ff; min-height: 16px;
+  }
+  .info-panel {
+    margin-top: 8px; padding: 9px;
+    background: rgba(10, 20, 40, 0.5);
+    border-radius: 6px; font-size: 10px;
+    line-height: 1.7; color: #80a0c0;
+    border: 1px solid rgba(60, 100, 160, 0.1);
+  }
+  .info-panel .hl { color: #ffd060; }
+  .info-panel .blue { color: #6ab0ff; }
+  .info-panel .title { color: #8ab8ff; font-weight: 600; margin-bottom: 3px; }
+</style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="logo-overlay">
+    <svg viewBox="0 0 640 240" width="320" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lxq-rb" x1="360" y1="90" x2="360" y2="150" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#FF2D55"/><stop offset="0.166" stop-color="#FF9500"/><stop offset="0.333" stop-color="#FFCC00"/><stop offset="0.5" stop-color="#34C759"/><stop offset="0.666" stop-color="#0A84FF"/><stop offset="0.833" stop-color="#5E5CE6"/><stop offset="1" stop-color="#BF5AF2"/>
+        </linearGradient>
+        <linearGradient id="lxq-wtl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DFF4FC"/></linearGradient>
+        <linearGradient id="lxq-wtr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFEFFB"/><stop offset="1" stop-color="#7FB8D8"/></linearGradient>
+        <linearGradient id="lxq-wba" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FB8D8"/><stop offset="1" stop-color="#20567C"/></linearGradient>
+        <radialGradient id="lxq-wg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#9FE9FF" stop-opacity="0.6"/><stop offset="0.5" stop-color="#4FCBF5" stop-opacity="0.24"/><stop offset="1" stop-color="#4FCBF5" stop-opacity="0"/></radialGradient>
+      </defs>
+      <path d="M210 72 L210 168 L258 168" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="222" cy="120" r="9" fill="#FFFFFF"/>
+      <g transform="translate(308,122)">
+        <circle cx="0" cy="0" r="54" fill="url(#lxq-wg)"/>
+        <g transform="rotate(-46)">
+          <polygon points="0,-55 -20,38 0,54" fill="url(#lxq-wtl)"/>
+          <polygon points="0,-55 20,38 0,54" fill="url(#lxq-wtr)"/>
+          <polygon points="-20,38 20,38 0,54" fill="url(#lxq-wba)"/>
+          <line x1="0" y1="-55" x2="0" y2="54" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="1.3"/>
+          <polyline points="-20,38 0,54 20,38" fill="none" stroke="#13405E" stroke-opacity="0.5" stroke-width="1"/>
+        </g>
+        <g transform="rotate(46)">
+          <polygon points="0,-55 -20,38 0,54" fill="url(#lxq-wtl)"/>
+          <polygon points="0,-55 20,38 0,54" fill="url(#lxq-wtr)"/>
+          <polygon points="-20,38 20,38 0,54" fill="url(#lxq-wba)"/>
+          <line x1="0" y1="-55" x2="0" y2="54" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="1.3"/>
+          <polyline points="-20,38 0,54 20,38" fill="none" stroke="#13405E" stroke-opacity="0.5" stroke-width="1"/>
+        </g>
+      </g>
+      <path d="M390 90 A30 30 0 0 1 390 150" stroke="#FFFFFF" stroke-width="8"/>
+      <path d="M390 90 A30 30 0 0 0 390 150" stroke="url(#lxq-rb)" stroke-width="8"/>
+      <path d="M415 139 L429 139 L429 156" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="429" cy="156" r="5" fill="#FFFFFF"/>
+      <text x="378" y="122" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">E=mc</text>
+      <text x="402" y="112" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#00C08A" text-anchor="middle" dominant-baseline="central">2</text>
+    </svg>
+  </div>
+  <div class="pattern-label" id="patternLabel">
+    <div class="idx" id="patternIdx">No.1 / 10</div>
+    <div class="name" id="patternName">齐摆同步</div>
+    <div class="desc" id="patternDesc">36管快速同步摆动</div>
+    <div class="color-row">
+      <span class="swatch" id="colorSwatch"></span>
+      <span class="color-name" id="colorName">纯色大红</span>
+    </div>
+    <div class="mode-row" id="modeRow">
+      <span class="swinging">●</span> 摆动: 36
+    </div>
+  </div>
+
+  <button class="controls-show" id="controlsShow">&#9881;</button>
+  <div class="controls-overlay" id="controlsOverlay">
+    <div class="controls">
+      <div class="controls-header">
+        <h2>&#9973; 七彩喷泉控制</h2>
+        <button class="controls-hide" id="controlsHide">&#10005;</button>
+      </div>
+      <div class="pattern-grid" id="patternGrid"></div>
+      <div class="toggle-row">
+        <input type="checkbox" id="autoCycle" checked>
+        <label for="autoCycle">自动轮播（动作15秒 + 清场3秒）</label>
+      </div>
+      <div class="control-group">
+        <label>摆动速度 <span class="val" id="speed-val">1.0x</span></label>
+        <input type="range" id="speed" min="0" max="2" step="0.05" value="1">
+      </div>
+      <div class="control-group">
+        <label>喷射力度 <span class="val" id="power-val">13.0</span></label>
+        <input type="range" id="power" min="6" max="20" step="0.5" value="13">
+      </div>
+      <div class="control-group">
+        <label>粒子密度 <span class="val" id="density-val">2</span></label>
+        <input type="range" id="density" min="1" max="3" step="1" value="2">
+      </div>
+      <div class="btn-group">
+        <button class="action-btn btn-play" id="playBtn">II 暂停</button>
+        <button class="action-btn btn-reset" id="resetBtn">O 重置</button>
+      </div>
+      <div class="status-bar" id="status">运行中</div>
+      <div class="info-panel">
+        <div class="title">系统参数</div>
+        <div>36 喷管 | <span class="hl">5纯色+七色变动</span></div>
+        <div><span class="blue">蓝色</span>=摆动 <span class="hl">橙色</span>=静止</div>
+        <div>摆动范围 <span class="hl">+/- 60 度</span> 快速摆动</div>
+        <div class="blue">全屏渲染 + 同色辉光 + 水柱弧线</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ========== Canvas & Resize ==========
+var canvas = document.getElementById('canvas');
+var ctx = canvas.getContext('2d');
+var W = 0, H = 0, waterY = 0;
+var dpr = 1;
+var margin = 50;
+var spacing = 0;
+var BARREL_LEN = 26;
+
+function resizeCanvas() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var w = window.innerWidth;
+  var h = window.innerHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  W = w; H = h;
+  waterY = H - 80;
+  margin = Math.max(40, W * 0.05);
+  spacing = (W - margin * 2) / (N_NOZZLES - 1);
+  for (var i = 0; i < N_NOZZLES; i++) {
+    nozzleXs[i] = margin + i * spacing;
+  }
+  BARREL_LEN = Math.max(22, Math.min(32, H * 0.035));
+  // Regenerate stars
+  stars = [];
+  var nStars = Math.floor(W * H / 7000);
+  for (var i = 0; i < nStars; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * (waterY - 30),
+      r: Math.random() * 1.3 + 0.3,
+      tw: Math.random() * Math.PI * 2,
+      ts: 0.3 + Math.random() * 0.5
+    });
+  }
+  // Clear tip history
+  for (var i = 0; i < N_NOZZLES; i++) {
+    nozzleTipHistory[i].length = 0;
+    nozzleAngleHistory[i].length = 0;
+  }
+}
+
+// ========== HSL to RGB ==========
+function hslToRgb(h, s, l) {
+  s /= 100; l /= 100;
+  var c = (1 - Math.abs(2 * l - 1)) * s;
+  var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  var m = l - c / 2;
+  var r, g, b;
+  if (h < 60)       { r = c; g = x; b = 0; }
+  else if (h < 120) { r = x; g = c; b = 0; }
+  else if (h < 180) { r = 0; g = c; b = x; }
+  else if (h < 240) { r = 0; g = x; b = c; }
+  else if (h < 300) { r = x; g = 0; b = c; }
+  else              { r = c; g = 0; b = x; }
+  return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+}
+
+// ========== 5 Solid Colors + Rainbow (36 hues) ==========
+var SOLID_COLORS = [
+  [255,  20,  20],   // 0 纯色大红
+  [ 20, 255,  60],   // 1 亮绿
+  [255, 210,   0],   // 2 金黄
+  [255,  80, 160],   // 3 粉红
+  [220,   0, 220],   // 4 红紫
+  [ 30, 200, 255],   // 5 冰蓝（新增）
+];
+var N_SOLID = SOLID_COLORS.length;
+
+var RAINBOW_COLORS = [];
+for (var h = 0; h < 36; h++) {
+  RAINBOW_COLORS.push(hslToRgb(h * 10, 100, 58));
+}
+var N_RAINBOW = RAINBOW_COLORS.length;
+var ALL_COLORS = SOLID_COLORS.concat(RAINBOW_COLORS);
+var N_ALL = ALL_COLORS.length;
+var COLOR_NAMES = ['纯色大红', '亮绿', '金黄', '粉红', '红紫', '冰蓝', '七色变动'];
+
+// ========== Pre-render particle sprites (bigger + brighter) ==========
+var SPRITE_R = 24;
+var SPRITE_SIZE = SPRITE_R * 2;
+var sprites = [];
+for (var c = 0; c < N_ALL; c++) {
+  var rgb = ALL_COLORS[c];
+  var r = rgb[0], g = rgb[1], b = rgb[2];
+  var spr = document.createElement('canvas');
+  spr.width = SPRITE_SIZE;
+  spr.height = SPRITE_SIZE;
+  var sc = spr.getContext('2d');
+  var grad = sc.createRadialGradient(SPRITE_R, SPRITE_R, 0, SPRITE_R, SPRITE_R, SPRITE_R);
+  grad.addColorStop(0,    'rgba(' + r + ',' + g + ',' + b + ',1)');
+  grad.addColorStop(0.05, 'rgba(' + r + ',' + g + ',' + b + ',1)');
+  grad.addColorStop(0.18, 'rgba(' + r + ',' + g + ',' + b + ',0.7)');
+  grad.addColorStop(0.45, 'rgba(' + r + ',' + g + ',' + b + ',0.2)');
+  grad.addColorStop(1,    'rgba(' + r + ',' + g + ',' + b + ',0)');
+  sc.fillStyle = grad;
+  sc.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+  // Bright solid core
+  sc.fillStyle = 'rgba(255,255,255,0.95)';
+  sc.beginPath();
+  sc.arc(SPRITE_R, SPRITE_R, SPRITE_R * 0.14, 0, Math.PI * 2);
+  sc.fill();
+  sc.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',1)';
+  sc.beginPath();
+  sc.arc(SPRITE_R, SPRITE_R, SPRITE_R * 0.22, 0, Math.PI * 2);
+  sc.fill();
+  sprites.push(spr);
+}
+
+// ========== Bloom sprites — large soft glow for same-color rendering ==========
+var BLOOM_R = 46;
+var BLOOM_SIZE = BLOOM_R * 2;
+var bloomSprites = [];
+for (var c = 0; c < N_ALL; c++) {
+  var rgb = ALL_COLORS[c];
+  var r = rgb[0], g = rgb[1], b = rgb[2];
+  var spr = document.createElement('canvas');
+  spr.width = BLOOM_SIZE;
+  spr.height = BLOOM_SIZE;
+  var sc = spr.getContext('2d');
+  var grad = sc.createRadialGradient(BLOOM_R, BLOOM_R, 0, BLOOM_R, BLOOM_R, BLOOM_R);
+  grad.addColorStop(0,   'rgba(' + r + ',' + g + ',' + b + ',0.32)');
+  grad.addColorStop(0.15,'rgba(' + r + ',' + g + ',' + b + ',0.14)');
+  grad.addColorStop(0.4, 'rgba(' + r + ',' + g + ',' + b + ',0.04)');
+  grad.addColorStop(1,   'rgba(' + r + ',' + g + ',' + b + ',0)');
+  sc.fillStyle = grad;
+  sc.fillRect(0, 0, BLOOM_SIZE, BLOOM_SIZE);
+  bloomSprites.push(spr);
+}
+
+// （实体足球改由下方 drawSoccerBall 绘制，不再使用粒子变色精灵）
+
+// ========== 第9动作 LXQ 专用三色精灵（亮红 L / 深绿 X / 冰蓝 Q） ==========
+// 追加到精灵表末尾，索引 LXQ_C0/C1/C2，供 drawParticles 按 p.c 取用
+var LXQ_COLORS = [
+  [255,  20,  20],   // L 亮红
+  [ 25, 150,  55],   // X 深绿
+  [ 30, 200, 255]    // Q 冰蓝
+];
+var LXQ_C0 = sprites.length;   // 首个 LXQ 索引（= 现有精灵数 N_ALL）
+for (var lc = 0; lc < 3; lc++) {
+  var rgb = LXQ_COLORS[lc]; var r = rgb[0], g = rgb[1], b = rgb[2];
+  var spr = document.createElement('canvas'); spr.width = SPRITE_SIZE; spr.height = SPRITE_SIZE;
+  var sc = spr.getContext('2d');
+  var grad = sc.createRadialGradient(SPRITE_R, SPRITE_R, 0, SPRITE_R, SPRITE_R, SPRITE_R);
+  grad.addColorStop(0,    'rgba(' + r + ',' + g + ',' + b + ',1)');
+  grad.addColorStop(0.05, 'rgba(' + r + ',' + g + ',' + b + ',1)');
+  grad.addColorStop(0.18, 'rgba(' + r + ',' + g + ',' + b + ',0.7)');
+  grad.addColorStop(0.45, 'rgba(' + r + ',' + g + ',' + b + ',0.2)');
+  grad.addColorStop(1,    'rgba(' + r + ',' + g + ',' + b + ',0)');
+  sc.fillStyle = grad; sc.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
+  sc.fillStyle = 'rgba(255,255,255,0.95)';
+  sc.beginPath(); sc.arc(SPRITE_R, SPRITE_R, SPRITE_R * 0.14, 0, Math.PI * 2); sc.fill();
+  sc.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',1)';
+  sc.beginPath(); sc.arc(SPRITE_R, SPRITE_R, SPRITE_R * 0.22, 0, Math.PI * 2); sc.fill();
+  sprites.push(spr);
+  var bspr = document.createElement('canvas'); bspr.width = BLOOM_SIZE; bspr.height = BLOOM_SIZE;
+  var bsc = bspr.getContext('2d');
+  var bgrad = bsc.createRadialGradient(BLOOM_R, BLOOM_R, 0, BLOOM_R, BLOOM_R, BLOOM_R);
+  bgrad.addColorStop(0,    'rgba(' + r + ',' + g + ',' + b + ',0.32)');
+  bgrad.addColorStop(0.15, 'rgba(' + r + ',' + g + ',' + b + ',0.14)');
+  bgrad.addColorStop(0.4,  'rgba(' + r + ',' + g + ',' + b + ',0.04)');
+  bgrad.addColorStop(1,    'rgba(' + r + ',' + g + ',' + b + ',0)');
+  bsc.fillStyle = bgrad; bsc.fillRect(0, 0, BLOOM_SIZE, BLOOM_SIZE);
+  bloomSprites.push(bspr);
+}
+var LXQ_C1 = LXQ_C0 + 1, LXQ_C2 = LXQ_C0 + 2;
+
+// LXQ 字形采样点（每字母 12 个喷管 = 12 个目标点），归一化 tx∈[0,1]左→右, ty∈[0,1]下→上
+// 每字母纵向放大系数：L 竖边加长（比 X/Q 高 18%）
+var LXQ_HSCALE = [1.18, 1.0, 1.0];
+var LXQ_GLYPH = [
+  // L：左侧竖直长条（贯穿全高）+ 底部横脚
+  [ [0.15,0.0],[0.15,0.2],[0.15,0.4],[0.15,0.6],[0.15,0.8],[0.15,1.0],
+    [0.32,0.10],[0.49,0.10],[0.66,0.10],[0.83,0.10],[1.0,0.10],[0.15,0.10] ],
+  // X：两条对角交叉
+  [ [0,0],[0.2,0.2],[0.4,0.4],[0.6,0.6],[0.8,0.8],[1,1],
+    [0,1],[0.2,0.8],[0.4,0.6],[0.6,0.4],[0.8,0.2],[1,0] ],
+  // Q：大写 O 圆环（9 点）+ 右下斜尾巴（3 点，自圆环穿出向右下）
+  [ [0.50,0.10],[0.77,0.198],[0.913,0.447],[0.864,0.730],[0.644,0.915],[0.356,0.915],
+    [0.136,0.730],[0.087,0.447],[0.230,0.198],
+    [0.86,0.55],[0.93,0.42],[1.0,0.30] ]
+];
+
+// 由喷管 i 计算其在 LXQ 中的发射角与初速度（抛物线顶点落在字母目标点上），整体随 ballRiseTimer 缓缓升起
+function lxqCompute(i) {
+  var g = Math.floor(i / 12);          // 0=L, 1=X, 2=q
+  var j = i - g * 12;
+  var pt = LXQ_GLYPH[g][j];
+  var letterLeft = g * (W / 3) + W * 0.04;
+  var letterW = W / 3 - W * 0.08;
+  var letterH = H * 0.26 * LXQ_HSCALE[g];   // L 竖边加长（HSCALE=1.18）
+  var rise = 1 - Math.pow(1 - Math.min(ballRiseTimer / (PATTERN_DURATION * 0.9), 1), 3);
+  var bottomY = waterY - 40 - rise * (H * 0.42);
+  var sx = letterLeft + pt[0] * letterW;
+  var sy = bottomY - pt[1] * letterH;
+  var tipX = nozzleXs[i], tipY = waterY, vx = 0, vy = -1, angle = 0;
+  var dy = waterY - sy - 28;           // 扣除枪管高度，使顶点精确落在目标
+  if (dy >= 6) {
+    var vy0 = Math.sqrt(2 * GRAVITY * dy);
+    var tApex = vy0 / GRAVITY;
+    var dx = sx - nozzleXs[i];
+    vx = dx / tApex;
+    angle = Math.atan2(vx, vy0);
+    tipX = nozzleXs[i] + Math.sin(angle) * (BARREL_LEN + 4);
+    tipY = waterY - Math.cos(angle) * (BARREL_LEN + 4);
+    vy = -vy0;
+  }
+  return { angle: angle, tipX: tipX, tipY: tipY, vx: vx, vy: vy,
+           cIdx: (g === 0 ? LXQ_C0 : g === 1 ? LXQ_C1 : LXQ_C2) };
+}
+
+// ========== 36 Nozzles ==========
+var N_NOZZLES = 36;
+var nozzleXs = [];
+for (var i = 0; i < N_NOZZLES; i++) nozzleXs.push(0);
+
+// ========== Stars ==========
+var stars = [];
+
+// ========== Tip history & angle history for water arc ribbons ==========
+var nozzleTipHistory = [];
+var nozzleAngleHistory = [];
+for (var i = 0; i < N_NOZZLES; i++) {
+  nozzleTipHistory.push([]);
+  nozzleAngleHistory.push([]);
+}
+var TRAIL_LEN = 24;   // longer trail for visible arc
+var ARC_LEN = 20;     // water arc ribbon samples
+
+// ========== Easing functions ==========
+function easeInOutSine(x) {
+  return -(Math.cos(Math.PI * x) - 1) / 2;
+}
+
+// ========== 10 Patterns — 参考西湖喷泉摆动动作 ==========
+// fn(i, N, p, sw, t, A) -> {angle, swinging}
+//   p: 当前动作内进度 0..1（动作固定 15 秒，换场前清场 3 秒，共 18 秒）
+//   sw: 摆动相位（随"摆动速度"滑块推进，与动作时长解耦，故高速摆动不改变动作维持时间）
+//   t: 连续时间（细微抖动），A: 摆幅(度)
+// pf(p): 喷射力度倍率；speedFn(i,N,p,sw,t): 逐管速度调制（动作1用于顶点正弦波）
+var patterns = [
+  {
+    name: '垂直高喷', desc: '红色水柱 顶端成单波长正弦波缓慢右移', color: 0, pf: function(p){ return 0.95; },
+    fn: function(i, N, p, sw, t, A) { return { angle: 0, swinging: false }; },
+    // 逐管控制喷射速度：顶点高度 h ∝ v^2，令 h=0.20+0.80·sin(…) 形成对比强烈的正弦波
+    // 仅显示 1 个波长（k=2π），用连续时间 t 缓慢右移（不依赖摆动速度，固定慢速），由空中粒子顶端自然连成曲线
+    speedFn: function(i, N, p, sw, t) {
+      var x = i / (N - 1);                         // 0(左)→1(右)
+      var k = 2 * Math.PI;                         // 横跨 1 个完整波长（只显示一个波长）
+      var wave = 0.5 + 0.5 * Math.sin(x * k - t * 0.5);   // 缓慢向右传播（约13秒平移一个波长）
+      return Math.sqrt(0.20 + 0.80 * wave);        // 速度 ∝ sqrt(顶点高度)，顶点高度比 0.20~1.00
+    }
+  },
+  {
+    // 绿茵足球：外围绿色竖直喷如草坪；中部一组喷管调制高度形成圆顶水柱，粒子进入球盘被重新着色成足球（白底黑斑），随动作进度缓缓升起
+    name: '绿茵足球', desc: '绿色草坪 中部喷管变色成足球', color: 1, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      return { angle: 0, swinging: false };   // 竖直静止喷射
+    },
+    speedFn: function(i, N, p, sw, t) {
+      var c = (N - 1) / 2;
+      var dx = (i - c) / (N * 0.16);           // 距中心归一化
+      if (Math.abs(dx) <= 1.2) {
+        var dome = Math.sqrt(Math.max(0, 1 - dx * dx));   // 中心高、边缘低 → 圆顶水柱
+        return 0.6 + 0.9 * dome;
+      }
+      return 0.7;                              // 外圈草坪略低
+    }
+  },
+  {
+    // 金色麦浪：喷嘴基本竖直如麦秆，靠柱高随"行波"起伏成浪；角度 90° 偏移使水柱轮廓勾出波浪形
+    // 行波 k=3 个波长横跨全屏，time 推进入射相 → 自左向右滚动（约 6 秒/波长），像风吹过麦田
+    name: '金色麦浪', desc: '金色水柱顶端成波浪 自左向右滚动如风吹麦田', color: 2, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      var x = i / (N - 1);
+      var k = 3 * Math.PI * 2;                       // 全屏 3 个波长（麦浪起伏）
+      var phase = x * k - time * 1.0;                // 随时间向右传播
+      return { angle: 9 * Math.cos(phase), swinging: false };   // 90°偏移： crest 处直立、零点处倾斜 → 勾出波形的麦秆随风感
+    },
+    speedFn: function(i, N, p, sw, t) {
+      var x = i / (N - 1);
+      var k = 3 * Math.PI * 2;
+      var wave = 0.5 + 0.5 * Math.sin(x * k - time * 1.0);   // 行波 0..1（与角度同相）
+      return Math.sqrt(0.25 + 0.75 * wave);        // 高度比 0.25~1.00，最高处连成滚动麦浪
+    }
+  },
+  {
+    name: '扇形开合', desc: '避震变换 扇形开合 快慢节奏交替', color: 3, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      var pos = (i / (N - 1)) * 2 - 1;            // -1 左 .. 1 右
+      // 快慢节奏：慢拍包络让扇形摆动速度在"缓段/急段"间交替
+      var slow = Math.sin(t * 0.5);
+      var fast = Math.max(0, slow);
+      var speedMul = 0.3 + 1.4 * fast * fast;      // 缓段≈0.3(慢) 急段≈1.7(快)
+      var ph = sw * speedMul + pos * 1.2;
+      // 扇形开合：开合度随动作进度一次，方向随相位起伏（速度受快慢节奏调制）
+      var fan = A * pos * Math.sin(p * Math.PI) * Math.sin(ph * 0.5);
+      // 避震变换：周期性"受击"后阻尼衰减弹跳（减震观感），急段受击更频繁
+      var strikeRate = 0.5 + 1.3 * fast;
+      var strike = (t * strikeRate) % 1.0;
+      var damp = Math.exp(-3.6 * strike);          // 受击后快速衰减 → 避震
+      var bounce = damp * Math.sin(strike * 15);
+      var shock = A * 0.5 * bounce * (0.35 + 0.65 * Math.abs(pos));  // 外管弹跳更大 → 保扇形感
+      return { angle: fan + shock + 1.2 * Math.sin(t * 1.2 + i * 0.5), swinging: true };
+    }
+  },
+  {
+    name: '分组交替', desc: '奇偶管反向摆动', color: 4, pf: function(p){ return 0.85; },
+    fn: function(i, N, p, sw, t, A) {
+      var g = (i % 2 === 0) ? 1 : -1;
+      return { angle: A * 0.6 * g * Math.sin(sw) + 1.5 * Math.sin(t * 1.2 + i * 0.5), swinging: true };
+    }
+  },
+  {
+    name: '螺旋旋转', desc: '相位旋转螺旋', color: 5, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      var pos = (i / (N - 1)) * 2 - 1;
+      return { angle: A * 0.7 * Math.sin(sw + pos * 1.2) + 1.5 * Math.sin(t * 1.2 + i * 0.5), swinging: true };
+    }
+  },
+  {
+    name: '脉冲喷射', desc: '脉冲式喷射摆动', color: 0, pf: function(p){ var pk = Math.pow(Math.sin(p * 4 * Math.PI), 2); return 0.6 + 0.6 * pk; },
+    fn: function(i, N, p, sw, t, A) {
+      var pk = Math.pow(Math.sin(p * 4 * Math.PI), 2);
+      return { angle: A * 0.3 * pk * Math.sin(sw + i * 0.3) + 1.5 * Math.sin(t * 1.2 + i * 0.5), swinging: true };
+    }
+  },
+  {
+    name: '交叉编织', desc: '左右半区反向', color: 6, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      var side = (i < N / 2) ? 1 : -1;
+      return { angle: A * 0.7 * side * Math.sin(sw) + 1.5 * Math.sin(t * 1.2 + i * 0.5), swinging: true };
+    }
+  },
+  {
+    // 第9动作：36 喷管分 3 组（每组 12 个）在空中拼出 "LXQ" 三个字母，随水推力从底部缓缓升起
+    // L=紫红(左组)、X=深绿(中组)、q=冰白(右组)；每喷管把粒子抛物线顶点送到字形目标点，顶点在空中连成字母
+    name: 'LXQ 升空', desc: '紫红L·深绿X·冰白q 空中成形缓缓升起', color: 4, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      if (i >= N) return { angle: 0, swinging: false };
+      var L = lxqCompute(i);
+      return { angle: L.angle * 180 / Math.PI, swinging: false };
+    }
+  },
+  {
+    name: '波浪叠加', desc: '双频波叠加', color: 5, pf: function(p){ return 1.0; },
+    fn: function(i, N, p, sw, t, A) {
+      var pos = (i / (N - 1)) * 2 - 1;
+      var w1 = Math.sin(sw + pos * 2);
+      var w2 = 0.6 * Math.sin(sw * 1.5 - pos * 1.5);
+      return { angle: A * (w1 * 0.7 + w2 * 0.5) + 1.5 * Math.sin(t * 1.2 + i * 0.5), swinging: true };
+    }
+  },
+];
+
+// ========== State ==========
+var currentPattern = 0;
+var time = 0;
+var isPlaying = true;
+var speedFactor = 1;
+var swingPhase = 0;          // 摆动相位：随"摆动速度"推进，与动作时长解耦
+var SWING_BASE = 0.09;       // 速度=1 时每帧摆动相位增量（≈1.1s/周期）
+var powerLevel = 20;
+var densityLevel = 2;
+var autoCycle = true;
+var patternTimer = 0;
+var ballRiseTimer = 0;     // 第二动作：足球升起计时（独立于 autoCycle，进入动作即重置）
+var frameCount = 0;
+
+// 动作时长与清场（真实秒数，随速度倍率推进）
+var PATTERN_DURATION = 15;   // 每动作固定维持 15 秒（与摆动速度无关）
+var CLEAR_DURATION = 3;      // 相邻动作间清场 3 秒（喷管停喷，粒子落净）
+var CYCLE_DURATION = PATTERN_DURATION + CLEAR_DURATION;   // 单个动作完整周期 18 秒
+
+function isClearing() { return patternTimer > PATTERN_DURATION; }
+
+var particles = [];
+var MAX_PARTICLES = 6000;
+var GRAVITY = 0.45;
+var AMP = 60;
+
+// ========== Get nozzle state ==========
+function getNozzleState(pat, i, N, p, sw, t, A) {
+  var result = pat.fn(i, N, p, sw, t, A);
+  if (typeof result === 'number') {
+    return { angle: result, swinging: true };
+  }
+  return result;
+}
+
+// progress within current action (0..1)
+function getProgress() {
+  return Math.min(patternTimer / PATTERN_DURATION, 0.999);
+}
+
+// angular velocity of nozzle (degrees per frame) via numerical derivative
+function getNozzleRateDeg(pat, i, N, p, sw, t, A, speedFactor) {
+  var dsw = 0.02;
+  var aA = getNozzleState(pat, i, N, p, sw - dsw, t, A).angle;
+  var aB = getNozzleState(pat, i, N, p, sw + dsw, t, A).angle;
+  var slope = (aB - aA) / (2 * dsw);                 // deg per swingPhase-unit
+  var swPerFrame = SWING_BASE * speedFactor;          // swingPhase += SWING_BASE*speedFactor / frame
+  return slope * swPerFrame;                          // deg per frame
+}
+
+function getColorIdx(pat, i) {
+  if (pat.color < N_SOLID) return pat.color;
+  return N_SOLID + Math.floor((time * 60 + i * 1.2)) % N_RAINBOW;
+}
+
+function getGlowColor(pat) {
+  if (pat.color < N_SOLID) return SOLID_COLORS[pat.color];
+  var rbIdx = Math.floor(time * 60) % N_RAINBOW;
+  return RAINBOW_COLORS[rbIdx];
+}
+
+// ========== Emit ==========
+function emitParticles() {
+  if (particles.length >= MAX_PARTICLES) return;
+  var emitEvery = densityLevel === 1 ? 3 : densityLevel === 2 ? 2 : 1;
+  if (frameCount % emitEvery !== 0) return;
+
+  // 清场期：喷管停喷，让空中粒子落净
+  if (isClearing()) return;
+
+  var pat = patterns[currentPattern];
+  var progress = getProgress();
+  var waveMode = !!pat.speedFn;                       // 动作1：逐管速度调制（顶点正弦波）
+  var rndAmt = waveMode ? 0.5 : 2.0;                  // 波形动作减小随机抖动，保持波面清晰
+  for (var i = 0; i < N_NOZZLES; i++) {
+    // 第9动作 LXQ：每喷管把一束粒子送到字形目标点（抛物线顶点落在字母笔划上），
+    // 多颗/小扩散 → 水柱从水底(底)到顶点(顶)连续填实，整列即笔划，字母由 36 根水柱上升段描出
+    if (currentPattern === 8) {
+      var LQ = lxqCompute(i);
+      var NX = 4;                       // 每管每帧喷 4 颗，填实水柱（顶底贯通）
+      for (var kN = 0; kN < NX; kN++) {
+        particles.push({
+          x: LQ.tipX + (Math.random() - 0.5) * 2.0,
+          y: LQ.tipY,
+          vx: LQ.vx + (Math.random() - 0.5) * 0.5,
+          vy: LQ.vy + (Math.random() - 0.5) * 0.4,
+          c: LQ.cIdx,
+          life: 1.0,
+          size: 3.0 + Math.random() * 1.8
+        });
+      }
+      continue;
+    }
+    var st = getNozzleState(pat, i, N_NOZZLES, progress, swingPhase, time, AMP);
+    var angleRad = st.angle * Math.PI / 180;
+    var cIdx = getColorIdx(pat, i);
+    var pf = pat.pf ? pat.pf(progress) : 1.0;
+    var speedMul = waveMode ? pat.speedFn(i, N_NOZZLES, progress, swingPhase, time) : 1.0;
+    var spd = (powerLevel + (Math.random() - 0.5) * rndAmt) * pf * speedMul;
+
+    // Emit from barrel tip
+    var tipX = nozzleXs[i] + Math.sin(angleRad) * (BARREL_LEN + 4);
+    var tipY = waterY - Math.cos(angleRad) * (BARREL_LEN + 4);
+
+    // Tangential velocity from nozzle rotation (px/frame), follows actual angular speed
+    var tangVx = 0, tangVy = 0;
+    if (st.swinging) {
+      var dAngleRad = getNozzleRateDeg(pat, i, N_NOZZLES, progress, swingPhase, time, AMP, speedFactor) * Math.PI / 180;
+      tangVx = Math.cos(angleRad) * BARREL_LEN * dAngleRad;
+      tangVy = Math.sin(angleRad) * BARREL_LEN * dAngleRad;
+    }
+
+    particles.push({
+      x: tipX + (Math.random() - 0.5) * 2.5,
+      y: tipY,
+      vx: spd * Math.sin(angleRad) + tangVx,
+      vy: -spd * Math.cos(angleRad) + tangVy,
+      c: cIdx,
+      life: 1.0,
+      size: 2.6 + Math.random() * 1.6   // bigger particles
+    });
+  }
+}
+
+// ========== Update ==========
+function updateParticles(dt) {
+  for (var i = particles.length - 1; i >= 0; i--) {
+    var p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += GRAVITY * dt;
+
+    // 第二动作：水粒子撞到实体足球 → 明显反弹（按恢复系数反射 + 轻微溅开）
+    if (soccerBall.active) {
+      var dx = p.x - soccerBall.x, dy = p.y - soccerBall.y;
+      var cr = soccerBall.R + p.size * 4;
+      var d2 = dx * dx + dy * dy;
+      if (d2 < cr * cr) {
+        var dist = Math.sqrt(d2) || 0.0001;
+        var nx = dx / dist, ny = dy / dist;
+        var vn = p.vx * nx + p.vy * ny;        // <0 表示正撞向球心
+        if (vn < 0) {
+          var rest = 0.8;                       // 恢复系数，越大弹得越明显
+          p.vx -= (1 + rest) * vn * nx;
+          p.vy -= (1 + rest) * vn * ny;
+          p.vx += (Math.random() - 0.5) * 1.4;  // 横向随机 → 溅开感
+        }
+        p.x = soccerBall.x + nx * cr;           // 始终推到球面外，避免陷入
+        p.y = soccerBall.y + ny * cr;
+        if (p.life < 0.7) p.life = 0.7;         // 反弹后保持可见
+      }
+    }
+
+    if (p.y > waterY - 35) {
+      p.life -= 0.05 * dt;
+    }
+
+    if (p.y > waterY || p.life <= 0 || p.x < -30 || p.x > W + 30 || p.y < -50) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+// ========== Drawing ==========
+function drawBackground() {
+  var grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#040714');
+  grad.addColorStop(0.5, '#080d22');
+  grad.addColorStop(0.82, '#0c1230');
+  grad.addColorStop(1, '#060a1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  for (var i = 0; i < stars.length; i++) {
+    var s = stars[i];
+    var tw = 0.4 + 0.6 * Math.abs(Math.sin(s.tw + time * s.ts));
+    ctx.fillStyle = 'rgba(200,220,255,' + (tw * 0.55) + ')';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawWater() {
+  var grad = ctx.createLinearGradient(0, waterY - 4, 0, H);
+  grad.addColorStop(0, 'rgba(25, 55, 105, 0.08)');
+  grad.addColorStop(0.12, 'rgba(15, 40, 80, 0.3)');
+  grad.addColorStop(0.5, 'rgba(8, 25, 55, 0.55)');
+  grad.addColorStop(1, 'rgba(4, 12, 30, 0.85)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, waterY, W, H - waterY);
+
+  ctx.strokeStyle = 'rgba(70, 140, 230, 0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (var x = 0; x <= W; x += 4) {
+    var y = waterY + Math.sin(x * 0.025 + time * 0.7) * 1.2;
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(100, 180, 255, 0.06)';
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  for (var x = 0; x <= W; x += 4) {
+    var y = waterY - 1 + Math.sin(x * 0.025 + time * 0.7) * 1.2;
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function drawMist() {
+  var grad = ctx.createLinearGradient(0, waterY - 20, 0, waterY + 4);
+  grad.addColorStop(0, 'rgba(120, 180, 255, 0)');
+  grad.addColorStop(1, 'rgba(120, 180, 255, 0.06)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, waterY - 20, W, 24);
+}
+
+// ========== Particle rendering with same-color bloom ==========
+function drawParticles() {
+  ctx.globalCompositeOperation = 'lighter';
+
+  // Pass 1: Bloom — large soft glow tints the sky with the particle's color
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    var bSpr = bloomSprites[p.c];
+    var bSz = p.size * 13;
+    ctx.globalAlpha = p.life * 0.34;
+    ctx.drawImage(bSpr, p.x - bSz / 2, p.y - bSz / 2, bSz, bSz);
+  }
+
+  // Pass 2: Normal particles — bright core + glow
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    var spr = sprites[p.c];
+    var sz = p.size * 10.5;
+    ctx.globalAlpha = p.life * 0.92;
+    ctx.drawImage(spr, p.x - sz / 2, p.y - sz / 2, sz, sz);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawReflections() {
+  ctx.globalCompositeOperation = 'lighter';
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
+    if (p.y > waterY - 80) {
+      var spr = sprites[p.c];
+      var sz = p.size * 10.5;
+      var refY = waterY + (waterY - p.y) * 0.32;
+      ctx.globalAlpha = p.life * 0.07;
+      ctx.drawImage(spr, p.x - sz / 2, refY - sz / 2, sz, sz);
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ========== Nozzle drawing — with WATER ARC RIBBON during fast swing ==========
+function drawNozzles() {
+  var pat = patterns[currentPattern];
+  var glowColor = getGlowColor(pat);
+  var gr = glowColor[0], gg = glowColor[1], gb = glowColor[2];
+  var glowCss = 'rgba(' + gr + ',' + gg + ',' + gb + ',';
+
+  // Pre-compute all nozzle states
+  var states = [];
+  var swingCount = 0, staticCount = 0;
+  var progress = getProgress();
+  var clearing = isClearing();
+  for (var i = 0; i < N_NOZZLES; i++) {
+    var st = clearing ? { angle: 0, swinging: false } : getNozzleState(pat, i, N_NOZZLES, progress, swingPhase, time, AMP);
+    st.rateDeg = st.swinging ? getNozzleRateDeg(pat, i, N_NOZZLES, progress, swingPhase, time, AMP, speedFactor) : 0;
+    states.push(st);
+    if (st.swinging) swingCount++; else staticCount++;
+  }
+
+  // 1. Base platform
+  ctx.fillStyle = 'rgba(12, 20, 38, 0.92)';
+  ctx.fillRect(margin - 14, waterY, W - margin * 2 + 28, 5);
+  ctx.strokeStyle = 'rgba(50, 90, 150, 0.25)';
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(margin - 14, waterY, W - margin * 2 + 28, 5);
+
+  // 2. Update tip trails & angle history — only for swinging nozzles
+  if (isPlaying) {
+    for (var i = 0; i < N_NOZZLES; i++) {
+      if (!states[i].swinging) {
+        nozzleTipHistory[i].length = 0;
+        nozzleAngleHistory[i].length = 0;
+        continue;
+      }
+      var angleRad = states[i].angle * Math.PI / 180;
+      var tipX = nozzleXs[i] + Math.sin(angleRad) * BARREL_LEN;
+      var tipY = waterY - Math.cos(angleRad) * BARREL_LEN;
+      nozzleTipHistory[i].push({ x: tipX, y: tipY, angle: states[i].angle });
+      if (nozzleTipHistory[i].length > TRAIL_LEN) nozzleTipHistory[i].shift();
+
+      // Also store angle for arc ribbon
+      nozzleAngleHistory[i].push(states[i].angle);
+      if (nozzleAngleHistory[i].length > ARC_LEN) nozzleAngleHistory[i].shift();
+    }
+  }
+
+  // 3. Draw WATER ARC RIBBONS — the key visual: traces the swing path as a solid water sheet
+  //    This is what makes it look like West Lake fountain — you see the full arc of water
+  ctx.globalCompositeOperation = 'lighter';
+  for (var i = 0; i < N_NOZZLES; i++) {
+    if (!states[i].swinging) continue;
+    var hist = nozzleTipHistory[i];
+    if (hist.length < 4) continue;
+
+    // Draw the swing arc as a thick ribbon — outer glow layer
+    ctx.strokeStyle = glowCss + '0.15)';
+    ctx.lineWidth = 12;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (var j = 0; j < hist.length; j++) {
+      if (j === 0) ctx.moveTo(hist[j].x, hist[j].y);
+      else ctx.lineTo(hist[j].x, hist[j].y);
+    }
+    ctx.stroke();
+
+    // Mid layer
+    ctx.strokeStyle = glowCss + '0.25)';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    for (var j = 0; j < hist.length; j++) {
+      if (j === 0) ctx.moveTo(hist[j].x, hist[j].y);
+      else ctx.lineTo(hist[j].x, hist[j].y);
+    }
+    ctx.stroke();
+
+    // Inner bright ribbon
+    var ribbonGrad = ctx.createLinearGradient(hist[0].x, hist[0].y, hist[hist.length-1].x, hist[hist.length-1].y);
+    ribbonGrad.addColorStop(0, glowCss + '0)');
+    ribbonGrad.addColorStop(0.3, glowCss + '0.3)');
+    ribbonGrad.addColorStop(0.7, glowCss + '0.5)');
+    ribbonGrad.addColorStop(1, glowCss + '0.7)');
+    ctx.strokeStyle = ribbonGrad;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (var j = 0; j < hist.length; j++) {
+      if (j === 0) ctx.moveTo(hist[j].x, hist[j].y);
+      else ctx.lineTo(hist[j].x, hist[j].y);
+    }
+    ctx.stroke();
+
+    // Hot core line — brightest
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (var j = 0; j < hist.length; j++) {
+      if (j === 0) ctx.moveTo(hist[j].x, hist[j].y);
+      else ctx.lineTo(hist[j].x, hist[j].y);
+    }
+    ctx.stroke();
+  }
+
+  // 4. Draw water streams — bright colored jet from barrel tip (longer during fast swing)
+  ctx.globalCompositeOperation = 'lighter';
+  for (var i = 0; i < N_NOZZLES; i++) {
+    if (clearing) continue;   // 清场期：不画水柱，仅保留喷管本体
+    var st = states[i];
+    var aRad = st.angle * Math.PI / 180;
+    var tipX = nozzleXs[i] + Math.sin(aRad) * BARREL_LEN;
+    var tipY = waterY - Math.cos(aRad) * BARREL_LEN;
+    // Stream length grows with swing speed
+    var streamLen = 46 + Math.min(Math.abs(st.rateDeg) * 4.5, 48);
+    var endX = tipX + Math.sin(aRad) * streamLen;
+    var endY = tipY - Math.cos(aRad) * streamLen;
+
+    var streamGrad = ctx.createLinearGradient(tipX, tipY, endX, endY);
+    streamGrad.addColorStop(0, glowCss + '0.65)');
+    streamGrad.addColorStop(0.25, glowCss + '0.3)');
+    streamGrad.addColorStop(0.6, glowCss + '0.08)');
+    streamGrad.addColorStop(1, glowCss + '0)');
+    ctx.strokeStyle = streamGrad;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+
+    // Bright core line
+    var coreGrad = ctx.createLinearGradient(tipX, tipY, endX, endY);
+    coreGrad.addColorStop(0, 'rgba(255,255,255,0.75)');
+    coreGrad.addColorStop(0.3, glowCss + '0.5)');
+    coreGrad.addColorStop(1, glowCss + '0)');
+    ctx.strokeStyle = coreGrad;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 5. Draw nozzles
+  for (var i = 0; i < N_NOZZLES; i++) {
+    var st = states[i];
+    var angleRad = st.angle * Math.PI / 180;
+    var x = nozzleXs[i];
+
+    ctx.save();
+    ctx.translate(x, waterY);
+    ctx.rotate(angleRad);
+
+    // Barrel — sleek tapered shape
+    var bGrad = ctx.createLinearGradient(-3.5, 0, 3.5, 0);
+    if (st.swinging) {
+      bGrad.addColorStop(0, 'rgba(40, 58, 88, 0.95)');
+      bGrad.addColorStop(0.3, 'rgba(90, 115, 160, 0.95)');
+      bGrad.addColorStop(0.5, 'rgba(120, 150, 200, 1.0)');
+      bGrad.addColorStop(0.7, 'rgba(85, 108, 150, 0.95)');
+      bGrad.addColorStop(1, 'rgba(32, 46, 70, 0.95)');
+    } else {
+      bGrad.addColorStop(0, 'rgba(30, 42, 62, 0.9)');
+      bGrad.addColorStop(0.3, 'rgba(65, 82, 115, 0.9)');
+      bGrad.addColorStop(0.5, 'rgba(80, 100, 135, 0.92)');
+      bGrad.addColorStop(0.7, 'rgba(60, 76, 105, 0.9)');
+      bGrad.addColorStop(1, 'rgba(24, 36, 54, 0.9)');
+    }
+    ctx.fillStyle = bGrad;
+    ctx.strokeStyle = st.swinging ? 'rgba(120, 160, 220, 0.35)' : 'rgba(90, 120, 170, 0.2)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-3.5, 0);
+    ctx.lineTo(3.5, 0);
+    ctx.lineTo(2.2, -BARREL_LEN);
+    ctx.lineTo(-2.2, -BARREL_LEN);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Center highlight line
+    ctx.strokeStyle = st.swinging ? 'rgba(150, 185, 235, 0.2)' : 'rgba(110, 140, 185, 0.1)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(0, -2);
+    ctx.lineTo(0, -BARREL_LEN + 2);
+    ctx.stroke();
+
+    // Tip — layered glow
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = glowCss + '0.35)';
+    ctx.beginPath();
+    ctx.arc(0, -BARREL_LEN, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = glowCss + '0.6)';
+    ctx.beginPath();
+    ctx.arc(0, -BARREL_LEN, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = glowCss + '1)';
+    ctx.beginPath();
+    ctx.arc(0, -BARREL_LEN, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    // White hot core
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(0, -BARREL_LEN, 1.0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Static indicator — small bracket
+    if (!st.swinging) {
+      ctx.strokeStyle = 'rgba(255, 171, 64, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-3, -BARREL_LEN - 2);
+      ctx.lineTo(-3, -BARREL_LEN - 5);
+      ctx.moveTo(3, -BARREL_LEN - 2);
+      ctx.lineTo(3, -BARREL_LEN - 5);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Pivot base — glowing
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = glowCss + '0.15)';
+    ctx.beginPath();
+    ctx.arc(x, waterY, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.fillStyle = st.swinging ? 'rgba(50, 70, 105, 0.95)' : 'rgba(42, 56, 80, 0.9)';
+    ctx.beginPath();
+    ctx.arc(x, waterY, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = st.swinging ? 'rgba(90, 130, 190, 0.3)' : 'rgba(255, 171, 64, 0.2)';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+
+  // Update mode display
+  var modeEl = document.getElementById('modeRow');
+  if (swingCount > 0 && staticCount > 0) {
+    modeEl.innerHTML = '<span class="swinging">&#9679;</span> 摆动: ' + swingCount + '  <span class="static">&#9679;</span> 静止: ' + staticCount;
+  } else if (staticCount > 0) {
+    modeEl.innerHTML = '<span class="static">&#9679;</span> 全部静止: ' + staticCount;
+  } else {
+    modeEl.innerHTML = '<span class="swinging">&#9679;</span> 全部摆动: ' + swingCount;
+  }
+}
+
+// ========== 实体彩色足球（第二动作：绿茵足球） ==========
+// 中间水柱将实体足球向上推（水推力）→ 足球随动作进度缓缓升起；
+// 落下的水粒子撞到球底按恢复系数明显反弹（见 updateParticles）。
+var soccerBall = { x: 0, y: 0, R: 0, spin: 0, active: false };
+function updateSoccerBall() {
+  if (currentPattern !== 1 || isClearing()) { soccerBall.active = false; return; }
+  var R = Math.max(28, Math.min(72, Math.min(W, H) * 0.06));
+  var rp = Math.min(ballRiseTimer / (PATTERN_DURATION * 0.85), 1);   // 约 13s 内升起
+  var e = 1 - Math.pow(1 - rp, 3);                                  // easeOut：水推力顶起，先快后缓
+  soccerBall.R = R;
+  soccerBall.x = W / 2;
+  soccerBall.y = waterY - R - 12 - e * (H * 0.40);                   // 自草坪升到约屏幕 40% 高度
+  soccerBall.spin = time * 0.35;                                     // 缓缓自转
+  soccerBall.active = true;
+}
+function soccerPentagonVerts(cx, cy, r, rot) {
+  var v = [];
+  for (var i = 0; i < 5; i++) {
+    var a = rot + i * (2 * Math.PI / 5) - Math.PI / 2;
+    v.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  return v;
+}
+function soccerPentagon(cx, cy, r, rot) {
+  var v = soccerPentagonVerts(cx, cy, r, rot);
+  ctx.beginPath();
+  ctx.moveTo(v[0][0], v[0][1]);
+  for (var i = 1; i < 5; i++) ctx.lineTo(v[i][0], v[i][1]);
+  ctx.closePath();
+  ctx.fill();
+}
+function drawSoccerBall(cx, cy, R, spin) {
+  // 球面明暗（光来自左上）
+  var g = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.35, R * 0.1, cx, cy, R);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(0.62, '#eef1f5');
+  g.addColorStop(1, '#aeb4c2');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+  // 球面裁切后画黑色五边形（经典足球）
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = '#15171d';
+  soccerPentagon(cx, cy, R * 0.40, spin);
+  var d = R * 0.92;
+  for (var k = 0; k < 5; k++) {
+    var a = -Math.PI / 2 + k * (2 * Math.PI / 5);
+    var sx = cx + Math.cos(a) * d, sy = cy + Math.sin(a) * d;
+    soccerPentagon(sx, sy, R * 0.46, a - Math.PI / 2 + spin);
+  }
+  ctx.restore();
+  // 球缘高光 + 暗边（立体感）
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = Math.max(1, R * 0.05);
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.97, Math.PI * 0.9, Math.PI * 1.7); ctx.stroke();
+  ctx.strokeStyle = 'rgba(70,75,90,0.45)';
+  ctx.lineWidth = Math.max(1, R * 0.04);
+  ctx.beginPath(); ctx.arc(cx, cy, R, Math.PI * 1.7, Math.PI * 2.6); ctx.stroke();
+  // 彩色外发光（呼应"彩色足球"）
+  ctx.globalCompositeOperation = 'lighter';
+  var rg = ctx.createRadialGradient(cx, cy, R * 0.95, cx, cy, R * 1.45);
+  rg.addColorStop(0, 'rgba(120,200,255,0)');
+  rg.addColorStop(0.45, 'rgba(120,200,255,0.16)');
+  rg.addColorStop(1, 'rgba(120,200,255,0)');
+  ctx.fillStyle = rg;
+  ctx.beginPath(); ctx.arc(cx, cy, R * 1.45, 0, Math.PI * 2); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+}
+function drawSoccerBallScene() {
+  if (!soccerBall.active) return;
+  drawSoccerBall(soccerBall.x, soccerBall.y, soccerBall.R, soccerBall.spin);
+}
+
+function draw() {
+  drawBackground();
+  drawWater();
+  drawMist();
+  drawReflections();
+  drawParticles();
+  drawNozzles();
+  drawSoccerBallScene();
+}
+
+// ========== Animation Loop ==========
+function animate() {
+  if (isPlaying) {
+    time += 0.016;                                  // 连续时间（抖动/星空），固定速率
+    swingPhase += SWING_BASE * speedFactor;          // 摆动相位随"摆动速度"推进（与动作时长解耦）
+    frameCount++;
+    ballRiseTimer += 0.016;
+
+    emitParticles();
+    updateSoccerBall();
+    updateParticles(1);
+
+    if (autoCycle) {
+      patternTimer += 0.016;                         // 动作时长固定，与摆动速度无关
+      if (patternTimer >= CYCLE_DURATION) {
+        selectPattern((currentPattern + 1) % patterns.length);
+        patternTimer = 0;
+      }
+    }
+
+    // 状态栏：动作倒计时 / 清场提示
+    var statusEl = document.getElementById('status');
+    if (isClearing()) {
+      var clrLeft = Math.max(1, Math.ceil(CYCLE_DURATION - patternTimer));
+      statusEl.textContent = '清场中（换场过渡）— 剩余 ' + clrLeft + 's  粒子: ' + particles.length;
+    } else {
+      var runningLeft = Math.max(1, Math.ceil(PATTERN_DURATION - patternTimer));
+      statusEl.textContent = '运行中 — 本动作剩余 ' + runningLeft + 's  粒子: ' + particles.length;
+    }
+  }
+
+  draw();
+  requestAnimationFrame(animate);
+}
+
+// ========== Pattern Selection ==========
+function selectPattern(idx) {
+  currentPattern = idx;
+  ballRiseTimer = 0;
+  var pat = patterns[idx];
+  var btns = document.querySelectorAll('.pattern-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', i === idx);
+  }
+  document.getElementById('patternIdx').textContent = 'No.' + (idx + 1) + ' / 10';
+  document.getElementById('patternName').textContent = pat.name;
+  document.getElementById('patternDesc').textContent = pat.desc;
+
+  var colorName = COLOR_NAMES[pat.color];
+  document.getElementById('colorName').textContent = colorName;
+  var swatch = document.getElementById('colorSwatch');
+  if (pat.color < N_SOLID) {
+    var rgb = SOLID_COLORS[pat.color];
+    var css = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+    swatch.style.background = css;
+    swatch.style.color = css;
+  } else {
+    swatch.style.background = 'linear-gradient(135deg, #ff0000, #ff9500, #ffcc00, #34c759, #0a84ff, #5e5ce6, #bf5af2)';
+    swatch.style.color = '#bf5af2';
+  }
+}
+
+// ========== Build UI ==========
+var grid = document.getElementById('patternGrid');
+for (var i = 0; i < patterns.length; i++) {
+  (function(idx) {
+    var btn = document.createElement('button');
+    btn.className = 'pattern-btn' + (idx === 0 ? ' active' : '');
+    var dotHTML;
+    if (patterns[idx].color < N_SOLID) {
+      var rgb = SOLID_COLORS[patterns[idx].color];
+      var css = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+      dotHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + css + ';margin-right:3px;vertical-align:middle;box-shadow:0 0 3px ' + css + ';"></span>';
+    } else {
+      dotHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#ff0000,#ffcc00,#34c759,#0a84ff,#bf5af2);margin-right:3px;vertical-align:middle;"></span>';
+    }
+    btn.innerHTML = dotHTML + (idx + 1) + '.' + patterns[idx].name;
+    btn.addEventListener('click', function() {
+      selectPattern(idx);
+      patternTimer = 0;
+    });
+    grid.appendChild(btn);
+  })(i);
+}
+
+// Slider fill
+function updateSliderFill(el) {
+  var min = parseFloat(el.min), max = parseFloat(el.max);
+  var val = parseFloat(el.value);
+  var pct = ((val - min) / (max - min)) * 100;
+  el.style.background = 'linear-gradient(to right, #4a9eff ' + pct + '%, rgba(35,55,85,0.8) ' + pct + '%)';
+}
+var sliders = document.querySelectorAll('input[type="range"]');
+for (var i = 0; i < sliders.length; i++) {
+  (function(el) {
+    updateSliderFill(el);
+    el.addEventListener('input', function() { updateSliderFill(el); });
+  })(sliders[i]);
+}
+
+document.getElementById('speed').addEventListener('input', function(e) {
+  speedFactor = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = speedFactor.toFixed(1) + 'x';
+});
+document.getElementById('power').addEventListener('input', function(e) {
+  powerLevel = parseFloat(e.target.value);
+  document.getElementById('power-val').textContent = powerLevel.toFixed(1);
+});
+document.getElementById('density').addEventListener('input', function(e) {
+  densityLevel = parseInt(e.target.value);
+  document.getElementById('density-val').textContent = densityLevel;
+});
+document.getElementById('autoCycle').addEventListener('change', function(e) {
+  autoCycle = e.target.checked;
+  patternTimer = 0;
+});
+
+document.getElementById('playBtn').addEventListener('click', function() {
+  isPlaying = !isPlaying;
+  document.getElementById('playBtn').textContent = isPlaying ? 'II 暂停' : '> 播放';
+  document.getElementById('status').textContent = isPlaying ? '运行中 — 粒子: ' + particles.length : '已暂停';
+});
+
+document.getElementById('resetBtn').addEventListener('click', function() {
+  particles.length = 0;
+  time = 0;
+  frameCount = 0;
+  patternTimer = 0;
+  for (var i = 0; i < N_NOZZLES; i++) {
+    nozzleTipHistory[i].length = 0;
+    nozzleAngleHistory[i].length = 0;
+  }
+  selectPattern(0);
+});
+
+// Controls toggle
+document.getElementById('controlsHide').addEventListener('click', function() {
+  document.getElementById('controlsOverlay').classList.add('hidden');
+  document.getElementById('controlsShow').style.display = 'flex';
+});
+document.getElementById('controlsShow').addEventListener('click', function() {
+  document.getElementById('controlsOverlay').classList.remove('hidden');
+  this.style.display = 'none';
+});
+
+// Init
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+selectPattern(0);
+animate();
+</script>
+</body>
+</html>
