@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>斜面平抛.两种运动分解对比</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #d0dcc8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+        }
+        .container {
+            background: #eaf0e0;
+            border-radius: 28px;
+            padding: 24px 28px 32px 28px;
+            box-shadow: 0 20px 40px rgba(80, 100, 70, 0.25), 0 8px 16px rgba(60, 80, 50, 0.15);
+            border: 1px solid #d0dcc0;
+        }
+        canvas {
+            display: block;
+            width: 1160px;
+            height: 680px;
+            border-radius: 16px;
+            background: #f0f5e8;
+            box-shadow: inset 0 0 0 1px #c8d8b8;
+            cursor: default;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 18px;
+            padding: 14px 24px;
+            background: #e6eee0;
+            border-radius: 40px;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.05);
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+        }
+        .controls .watermark {
+            font-size: 14px;
+            font-weight: 700;
+            color: rgba(100, 120, 90, 0.35);
+            letter-spacing: 1px;
+            margin-right: auto;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(200, 215, 185, 0.25);
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+        }
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .ctrl-group label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #4a5a3a;
+            letter-spacing: 0.3px;
+        }
+        .ctrl-group .value {
+            font-size: 17px;
+            font-weight: 700;
+            color: #3a4a2a;
+            background: #fafff5;
+            padding: 0 14px;
+            border-radius: 30px;
+            line-height: 32px;
+            min-width: 56px;
+            text-align: center;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 180px;
+            height: 5px;
+            border-radius: 10px;
+            background: #c0d0b0;
+            outline: none;
+            transition: background 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6a8a5a;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(60, 80, 50, 0.30);
+            border: 2px solid #f0f5e8;
+            transition: 0.08s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.12);
+            background: #5a7a4a;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6a8a5a;
+            cursor: pointer;
+            border: 2px solid #f0f5e8;
+            box-shadow: 0 2px 6px rgba(60, 80, 50, 0.30);
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #f0f5e8;
+            background: #6a8a5a;
+            cursor: pointer;
+            transition: 0.18s;
+            box-shadow: 0 3px 8px rgba(60, 80, 50, 0.20);
+            letter-spacing: 0.5px;
+        }
+        .btn:hover {
+            background: #5a7a4a;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(60, 80, 50, 0.25);
+        }
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(60, 80, 50, 0.15);
+        }
+        .btn-reset {
+            background: #8a9a7a;
+        }
+        .btn-reset:hover {
+            background: #7a8a6a;
+        }
+        .btn-speed {
+            background: #8aaa7a;
+            padding: 8px 14px;
+            min-width: 44px;
+            font-size: 13px;
+        }
+        .btn-speed.active {
+            background: #4a7a3a;
+            box-shadow: 0 0 0 2px #d0e0c0;
+        }
+        .btn-speed:hover {
+            background: #6a9a5a;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #4a5a3a;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 1px solid rgba(0, 0, 0, 0.10);
+        }
+        .legend-dot.red { background: #d94a4a; }
+        .legend-dot.blue { background: #3a7abd; }
+        .legend-dot.orange { background: #d97a2a; }
+        .legend-dot.green { background: #5a9a5a; }
+        .status-tip {
+            font-size: 14px;
+            color: #5a6a4a;
+            font-weight: 500;
+            padding: 4px 16px;
+            background: #dce8d0;
+            border-radius: 30px;
+            min-width: 80px;
+            text-align: center;
+        }
+        .speed-badge {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5a3a;
+            background: #d0dcc0;
+            padding: 2px 14px;
+            border-radius: 30px;
+            letter-spacing: 0.3px;
+        }
+        @media (max-width: 1240px) {
+            canvas {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1160 / 680;
+            }
+            .container {
+                padding: 16px;
+                border-radius: 20px;
+            }
+            .controls {
+                gap: 12px;
+                padding: 12px 16px;
+            }
+            input[type="range"] { width: 120px; }
+        }
+        @media (max-width: 700px) {
+            .controls { flex-direction: column; align-items: stretch; gap: 10px; }
+            .ctrl-group { justify-content: center; flex-wrap: wrap; }
+            .legend { justify-content: center; gap: 10px; }
+            .controls .watermark {
+                margin-right: 0;
+                text-align: center;
+                order: 10;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <canvas id="canvas" width="1160" height="680"></canvas>
+
+        <div class="controls">
+            <span class="watermark">force99</span>
+
+            <div class="ctrl-group">
+                <label for="speedSlider">初速度 v₀</label>
+                <input type="range" id="speedSlider" min="60" max="260" value="160" step="2">
+                <span class="value" id="speedDisplay">160</span>
+            </div>
+            <div class="ctrl-group">
+                <button class="btn" id="playBtn">▶ 播放</button>
+                <button class="btn btn-reset" id="resetBtn">⟳ 重置</button>
+            </div>
+            <div class="ctrl-group">
+                <label>速度</label>
+                <button class="btn btn-speed" data-speed="1">1x</button>
+                <button class="btn btn-speed active" data-speed="0.5">1/2</button>
+                <button class="btn btn-speed" data-speed="0.25">1/4</button>
+                <button class="btn btn-speed" data-speed="0.125">1/8</button>
+            </div>
+            <div class="legend">
+                <span class="legend-item"><span class="legend-dot red"></span> 水平 / 沿斜面</span>
+                <span class="legend-item"><span class="legend-dot blue"></span> 竖直 / 垂直斜面</span>
+                <span class="legend-item"><span class="legend-dot orange"></span> 合速度</span>
+                <span class="legend-item"><span class="legend-dot green"></span> 轨迹</span>
+            </div>
+            <span class="status-tip" id="statusTip">● 就绪</span>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  1. 画布与上下文
+        // ============================================================
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const W = 1160, H = 680;
+
+        // ============================================================
+        //  2. 物理参数
+        // ============================================================
+        const THETA = 30;
+        const THETA_RAD = THETA * Math.PI / 180;
+        const G = 180;
+        const SLOPE_LEN = 520;
+        let SPEED_FACTOR = 0.5;
+
+        const LEFT_ORIGIN = { x: 130, y: 90 };
+        const RIGHT_ORIGIN = { x: 720, y: 90 };
+
+        const BALL_R = 16;
+        const V_SCALE = 0.55;
+
+        // ============================================================
+        //  3. 状态
+        // ============================================================
+        let v0 = 160;
+        let time = 0;
+        let isRunning = false;
+        let animId = null;
+        let trailLeft = [];
+        let trailRight = [];
+
+        // 速度历史
+        let speedHistory = {
+            time: [],
+            vxRed: [],
+            vyRed: [],
+            vsBlue: [],
+            vnBlue: []
+        };
+
+        // ============================================================
+        //  4. 物理计算
+        // ============================================================
+        function calcPhysics(t, v0) {
+            const g = G;
+            const ct = Math.cos(THETA_RAD);
+            const st = Math.sin(THETA_RAD);
+            const tanA = Math.tan(THETA_RAD);
+            const tLand = 2 * v0 * tanA / g;
+
+            const x = v0 * t;
+            const y = 0.5 * g * t * t;
+            const vx = v0;
+            const vy = g * t;
+
+            const s = v0 * ct * t + 0.5 * g * st * t * t;
+            const n = -v0 * st * t + 0.5 * g * ct * t * t;
+            const vs = v0 * ct + g * st * t;
+            const vn = -v0 * st + g * ct * t;
+
+            const rx = RIGHT_ORIGIN.x + s * ct - n * st;
+            const ry = RIGHT_ORIGIN.y + s * st + n * ct;
+
+            return {
+                tLand,
+                x, y, vx, vy,
+                s, n, vs, vn,
+                rx, ry,
+                lx: LEFT_ORIGIN.x + x,
+                ly: LEFT_ORIGIN.y + y,
+                landed: t >= tLand
+            };
+        }
+
+        // ============================================================
+        //  5. 绘图工具
+        // ============================================================
+        function drawGrid() {
+            ctx.fillStyle = '#f0f5e8';
+            ctx.fillRect(0, 0, W, H);
+            ctx.strokeStyle = '#e0ecd0';
+            ctx.lineWidth = 0.6;
+            const cols = 58, rows = 34;
+            const cw = W / cols, ch = H / rows;
+            for (let i = 0; i <= cols; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cw, 0);
+                ctx.lineTo(i * cw, H);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= rows; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * ch);
+                ctx.lineTo(W, i * ch);
+                ctx.stroke();
+            }
+            ctx.strokeStyle = '#e8f0dc';
+            ctx.lineWidth = 0.3;
+            for (let i = 0; i <= cols * 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cw / 2, 0);
+                ctx.lineTo(i * cw / 2, H);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= rows * 2; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * ch / 2);
+                ctx.lineTo(W, i * ch / 2);
+                ctx.stroke();
+            }
+        }
+
+        function drawBall(cx, cy, radius, color, glow = true) {
+            const grad = ctx.createRadialGradient(cx - radius * 0.3, cy - radius * 0.3, radius * 0.1, cx, cy, radius);
+            if (color === 'red') {
+                grad.addColorStop(0, '#ff8a8a');
+                grad.addColorStop(0.5, '#d94a4a');
+                grad.addColorStop(1, '#8a2a2a');
+            } else if (color === 'blue') {
+                grad.addColorStop(0, '#7ab8ff');
+                grad.addColorStop(0.5, '#3a7abd');
+                grad.addColorStop(1, '#1a4a7a');
+            } else {
+                grad.addColorStop(0, '#b8a0e0');
+                grad.addColorStop(0.5, '#9b59b6');
+                grad.addColorStop(1, '#6c3483');
+            }
+            ctx.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx.shadowBlur = 14;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            const hl = ctx.createRadialGradient(cx - radius * 0.35, cy - radius * 0.4, radius * 0.05, cx - radius * 0.2, cy - radius * 0.25, radius * 0.6);
+            hl.addColorStop(0, 'rgba(255,255,255,0.70)');
+            hl.addColorStop(0.5, 'rgba(255,255,255,0.20)');
+            hl.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fillStyle = hl;
+            ctx.fill();
+
+            if (glow) {
+                ctx.shadowColor = color === 'red' ? 'rgba(200,60,60,0.25)' : (color === 'blue' ? 'rgba(60,120,200,0.25)' : 'rgba(155,89,182,0.25)');
+                ctx.shadowBlur = 24;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius * 0.7, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0)';
+                ctx.fill();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+            }
+            ctx.strokeStyle = color === 'red' ? 'rgba(120,30,30,0.35)' : (color === 'blue' ? 'rgba(20,60,120,0.35)' : 'rgba(100,50,120,0.35)');
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        function drawSlope(originX, originY, angle, length, label = '') {
+            const rad = angle * Math.PI / 180;
+            const endX = originX + length * Math.cos(rad);
+            const endY = originY + length * Math.sin(rad);
+
+            ctx.shadowColor = 'rgba(80,90,70,0.10)';
+            ctx.shadowBlur = 18;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 4;
+
+            const grad = ctx.createLinearGradient(originX, originY, endX, endY);
+            grad.addColorStop(0, '#c8b898');
+            grad.addColorStop(0.5, '#d8c8a8');
+            grad.addColorStop(1, '#b8a888');
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(endX, endY);
+            ctx.lineTo(endX - 14 * Math.sin(rad), endY + 14 * Math.cos(rad));
+            ctx.lineTo(originX - 14 * Math.sin(rad), originY + 14 * Math.cos(rad));
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            ctx.strokeStyle = '#a89078';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#b8a088';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(originX - 14 * Math.sin(rad), originY + 14 * Math.cos(rad));
+            ctx.lineTo(endX - 14 * Math.sin(rad), endY + 14 * Math.cos(rad));
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(140,120,100,0.25)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i < 6; i++) {
+                const frac = i / 6;
+                const px = originX + frac * length * Math.cos(rad);
+                const py = originY + frac * length * Math.sin(rad);
+                const nx = -Math.sin(rad) * 8;
+                const ny = Math.cos(rad) * 8;
+                ctx.beginPath();
+                ctx.moveTo(px + nx, py + ny);
+                ctx.lineTo(px - nx, py - ny);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#7a8a6a';
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('▾', originX, originY - 4);
+
+            ctx.strokeStyle = 'rgba(100,110,90,0.25)';
+            ctx.lineWidth = 1;
+            const arcR = 38;
+            ctx.beginPath();
+            ctx.arc(originX, originY, arcR, 0, rad, false);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(100,110,90,0.50)';
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            const labelX = originX + arcR * 0.65 * Math.cos(rad / 2);
+            const labelY = originY + arcR * 0.65 * Math.sin(rad / 2);
+            ctx.fillText('θ=' + angle + '°', labelX + 6, labelY - 2);
+
+            if (label) {
+                ctx.fillStyle = 'rgba(100,110,90,0.45)';
+                ctx.font = '12px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const midX = (originX + endX) / 2;
+                const midY = (originY + endY) / 2;
+                ctx.fillText(label, midX, midY + 22);
+            }
+            return { endX, endY };
+        }
+
+        function drawArrow(x1, y1, x2, y2, color, label = '', labelOffset = { dx: 0, dy: 0 }, lineWidth = 2.6, dash = []) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            if (len < 1.5) return;
+
+            const angle = Math.atan2(dy, dx);
+            const arrowLen = 13;
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.04)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 2;
+
+            if (dash.length > 0) {
+                ctx.setLineDash(dash);
+            } else {
+                ctx.setLineDash([]);
+            }
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            const tipX = x2, tipY = y2;
+            const bx = tipX - arrowLen * 0.5 * Math.cos(angle);
+            const by = tipY - arrowLen * 0.5 * Math.sin(angle);
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(bx - arrowLen * 0.4 * Math.sin(angle), by + arrowLen * 0.4 * Math.cos(angle));
+            ctx.lineTo(bx + arrowLen * 0.4 * Math.sin(angle), by - arrowLen * 0.4 * Math.cos(angle));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            if (label) {
+                const midX = (x1 + x2) / 2 + labelOffset.dx;
+                const midY = (y1 + y2) / 2 + labelOffset.dy;
+                ctx.font = '14px "Segoe UI", "PingFang SC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const metrics = ctx.measureText(label);
+                const tw = metrics.width;
+                const th = 22;
+                const px = midX - tw / 2 - 8;
+                const py = midY - th / 2 - 2;
+                ctx.fillStyle = 'rgba(240,245,232,0.85)';
+                ctx.shadowColor = 'rgba(0,0,0,0.04)';
+                ctx.shadowBlur = 6;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 2;
+                ctx.beginPath();
+                ctx.roundRect(px, py, tw + 16, th + 4, 12);
+                ctx.fill();
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.fillStyle = color;
+                ctx.font = '14px "Segoe UI", "PingFang SC", sans-serif';
+                ctx.fillText(label, midX, midY + 1);
+            }
+            ctx.restore();
+        }
+
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+            if (r > w / 2) r = w / 2;
+            if (r > h / 2) r = h / 2;
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            return this;
+        };
+
+        function drawTrail(points, color = '#5a9a5a') {
+            if (points.length < 2) return;
+            ctx.save();
+            ctx.setLineDash([6, 7]);
+            ctx.lineDashOffset = 0;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.2;
+            ctx.shadowColor = 'rgba(0,0,0,0.04)';
+            ctx.shadowBlur = 4;
+            ctx.globalAlpha = 0.80;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1;
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // ============================================================
+        //  6. 速度-时间图 (左右分区)
+        // ============================================================
+        function drawSpeedGraphs() {
+            const data = speedHistory;
+            if (data.time.length < 2) return;
+
+            const gx1 = 35, gy1 = 500, gw1 = 330, gh1 = 160;
+            const gx2 = W - 330 - 35, gy2 = 500, gw2 = 330, gh2 = 160;
+            const pad = { top: 14, bottom: 20, left: 32, right: 10 };
+
+            drawSingleGraph(gx1, gy1, gw1, gh1, pad,
+                data.time, data.vxRed, data.vyRed,
+                '#d94a4a', '#3a7abd', '红 v_x', '红 v_y',
+                'v (px/s)', 't (s)');
+
+            drawSingleGraph(gx2, gy2, gw2, gh2, pad,
+                data.time, data.vsBlue, data.vnBlue,
+                '#d94a4a', '#3a7abd', '蓝 v_s', '蓝 v_n',
+                'v (px/s)', 't (s)');
+        }
+
+        function drawSingleGraph(gx, gy, gw, gh, pad, timeArr, data1, data2, color1, color2, label1, label2, yLabel, xLabel) {
+            const plotX = gx + pad.left;
+            const plotY = gy + pad.top;
+            const plotW = gw - pad.left - pad.right;
+            const plotH = gh - pad.top - pad.bottom;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(240,245,232,0.88)';
+            ctx.shadowColor = 'rgba(0,0,0,0.06)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 4;
+            ctx.beginPath();
+            ctx.roundRect(gx, gy, gw, gh, 8);
+            ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(160,180,150,0.30)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(gx, gy, gw, gh, 8);
+            ctx.stroke();
+
+            const tMax = Math.max(1, timeArr[timeArr.length-1]);
+            const allVals = data1.concat(data2);
+            let vMax = 10;
+            for (let v of allVals) if (Math.abs(v) > vMax) vMax = Math.abs(v);
+            vMax = Math.max(vMax, 10);
+            vMax = vMax * 1.2;
+
+            const tScale = plotW / tMax;
+            const vScale = plotH / vMax;
+
+            ctx.strokeStyle = '#6a7a5a';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(plotX, plotY);
+            ctx.lineTo(plotX, plotY + plotH);
+            ctx.lineTo(plotX + plotW, plotY + plotH);
+            ctx.stroke();
+
+            ctx.fillStyle = '#5a6a4a';
+            ctx.font = '9px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i <= 4; i++) {
+                const x = plotX + (i / 4) * plotW;
+                const tVal = (i / 4) * tMax;
+                ctx.fillText(tVal.toFixed(1), x, plotY + plotH + 2);
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 4; i++) {
+                const y = plotY + plotH - (i / 4) * plotH;
+                const vVal = (i / 4) * vMax;
+                ctx.fillText(vVal.toFixed(0), plotX - 4, y);
+            }
+
+            ctx.fillStyle = '#5a6a4a';
+            ctx.font = '9px "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(xLabel, plotX + plotW/2, plotY + plotH + 16);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(yLabel, plotX - 20, plotY + plotH/2);
+
+            ctx.save();
+            ctx.strokeStyle = color1;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            for (let i = 0; i < timeArr.length; i++) {
+                const x = plotX + timeArr[i] * tScale;
+                const y = plotY + plotH - data1[i] * vScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.save();
+            ctx.strokeStyle = color2;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            for (let i = 0; i < timeArr.length; i++) {
+                const x = plotX + timeArr[i] * tScale;
+                const y = plotY + plotH - data2[i] * vScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            ctx.save();
+            ctx.font = '10px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            let legX = gx + 10, legY = gy + 6;
+            const legItems = [
+                {color: color1, dash: [], label: label1},
+                {color: color2, dash: [5,5], label: label2}
+            ];
+            for (let item of legItems) {
+                ctx.strokeStyle = item.color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash(item.dash);
+                ctx.beginPath();
+                ctx.moveTo(legX, legY + 5);
+                ctx.lineTo(legX + 18, legY + 5);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = item.color;
+                ctx.fillText(item.label, legX + 22, legY - 1);
+                legX += 70;
+                if (legX > gx + gw - 30) { legX = gx + 10; legY += 16; }
+            }
+            ctx.restore();
+
+            const curTime = Math.min(time, timeArr[timeArr.length-1]);
+            if (curTime > 0) {
+                const xLine = plotX + curTime * tScale;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(100,120,90,0.30)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 5]);
+                ctx.beginPath();
+                ctx.moveTo(xLine, plotY);
+                ctx.lineTo(xLine, plotY + plotH);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        // ============================================================
+        //  7. 主绘制函数
+        // ============================================================
+        function drawScene() {
+            const ct = Math.cos(THETA_RAD);
+            const st = Math.sin(THETA_RAD);
+            const g = G;
+
+            const phys = calcPhysics(time, v0);
+            const tLand = phys.tLand;
+            const landed = phys.landed;
+
+            drawGrid();
+
+            // ========== 总标题 ==========
+            ctx.save();
+            ctx.fillStyle = '#3a4a3a';
+            ctx.font = 'bold 22px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('斜面平抛.两种运动分解对比', W / 2, 8);
+            ctx.restore();
+
+            // ---------- 子标题 ----------
+            ctx.save();
+            ctx.fillStyle = 'rgba(100,120,90,0.55)';
+            ctx.font = '15px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('水平 · 竖直分解', LEFT_ORIGIN.x + 200, 44);
+            ctx.fillText('沿斜面 · 垂直斜面分解', RIGHT_ORIGIN.x + 200, 44);
+            ctx.restore();
+
+            // ---------- 分割线 ----------
+            ctx.save();
+            ctx.strokeStyle = 'rgba(160,180,150,0.25)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 10]);
+            ctx.beginPath();
+            ctx.moveTo(W / 2, 10);
+            ctx.lineTo(W / 2, H - 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            drawSlope(LEFT_ORIGIN.x, LEFT_ORIGIN.y, THETA, SLOPE_LEN, '斜面');
+            drawSlope(RIGHT_ORIGIN.x, RIGHT_ORIGIN.y, THETA, SLOPE_LEN, '斜面');
+
+            const lx = LEFT_ORIGIN.x + phys.x;
+            const ly = LEFT_ORIGIN.y + phys.y;
+            const rx = RIGHT_ORIGIN.x + phys.s * ct - phys.n * st;
+            const ry = RIGHT_ORIGIN.y + phys.s * st + phys.n * ct;
+
+            if (trailLeft.length > 1) drawTrail(trailLeft, '#5a9a5a');
+            if (trailRight.length > 1) drawTrail(trailRight, '#5a9a5a');
+
+            // ---- 左边：红球分速度与合速度平行四边形 ----
+            if (phys.vx > 1) {
+                drawArrow(lx, ly, lx + phys.vx * V_SCALE, ly, '#d94a4a', 'v_x', { dx: 0, dy: 28 }, 2.8);
+            }
+            if (phys.vy > 1) {
+                drawArrow(lx, ly, lx, ly + phys.vy * V_SCALE, '#3a7abd', 'v_y', { dx: 28, dy: 0 }, 2.8);
+            }
+            const vx_scaled = phys.vx * V_SCALE;
+            const vy_scaled = phys.vy * V_SCALE;
+            const vEndX = lx + vx_scaled;
+            const vEndY = ly + vy_scaled;
+            if (phys.vx > 1 || phys.vy > 1) {
+                drawArrow(lx, ly, vEndX, vEndY, '#d97a2a', 'v', { dx: 0, dy: -28 }, 3.0);
+            }
+            ctx.save();
+            ctx.setLineDash([4, 5]);
+            ctx.strokeStyle = 'rgba(180,180,160,0.50)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(lx + vx_scaled, ly);
+            ctx.lineTo(vEndX, vEndY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(lx, ly + vy_scaled);
+            ctx.lineTo(vEndX, vEndY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // ---- 右边：蓝球分速度与合速度 ----
+            const vs_x = phys.vs * V_SCALE * ct;
+            const vs_y = phys.vs * V_SCALE * st;
+            if (phys.vs > 1) {
+                drawArrow(rx, ry, rx + vs_x, ry + vs_y, '#d94a4a', 'v_s', { dx: 0, dy: 28 }, 2.8);
+            }
+            const vn_x = -phys.vn * V_SCALE * st;
+            const vn_y = phys.vn * V_SCALE * ct;
+            if (Math.abs(phys.vn) > 1) {
+                drawArrow(rx, ry, rx + vn_x, ry + vn_y, '#3a7abd', 'v_n', { dx: 28, dy: 0 }, 2.8);
+            }
+            const vtot_x = vs_x + vn_x;
+            const vtot_y = vs_y + vn_y;
+            if (phys.vs > 1 || Math.abs(phys.vn) > 1) {
+                drawArrow(rx, ry, rx + vtot_x, ry + vtot_y, '#d97a2a', 'v', { dx: 0, dy: -28 }, 3.0);
+            }
+            ctx.save();
+            ctx.setLineDash([4, 5]);
+            ctx.strokeStyle = 'rgba(180,180,160,0.50)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(rx + vs_x, ry + vs_y);
+            ctx.lineTo(rx + vtot_x, ry + vtot_y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(rx + vn_x, ry + vn_y);
+            ctx.lineTo(rx + vtot_x, ry + vtot_y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // ---- 位移分解 ----
+            if (phys.x > 2) {
+                drawArrow(LEFT_ORIGIN.x, LEFT_ORIGIN.y, lx, LEFT_ORIGIN.y, '#d94a4a', 'x', { dx: 0, dy: -26 }, 2.0);
+            }
+            if (phys.y > 2) {
+                drawArrow(LEFT_ORIGIN.x, LEFT_ORIGIN.y, LEFT_ORIGIN.x, ly, '#3a7abd', 'y', { dx: -28, dy: 0 }, 2.0);
+            }
+            ctx.save();
+            ctx.setLineDash([4, 6]);
+            ctx.strokeStyle = 'rgba(180,180,170,0.25)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(LEFT_ORIGIN.x, LEFT_ORIGIN.y);
+            ctx.lineTo(lx, LEFT_ORIGIN.y);
+            ctx.lineTo(lx, ly);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(LEFT_ORIGIN.x, LEFT_ORIGIN.y);
+            ctx.lineTo(LEFT_ORIGIN.x, ly);
+            ctx.lineTo(lx, ly);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            const ssx2 = RIGHT_ORIGIN.x + phys.s * ct;
+            const ssy2 = RIGHT_ORIGIN.y + phys.s * st;
+            if (phys.s > 2) {
+                drawArrow(RIGHT_ORIGIN.x, RIGHT_ORIGIN.y, ssx2, ssy2, '#d94a4a', 's', { dx: 0, dy: -26 }, 2.0);
+            }
+            const nsx2 = RIGHT_ORIGIN.x - phys.n * st;
+            const nsy2 = RIGHT_ORIGIN.y + phys.n * ct;
+            if (Math.abs(phys.n) > 2) {
+                drawArrow(RIGHT_ORIGIN.x, RIGHT_ORIGIN.y, nsx2, nsy2, '#3a7abd', 'n', { dx: -28, dy: 0 }, 2.0);
+            }
+            ctx.save();
+            ctx.setLineDash([4, 6]);
+            ctx.strokeStyle = 'rgba(180,180,170,0.25)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(RIGHT_ORIGIN.x, RIGHT_ORIGIN.y);
+            ctx.lineTo(RIGHT_ORIGIN.x + phys.s * ct, RIGHT_ORIGIN.y + phys.s * st);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(RIGHT_ORIGIN.x, RIGHT_ORIGIN.y);
+            ctx.lineTo(RIGHT_ORIGIN.x - phys.n * st, RIGHT_ORIGIN.y + phys.n * ct);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(RIGHT_ORIGIN.x + phys.s * ct, RIGHT_ORIGIN.y + phys.s * st);
+            ctx.lineTo(rx, ry);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(RIGHT_ORIGIN.x - phys.n * st, RIGHT_ORIGIN.y + phys.n * ct);
+            ctx.lineTo(rx, ry);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // ---- 小球 ----
+            if (!landed || time <= tLand * 1.01) {
+                drawBall(lx, ly, BALL_R, 'red', true);
+                drawBall(rx, ry, BALL_R, 'blue', true);
+            }
+
+            // ---- 落点标记 ----
+            if (landed && time >= tLand) {
+                const lLandX = LEFT_ORIGIN.x + phys.x;
+                const lLandY = LEFT_ORIGIN.y + phys.y;
+                ctx.save();
+                ctx.fillStyle = 'rgba(200,60,60,0.20)';
+                ctx.strokeStyle = 'rgba(200,60,60,0.50)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 5]);
+                ctx.beginPath();
+                ctx.arc(lLandX, lLandY, BALL_R + 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                const rLandX = RIGHT_ORIGIN.x + phys.s * ct - phys.n * st;
+                const rLandY = RIGHT_ORIGIN.y + phys.s * st + phys.n * ct;
+                ctx.fillStyle = 'rgba(60,120,200,0.20)';
+                ctx.strokeStyle = 'rgba(60,120,200,0.50)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([3, 5]);
+                ctx.beginPath();
+                ctx.arc(rLandX, rLandY, BALL_R + 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+
+                ctx.save();
+                ctx.fillStyle = 'rgba(100,120,90,0.60)';
+                ctx.font = '13px "Segoe UI", "PingFang SC", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('● 落地', lLandX, lLandY - BALL_R - 12);
+                ctx.fillText('● 落地', rLandX, rLandY - BALL_R - 12);
+                ctx.restore();
+            }
+
+            // ---- 信息 ----
+            ctx.save();
+            ctx.fillStyle = 'rgba(100,120,90,0.40)';
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            const tShow = Math.min(time, tLand);
+            ctx.fillText('t = ' + tShow.toFixed(2) + ' s', 20, 72);
+            ctx.fillText('v₀ = ' + v0.toFixed(0) + ' px/s', 20, 92);
+            ctx.textAlign = 'right';
+            ctx.fillText('θ = ' + THETA + '°  g = ' + G.toFixed(0) + ' px/s²', W - 20, 72);
+            ctx.fillStyle = 'rgba(100,120,90,0.30)';
+            ctx.textAlign = 'left';
+            ctx.font = '12px "Segoe UI", sans-serif';
+            const speedLabel = SPEED_FACTOR === 1 ? '1x' : '1/' + (1/SPEED_FACTOR).toFixed(0) + 'x';
+            ctx.fillText('速度 ' + speedLabel, 20, 112);
+            ctx.restore();
+
+            // ---- 速度图 ----
+            drawSpeedGraphs();
+
+            // ---- 状态 ----
+            const tip = document.getElementById('statusTip');
+            if (landed && time >= tLand) {
+                tip.textContent = '⏹ 已落地';
+                tip.style.color = '#5a6a4a';
+                isRunning = false;
+                document.getElementById('playBtn').textContent = '▶ 播放';
+            } else if (isRunning) {
+                tip.textContent = '▶ 播放中 (' + speedLabel + ')';
+                tip.style.color = '#5a6a4a';
+            } else {
+                tip.textContent = '● 就绪';
+                tip.style.color = '#5a6a4a';
+            }
+        }
+
+        // ============================================================
+        //  8. 动画循环
+        // ============================================================
+        let lastTimestamp = 0;
+
+        function animate(timestamp) {
+            if (!isRunning) {
+                drawScene();
+                animId = requestAnimationFrame(animate);
+                return;
+            }
+
+            if (lastTimestamp === 0) {
+                lastTimestamp = timestamp;
+                animId = requestAnimationFrame(animate);
+                return;
+            }
+
+            const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05) * SPEED_FACTOR;
+            lastTimestamp = timestamp;
+
+            const phys = calcPhysics(time, v0);
+            const tLand = phys.tLand;
+
+            if (time < tLand) {
+                time += dt;
+                if (time > tLand) time = tLand;
+
+                const physNow = calcPhysics(time, v0);
+                speedHistory.time.push(time);
+                speedHistory.vxRed.push(v0);
+                speedHistory.vyRed.push(G * time);
+                speedHistory.vsBlue.push(physNow.vs);
+                speedHistory.vnBlue.push(-physNow.vn);
+
+                const lx = LEFT_ORIGIN.x + physNow.x;
+                const ly = LEFT_ORIGIN.y + physNow.y;
+                trailLeft.push({ x: lx, y: ly });
+
+                const rx = RIGHT_ORIGIN.x + physNow.s * Math.cos(THETA_RAD) - physNow.n * Math.sin(THETA_RAD);
+                const ry = RIGHT_ORIGIN.y + physNow.s * Math.sin(THETA_RAD) + physNow.n * Math.cos(THETA_RAD);
+                trailRight.push({ x: rx, y: ry });
+            }
+
+            drawScene();
+
+            if (time >= tLand) {
+                isRunning = false;
+                document.getElementById('playBtn').textContent = '▶ 播放';
+                drawScene();
+                animId = requestAnimationFrame(animate);
+                return;
+            }
+
+            animId = requestAnimationFrame(animate);
+        }
+
+        // ============================================================
+        //  9. 交互控制
+        // ============================================================
+        function resetSimulation() {
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            time = 0;
+            isRunning = false;
+            trailLeft = [];
+            trailRight = [];
+            speedHistory = { time: [], vxRed: [], vyRed: [], vsBlue: [], vnBlue: [] };
+            lastTimestamp = 0;
+            document.getElementById('playBtn').textContent = '▶ 播放';
+            trailLeft.push({ x: LEFT_ORIGIN.x, y: LEFT_ORIGIN.y });
+            trailRight.push({ x: RIGHT_ORIGIN.x, y: RIGHT_ORIGIN.y });
+            drawScene();
+            if (!animId) {
+                animId = requestAnimationFrame(animate);
+            }
+        }
+
+        function startPlay() {
+            const phys = calcPhysics(time, v0);
+            const tLand = phys.tLand;
+            if (time >= tLand && tLand > 0) {
+                resetSimulation();
+                setTimeout(() => {
+                    isRunning = true;
+                    document.getElementById('playBtn').textContent = '⏸ 暂停';
+                    lastTimestamp = 0;
+                }, 20);
+                return;
+            }
+            isRunning = !isRunning;
+            document.getElementById('playBtn').textContent = isRunning ? '⏸ 暂停' : '▶ 播放';
+            if (isRunning) {
+                lastTimestamp = 0;
+            }
+        }
+
+        const speedBtns = document.querySelectorAll('.btn-speed');
+        speedBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                speedBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const val = parseFloat(this.dataset.speed);
+                SPEED_FACTOR = val;
+                const label = val === 1 ? '1x' : '1/' + (1/val).toFixed(0) + 'x';
+                document.querySelector('.speed-badge').textContent = '🐢 ' + label;
+            });
+        });
+
+        const slider = document.getElementById('speedSlider');
+        const speedDisplay = document.getElementById('speedDisplay');
+        slider.addEventListener('input', function() {
+            const val = parseInt(this.value);
+            speedDisplay.textContent = val;
+            v0 = val;
+            resetSimulation();
+            setTimeout(() => {
+                isRunning = true;
+                document.getElementById('playBtn').textContent = '⏸ 暂停';
+                lastTimestamp = 0;
+            }, 30);
+        });
+
+        document.getElementById('playBtn').addEventListener('click', startPlay);
+        document.getElementById('resetBtn').addEventListener('click', resetSimulation);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                startPlay();
+            }
+            if (e.key === 'r' || e.key === 'R') {
+                resetSimulation();
+            }
+        });
+
+        // ============================================================
+        //  10. 启动
+        // ============================================================
+        trailLeft.push({ x: LEFT_ORIGIN.x, y: LEFT_ORIGIN.y });
+        trailRight.push({ x: RIGHT_ORIGIN.x, y: RIGHT_ORIGIN.y });
+        drawScene();
+        animId = requestAnimationFrame(animate);
+
+        setTimeout(() => {
+            if (!isRunning && time === 0) {
+                isRunning = true;
+                document.getElementById('playBtn').textContent = '⏸ 暂停';
+                lastTimestamp = 0;
+            }
+        }, 800);
+
+        console.log('✅ 总标题已更新为：斜面平抛.两种运动分解对比');
+        console.log('📌 空格: 播放/暂停  |  R: 重置');
+    </script>
+
+</body>
+</html>
