@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>纵波 - 竖直线段质点 (加长1倍)</title>
+    <link rel="icon" type="image/png" href="../assets/img/longitudinal-wave-favicon.png">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #eee;
+            padding: 10px;
+        }
+        .container {
+            background: #0f0f1f;
+            padding: 15px 20px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            width: 95%;
+            max-width: 1400px;
+        }
+        canvas { display: block; background: #000; border-radius: 12px; width: 100%; height: auto; aspect-ratio: 3/1; }
+        .controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-top: 18px; gap: 12px 16px; font-size: 16px; }
+        .control-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .control-group label { font-weight: 500; color: #bbb; white-space: nowrap; }
+        input[type="range"] { height: 5px; -webkit-appearance: none; background: #4a4a7a; border-radius: 2px; outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #6c6cf0; cursor: pointer; box-shadow: 0 0 8px #6c6cf0aa; }
+        #freqSlider { width: 150px; }
+        #timeSlider { width: 200px; }
+        #freqValue, #timeValue { min-width: 60px; text-align: center; font-weight: 600; color: #8f8fff; }
+        #timeValue { color: #ffd966; }
+        button { padding: 8px 20px; border: none; border-radius: 30px; font-size: 16px; font-weight: 600; background: #3a3a7a; color: #fff; cursor: pointer; transition: 0.15s; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        button:hover { transform: scale(1.03); filter: brightness(1.2); }
+        button#playBtn { background: #4a9eff; min-width: 90px; }
+        button#resetBtn { background: #6b6b8a; }
+        button#stepBtn { background: #f0a030; color: #000; }
+        .status { font-size: 15px; color: #8a8aaa; margin-left: 6px; }
+        .legend { display: flex; flex-wrap: wrap; gap: 20px; font-size: 15px; color: #aaa; margin-top: 12px; justify-content: center; }
+        .legend span { display: flex; align-items: center; gap: 8px; }
+        .line-sample { display: inline-block; width: 4px; height: 18px; background: #6fc3ff; border-radius: 2px; }
+        #phaseDisplay { font-weight: 600; color: #ffd966; font-size: 17px; min-width: 80px; text-align: center; }
+        @media (max-width: 700px) { .controls { font-size: 14px; } button { font-size: 14px; padding: 6px 14px; } #freqSlider { width: 100px; } #timeSlider { width: 130px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <canvas id="canvas" width="1200" height="400"></canvas>
+    <div class="controls">
+        <div class="control-group">
+            <label>🎵 频率</label>
+            <input type="range" id="freqSlider" min="0.1" max="2.0" step="0.1" value="0.5">
+            <span id="freqValue">0.5 Hz</span>
+        </div>
+        <div class="control-group">
+            <label>⏱ 时间</label>
+            <input type="range" id="timeSlider" min="0" max="8" step="0.01" value="0">
+            <span id="timeValue">0.00 s</span>
+        </div>
+        <div class="control-group">
+            <button id="playBtn">▶ 开始</button>
+            <button id="stepBtn">⏭ +1/4 T</button>
+            <button id="resetBtn">⟳ 重置</button>
+            <span class="status" id="statusText">● 停止</span>
+        </div>
+        <div class="control-group">
+            <span style="color:#aaa;">相位：</span>
+            <span id="phaseDisplay">0.00 T</span>
+        </div>
+    </div>
+    <div class="legend">
+        <span><span class="line-sample" style="background:#4cd964;"></span> 波源（原点）</span>
+        <span><span class="line-sample" style="background:#ff6b6b;"></span> 密集区</span>
+        <span><span class="line-sample" style="background:#4a8cff;"></span> 稀疏区</span>
+        <span>⚡ 波速 <span id="speedDisplay">200</span> px/s</span>
+        <span>振幅 ≤ 间距</span>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const width = 1200, height = 400;
+    const NUM_PARTICLES = 50;
+    const SPACING = width / NUM_PARTICLES;        // 24 px
+    const CENTER_Y = height / 2;
+
+    // 振幅强制 ≤ 间距的 80%，避免质点重叠
+    const AMPLITUDE = Math.min(80, SPACING * 0.8);
+    const WAVE_SPEED = 200;
+
+    // ---- 竖直线段长度加长1倍：原为 SPACING*0.8，现为 SPACING*1.6 ----
+    const LINE_LENGTH = SPACING * 1.6;
+
+    let freq = 0.5;
+    let omega = 2 * Math.PI * freq;
+    let k = omega / WAVE_SPEED;
+    let time = 0, isPlaying = false, animId = null, targetTime = null;
+
+    // DOM
+    const freqSlider = document.getElementById('freqSlider');
+    const freqValue = document.getElementById('freqValue');
+    const timeSlider = document.getElementById('timeSlider');
+    const timeValue = document.getElementById('timeValue');
+    const playBtn = document.getElementById('playBtn');
+    const stepBtn = document.getElementById('stepBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusText = document.getElementById('statusText');
+    const phaseDisplay = document.getElementById('phaseDisplay');
+
+    function updatePhaseDisplay() {
+        const T = 1 / freq;
+        phaseDisplay.textContent = (time / T).toFixed(2) + ' T';
+    }
+    function updateTimeSlider() {
+        const T = 1 / freq;
+        const maxTime = 4 * T;
+        timeSlider.max = maxTime.toFixed(2);
+        timeSlider.value = time.toFixed(2);
+        timeValue.textContent = time.toFixed(2) + ' s';
+    }
+
+    function stepForward() {
+        if (isPlaying) { isPlaying = false; playBtn.textContent = '▶ 继续'; statusText.textContent = '● 暂停'; }
+        const T = 1 / freq;
+        const maxTime = parseFloat(timeSlider.max);
+        let target = time + T / 4;
+        if (target > maxTime) target = maxTime;
+        targetTime = target;
+        isPlaying = true;
+        playBtn.textContent = '⏸ 暂停';
+        statusText.textContent = '▶ 振动中';
+        if (!animId) animate();
+    }
+
+    function resetSimulation() {
+        time = 0; targetTime = null;
+        if (isPlaying) { isPlaying = false; playBtn.textContent = '▶ 开始'; statusText.textContent = '● 停止'; }
+        updateTimeSlider(); updatePhaseDisplay(); draw();
+    }
+
+    function updateFrequency(newFreq) {
+        freq = newFreq;
+        omega = 2 * Math.PI * freq;
+        k = omega / WAVE_SPEED;
+        freqValue.textContent = freq.toFixed(1) + ' Hz';
+        resetSimulation();
+    }
+
+    // ---- 绘制竖直线段（代表质点） ----
+    function drawVerticalLine(x, y, length, color1, color2, isSource) {
+        const half = length / 2;
+        const top = y - half;
+        const bottom = y + half;
+        const grad = ctx.createLinearGradient(x, top, x, bottom);
+        grad.addColorStop(0, color1);
+        grad.addColorStop(1, color2);
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = isSource ? 4 : 3;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color2 + 'aa';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // 两端圆点（大小按比例调整）
+        const dotRadius = isSource ? 4 : 3;
+        ctx.beginPath();
+        ctx.arc(x, top, dotRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = color1;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, bottom, dotRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = color2;
+        ctx.fill();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        // 方格
+        const gridStep = SPACING;
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth = 0.8;
+        for (let x = 0; x <= width; x += gridStep) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,height); ctx.stroke(); }
+        for (let y = 0; y <= height; y += gridStep) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(width,y); ctx.stroke(); }
+
+        // 坐标轴
+        ctx.save();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5; ctx.shadowBlur = 8; ctx.shadowColor = '#ffffff44';
+        ctx.beginPath(); ctx.moveTo(0, CENTER_Y); ctx.lineTo(width-10, CENTER_Y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(width-10, CENTER_Y-8); ctx.lineTo(width, CENTER_Y); ctx.lineTo(width-10, CENTER_Y+8); ctx.stroke();
+        ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText('x', width-25, CENTER_Y-10);
+        ctx.beginPath(); ctx.moveTo(0, 14); ctx.lineTo(0, height-14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-8, 14); ctx.lineTo(0, 0); ctx.lineTo(8, 14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(-8, height-14); ctx.lineTo(0, height); ctx.lineTo(8, height-14); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('y', 20, 22);
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText('0', -8, CENTER_Y+3);
+        ctx.restore();
+
+        // 物理参数
+        const wavelength_px = WAVE_SPEED / freq;
+        ctx.fillStyle = '#ccccdd'; ctx.font = '16px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText(`频率 f = ${freq.toFixed(1)} Hz`, 14, 14);
+        ctx.fillText(`波长 λ = ${wavelength_px.toFixed(0)} px`, 14, 36);
+        ctx.fillText(`波速 v = ${WAVE_SPEED} px/s`, 14, 58);
+        ctx.fillText(`振幅 A = ${AMPLITUDE.toFixed(0)} px (≤ 间距)`, 14, 80);
+
+        // 计算纵波位移（水平偏移）
+        const displacements = [];
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+            const x_orig = i * SPACING;
+            let dx = 0;
+            const arrivalTime = x_orig / WAVE_SPEED;
+            if (time > arrivalTime) {
+                dx = AMPLITUDE * Math.sin(omega * (time - arrivalTime));
+            }
+            displacements.push({ x_orig, dx });
+        }
+
+        // 画平衡位置小点
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+            const { x_orig } = displacements[i];
+            ctx.beginPath();
+            ctx.arc(x_orig, CENTER_Y, 1.5, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fill();
+        }
+
+        // 水平指示线
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+            const { x_orig, dx } = displacements[i];
+            const currentX = x_orig + dx;
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            ctx.moveTo(x_orig, CENTER_Y);
+            ctx.lineTo(currentX, CENTER_Y);
+            ctx.stroke();
+        }
+
+        // 绘制竖直线段质点
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+            const { x_orig, dx } = displacements[i];
+            const currentX = x_orig + dx;
+            let densityFactor = 0.5;
+            if (i > 0 && i < NUM_PARTICLES - 1) {
+                const prevDx = displacements[i-1].dx;
+                const nextDx = displacements[i+1].dx;
+                const diff = Math.abs(nextDx - prevDx) / (2 * AMPLITUDE);
+                densityFactor = 0.3 + 0.7 * Math.min(diff, 1);
+            }
+            const r = 80 + 175 * densityFactor;
+            const g = 80 + 100 * (1 - densityFactor);
+            const b = 200 - 150 * densityFactor;
+            const color1 = `rgb(${Math.min(r+60,255)}, ${Math.min(g+60,255)}, ${Math.min(b+60,255)})`;
+            const color2 = `rgb(${r}, ${g}, ${b})`;
+
+            const isSource = (i === 0);
+            if (isSource) {
+                drawVerticalLine(currentX, CENTER_Y, LINE_LENGTH, '#b0ffb0', '#2e7d32', true);
+            } else {
+                drawVerticalLine(currentX, CENTER_Y, LINE_LENGTH, color1, color2, false);
+            }
+        }
+
+        // ===== 水印：透明绿色 =====
+        ctx.save();
+        ctx.font = 'italic bold 48px "Brush Script MT", "Comic Sans MS", cursive';
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.06)';   // 透明绿色
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('force99', width - 18, height - 12);
+        ctx.restore();
+
+        // 状态
+        if (!isPlaying && time > 0) {
+            ctx.fillStyle = '#ffd966'; ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+            ctx.fillText('⏸ 暂停', 14, 110);
+        }
+        if (time === 0) {
+            ctx.fillStyle = '#888'; ctx.font = '18px sans-serif';
+            ctx.fillText('点击「开始」或拖动时间滑块', 14, 110);
+        }
+    }
+
+    function animate() {
+        if (isPlaying) {
+            const dt = 1 / 60;
+            time += dt;
+            const maxTime = parseFloat(timeSlider.max);
+            if (time >= maxTime) { time = maxTime; isPlaying = false; playBtn.textContent = '▶ 开始'; statusText.textContent = '● 停止'; targetTime = null; }
+            if (targetTime !== null && time >= targetTime) { time = targetTime; isPlaying = false; playBtn.textContent = '▶ 继续'; statusText.textContent = '● 暂停'; targetTime = null; }
+            timeSlider.value = time.toFixed(2);
+            timeValue.textContent = time.toFixed(2) + ' s';
+            updatePhaseDisplay();
+        }
+        draw();
+        animId = requestAnimationFrame(animate);
+    }
+
+    // 事件绑定
+    freqSlider.addEventListener('input', e => updateFrequency(parseFloat(e.target.value)));
+    timeSlider.addEventListener('input', e => {
+        const val = parseFloat(e.target.value);
+        time = val; targetTime = null;
+        if (isPlaying) { isPlaying = false; playBtn.textContent = '▶ 继续'; statusText.textContent = '● 暂停'; }
+        timeValue.textContent = time.toFixed(2) + ' s';
+        updatePhaseDisplay();
+        draw();
+    });
+    playBtn.addEventListener('click', function() {
+        const maxTime = parseFloat(timeSlider.max);
+        if (time >= maxTime && !isPlaying) { resetSimulation(); return; }
+        if (time === 0 && !isPlaying) { isPlaying = true; playBtn.textContent = '⏸ 暂停'; statusText.textContent = '▶ 振动中'; targetTime = null; if (!animId) animate(); return; }
+        isPlaying = !isPlaying;
+        playBtn.textContent = isPlaying ? '⏸ 暂停' : '▶ 继续';
+        statusText.textContent = isPlaying ? '▶ 振动中' : '● 暂停';
+        if (isPlaying) targetTime = null;
+        if (isPlaying && !animId) animate();
+    });
+    stepBtn.addEventListener('click', stepForward);
+    resetBtn.addEventListener('click', resetSimulation);
+
+    // 启动
+    const initMaxTime = 4 / freq;
+    timeSlider.max = initMaxTime.toFixed(2);
+    timeSlider.value = '0';
+    timeValue.textContent = '0.00 s';
+    resetSimulation();
+    animate();
+    document.getElementById('speedDisplay').textContent = WAVE_SPEED;
+})();
+</script>
+</body>
+</html>
