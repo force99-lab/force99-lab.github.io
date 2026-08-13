@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>传送带 - force99</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+        }
+        .container {
+            background: #16213e;
+            padding: 20px 25px 25px 25px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            border: 1px solid #0f3460;
+            max-width: 1000px;
+        }
+        .top-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .canvas-wrap {
+            flex: 1;
+            min-width: 700px;
+        }
+        canvas#mainCanvas {
+            display: block;
+            margin: 0 auto;
+            background: #0a0a1a;
+            border-radius: 16px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+            width: 100%;
+            height: auto;
+            aspect-ratio: 800 / 230;
+        }
+        .vt-wrap {
+            flex: 0 0 280px;
+            min-width: 200px;
+        }
+        canvas#vtCanvas {
+            display: block;
+            background: #0a0a1a;
+            border-radius: 16px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+            width: 100%;
+            height: auto;
+            aspect-ratio: 280 / 230;
+        }
+        .controls {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 10px 20px;
+            background: #1a1a2e;
+            padding: 12px 18px;
+            border-radius: 40px;
+            border: 1px solid #2a3a5e;
+        }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #b0c4de;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .slider-group label {
+            min-width: 32px;
+            color: #8aa8dd;
+            font-size: 11px;
+        }
+        .slider-group input {
+            width: 80px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #2a3a5e;
+            border-radius: 4px;
+            outline: none;
+        }
+        .slider-group input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            box-shadow: 0 0 16px #4fc3f777;
+            border: 2px solid #fff;
+        }
+        .slider-group input::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #4fc3f7;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+        .slider-group span {
+            min-width: 48px;
+            text-align: center;
+            color: #4fc3f7;
+            font-weight: 600;
+            font-size: 13px;
+            background: #0f1a2e;
+            padding: 1px 6px;
+            border-radius: 16px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-ctrl {
+            background: #2a3a5e;
+            border: none;
+            color: #b0c4de;
+            font-weight: 600;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-ctrl:hover {
+            background: #3a4a6e;
+            transform: scale(1.03);
+        }
+        .btn-ctrl.active {
+            background: #4fc3f7;
+            color: #0a0a1a;
+            box-shadow: 0 0 16px #4fc3f777;
+        }
+        .btn-reset {
+            background: #ff6b6b;
+            border: none;
+            color: #fff;
+            font-weight: 700;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn-reset:hover {
+            background: #ff8a8a;
+            transform: scale(1.03);
+        }
+        .status {
+            color: #aab;
+            text-align: center;
+            margin-top: 6px;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+        }
+        .status span {
+            color: #ffb74d;
+            font-weight: 600;
+        }
+        .note {
+            color: #6688aa;
+            text-align: center;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        @media (max-width: 860px) {
+            .top-row { flex-direction: column; align-items: center; }
+            .canvas-wrap { min-width: unset; width: 100%; }
+            .vt-wrap { flex: unset; width: 100%; max-width: 400px; }
+            .controls { gap: 6px 12px; }
+            .slider-group input { width: 60px; }
+            .slider-group span { min-width: 38px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-row">
+        <div class="canvas-wrap">
+            <canvas id="mainCanvas" width="800" height="230"></canvas>
+        </div>
+        <div class="vt-wrap">
+            <canvas id="vtCanvas" width="280" height="230"></canvas>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="slider-group">
+            <label>🚀带速</label>
+            <input type="range" id="beltSpeed" min="-10" max="10" step="0.1" value="2.0">
+            <span id="beltSpeedVal">+2.0</span>
+        </div>
+        <div class="slider-group">
+            <label>⚡初速</label>
+            <input type="range" id="objSpeed" min="-10" max="10" step="0.1" value="0.0">
+            <span id="objSpeedVal">0.0</span>
+        </div>
+        <div class="slider-group">
+            <label>📍位置</label>
+            <input type="range" id="objPos" min="60" max="740" step="1" value="160">
+            <span id="objPosVal">160</span>
+        </div>
+        <div class="slider-group">
+            <label>🧲μ</label>
+            <input type="range" id="friction" min="0.0" max="1.0" step="0.01" value="0.30">
+            <span id="frictionVal">0.30</span>
+        </div>
+        <div class="btn-group">
+            <button class="btn-ctrl active" id="startBtn">▶ 启动</button>
+            <button class="btn-ctrl" id="pauseBtn">⏸ 暂停</button>
+            <button class="btn-reset" id="resetBtn">↺ 重置</button>
+        </div>
+    </div>
+    <div class="status" id="statusMsg">⏸ 已停止 · 点击「启动」开始模拟</div>
+    <div class="note">⚙️ v-t图：白色坐标轴 · 皮带速度实线 · 水印 force99</div>
+</div>
+
+<script>
+    (function(){
+        // ===== DOM =====
+        const mainCanvas = document.getElementById('mainCanvas');
+        const ctx = mainCanvas.getContext('2d');
+        const vtCanvas = document.getElementById('vtCanvas');
+        const vtx = vtCanvas.getContext('2d');
+
+        const beltSlider = document.getElementById('beltSpeed');
+        const objSlider = document.getElementById('objSpeed');
+        const posSlider = document.getElementById('objPos');
+        const frictionSlider = document.getElementById('friction');
+        const beltVal = document.getElementById('beltSpeedVal');
+        const objVal = document.getElementById('objSpeedVal');
+        const posVal = document.getElementById('objPosVal');
+        const frictionVal = document.getElementById('frictionVal');
+        const statusMsg = document.getElementById('statusMsg');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // ===== 物理参数 =====
+        let beltV = 2.0;
+        let objV0 = 0.0;
+        let mu = 0.30;
+        const g = 9.8;
+
+        let running = false;
+        let animId = null;
+        let lastTimestamp = 0;
+        let simTime = 0;
+
+        // ===== 几何参数 =====
+        const BELT_H = 12;
+        const TOP_Y = 78;
+        const TOP_BOTTOM = TOP_Y + BELT_H;
+        const BOT_Y = 140;
+        const BOT_BOTTOM = BOT_Y + BELT_H;
+        const TOTAL_H = BOT_BOTTOM - TOP_Y;
+        const OUTER_R = TOTAL_H / 2;
+        const INNER_R = (BOT_Y - TOP_BOTTOM) / 2;
+        const ROLLER1_X = OUTER_R + 4;
+        const ROLLER2_X = 800 - OUTER_R - 4;
+        const ROLLER_CY = TOP_Y + TOTAL_H / 2;
+        const BELT_LEFT = ROLLER1_X;
+        const BELT_RIGHT = ROLLER2_X;
+        const BELT_WIDTH = BELT_RIGHT - BELT_LEFT;
+
+        // ===== 物块 =====
+        const BLOCK_SIZE = 20;
+        let obj = {
+            x: 160,
+            y: TOP_Y + (BELT_H - BLOCK_SIZE) / 2 + 1,
+            w: BLOCK_SIZE,
+            h: BLOCK_SIZE,
+            v: 0.0,
+        };
+
+        let trail = [];
+        const PIXEL_PER_METER = 20;
+        const TEXTURE_SPACING = 60;
+
+        let accumulatedBeltOffset = 0;
+        let accumulatedAngle = 0;
+
+        // ===== v-t 数据 =====
+        const MAX_DATA_POINTS = 600;
+        let vtData = [];
+        const VT_T_MAX = 5.0;
+        const VT_V_MIN = -10;
+        const VT_V_MAX = 10;
+
+        // ===== 带符号显示 =====
+        function formatSpeed(v) {
+            if (v > 0) return '+' + v.toFixed(1);
+            if (v < 0) return v.toFixed(1);
+            return '0.0';
+        }
+
+        // ===== 重置 =====
+        function fullReset() {
+            running = false;
+            simTime = 0;
+            const initX = parseFloat(posSlider.value);
+            const initV = parseFloat(objSlider.value);
+            obj.x = initX;
+            obj.y = TOP_Y + (BELT_H - BLOCK_SIZE) / 2 + 1;
+            obj.w = BLOCK_SIZE;
+            obj.h = BLOCK_SIZE;
+            obj.v = initV;
+            trail = [];
+            accumulatedBeltOffset = 0;
+            accumulatedAngle = 0;
+            vtData = [];
+            startBtn.textContent = '▶ 启动';
+            startBtn.classList.add('active');
+            pauseBtn.classList.remove('active');
+            statusMsg.innerHTML = '⏸ 已重置 · 点击「启动」开始模拟';
+            drawCanvas();
+            drawVT();
+        }
+
+        // ===== 木纹纹理 =====
+        function drawWoodTexture(cx, cy, w, h) {
+            const baseGrd = ctx.createLinearGradient(cx, cy, cx + w, cy + h);
+            baseGrd.addColorStop(0, '#d4a574');
+            baseGrd.addColorStop(0.3, '#c4956a');
+            baseGrd.addColorStop(0.6, '#b8885e');
+            baseGrd.addColorStop(1, '#a07850');
+            ctx.fillStyle = baseGrd;
+            ctx.fillRect(cx, cy, w, h);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(cx, cy, w, h);
+            ctx.clip();
+            for (let i = 0; i < 10; i++) {
+                const yPos = cy + 2 + i * (h / 10) + Math.sin(i * 1.5) * 1.2;
+                ctx.beginPath();
+                ctx.moveTo(cx - 2, yPos);
+                for (let x = 0; x <= w + 4; x += 2) {
+                    const wave = Math.sin(x * 0.08 + i * 0.9) * 1.0 + Math.sin(x * 0.03 + i * 1.7) * 1.5;
+                    ctx.lineTo(cx + x, yPos + wave);
+                }
+                ctx.strokeStyle = i % 2 === 0 ? '#8a6a4a' : '#b89878';
+                ctx.lineWidth = i % 2 === 0 ? 1.5 : 0.8;
+                ctx.globalAlpha = 0.6;
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+            for (let i = 0; i < 16; i++) {
+                const yPos = cy + 2 + i * (h / 16) + Math.sin(i * 2.3) * 0.6;
+                ctx.beginPath();
+                ctx.moveTo(cx, yPos);
+                ctx.lineTo(cx + w, yPos + Math.sin(i * 1.1) * 0.5);
+                ctx.strokeStyle = '#7a5a3a';
+                ctx.lineWidth = 0.4;
+                ctx.globalAlpha = 0.3;
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+            const vigGrd = ctx.createRadialGradient(
+                cx + w/2, cy + h/2, w*0.2,
+                cx + w/2, cy + h/2, w*0.8
+            );
+            vigGrd.addColorStop(0, 'rgba(0,0,0,0)');
+            vigGrd.addColorStop(1, 'rgba(0,0,0,0.2)');
+            ctx.fillStyle = vigGrd;
+            ctx.fillRect(cx, cy, w, h);
+            ctx.restore();
+            ctx.strokeStyle = '#6a4a2a';
+            ctx.lineWidth = 0.6;
+            ctx.strokeRect(cx, cy, w, h);
+        }
+
+        // ===== 半圆环 =====
+        function drawHalfRing(cx, cy, outerR, innerR, angleOffset) {
+            const grd = ctx.createRadialGradient(
+                cx - outerR*0.2, cy - outerR*0.2, innerR*0.5,
+                cx, cy, outerR
+            );
+            grd.addColorStop(0, '#3d5a78');
+            grd.addColorStop(0.5, '#2c3e5a');
+            grd.addColorStop(0.8, '#1e2f44');
+            grd.addColorStop(1, '#0f1a2e');
+            ctx.fillStyle = grd;
+            ctx.shadowColor = "#00000066";
+            ctx.shadowBlur = 18;
+            ctx.shadowOffsetY = 4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+            ctx.arc(cx, cy, innerR, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            const midR = (outerR + innerR) / 2;
+            const circumference = Math.PI * 2 * midR;
+            const targetSpacing = TEXTURE_SPACING / 2;
+            const numStripes = Math.max(12, Math.round(circumference / targetSpacing));
+            for (let i = 0; i < numStripes; i++) {
+                const startAngle = (i / numStripes) * Math.PI * 2 + angleOffset;
+                const midAngle = startAngle + Math.PI / numStripes;
+                const endAngle = startAngle + Math.PI / numStripes * 2;
+                ctx.beginPath();
+                ctx.moveTo(cx + innerR * Math.cos(startAngle), cy + innerR * Math.sin(startAngle));
+                ctx.lineTo(cx + outerR * Math.cos(startAngle), cy + outerR * Math.sin(startAngle));
+                ctx.lineTo(cx + outerR * Math.cos(midAngle), cy + outerR * Math.sin(midAngle));
+                ctx.lineTo(cx + innerR * Math.cos(midAngle), cy + innerR * Math.sin(midAngle));
+                ctx.closePath();
+                ctx.fillStyle = "#6a8aaa";
+                ctx.globalAlpha = 0.5;
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(cx + innerR * Math.cos(midAngle), cy + innerR * Math.sin(midAngle));
+                ctx.lineTo(cx + outerR * Math.cos(midAngle), cy + outerR * Math.sin(midAngle));
+                ctx.lineTo(cx + outerR * Math.cos(endAngle), cy + outerR * Math.sin(endAngle));
+                ctx.lineTo(cx + innerR * Math.cos(endAngle), cy + innerR * Math.sin(endAngle));
+                ctx.closePath();
+                ctx.fillStyle = "#1a2a3a";
+                ctx.globalAlpha = 0.4;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+            ctx.strokeStyle = "#7fa9c9";
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx - outerR*0.2, cy - outerR*0.25, outerR*0.25, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff22";
+            ctx.fill();
+        }
+
+        // ===== 金属铜色转轮 =====
+        function drawCopperWheel(cx, cy, radius, angleOffset) {
+            ctx.shadowColor = "#00000088";
+            ctx.shadowBlur = 16;
+            ctx.shadowOffsetY = 3;
+            const wheelGrd = ctx.createRadialGradient(
+                cx - radius*0.3, cy - radius*0.35, 2,
+                cx, cy, radius
+            );
+            wheelGrd.addColorStop(0, '#f5e6c8');
+            wheelGrd.addColorStop(0.15, '#e8cfa0');
+            wheelGrd.addColorStop(0.35, '#d4a86a');
+            wheelGrd.addColorStop(0.55, '#c49050');
+            wheelGrd.addColorStop(0.75, '#b07840');
+            wheelGrd.addColorStop(0.9, '#8a6030');
+            wheelGrd.addColorStop(1, '#6a4820');
+            ctx.fillStyle = wheelGrd;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.strokeStyle = "#d4a86a";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angleOffset);
+            ctx.beginPath();
+            ctx.arc(-radius*0.2, -radius*0.25, radius*0.35, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff33";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(-radius*0.1, -radius*0.3, radius*0.15, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff55";
+            ctx.fill();
+            ctx.strokeStyle = "#c4905066";
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = "#c4905044";
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.25, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = "#00000055";
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            const hubGrd = ctx.createRadialGradient(-1.5, -1.5, 1, 0, 0, 4);
+            hubGrd.addColorStop(0, '#f5e6c8');
+            hubGrd.addColorStop(0.5, '#d4a86a');
+            hubGrd.addColorStop(1, '#8a6030');
+            ctx.fillStyle = hubGrd;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(-1, -1.5, 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffffaa";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(radius*0.15, radius*0.2, radius*0.12, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff08";
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ===== 皮带直线段 =====
+        function drawBeltSegment(x1, y1, x2, y2, offset, isTop) {
+            const w = x2 - x1;
+            const h = y2 - y1;
+            const grad = ctx.createLinearGradient(0, y1, 0, y2);
+            grad.addColorStop(0, '#2c3e5a');
+            grad.addColorStop(0.5, '#3d5a78');
+            grad.addColorStop(1, '#1e2f44');
+            ctx.fillStyle = grad;
+            ctx.shadowColor = isTop ? "#4fc3f722" : "#00000000";
+            ctx.shadowBlur = isTop ? 16 : 0;
+            ctx.fillRect(x1, y1, w, h);
+            ctx.shadowBlur = 0;
+            const stripeW = 6;
+            const gapW = 6;
+            for (let i = -TEXTURE_SPACING + offset; i < 820; i += (stripeW + gapW)) {
+                if (i > BELT_LEFT + 4 && i < BELT_RIGHT - 4) {
+                    ctx.fillStyle = "#6a8aaa";
+                    ctx.globalAlpha = 0.4;
+                    ctx.fillRect(i, y1 + 1, stripeW, h - 2);
+                    ctx.fillStyle = "#1a2a3a";
+                    ctx.globalAlpha = 0.3;
+                    ctx.fillRect(i + stripeW, y1 + 1, gapW, h - 2);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+            ctx.strokeStyle = "#7fa9c9";
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(x1, y1, w, h);
+            if (isTop) {
+                ctx.strokeStyle = "#8ab8d966";
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(x1 + 10, y1 + 1);
+                ctx.lineTo(x2 - 10, y1 + 1);
+                ctx.stroke();
+            }
+        }
+
+        // ===== 划痕绘制 =====
+        function drawTrails() {
+            if (trail.length === 0) return;
+            for (let seg of trail) {
+                const screenX = BELT_LEFT + seg.x;
+                if (screenX + seg.width > BELT_LEFT + 2 && screenX < BELT_RIGHT - 2) {
+                    ctx.fillStyle = "#ff3d3d";
+                    ctx.shadowColor = "#ff3d3daa";
+                    ctx.shadowBlur = 14;
+                    ctx.globalAlpha = 0.85;
+                    const drawX = Math.max(screenX, BELT_LEFT + 2);
+                    const drawW = Math.min(screenX + seg.width, BELT_RIGHT - 2) - drawX;
+                    if (drawW > 0) {
+                        ctx.fillRect(drawX, TOP_Y + 2, drawW, BELT_H - 4);
+                    }
+                }
+            }
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+        }
+
+        // ===== 主绘制 =====
+        function drawCanvas() {
+            ctx.clearRect(0, 0, 800, 230);
+            ctx.strokeStyle = "#1a2a44";
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < 800; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, 230);
+                ctx.strokeStyle = "#1a2a44";
+                ctx.stroke();
+            }
+            for (let i = 0; i < 230; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(800, i);
+                ctx.strokeStyle = "#1a2a44";
+                ctx.stroke();
+            }
+            const currentBeltV = parseFloat(beltSlider.value);
+            const topOffset = accumulatedBeltOffset % TEXTURE_SPACING;
+            const botOffset = (-accumulatedBeltOffset) % TEXTURE_SPACING;
+            const angleOffset = accumulatedAngle;
+            ctx.fillStyle = "#0a0a1a";
+            ctx.shadowBlur = 0;
+            ctx.fillRect(ROLLER1_X + 2, TOP_BOTTOM, ROLLER2_X - ROLLER1_X - 4, BOT_Y - TOP_BOTTOM);
+            drawBeltSegment(BELT_LEFT, TOP_Y, BELT_RIGHT, TOP_Y + BELT_H, topOffset, true);
+            drawBeltSegment(BELT_LEFT, BOT_Y, BELT_RIGHT, BOT_Y + BELT_H, botOffset, false);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, ROLLER1_X, 230);
+            ctx.clip();
+            drawHalfRing(ROLLER1_X, ROLLER_CY, OUTER_R, INNER_R, angleOffset);
+            ctx.restore();
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(ROLLER2_X, 0, 800 - ROLLER2_X, 230);
+            ctx.clip();
+            drawHalfRing(ROLLER2_X, ROLLER_CY, OUTER_R, INNER_R, angleOffset);
+            ctx.restore();
+            ctx.fillStyle = "#0a0a1a";
+            ctx.shadowBlur = 0;
+            ctx.fillRect(ROLLER1_X, TOP_Y, ROLLER2_X - ROLLER1_X, TOTAL_H);
+            drawBeltSegment(BELT_LEFT, TOP_Y, BELT_RIGHT, TOP_Y + BELT_H, topOffset, true);
+            drawBeltSegment(BELT_LEFT, BOT_Y, BELT_RIGHT, BOT_Y + BELT_H, botOffset, false);
+            drawCopperWheel(ROLLER1_X, ROLLER_CY, INNER_R, angleOffset);
+            drawCopperWheel(ROLLER2_X, ROLLER_CY, INNER_R, angleOffset);
+            drawTrails();
+
+            // ---- 物块 ----
+            const x = obj.x;
+            const y = obj.y;
+            const s = obj.w;
+            ctx.shadowColor = "#000000aa";
+            ctx.shadowBlur = 18;
+            ctx.shadowOffsetY = 4;
+            drawWoodTexture(x, y, s, s);
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 11px 'Segoe UI'";
+            ctx.fillText("m", x + s/2 - 6, y - 10);
+            ctx.fillStyle = "#bbddff";
+            ctx.font = "10px 'Segoe UI'";
+            const vSign = obj.v >= 0 ? '+' : '';
+            ctx.fillText("v=" + vSign + obj.v.toFixed(2) + " m/s", x - 4, y - 26);
+
+            if (Math.abs(obj.v) > 0.05) {
+                ctx.fillStyle = obj.v > 0 ? "#4fc3f7" : "#ff6b6b";
+                ctx.font = "18px 'Segoe UI'";
+                ctx.fillText(obj.v > 0 ? "→" : "←", x + s/2 - 8, y - 46);
+            }
+
+            ctx.fillStyle = "#557799";
+            ctx.font = "11px 'Segoe UI'";
+            const dirText = currentBeltV > 0.05 ? '→' : (currentBeltV < -0.05 ? '←' : '●');
+            const stateText = running ? '▶ 运行中' : '⏸ 已暂停';
+            const beltSign = currentBeltV >= 0 ? '+' : '';
+            ctx.fillText(stateText + "  μ=" + mu.toFixed(2) + "  划痕:" + trail.length + 
+                "  带速:" + beltSign + currentBeltV.toFixed(1) + "m/s " + dirText, 30, 218);
+            ctx.fillStyle = "#3a5a7a";
+            ctx.fillText("向右为正→  向左为负←", 680, 218);
+        }
+
+        // ===== ★ v-t 图像 ★ =====
+        function drawVT() {
+            const W = 280, H = 230;
+            vtx.clearRect(0, 0, W, H);
+            vtx.fillStyle = "#0a0a1a";
+            vtx.fillRect(0, 0, W, H);
+
+            const pad = { top: 18, bottom: 22, left: 35, right: 12 };
+            const plotW = W - pad.left - pad.right;
+            const plotH = H - pad.top - pad.bottom;
+
+            const tMin = 0, tMax = VT_T_MAX, tRange = tMax - tMin;
+            const vMin = VT_V_MIN, vMax = VT_V_MAX, vRange = vMax - vMin;
+
+            function toPixel(t, v) {
+                return [pad.left + ((t - tMin) / tRange) * plotW, 
+                        pad.top + plotH - ((v - vMin) / vRange) * plotH];
+            }
+
+            // ---- 灰色网格 ----
+            vtx.strokeStyle = "#1a2a44";
+            vtx.lineWidth = 0.5;
+            for (let i = 0; i <= 4; i++) {
+                const vv = vMin + (i / 4) * vRange;
+                const [, py] = toPixel(0, vv);
+                vtx.beginPath();
+                vtx.moveTo(pad.left, py);
+                vtx.lineTo(pad.left + plotW, py);
+                vtx.stroke();
+                vtx.fillStyle = "#445566";
+                vtx.font = "8px 'Segoe UI'";
+                const label = vv === 0 ? '0' : (vv > 0 ? '+' : '') + vv.toFixed(1);
+                vtx.fillText(label, 2, py + 3);
+            }
+            for (let t = 0.5; t <= tMax; t += 0.5) {
+                const [px] = toPixel(t, 0);
+                vtx.beginPath();
+                vtx.moveTo(px, pad.top);
+                vtx.lineTo(px, pad.top + plotH);
+                vtx.stroke();
+                vtx.fillStyle = "#44556666";
+                vtx.font = "7px 'Segoe UI'";
+                vtx.fillText(t.toFixed(1), px - 4, pad.top + plotH + 12);
+            }
+
+            // ---- 白色坐标轴 ----
+            vtx.strokeStyle = "#ffffff";
+            vtx.lineWidth = 1.5;
+            vtx.beginPath();
+            vtx.moveTo(pad.left, pad.top);
+            vtx.lineTo(pad.left, pad.top + plotH);
+            vtx.stroke();
+            const [, zeroY] = toPixel(0, 0);
+            vtx.beginPath();
+            vtx.moveTo(pad.left, zeroY);
+            vtx.lineTo(pad.left + plotW, zeroY);
+            vtx.stroke();
+
+            // ---- v=0 白色粗线 ----
+            vtx.strokeStyle = "#ffffff";
+            vtx.lineWidth = 2.5;
+            vtx.beginPath();
+            vtx.moveTo(pad.left, zeroY);
+            vtx.lineTo(pad.left + plotW, zeroY);
+            vtx.stroke();
+
+            // ---- 轴标签 ----
+            vtx.fillStyle = "#ffffffcc";
+            vtx.font = "9px 'Segoe UI'";
+            vtx.fillText("v(m/s)", pad.left + 2, pad.top + 10);
+            vtx.fillText("t(s)", pad.left + plotW - 14, pad.top + plotH + 14);
+
+            vtx.fillStyle = "#ffffff88";
+            vtx.font = "7px 'Segoe UI'";
+            vtx.fillText("0", pad.left - 3, pad.top + plotH + 12);
+            vtx.fillText(tMax.toFixed(1), pad.left + plotW - 6, pad.top + plotH + 12);
+
+            // ---- 数据曲线 ----
+            if (vtData.length < 2) {
+                vtx.fillStyle = "#445566";
+                vtx.font = "11px 'Segoe UI'";
+                vtx.fillText("等待数据...", pad.left + plotW/2 - 30, pad.top + plotH/2 + 4);
+                return;
+            }
+
+            let plotData = vtData.filter(d => d.t <= tMax);
+            if (plotData.length < 2) plotData = vtData.slice(-2);
+
+            // ★ 物块速度（红色） ★
+            vtx.strokeStyle = "#ff6b6b";
+            vtx.lineWidth = 2;
+            vtx.beginPath();
+            for (let i = 0; i < plotData.length; i++) {
+                const [px, py] = toPixel(plotData[i].t, plotData[i].v_obj);
+                if (i === 0) vtx.moveTo(px, py);
+                else vtx.lineTo(px, py);
+            }
+            vtx.stroke();
+
+            // ★ 皮带速度（蓝色实线） ★
+            vtx.strokeStyle = "#4fc3f7";
+            vtx.lineWidth = 2;
+            vtx.setLineDash([]); // 实线
+            vtx.beginPath();
+            for (let i = 0; i < plotData.length; i++) {
+                const [px, py] = toPixel(plotData[i].t, plotData[i].v_belt);
+                if (i === 0) vtx.moveTo(px, py);
+                else vtx.lineTo(px, py);
+            }
+            vtx.stroke();
+
+            // ---- 图例 ----
+            vtx.fillStyle = "#ff6b6b";
+            vtx.fillRect(pad.left + plotW - 70, pad.top + 4, 12, 3);
+            vtx.fillStyle = "#bbddff";
+            vtx.font = "8px 'Segoe UI'";
+            vtx.fillText("物块", pad.left + plotW - 56, pad.top + 8);
+
+            vtx.fillStyle = "#4fc3f7";
+            vtx.fillRect(pad.left + plotW - 36, pad.top + 4, 12, 3);
+            vtx.fillStyle = "#bbddff";
+            vtx.font = "8px 'Segoe UI'";
+            vtx.fillText("皮带", pad.left + plotW - 22, pad.top + 8);
+
+            // ---- ★ 水印 "force99" ★ ----
+            vtx.fillStyle = "rgba(255,255,255,0.12)";
+            vtx.font = "bold 18px 'Segoe UI', 'Arial'";
+            vtx.textAlign = "right";
+            vtx.textBaseline = "bottom";
+            vtx.fillText("force99", W - 10, H - 6);
+            vtx.textAlign = "left";
+            vtx.textBaseline = "alphabetic";
+        }
+
+        // ===== 物理更新 =====
+        function updatePhysics(dt) {
+            if (!running) return;
+            if (dt > 0.05) dt = 0.05;
+            const currentBeltV = parseFloat(beltSlider.value);
+            beltV = currentBeltV;
+            mu = parseFloat(frictionSlider.value);
+            const v_rel = obj.v - beltV;
+            let a = 0;
+            if (Math.abs(v_rel) > 0.001) {
+                a = -Math.sign(v_rel) * mu * g;
+            } else {
+                a = 0;
+                obj.v = beltV;
+            }
+            obj.v += a * dt;
+            if (obj.v > 10) obj.v = 10;
+            if (obj.v < -10) obj.v = -10;
+            const dx = obj.v * dt * PIXEL_PER_METER;
+            const oldX = obj.x;
+            obj.x += dx;
+            if (obj.x < BELT_LEFT + 4) { obj.x = BELT_LEFT + 4; obj.v = 0; }
+            if (obj.x + obj.w > BELT_RIGHT - 4) { obj.x = BELT_RIGHT - 4 - obj.w; obj.v = 0; }
+
+            // ---- 划痕 ----
+            const trailShift = beltV * dt * PIXEL_PER_METER;
+            for (let seg of trail) seg.x += trailShift;
+
+            if (Math.abs(v_rel) > 0.01) {
+                const objLeft = obj.x - BELT_LEFT;
+                const objRight = obj.x + obj.w - BELT_LEFT;
+                const oldLeft = oldX - BELT_LEFT;
+                const oldRight = oldX + obj.w - BELT_LEFT;
+                const trailStart = Math.min(objLeft, oldLeft);
+                const trailEnd = Math.max(objRight, oldRight);
+                const trailW = trailEnd - trailStart;
+                if (trailW > 0.5) {
+                    if (trail.length > 0) {
+                        const last = trail[trail.length - 1];
+                        if (trailStart <= last.x + last.width + 2 && trailStart + trailW >= last.x - 2) {
+                            const newX = Math.min(last.x, trailStart);
+                            const newW = Math.max(last.x + last.width, trailStart + trailW) - newX;
+                            last.x = newX;
+                            last.width = newW;
+                        } else {
+                            trail.push({ x: trailStart, width: trailW });
+                        }
+                    } else {
+                        trail.push({ x: trailStart, width: trailW });
+                    }
+                }
+            }
+            trail = trail.filter(seg => seg.x + seg.width > 0 && seg.x < BELT_WIDTH);
+
+            // ---- v-t 数据 ----
+            simTime += dt;
+            vtData.push({ t: simTime, v_obj: obj.v, v_belt: beltV });
+            if (vtData.length > MAX_DATA_POINTS) vtData.shift();
+            statusMsg.innerHTML = '▶ 运行中 | 相对速度 ' + (obj.v - beltV).toFixed(2) + ' m/s';
+        }
+
+        // ===== 速度更新 =====
+        function updateSpeed(dt) {
+            if (dt > 0.05) dt = 0.05;
+            const currentBeltV = parseFloat(beltSlider.value);
+            accumulatedBeltOffset += currentBeltV * dt * PIXEL_PER_METER;
+            accumulatedAngle += (currentBeltV * PIXEL_PER_METER) / OUTER_R * dt;
+        }
+
+        function animate(timestamp) {
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            let dt = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+            if (dt > 0.1) dt = 0.1;
+            updateSpeed(dt);
+            if (running) updatePhysics(dt);
+            drawCanvas();
+            drawVT();
+            animId = requestAnimationFrame(animate);
+        }
+
+        function startLoop() {
+            if (animId) cancelAnimationFrame(animId);
+            lastTimestamp = 0;
+            animId = requestAnimationFrame(animate);
+        }
+
+        // ===== 控制按钮 =====
+        startBtn.addEventListener('click', function() {
+            if (!running) {
+                running = true;
+                startBtn.textContent = '▶ 运行中';
+                startBtn.classList.add('active');
+                pauseBtn.classList.remove('active');
+                if (vtData.length === 0) {
+                    vtData.push({ t: 0, v_obj: obj.v, v_belt: parseFloat(beltSlider.value) });
+                    simTime = 0;
+                }
+                statusMsg.innerHTML = '▶ 运行中...';
+            }
+        });
+
+        pauseBtn.addEventListener('click', function() {
+            if (running) {
+                running = false;
+                startBtn.textContent = '▶ 启动';
+                startBtn.classList.remove('active');
+                pauseBtn.classList.add('active');
+                statusMsg.innerHTML = '⏸ 已暂停 · 点击「启动」继续';
+            }
+        });
+
+        resetBtn.addEventListener('click', fullReset);
+
+        // ===== 滑块事件 =====
+        function onSliderChange() {
+            beltV = parseFloat(beltSlider.value);
+            objV0 = parseFloat(objSlider.value);
+            mu = parseFloat(frictionSlider.value);
+            const pos = parseFloat(posSlider.value);
+            beltVal.textContent = formatSpeed(beltV);
+            objVal.textContent = formatSpeed(objV0);
+            posVal.textContent = pos.toFixed(0);
+            frictionVal.textContent = mu.toFixed(2);
+            if (!running) {
+                obj.v = objV0;
+                obj.x = pos;
+                vtData = [];
+                simTime = 0;
+                statusMsg.innerHTML = '⏸ 参数已调整 · 点击「启动」开始';
+            }
+            drawCanvas();
+            drawVT();
+        }
+
+        beltSlider.addEventListener('input', onSliderChange);
+        objSlider.addEventListener('input', onSliderChange);
+        posSlider.addEventListener('input', onSliderChange);
+        frictionSlider.addEventListener('input', onSliderChange);
+
+        // ===== 初始化 =====
+        function init() {
+            beltV = parseFloat(beltSlider.value);
+            objV0 = parseFloat(objSlider.value);
+            mu = parseFloat(frictionSlider.value);
+            const pos = parseFloat(posSlider.value);
+            obj.v = objV0;
+            obj.x = pos;
+            obj.y = TOP_Y + (BELT_H - BLOCK_SIZE) / 2 + 1;
+            beltVal.textContent = formatSpeed(beltV);
+            objVal.textContent = formatSpeed(objV0);
+            posVal.textContent = pos.toFixed(0);
+            frictionVal.textContent = mu.toFixed(2);
+            accumulatedBeltOffset = 0;
+            accumulatedAngle = 0;
+            trail = [];
+            vtData = [];
+            simTime = 0;
+            running = false;
+            startBtn.textContent = '▶ 启动';
+            startBtn.classList.add('active');
+            pauseBtn.classList.remove('active');
+            statusMsg.innerHTML = '⏸ 已停止 · 点击「启动」开始模拟';
+            drawCanvas();
+            drawVT();
+            startLoop();
+        }
+        init();
+    })();
+</script>
+</body>
+</html>
