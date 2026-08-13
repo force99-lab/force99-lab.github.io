@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>平抛运动 · 三球对比</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #d0dcc8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            background: #f0f8e8;
+            border-radius: 28px;
+            padding: 24px 28px 28px;
+            box-shadow: 0 20px 50px rgba(60, 80, 50, 0.35), inset 0 1px 4px rgba(255, 255, 255, 0.6);
+            max-width: 1120px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: #3a4a32;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 4px rgba(255, 255, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .ball-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            vertical-align: middle;
+        }
+        .ball-icon.red {
+            background: radial-gradient(circle at 35% 30%, #FF7A7A, #C62828);
+        }
+        .ball-icon.blue {
+            background: radial-gradient(circle at 35% 30%, #64B5F6, #0D47A1);
+        }
+        .ball-icon.green {
+            background: radial-gradient(circle at 35% 30%, #81C784, #1B5E20);
+        }
+        .canvas-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .canvas-wrapper {
+            background: #f0f8e8;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(160, 180, 140, 0.4), 0 6px 18px rgba(60, 80, 50, 0.15);
+            flex: 1 1 0;
+            min-width: 280px;
+        }
+        .canvas-wrapper.main {
+            flex: 1.8;
+        }
+        .canvas-wrapper.speed {
+            flex: 1;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #f0f8e8;
+        }
+        #mainCanvas {
+            border-right: 1px solid rgba(160, 180, 140, 0.3);
+        }
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px 20px;
+            margin-top: 16px;
+            background: rgba(230, 242, 220, 0.6);
+            border-radius: 16px;
+            padding: 14px 22px;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(180, 200, 160, 0.3);
+            position: relative;
+        }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .slider-group label {
+            font-weight: 500;
+            color: #2d3d25;
+            font-size: 14px;
+        }
+        .slider-group input[type="range"] {
+            width: 130px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #b8cfaa;
+            border-radius: 4px;
+            outline: none;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3a6a2a;
+            cursor: pointer;
+            border: 2px solid #e0ecd8;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        .slider-group .val {
+            min-width: 44px;
+            font-weight: 600;
+            color: #1f3a18;
+            font-size: 15px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn-group button {
+            padding: 6px 18px;
+            border: none;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            background: #e0ecd8;
+            color: #2d3d25;
+            cursor: pointer;
+            transition: all 0.12s;
+            box-shadow: 0 2px 6px rgba(60, 80, 50, 0.10);
+            border: 1px solid rgba(160, 180, 140, 0.25);
+        }
+        .btn-group button:hover {
+            background: #d0e0c5;
+            transform: scale(0.97);
+        }
+        .btn-group button:active {
+            transform: scale(0.94);
+        }
+        .btn-group button.primary {
+            background: #4c7a3c;
+            color: #fff;
+            border-color: #3a6a2a;
+            box-shadow: 0 3px 10px rgba(60, 120, 40, 0.25);
+        }
+        .btn-group button.primary:hover {
+            background: #3f6a30;
+        }
+        .btn-group button.primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .btn-group button.danger {
+            background: #c0392b;
+            color: #fff;
+            border-color: #a03020;
+        }
+        .btn-group button.danger:hover {
+            background: #a83226;
+        }
+        .btn-group button.observe {
+            background: #6A1B9A;
+            color: #fff;
+            border-color: #4a1270;
+            box-shadow: 0 3px 10px rgba(106, 27, 154, 0.25);
+        }
+        .btn-group button.observe:hover {
+            background: #4a1270;
+        }
+        .watermark {
+            font-size: 13px;
+            color: #aabba0;
+            opacity: 0.6;
+            user-select: none;
+            margin-left: auto;
+            font-weight: 400;
+            letter-spacing: 1px;
+            padding-left: 12px;
+        }
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            gap: 6px 18px;
+            font-size: 14px;
+            color: #2d3d25;
+            background: rgba(240, 248, 232, 0.5);
+            border-radius: 12px;
+            padding: 8px 18px;
+        }
+        .info-row .item {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .info-row .label {
+            color: #5a7050;
+            font-weight: 400;
+        }
+        .info-row .value {
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            min-width: 48px;
+        }
+        .value.vx { color: #1976D2; }
+        .value.vy { color: #D32F2F; }
+        .value.v { color: #6A1B9A; }
+        .value.t { color: #2E7D32; }
+        .legend-tip {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #3d5035;
+            font-weight: 500;
+            flex-wrap: wrap;
+        }
+        .legend-tip .dot {
+            display: inline-block;
+            width: 14px;
+            height: 4px;
+            border-radius: 4px;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .dot.blue { background: #1976D2; }
+        .dot.red { background: #D32F2F; }
+        .dot.purple { background: #6A1B9A; }
+
+        @media (max-width: 820px) {
+            .container { padding: 16px; }
+            .canvas-row { flex-direction: column; }
+            .canvas-wrapper.main { flex: 1; }
+            .canvas-wrapper.speed { flex: 1; }
+            #mainCanvas { border-right: none; border-bottom: 1px solid rgba(160, 180, 140, 0.3); }
+            .control-panel { flex-direction: column; align-items: stretch; gap: 10px; }
+            .slider-group { justify-content: center; }
+            .btn-group { justify-content: center; }
+            .watermark { margin-left: 0; text-align: center; padding-left: 0; }
+            .info-row { font-size: 13px; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>
+        <span class="ball-icon red"></span>
+        <span class="ball-icon blue"></span>
+        <span class="ball-icon green"></span>
+        平抛运动 · 三球对比
+    </h1>
+
+    <div class="canvas-row">
+        <div class="canvas-wrapper main">
+            <canvas id="mainCanvas" width="700" height="420"></canvas>
+        </div>
+        <div class="canvas-wrapper speed">
+            <canvas id="speedCanvas" width="380" height="420"></canvas>
+        </div>
+    </div>
+
+    <!-- 控制栏 -->
+    <div class="control-panel">
+        <div class="slider-group">
+            <label for="v0Slider">初速 v₀</label>
+            <input type="range" id="v0Slider" min="60" max="280" value="160" step="2" />
+            <span class="val" id="v0Display">160</span>
+        </div>
+        <div class="btn-group">
+            <button class="primary" id="btnStart">▶ 开始</button>
+            <button id="btnPause" disabled>⏸ 暂停</button>
+            <button class="observe" id="btnObserve">👁 观察模式</button>
+            <button class="danger" id="btnReset">⟳ 重置</button>
+            <span class="watermark">force99</span>
+        </div>
+    </div>
+
+    <!-- 信息 & 图例 -->
+    <div class="info-row">
+        <span class="item"><span class="label">⏱ t =</span><span class="value t" id="dTime">0.00</span><span class="label">s</span></span>
+        <span class="item"><span class="label">vₓ =</span><span class="value vx" id="dVx">160.0</span></span>
+        <span class="item"><span class="label">vᵧ =</span><span class="value vy" id="dVy">0.0</span></span>
+        <span class="item"><span class="label">合速度 v =</span><span class="value v" id="dV">160.0</span></span>
+        <span class="legend-tip">
+            <span><span class="dot blue"></span> vₓ</span>
+            <span><span class="dot red"></span> vᵧ</span>
+            <span><span class="dot purple"></span> 合速度</span>
+        </span>
+    </div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+
+        // ---- DOM refs ----
+        const mainCanvas = document.getElementById('mainCanvas');
+        const speedCanvas = document.getElementById('speedCanvas');
+        const ctx = mainCanvas.getContext('2d');
+        const sctx = speedCanvas.getContext('2d');
+
+        const dTime = document.getElementById('dTime');
+        const dVx = document.getElementById('dVx');
+        const dVy = document.getElementById('dVy');
+        const dV = document.getElementById('dV');
+
+        const btnStart = document.getElementById('btnStart');
+        const btnPause = document.getElementById('btnPause');
+        const btnReset = document.getElementById('btnReset');
+        const btnObserve = document.getElementById('btnObserve');
+        const v0Slider = document.getElementById('v0Slider');
+        const v0Display = document.getElementById('v0Display');
+
+        // ---- 物理参数 ----
+        let V0 = 160;
+        const G = 280;
+        const RADIUS = 14;
+        const START_X = 70;
+        const START_Y = 50;
+        const GROUND_Y = 400;
+        const RIGHT_BOUND = 670;
+
+        // ---- 状态 ----
+        let time = 0;
+        let running = false;
+        let paused = false;
+        let finished = false;
+        // 红球轨迹
+        let trailRed = [];
+        // 蓝球轨迹
+        let trailBlue = [];
+        // 绿球轨迹
+        let trailGreen = [];
+        // 定格标记（小立体球）
+        let freezeMarksRed = [];
+        let freezeMarksBlue = [];
+        let freezeMarksGreen = [];
+
+        let speedHistory = [];
+        let animId = null;
+        let lastTimestamp = 0;
+        let isObserveMode = false;
+
+        const PLAY_SPEED = 0.5;
+        const FREEZE_INTERVAL = 0.25;
+
+        // ---- 辅助 ----
+        function getRedState(t) {
+            const x = START_X + V0 * t;
+            const y = START_Y + 0.5 * G * t * t;
+            return { x, y };
+        }
+
+        function clampRed(t) {
+            let finalT = t;
+            const pos = getRedState(t);
+            let fx = pos.x, fy = pos.y;
+            let clamped = false;
+            if (fx >= RIGHT_BOUND) {
+                finalT = (RIGHT_BOUND - START_X) / V0;
+                fy = START_Y + 0.5 * G * finalT * finalT;
+                fx = RIGHT_BOUND;
+                clamped = true;
+            }
+            if (fy >= GROUND_Y - RADIUS) {
+                const disc = 2 * G * (GROUND_Y - RADIUS - START_Y);
+                if (disc >= 0) {
+                    const tGround = Math.sqrt(disc) / G;
+                    if (tGround < finalT || fx >= RIGHT_BOUND) {
+                        finalT = tGround;
+                        fx = START_X + V0 * finalT;
+                        fy = GROUND_Y - RADIUS;
+                        clamped = true;
+                    }
+                }
+            }
+            return { t: finalT, x: fx, y: fy, clamped };
+        }
+
+        function getBlueState(t) {
+            const y = START_Y + 0.5 * G * t * t;
+            return { x: START_X, y: Math.min(y, GROUND_Y - RADIUS) };
+        }
+
+        function getGreenState(t) {
+            const x = START_X + V0 * t;
+            return { x: Math.min(x, RIGHT_BOUND), y: GROUND_Y };
+        }
+
+        // ---- 重置 ----
+        function resetSimulation() {
+            running = false;
+            paused = false;
+            finished = false;
+            time = 0;
+            V0 = parseFloat(v0Slider.value) || 160;
+            v0Display.textContent = V0;
+            trailRed = [{ x: START_X, y: START_Y }];
+            trailBlue = [{ x: START_X, y: START_Y }];
+            trailGreen = [{ x: START_X, y: GROUND_Y }];
+            freezeMarksRed = [];
+            freezeMarksBlue = [];
+            freezeMarksGreen = [];
+            speedHistory = [{ t: 0, vx: V0, vy: 0 }];
+            isObserveMode = false;
+            btnStart.disabled = false;
+            btnPause.disabled = true;
+            btnStart.textContent = '▶ 开始';
+            updateInfo();
+            drawMainScene();
+            drawSpeedChart();
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            lastTimestamp = 0;
+        }
+
+        // ---- 更新信息 ----
+        function updateInfo() {
+            const vy = G * time;
+            const v = Math.hypot(V0, vy);
+            dTime.textContent = time.toFixed(2);
+            dVx.textContent = V0.toFixed(1);
+            dVy.textContent = vy.toFixed(1);
+            dV.textContent = v.toFixed(1);
+        }
+
+        // ---- 物理更新 ----
+        function updatePhysics(dt) {
+            if (!running || paused || finished) return;
+            dt *= PLAY_SPEED;
+            if (dt > 0.04) dt = 0.04;
+
+            let newTime = time + dt;
+            // 红球边界检测
+            const result = clampRed(newTime);
+            newTime = result.t;
+            const redPos = { x: result.x, y: result.y };
+            const clamped = result.clamped;
+
+            // 更新轨迹
+            trailRed.push({ x: redPos.x, y: redPos.y });
+            const bluePos = getBlueState(newTime);
+            trailBlue.push({ x: bluePos.x, y: bluePos.y });
+            const greenPos = getGreenState(newTime);
+            trailGreen.push({ x: greenPos.x, y: greenPos.y });
+
+            // 定格标记 (所有球)
+            const lastMark = freezeMarksRed.length > 0 ? freezeMarksRed[freezeMarksRed.length - 1].t : 0;
+            let markTime = lastMark + FREEZE_INTERVAL;
+            while (markTime <= newTime + 0.001) {
+                // 红球
+                const redMark = clampRed(markTime);
+                freezeMarksRed.push({ x: redMark.x, y: redMark.y, t: redMark.t });
+                // 蓝球
+                const blueMark = getBlueState(markTime);
+                freezeMarksBlue.push({ x: blueMark.x, y: blueMark.y, t: markTime });
+                // 绿球
+                const greenMark = getGreenState(markTime);
+                freezeMarksGreen.push({ x: greenMark.x, y: greenMark.y, t: markTime });
+
+                markTime += FREEZE_INTERVAL;
+                if (clamped) break;
+            }
+
+            // 速度历史 (红球)
+            const vyNow = G * newTime;
+            speedHistory.push({ t: newTime, vx: V0, vy: vyNow });
+
+            time = newTime;
+
+            // 检查红球是否结束
+            if (clamped || redPos.x >= RIGHT_BOUND - 1 || redPos.y >= GROUND_Y - RADIUS - 1) {
+                finished = true;
+                running = false;
+                btnStart.disabled = false;
+                btnPause.disabled = true;
+                btnStart.textContent = '▶ 开始';
+                // 修正红球最后位置
+                const finalPos = clampRed(time);
+                trailRed[trailRed.length - 1] = { x: finalPos.x, y: finalPos.y };
+                time = finalPos.t;
+                // 同步蓝绿最终位置
+                const finalBlue = getBlueState(time);
+                trailBlue[trailBlue.length - 1] = { x: finalBlue.x, y: finalBlue.y };
+                const finalGreen = getGreenState(time);
+                trailGreen[trailGreen.length - 1] = { x: finalGreen.x, y: finalGreen.y };
+                updateInfo();
+                return;
+            }
+
+            updateInfo();
+        }
+
+        // ---- 绘制立体球 (通用) ----
+        function drawBallWithColor(ctx, x, y, radius, color1, color2, color3, highlight) {
+            const grad = ctx.createRadialGradient(
+                x - radius * 0.3, y - radius * 0.35, radius * 0.12,
+                x, y, radius
+            );
+            grad.addColorStop(0, color1);
+            grad.addColorStop(0.3, color2);
+            grad.addColorStop(0.7, color3);
+            grad.addColorStop(1, highlight);
+            ctx.save();
+            ctx.shadowColor = 'rgba(80,40,20,0.25)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetY = 3;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            const hl = ctx.createRadialGradient(
+                x - radius * 0.3, y - radius * 0.35, radius * 0.02,
+                x - radius * 0.3, y - radius * 0.35, radius * 0.35
+            );
+            hl.addColorStop(0, 'rgba(255,255,255,0.6)');
+            hl.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = hl;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- 绘制主场景 ----
+        function drawMainScene() {
+            const W = mainCanvas.width;
+            const H = mainCanvas.height;
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#f0f8e8';
+            ctx.fillRect(0, 0, W, H);
+
+            // 网格
+            ctx.save();
+            const gridSize = 30;
+            ctx.strokeStyle = 'rgba(180, 200, 165, 0.35)';
+            ctx.lineWidth = 0.8;
+            for (let x = 0; x <= W; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= H; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 地面
+            ctx.save();
+            ctx.strokeStyle = '#6d8a5c';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(60,80,40,0.15)';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(W, GROUND_Y);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(100,130,80,0.15)';
+            ctx.lineWidth = 1;
+            for (let x = 10; x < W; x += 18) {
+                ctx.beginPath();
+                ctx.moveTo(x, GROUND_Y + 4);
+                ctx.lineTo(x + 8, GROUND_Y + 10);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 坐标系
+            ctx.save();
+            ctx.strokeStyle = 'rgba(60,80,50,0.5)';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(START_X, START_Y);
+            ctx.lineTo(W - 20, START_Y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(START_X, START_Y);
+            ctx.lineTo(START_X, GROUND_Y + 12);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = 'rgba(60,80,50,0.6)';
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('x', W - 24, START_Y - 6);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('y', START_X + 10, GROUND_Y + 8);
+            ctx.fillStyle = 'rgba(60,80,50,0.5)';
+            ctx.beginPath();
+            ctx.arc(START_X, START_Y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('O (0,0)', START_X - 6, START_Y - 6);
+            ctx.restore();
+
+            // ---- 轨迹 ----
+            // 红球轨迹 (红色)
+            if (trailRed.length > 1) {
+                ctx.save();
+                ctx.strokeStyle = '#D32F2F';
+                ctx.lineWidth = 2.8;
+                ctx.shadowColor = 'rgba(200,50,50,0.15)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(trailRed[0].x, trailRed[0].y);
+                for (let i = 1; i < trailRed.length; i++) {
+                    ctx.lineTo(trailRed[i].x, trailRed[i].y);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 蓝球轨迹 (蓝色虚线) 仅观察模式
+            if (isObserveMode && trailBlue.length > 1) {
+                ctx.save();
+                ctx.strokeStyle = '#1976D2';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 6]);
+                ctx.shadowColor = 'rgba(25,118,210,0.12)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.moveTo(trailBlue[0].x, trailBlue[0].y);
+                for (let i = 1; i < trailBlue.length; i++) {
+                    ctx.lineTo(trailBlue[i].x, trailBlue[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
+            // 绿球轨迹 (绿色虚线) 仅观察模式
+            if (isObserveMode && trailGreen.length > 1) {
+                ctx.save();
+                ctx.strokeStyle = '#2E7D32';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 6]);
+                ctx.shadowColor = 'rgba(46,125,50,0.12)';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.moveTo(trailGreen[0].x, trailGreen[0].y);
+                for (let i = 1; i < trailGreen.length; i++) {
+                    ctx.lineTo(trailGreen[i].x, trailGreen[i].y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+
+            // ---- 定格小立体球 (观察模式) ----
+            if (isObserveMode) {
+                const smallR = RADIUS * 0.45;
+                // 红定格
+                for (const m of freezeMarksRed) {
+                    drawBallWithColor(ctx, m.x, m.y, smallR, '#FF7A7A', '#E63946', '#C62828', '#7A1A1A');
+                }
+                // 蓝定格
+                for (const m of freezeMarksBlue) {
+                    drawBallWithColor(ctx, m.x, m.y, smallR, '#64B5F6', '#1E88E5', '#0D47A1', '#0D47A1');
+                }
+                // 绿定格
+                for (const m of freezeMarksGreen) {
+                    drawBallWithColor(ctx, m.x, m.y, smallR, '#81C784', '#43A047', '#1B5E20', '#1B5E20');
+                }
+            }
+
+            // ---- 当前运动球 ----
+            if (isObserveMode) {
+                // 红球 (平抛)
+                if (trailRed.length > 0) {
+                    const pos = trailRed[trailRed.length - 1];
+                    drawBallWithColor(ctx, pos.x, pos.y, RADIUS, '#FF7A7A', '#E63946', '#C62828', '#7A1A1A');
+                    ctx.save();
+                    ctx.fillStyle = '#c0392b';
+                    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('红 (平抛)', pos.x + RADIUS + 4, pos.y - 4);
+                    ctx.restore();
+                }
+                // 蓝球 (自由落体)
+                if (trailBlue.length > 0) {
+                    const pos = trailBlue[trailBlue.length - 1];
+                    drawBallWithColor(ctx, pos.x, pos.y, RADIUS, '#64B5F6', '#1E88E5', '#0D47A1', '#0D47A1');
+                    ctx.save();
+                    ctx.fillStyle = '#1565C0';
+                    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('蓝 (自由落体)', pos.x + RADIUS + 4, pos.y - 4);
+                    ctx.restore();
+                }
+                // 绿球 (匀速直线)
+                if (trailGreen.length > 0) {
+                    const pos = trailGreen[trailGreen.length - 1];
+                    drawBallWithColor(ctx, pos.x, pos.y, RADIUS, '#81C784', '#43A047', '#1B5E20', '#1B5E20');
+                    ctx.save();
+                    ctx.fillStyle = '#2E7D32';
+                    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('绿 (匀速)', pos.x + RADIUS + 4, pos.y - 4);
+                    ctx.restore();
+                }
+            } else {
+                // 普通模式仅红球，带速度箭头
+                if (trailRed.length > 0) {
+                    const pos = trailRed[trailRed.length - 1];
+                    drawBallWithColor(ctx, pos.x, pos.y, RADIUS, '#FF7A7A', '#E63946', '#C62828', '#7A1A1A');
+                    // 速度箭头
+                    const cx = pos.x, cy = pos.y;
+                    const vxVal = V0;
+                    const vyVal = G * time;
+                    const vVal = Math.hypot(vxVal, vyVal);
+                    const arrowScale = 0.35;
+                    if (vxVal > 2) {
+                        const lenX = vxVal * arrowScale;
+                        drawArrow(ctx, cx, cy, cx + lenX, cy, '#1976D2', 2.8);
+                        ctx.save();
+                        ctx.fillStyle = '#1976D2';
+                        ctx.font = 'bold 13px "Segoe UI", sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText('vₓ', cx + lenX + 6, cy - 2);
+                        ctx.restore();
+                    }
+                    if (vyVal > 2) {
+                        const lenY = vyVal * arrowScale;
+                        drawArrow(ctx, cx, cy, cx, cy + lenY, '#D32F2F', 2.8);
+                        ctx.save();
+                        ctx.fillStyle = '#D32F2F';
+                        ctx.font = 'bold 13px "Segoe UI", sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'top';
+                        ctx.fillText('vᵧ', cx + 6, cy + lenY + 4);
+                        ctx.restore();
+                    }
+                    if (vVal > 2) {
+                        const lenV = vVal * arrowScale;
+                        const angle = Math.atan2(vyVal, vxVal);
+                        const endX = cx + lenV * Math.cos(angle);
+                        const endY = cy + lenV * Math.sin(angle);
+                        drawArrow(ctx, cx, cy, endX, endY, '#6A1B9A', 3.2);
+                        ctx.save();
+                        ctx.fillStyle = '#6A1B9A';
+                        ctx.font = 'bold 13px "Segoe UI", sans-serif';
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(`v=${vVal.toFixed(0)}`, endX + 6, endY - 4);
+                        ctx.restore();
+                    }
+                }
+            }
+
+            if (finished) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(44,62,40,0.6)';
+                ctx.font = 'bold 20px "Segoe UI", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText('✓ 落地', W / 2, 16);
+                ctx.restore();
+            }
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(44,62,40,0.5)';
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText(`t = ${time.toFixed(2)} s`, W - 16, 10);
+            ctx.fillStyle = 'rgba(44,62,40,0.35)';
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillText(`v₀ = ${V0}  g = ${G}`, W - 16, 30);
+            ctx.restore();
+        }
+
+        // ---- 绘制箭头 (通用) ----
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const len = Math.hypot(dx, dy);
+            if (len < 2) return;
+            const angle = Math.atan2(dy, dx);
+            const headLen = Math.min(10, len * 0.32);
+            const headAngle = 0.45;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = lineWidth || 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headLen * Math.cos(angle - headAngle), toY - headLen * Math.sin(angle - headAngle));
+            ctx.lineTo(toX - headLen * Math.cos(angle + headAngle), toY - headLen * Math.sin(angle + headAngle));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- 绘制速度图 ----
+        function drawSpeedChart() {
+            const W = speedCanvas.width;
+            const H = speedCanvas.height;
+            sctx.clearRect(0, 0, W, H);
+            sctx.fillStyle = '#f7fbf5';
+            sctx.fillRect(0, 0, W, H);
+
+            let pad = { top: 26, right: 20, bottom: 28, left: 42 };
+            if (W < 450) {
+                pad.left = 36;
+                pad.right = 16;
+                pad.top = 22;
+                pad.bottom = 24;
+            }
+
+            const chartW = W - pad.left - pad.right;
+            const chartH = H - pad.top - pad.bottom;
+
+            const tMax = Math.max(2.8, time + 0.4);
+            const vMax = Math.max(V0 * 1.2, G * tMax * 1.15, 80);
+            const vMaxCeil = Math.ceil(vMax / 50) * 50;
+
+            const toPixelX = (t) => pad.left + (t / tMax) * chartW;
+            const toPixelY = (v) => pad.top + chartH - (v / vMaxCeil) * chartH;
+
+            // 网格
+            sctx.save();
+            sctx.strokeStyle = 'rgba(180, 200, 170, 0.25)';
+            sctx.lineWidth = 0.6;
+            const vSteps = 4;
+            for (let i = 0; i <= vSteps; i++) {
+                const v = (i / vSteps) * vMaxCeil;
+                const y = toPixelY(v);
+                sctx.beginPath();
+                sctx.moveTo(pad.left, y);
+                sctx.lineTo(pad.left + chartW, y);
+                sctx.stroke();
+                sctx.fillStyle = 'rgba(60,80,50,0.4)';
+                sctx.font = '9px "Segoe UI", sans-serif';
+                sctx.textAlign = 'right';
+                sctx.textBaseline = 'middle';
+                sctx.fillText(v.toFixed(0), pad.left - 6, y);
+            }
+            const tSteps = 4;
+            for (let i = 0; i <= tSteps; i++) {
+                const t = (i / tSteps) * tMax;
+                const x = toPixelX(t);
+                sctx.beginPath();
+                sctx.moveTo(x, pad.top);
+                sctx.lineTo(x, pad.top + chartH);
+                sctx.stroke();
+                sctx.fillStyle = 'rgba(60,80,50,0.4)';
+                sctx.font = '9px "Segoe UI", sans-serif';
+                sctx.textAlign = 'center';
+                sctx.textBaseline = 'top';
+                sctx.fillText(t.toFixed(1), x, pad.top + chartH + 4);
+            }
+            sctx.restore();
+
+            // 坐标轴
+            sctx.save();
+            sctx.strokeStyle = '#4a6040';
+            sctx.lineWidth = 1.6;
+            sctx.beginPath();
+            sctx.moveTo(pad.left, pad.top);
+            sctx.lineTo(pad.left, pad.top + chartH);
+            sctx.lineTo(pad.left + chartW, pad.top + chartH);
+            sctx.stroke();
+            sctx.fillStyle = '#3a5030';
+            sctx.font = '11px "Segoe UI", sans-serif';
+            sctx.textAlign = 'center';
+            sctx.textBaseline = 'top';
+            sctx.fillText('t / s', pad.left + chartW / 2, pad.top + chartH + 4);
+            sctx.save();
+            sctx.translate(14, pad.top + chartH / 2);
+            sctx.rotate(-Math.PI / 2);
+            sctx.textAlign = 'center';
+            sctx.textBaseline = 'middle';
+            sctx.fillText('v / (px·s⁻¹)', 0, 0);
+            sctx.restore();
+            sctx.restore();
+
+            // vx 水平线
+            const yVx = toPixelY(V0);
+            sctx.save();
+            sctx.strokeStyle = '#1976D2';
+            sctx.lineWidth = 2.8;
+            sctx.shadowColor = 'rgba(25,118,210,0.15)';
+            sctx.shadowBlur = 6;
+            sctx.beginPath();
+            sctx.moveTo(toPixelX(0), yVx);
+            sctx.lineTo(toPixelX(Math.min(time, tMax)), yVx);
+            sctx.stroke();
+            sctx.restore();
+
+            // vy 曲线
+            sctx.save();
+            sctx.strokeStyle = '#D32F2F';
+            sctx.lineWidth = 2.8;
+            sctx.shadowColor = 'rgba(211,47,47,0.15)';
+            sctx.shadowBlur = 6;
+            sctx.beginPath();
+            const tEnd = Math.min(time, tMax);
+            const steps = 80;
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * tEnd;
+                const vy = G * t;
+                const x = toPixelX(t);
+                const y = toPixelY(vy);
+                if (i === 0) sctx.moveTo(x, y);
+                else sctx.lineTo(x, y);
+            }
+            sctx.stroke();
+            sctx.restore();
+
+            // 合速度 (紫色虚线)
+            sctx.save();
+            sctx.strokeStyle = '#6A1B9A';
+            sctx.lineWidth = 2.0;
+            sctx.setLineDash([5, 5]);
+            sctx.shadowColor = 'rgba(106,27,154,0.12)';
+            sctx.shadowBlur = 4;
+            sctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const t = (i / steps) * tEnd;
+                const vx = V0;
+                const vy = G * t;
+                const v = Math.hypot(vx, vy);
+                const x = toPixelX(t);
+                const y = toPixelY(v);
+                if (i === 0) sctx.moveTo(x, y);
+                else sctx.lineTo(x, y);
+            }
+            sctx.stroke();
+            sctx.setLineDash([]);
+            sctx.restore();
+
+            // 当前时刻标记
+            if (time > 0.01 && time <= tMax) {
+                const curX = toPixelX(time);
+                const vyNow = G * time;
+                const vNow = Math.hypot(V0, vyNow);
+
+                sctx.save();
+                sctx.setLineDash([4, 5]);
+                sctx.strokeStyle = 'rgba(60,80,50,0.2)';
+                sctx.lineWidth = 1.2;
+                sctx.beginPath();
+                sctx.moveTo(curX, pad.top);
+                sctx.lineTo(curX, pad.top + chartH);
+                sctx.stroke();
+                sctx.restore();
+
+                const points = [
+                    { y: toPixelY(V0), color: '#1976D2' },
+                    { y: toPixelY(vyNow), color: '#D32F2F' },
+                    { y: toPixelY(vNow), color: '#6A1B9A' }
+                ];
+                for (const p of points) {
+                    sctx.save();
+                    sctx.shadowColor = 'rgba(0,0,0,0.15)';
+                    sctx.shadowBlur = 10;
+                    sctx.beginPath();
+                    sctx.arc(curX, p.y, 5, 0, Math.PI * 2);
+                    sctx.fillStyle = p.color;
+                    sctx.fill();
+                    sctx.restore();
+                }
+                sctx.save();
+                sctx.font = 'bold 10px "Segoe UI", sans-serif';
+                sctx.textAlign = 'left';
+                sctx.textBaseline = 'bottom';
+                sctx.fillStyle = '#6A1B9A';
+                sctx.fillText(`v=${vNow.toFixed(0)}`, curX + 8, toPixelY(vNow) - 4);
+                sctx.restore();
+            }
+
+            // 图例
+            const legX = pad.left + chartW - 120;
+            const legY = pad.top + 6;
+            sctx.save();
+            sctx.fillStyle = 'rgba(247,251,245,0.88)';
+            sctx.shadowColor = 'rgba(0,0,0,0.04)';
+            sctx.shadowBlur = 8;
+            sctx.beginPath();
+            sctx.roundRect(legX, legY, 110, 52, 6);
+            sctx.fill();
+            sctx.shadowBlur = 0;
+            sctx.strokeStyle = 'rgba(160,180,140,0.2)';
+            sctx.lineWidth = 1;
+            sctx.beginPath();
+            sctx.roundRect(legX, legY, 110, 52, 6);
+            sctx.stroke();
+            sctx.font = '10px "Segoe UI", sans-serif';
+            sctx.textAlign = 'left';
+            sctx.textBaseline = 'middle';
+            const items = [
+                { color: '#1976D2', label: 'vₓ', yOff: 14 },
+                { color: '#D32F2F', label: 'vᵧ', yOff: 30 },
+                { color: '#6A1B9A', label: 'v合', yOff: 46 }
+            ];
+            for (const it of items) {
+                sctx.fillStyle = it.color;
+                sctx.fillRect(legX + 8, legY + it.yOff - 2, 16, 3);
+                sctx.fillStyle = '#2d3d25';
+                sctx.fillText(it.label, legX + 30, legY + it.yOff);
+            }
+            sctx.restore();
+        }
+
+        // ---- roundRect polyfill ----
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                if (r > w / 2) r = w / 2;
+                if (r > h / 2) r = h / 2;
+                this.moveTo(x + r, y);
+                this.lineTo(x + w - r, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r);
+                this.lineTo(x + w, y + h - r);
+                this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                this.lineTo(x + r, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r);
+                this.lineTo(x, y + r);
+                this.quadraticCurveTo(x, y, x + r, y);
+                return this;
+            };
+        }
+
+        // ---- 循环 ----
+        function loop(timestamp) {
+            if (!running && !paused) {
+                animId = null;
+                return;
+            }
+            if (!paused && running) {
+                const dt = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0.016;
+                lastTimestamp = timestamp;
+                updatePhysics(dt);
+            }
+            drawMainScene();
+            drawSpeedChart();
+            if (running || paused) {
+                animId = requestAnimationFrame(loop);
+            } else {
+                animId = null;
+            }
+        }
+
+        // ---- 控制函数 ----
+        function startSimulation() {
+            if (finished) {
+                resetSimulation();
+                setTimeout(() => startSimulation(), 50);
+                return;
+            }
+            if (paused) {
+                paused = false;
+                running = true;
+                btnPause.textContent = '⏸ 暂停';
+                btnStart.disabled = true;
+                btnPause.disabled = false;
+                lastTimestamp = performance.now();
+                if (!animId) {
+                    animId = requestAnimationFrame(loop);
+                }
+                return;
+            }
+            if (trailRed.length === 0 || trailRed.length === 1) {
+                trailRed = [{ x: START_X, y: START_Y }];
+                trailBlue = [{ x: START_X, y: START_Y }];
+                trailGreen = [{ x: START_X, y: GROUND_Y }];
+                speedHistory = [{ t: 0, vx: V0, vy: 0 }];
+                freezeMarksRed = [];
+                freezeMarksBlue = [];
+                freezeMarksGreen = [];
+            }
+            running = true;
+            paused = false;
+            finished = false;
+            btnStart.disabled = true;
+            btnPause.disabled = false;
+            btnPause.textContent = '⏸ 暂停';
+            lastTimestamp = performance.now();
+            if (!animId) {
+                animId = requestAnimationFrame(loop);
+            }
+        }
+
+        function pauseSimulation() {
+            if (!running || paused) return;
+            paused = true;
+            running = false;
+            btnPause.textContent = '▶ 继续';
+            btnStart.disabled = false;
+            btnStart.textContent = '▶ 继续';
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+        }
+
+        // ---- 观察模式 ----
+        function startObserveMode() {
+            resetSimulation();
+            isObserveMode = true;
+            trailRed = [{ x: START_X, y: START_Y }];
+            trailBlue = [{ x: START_X, y: START_Y }];
+            trailGreen = [{ x: START_X, y: GROUND_Y }];
+            freezeMarksRed = [];
+            freezeMarksBlue = [];
+            freezeMarksGreen = [];
+            speedHistory = [{ t: 0, vx: V0, vy: 0 }];
+            finished = false;
+            running = false;
+            paused = false;
+            time = 0;
+            updateInfo();
+            // 自动开始
+            btnStart.disabled = true;
+            btnPause.disabled = false;
+            btnPause.textContent = '⏸ 暂停';
+            running = true;
+            paused = false;
+            lastTimestamp = performance.now();
+            if (animId) {
+                cancelAnimationFrame(animId);
+                animId = null;
+            }
+            animId = requestAnimationFrame(loop);
+        }
+
+        // ---- 滑块 ----
+        v0Slider.addEventListener('input', function() {
+            if (running || paused) return;
+            V0 = parseFloat(this.value) || 160;
+            v0Display.textContent = V0;
+            resetSimulation();
+        });
+
+        // ---- 事件绑定 ----
+        btnStart.addEventListener('click', startSimulation);
+        btnPause.addEventListener('click', pauseSimulation);
+        btnReset.addEventListener('click', resetSimulation);
+        btnObserve.addEventListener('click', startObserveMode);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'Space') {
+                e.preventDefault();
+                if (running && !paused) pauseSimulation();
+                else if (!running && !finished) startSimulation();
+                else if (finished) { resetSimulation(); setTimeout(() => startSimulation(), 60); }
+            }
+            if (e.key === 'r' || e.key === 'R') resetSimulation();
+        });
+
+        // ---- 初始化 ----
+        function init() {
+            V0 = parseFloat(v0Slider.value) || 160;
+            v0Display.textContent = V0;
+            trailRed = [{ x: START_X, y: START_Y }];
+            trailBlue = [{ x: START_X, y: START_Y }];
+            trailGreen = [{ x: START_X, y: GROUND_Y }];
+            freezeMarksRed = [];
+            freezeMarksBlue = [];
+            freezeMarksGreen = [];
+            speedHistory = [{ t: 0, vx: V0, vy: 0 }];
+            time = 0;
+            running = false;
+            paused = false;
+            finished = false;
+            isObserveMode = false;
+            updateInfo();
+            drawMainScene();
+            drawSpeedChart();
+            btnStart.disabled = false;
+            btnPause.disabled = true;
+            btnStart.textContent = '▶ 开始';
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+    })();
+</script>
+</body>
+</html>
