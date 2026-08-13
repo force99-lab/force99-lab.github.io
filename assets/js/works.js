@@ -73,7 +73,11 @@ const WORKS = [
     icon:"🌐", cover:"assets/img/standing-wave-cover.png",
     link:"animations/standing-wave.html", date:"2026-08-13", tag:"波动"
   },
-
+ {
+    type:"animation", title:"示波器工作原理",
+    desc:"演示电子束在电场中偏转、逐点扫描合成波形，直观呈现示波器成像原理。",
+    icon:"📺", link:"animations/oscilloscope.html", date:"2026-08-13", tag:"电学"
+  },
   /* ---------------- 解题 ---------------- */
   {
     type:"solve", title:"2026湖北高考物理压轴题",
