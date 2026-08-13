@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>示波器 · 示波合成</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            background: #111827;
+            border-radius: 20px;
+            padding: 24px 28px 28px 28px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(60,140,255,0.15);
+            max-width: 1320px;
+            width: 100%;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 26px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #e63946, #b71c1c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+            margin-left: 170px;
+        }
+        .header .status {
+            color: #8aa4c8;
+            font-size: 14px;
+            background: #1a2538;
+            padding: 4px 16px;
+            border-radius: 30px;
+            border: 1px solid #2a3a55;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header .status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+            display: inline-block;
+            animation: pulse-dot 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.4;transform:scale(0.7);} }
+        .header-logo {
+            position: absolute;
+            left: 6px;
+            top: 0;
+            width: 150px;
+            height: 56px;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+        .header-logo svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #060b18;
+            border-radius: 14px;
+            box-shadow: inset 0 0 60px rgba(0,20,60,0.5), 0 0 0 1px #1e3050;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px 30px;
+            margin-top: 18px;
+            padding: 16px 18px 12px 18px;
+            background: #0f1a2b;
+            border-radius: 14px;
+            border: 1px solid #1f3250;
+            justify-content: center;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .control-group label {
+            color: #b0ccee;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: 50px;
+        }
+        .control-group .value {
+            color: #7fc9ff;
+            font-size: 17px;
+            font-weight: 600;
+            min-width: 45px;
+            text-align: center;
+            background: #0a1422;
+            padding: 0 8px;
+            border-radius: 6px;
+            border: 1px solid #1a2a44;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 150px;
+            height: 4px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #1a3a5a, #3a7abd);
+            outline: none;
+            transition: 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #6fc3ff, #3a7abd);
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(80,180,255,0.4);
+            border: 2px solid #8ac4ff;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.12); box-shadow: 0 0 28px rgba(80,180,255,0.6); }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #6fc3ff, #3a7abd);
+            cursor: pointer;
+            border: 2px solid #8ac4ff;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 4px;
+            background: #0a1422;
+            padding: 4px;
+            border-radius: 30px;
+            border: 1px solid #1a2a44;
+        }
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: #8aa4c8;
+            padding: 5px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+        .mode-btn.active {
+            background: #1a3a5a;
+            color: #d0ecff;
+            box-shadow: 0 0 20px rgba(60,140,255,0.15);
+        }
+        .mode-btn:hover:not(.active) { color: #b0d0f0; background: #152235; }
+        .btn-reset {
+            background: #1a2a44;
+            border: 1px solid #3a5a7a;
+            color: #b0d0f0;
+            padding: 6px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-reset:hover { background: #2a3a5a; border-color: #5a8abd; color: #d0ecff; box-shadow: 0 0 20px rgba(60,140,255,0.15); }
+        .btn-reset:active { transform: scale(0.96); }
+        .btn-stop {
+            background: #1a2a44;
+            border: 1px solid #3a5a7a;
+            color: #b0d0f0;
+            padding: 6px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-stop:hover { background: #2a3a5a; border-color: #5a8abd; color: #d0ecff; box-shadow: 0 0 20px rgba(60,140,255,0.15); }
+        .btn-stop.active { background: #3a2a2a; border-color: #8a5a5a; color: #ffb0b0; }
+        .synthesis-controls {
+            display: none;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            padding: 12px 16px;
+            background: rgba(26,42,68,0.6);
+            border-radius: 12px;
+            border: 1px solid #2a4a6a;
+            margin-top: 8px;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+        .synthesis-controls.show {
+            display: flex;
+        }
+        .synthesis-controls .control-group {
+            gap: 6px;
+        }
+        .synthesis-controls .control-group label {
+            font-size: 13px;
+            min-width: 30px;
+        }
+        .synthesis-controls .control-group .value {
+            font-size: 14px;
+            min-width: 35px;
+        }
+        .synthesis-controls .control-group input[type="range"] {
+            width: 100px;
+        }
+        .mode-selector-small {
+            display: flex;
+            gap: 4px;
+            background: #0a1422;
+            padding: 3px;
+            border-radius: 20px;
+            border: 1px solid #1a2a44;
+        }
+        .mode-selector-small .mode-btn-small {
+            background: transparent;
+            border: none;
+            color: #8aa4c8;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+        .mode-selector-small .mode-btn-small.active {
+            background: #1a3a5a;
+            color: #d0ecff;
+            box-shadow: 0 0 20px rgba(60,140,255,0.15);
+        }
+        .mode-selector-small .mode-btn-small:hover:not(.active) { color: #b0d0f0; background: #152235; }
+        .btn-synthesis {
+            background: #1a4a3a;
+            border: 1px solid #3a8a6a;
+            color: #8adeb0;
+            padding: 6px 22px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-synthesis:hover { background: #2a5a4a; border-color: #5aaa7a; color: #b0f0c8; box-shadow: 0 0 20px rgba(60,200,120,0.15); }
+        .btn-synthesis.active { background: #1a5a3a; border-color: #4aaa6a; color: #a0f0b0; }
+        .legend {
+            display: flex;
+            gap: 18px;
+            color: #8aa4c8;
+            font-size: 13px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-left: 4px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-item .swatch {
+            width: 20px;
+            height: 4px;
+            border-radius: 4px;
+        }
+        .legend-item .swatch.trail { background: #e63946; }
+        .legend-item .swatch.particle { background: #ff6666; width: 10px; height: 10px; border-radius: 50%; }
+        .legend-item .swatch.wave { background: #4ade80; height: 2px; }
+        .legend-item .swatch.spot { background: #00ff00; width: 10px; height: 10px; border-radius: 50%; }
+        .legend-item .swatch.purple { background: #d946ef; height: 4px; width: 20px; }
+        .legend-item .swatch.triangle1 { background: #ff6b81; height: 10px; width: 10px; border-radius: 2px; opacity:0.6; }
+        .legend-item .swatch.triangle2 { background: #7bed9f; height: 10px; width: 10px; border-radius: 2px; opacity:0.3; }
+        @media (max-width: 860px) {
+            .container { padding: 14px; }
+            .controls { gap: 12px; padding: 12px; }
+            .control-group { gap: 6px; width: 100%; justify-content: space-between; }
+            input[type="range"] { flex: 1; min-width: 70px; }
+            .mode-selector { width: 100%; justify-content: center; }
+            .header h1 { font-size: 20px; margin-left: 0; padding-top: 50px; }
+            .header-logo { width: 100px; height: 38px; left: 4px; }
+            .legend { margin-left: 0; justify-content: center; width: 100%; }
+            .synthesis-controls .control-group input[type="range"] { width: 80px; }
+            .synthesis-controls { gap: 8px; }
+            .mode-selector-small { width: 100%; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .header { flex-direction: column; align-items: flex-start; gap: 4px; }
+            .header .status { font-size: 11px; padding: 3px 12px; }
+            .header h1 { font-size: 18px; margin-left: 0; padding-top: 40px; }
+            .header-logo { width: 80px; height: 30px; left: 2px; }
+            .control-group label { font-size: 12px; min-width: 44px; }
+            .control-group .value { font-size: 14px; min-width: 30px; }
+            .synthesis-controls .control-group input[type="range"] { width: 60px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-logo">
+            <svg viewBox="0 0 640 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="pg" x1="0" y1="0" x2="380" y2="240" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0B3D6E"/><stop offset="1" stop-color="#00C08A"/></linearGradient>
+                    <linearGradient id="qg" x1="390" y1="90" x2="390" y2="150" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0B3D6E"/><stop offset="1" stop-color="#00C08A"/></linearGradient>
+                    <linearGradient id="rb" x1="360" y1="90" x2="360" y2="150" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FF2D55"/><stop offset="0.166" stop-color="#FF9500"/><stop offset="0.333" stop-color="#FFCC00"/><stop offset="0.5" stop-color="#34C759"/><stop offset="0.666" stop-color="#0A84FF"/><stop offset="0.833" stop-color="#5E5CE6"/><stop offset="1" stop-color="#BF5AF2"/></linearGradient>
+                </defs>
+                <path d="M210 72 L210 168 L258 168" stroke="#0B3D6E" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="222" cy="120" r="16" fill="#8FBFD6" opacity="0.5"/>
+                <circle cx="222" cy="120" r="9" fill="#FFFFFF"/>
+                <circle cx="222" cy="120" r="9" fill="none" stroke="#0B3D6E" stroke-width="2" opacity="0.4"/>
+                <polygon points="355,70 260,175 300,175" fill="url(#pg)" fill-opacity="0.82" stroke="#0B3D6E" stroke-width="2"/>
+                <polygon points="260,70 355,175 310,175" fill="url(#pg)" fill-opacity="0.82" stroke="#0B3D6E" stroke-width="2"/>
+                <circle cx="307" cy="122" r="6" fill="#00C08A"/>
+                <path d="M390 90 A30 30 0 0 1 390 150" stroke="url(#qg)" stroke-width="8"/>
+                <path d="M390 90 A30 30 0 0 0 390 150" stroke="url(#rb)" stroke-width="8"/>
+                <path d="M415 139 L429 139 L429 156" stroke="url(#qg)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="429" cy="156" r="5" fill="#00C08A"/>
+                <text x="390" y="122" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#0B3D6E" text-anchor="middle" dominant-baseline="central">E=mc²</text>
+            </svg>
+        </div>
+        <h1>⚡ 示波器 · 示波合成</h1>
+        <div class="status">
+            <span class="dot"></span>
+            <span id="statusText">运行中</span>
+        </div>
+    </div>
+
+    <canvas id="oscilloscopeCanvas" width="1200" height="640"></canvas>
+
+    <div class="controls">
+        <div class="control-group">
+            <label for="voltageAccel">加速 U₁</label>
+            <input type="range" id="voltageAccel" min="0" max="200" step="1" value="80" />
+            <span class="value" id="accelValue">80</span>
+        </div>
+
+        <div class="control-group">
+            <label for="voltageDeflect">偏转峰值</label>
+            <input type="range" id="voltageDeflect" min="0" max="200" step="1" value="160" />
+            <span class="value" id="deflectValue">160</span>
+        </div>
+
+        <div class="control-group">
+            <label for="scanPeriodSlider">扫描周期 (s)</label>
+            <input type="range" id="scanPeriodSlider" min="0.6" max="5.0" step="0.1" value="1.0" />
+            <span class="value" id="scanPeriodValue">1.0</span>
+        </div>
+
+        <div class="control-group">
+            <label style="min-width:36px;">模式</label>
+            <div class="mode-selector" id="modeSelector">
+                <button class="mode-btn active" data-mode="dc">直流</button>
+                <button class="mode-btn" data-mode="analysis">分析</button>
+                <button class="mode-btn" data-mode="sawtooth">扫描</button>
+                <button class="mode-btn" data-mode="sine">正弦</button>
+            </div>
+        </div>
+
+        <button class="btn-synthesis" id="synthesisBtn">○ 示波合成</button>
+        <button class="btn-reset" id="resetBtn">⟳ 重置</button>
+        <button class="btn-stop" id="stopBtn">⏸ 暂停</button>
+
+        <div class="legend">
+            <span class="legend-item"><span class="swatch trail"></span> 轨迹</span>
+            <span class="legend-item"><span class="swatch particle"></span> 粒子</span>
+            <span class="legend-item"><span class="swatch wave"></span> 电压波形</span>
+            <span class="legend-item"><span class="swatch spot"></span> 光斑</span>
+            <span class="legend-item"><span class="swatch purple"></span> 合运动</span>
+            <span class="legend-item"><span class="swatch triangle1"></span> 大△</span>
+            <span class="legend-item"><span class="swatch triangle2"></span> 小△</span>
+        </div>
+
+        <div class="synthesis-controls" id="synthesisControls">
+            <div class="control-group">
+                <label>Ax</label>
+                <input type="range" id="synthAx" min="10" max="120" step="1" value="80" />
+                <span class="value" id="synthAxVal">80</span>
+            </div>
+            <div class="control-group">
+                <label>Ay</label>
+                <input type="range" id="synthAy" min="10" max="120" step="1" value="80" />
+                <span class="value" id="synthAyVal">80</span>
+            </div>
+            <div class="control-group">
+                <label>fx</label>
+                <input type="range" id="synthFx" min="0.5" max="4.0" step="0.1" value="1.0" />
+                <span class="value" id="synthFxVal">1.0</span>
+            </div>
+            <div class="control-group">
+                <label>fy</label>
+                <input type="range" id="synthFy" min="0.5" max="4.0" step="0.1" value="1.5" />
+                <span class="value" id="synthFyVal">1.5</span>
+            </div>
+            <div class="control-group">
+                <label>φ</label>
+                <input type="range" id="synthPhi" min="0" max="360" step="1" value="0" />
+                <span class="value" id="synthPhiVal">0</span>
+            </div>
+            <div class="control-group">
+                <label style="min-width:20px;">X模式</label>
+                <div class="mode-selector-small" id="xModeSelector">
+                    <button class="mode-btn-small active" data-xmode="sawtooth">扫描</button>
+                    <button class="mode-btn-small" data-xmode="sin">简谐</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <label style="min-width:20px;">Y模式</label>
+                <div class="mode-selector-small" id="yModeSelector">
+                    <button class="mode-btn-small active" data-ymode="const">定值</button>
+                    <button class="mode-btn-small" data-ymode="linear">匀速</button>
+                    <button class="mode-btn-small" data-ymode="sin">简谐</button>
+                    <button class="mode-btn-small" data-ymode="accel">匀加速</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const canvas = document.getElementById('oscilloscopeCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = 1200, H = 640;
+        canvas.width = W; canvas.height = H;
+
+        // DOM 元素
+        const accelSlider = document.getElementById('voltageAccel');
+        const deflectSlider = document.getElementById('voltageDeflect');
+        const scanPeriodSlider = document.getElementById('scanPeriodSlider');
+        const accelValue = document.getElementById('accelValue');
+        const deflectValue = document.getElementById('deflectValue');
+        const scanPeriodValue = document.getElementById('scanPeriodValue');
+        const resetBtn = document.getElementById('resetBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('statusText');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const synthesisBtn = document.getElementById('synthesisBtn');
+        const synthesisControls = document.getElementById('synthesisControls');
+
+        // 合成参数
+        const synthAx = document.getElementById('synthAx');
+        const synthAy = document.getElementById('synthAy');
+        const synthFx = document.getElementById('synthFx');
+        const synthFy = document.getElementById('synthFy');
+        const synthPhi = document.getElementById('synthPhi');
+        const synthAxVal = document.getElementById('synthAxVal');
+        const synthAyVal = document.getElementById('synthAyVal');
+        const synthFxVal = document.getElementById('synthFxVal');
+        const synthFyVal = document.getElementById('synthFyVal');
+        const synthPhiVal = document.getElementById('synthPhiVal');
+
+        // 模式状态
+        let synthXMode = 'sawtooth';
+        let synthYMode = 'const';
+
+        // 几何常量 (保留)
+        const CENTER_Y = 330;
+        const ACCEL = {
+            xLeft: 130, xRight: 170,
+            yTop: 170, yBottom: 490,
+            plateThick: 6,
+            get xEnter() { return this.xLeft + this.plateThick; },
+            get xExit() { return this.xRight - this.plateThick; },
+        };
+        const DEFLECT = {
+            xLeft: 360, xRight: 530,
+            yTop: 230, yBottom: 430,
+            plateThick: 10,
+            get xEnter() { return this.xLeft; },
+            get xExit() { return this.xRight; },
+            get yTopInner() { return this.yTop + this.plateThick; },
+            get yBottomInner() { return this.yBottom - this.plateThick; },
+            get centerX() { return (this.xLeft + this.xRight) / 2; }
+        };
+        const SCREEN = { x: 790, yTop: 100, yBottom: 560 };
+        const DRIFT1 = { xStart: ACCEL.xExit, xEnd: DEFLECT.xEnter };
+        const DRIFT2 = { xStart: DEFLECT.xExit, xEnd: SCREEN.x };
+        const START_X = ACCEL.xEnter;
+        const START_Y = CENTER_Y;
+
+        // 波形图区域
+        const WAVE = {
+            x: 865, y: 180,
+            width: 280, height: 240,
+            margin: { top: 20, bottom: 20, left: 30, right: 10 }
+        };
+        let voltageHistory = [];
+        const MAX_HISTORY = 300;
+        let waveTime = 0;
+
+        // 物理参数 (主模式)
+        let U1 = parseFloat(accelSlider.value);
+        let U2_peak = parseFloat(deflectSlider.value);
+        let mode = 'dc';
+        const SCALE_ACCEL = 1500.0;
+        const SCALE_DEFLECT = 8000.0;
+        let SCAN_PERIOD = parseFloat(scanPeriodSlider.value);
+        const PARTICLES_PER_CYCLE = 40;
+        let EMIT_INTERVAL = SCAN_PERIOD / PARTICLES_PER_CYCLE;
+
+        // 粒子数组 (扫描/正弦)
+        let particles = [];
+        const MAX_PARTICLES = 120;
+        let emitTimer = 0;
+
+        // 直流/分析 粒子
+        let dcParticle = null;
+        let dcFinished = false;
+        let dcTimer = 0;
+
+        // 光斑
+        let screenSpots = [];
+        const SPOT_LIFETIME = 0.4;
+
+        // 动画控制
+        let isRunning = true;
+        let animationId = null;
+        let lastTimestamp = 0;
+
+        // 板书状态
+        let blackboardText = "如何建立偏转电场中偏移y与屏幕上偏移Y之间函数关系？";
+        let blackboardStartTime = -1;
+        let blackboardChars = 0;
+
+        // 合成模式专用变量
+        let synthTrailX = [];
+        let synthTrailY = [];
+        let synthTrailXY = [];
+        const MAX_SYNTH_TRAIL = 500;
+
+        // 粒子类 (保留)
+        class Particle {
+            constructor() {
+                this.x = START_X;
+                this.y = START_Y;
+                this.vx = 0;
+                this.vy = 0;
+                this.phase = 'accel';
+                this.time = 0;
+                this.enterWaveTime = 0;
+                this.fixedU2 = 0;
+                this.trail = [];
+                this.reachedScreen = false;
+                this.active = true;
+                this.endX = 0;
+                this.endY = 0;
+                this.hitPlate = false;
+                this.exitX = 0;
+                this.exitY = 0;
+                this.exitVx = 0;
+                this.exitVy = 0;
+            }
+
+            update(dt, isDc = false) {
+                if (!this.active || this.reachedScreen || this.hitPlate) return;
+                const dtClamped = Math.min(dt, 0.025);
+                const x = this.x;
+
+                if (this.phase === 'accel') {
+                    const a = (U1 / (ACCEL.xRight - ACCEL.xLeft)) * SCALE_ACCEL;
+                    this.vx += a * dtClamped;
+                    this.x += this.vx * dtClamped;
+                    this.y = CENTER_Y;
+                    this.vy = 0;
+                    if (this.x >= ACCEL.xExit) {
+                        this.x = ACCEL.xExit;
+                        this.phase = 'drift1';
+                    }
+                }
+                else if (this.phase === 'drift1') {
+                    this.x += this.vx * dtClamped;
+                    this.y = CENTER_Y;
+                    this.vy = 0;
+                    if (this.x >= DRIFT1.xEnd) {
+                        this.x = DRIFT1.xEnd;
+                        this.phase = 'deflect';
+                        this.enterWaveTime = waveTime;
+                        if (isDc || mode === 'analysis') {
+                            this.fixedU2 = U2_peak;
+                        } else {
+                            const elapsed = 0;
+                            if (mode === 'sawtooth') {
+                                const t = waveTime % SCAN_PERIOD;
+                                this.fixedU2 = U2_peak * (t / SCAN_PERIOD) * 2 - U2_peak;
+                            } else if (mode === 'sine') {
+                                const omega = 2 * Math.PI / SCAN_PERIOD;
+                                this.fixedU2 = U2_peak * Math.sin(omega * waveTime);
+                            } else {
+                                this.fixedU2 = 0;
+                            }
+                        }
+                    }
+                }
+                else if (this.phase === 'deflect') {
+                    this.x += this.vx * dtClamped;
+                    const U2_inst = this.fixedU2;
+                    const a_y = (U2_inst / (DEFLECT.yBottom - DEFLECT.yTop)) * SCALE_DEFLECT;
+                    this.vy += a_y * dtClamped;
+                    this.y += this.vy * dtClamped;
+
+                    if (this.y <= DEFLECT.yTopInner || this.y >= DEFLECT.yBottomInner) {
+                        this.hitPlate = true;
+                        this.active = false;
+                        this.endX = this.x;
+                        this.endY = this.y;
+                        this.addTrailPoint(this.x, this.y);
+                        return;
+                    }
+
+                    if (this.x >= DEFLECT.xExit) {
+                        this.exitX = this.x;
+                        this.exitY = this.y;
+                        this.exitVx = this.vx;
+                        this.exitVy = this.vy;
+                        this.x = DEFLECT.xExit;
+                        this.phase = 'drift2';
+                    }
+                }
+                else if (this.phase === 'drift2') {
+                    this.x += this.vx * dtClamped;
+                    this.y += this.vy * dtClamped;
+                    if (this.x >= DRIFT2.xEnd) {
+                        this.x = DRIFT2.xEnd;
+                        this.reachedScreen = true;
+                        this.endX = this.x;
+                        this.endY = this.y;
+                        this.active = false;
+                        this.addTrailPoint(this.x, this.y);
+                        return;
+                    }
+                }
+                else if (this.phase === 'done') {
+                    return;
+                }
+
+                this.time += dtClamped;
+                this.addTrailPoint(this.x, this.y);
+            }
+
+            addTrailPoint(x, y) {
+                const trail = this.trail;
+                if (trail.length === 0) {
+                    trail.push({ x, y });
+                    return;
+                }
+                const last = trail[trail.length - 1];
+                if (last === null) {
+                    trail.push({ x, y });
+                    return;
+                }
+                const dx = x - last.x, dy = y - last.y;
+                if (dx*dx + dy*dy < 0.1) return;
+                trail.push({ x, y });
+                if (trail.length > 3000) {
+                    trail.splice(0, trail.length - 3000);
+                }
+            }
+        }
+
+        // ---- 直流/分析 粒子管理 ----
+        function createDcParticle() {
+            dcParticle = new Particle();
+            dcParticle.addTrailPoint(START_X, START_Y);
+            dcFinished = false;
+            dcTimer = 0;
+        }
+
+        function updateDc(dt) {
+            if (dcFinished) {
+                if (mode === 'analysis') {
+                    return;
+                }
+                dcTimer += dt;
+                if (dcTimer > 0.5) {
+                    createDcParticle();
+                }
+                return;
+            }
+            if (!dcParticle) {
+                createDcParticle();
+                return;
+            }
+            dcParticle.update(dt, true);
+            if (!dcParticle.active) {
+                dcFinished = true;
+                dcTimer = 0;
+                if (mode === 'analysis') {
+                    blackboardStartTime = waveTime;
+                    blackboardChars = 0;
+                }
+            }
+        }
+
+        // ---- 扫描粒子管理 ----
+        function emitScanParticle() {
+            if (particles.length >= MAX_PARTICLES) return;
+            const p = new Particle();
+            p.addTrailPoint(START_X, START_Y);
+            particles.push(p);
+        }
+
+        function updateScan(dt) {
+            emitTimer += dt;
+            while (emitTimer >= EMIT_INTERVAL) {
+                emitTimer -= EMIT_INTERVAL;
+                emitScanParticle();
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update(dt, false);
+                if (!p.active) {
+                    if (p.reachedScreen) {
+                        screenSpots.push({
+                            x: p.endX,
+                            y: p.endY,
+                            birth: waveTime,
+                            lifetime: SPOT_LIFETIME
+                        });
+                    }
+                    particles.splice(i, 1);
+                }
+            }
+
+            for (let i = screenSpots.length - 1; i >= 0; i--) {
+                const spot = screenSpots[i];
+                if (waveTime - spot.birth > spot.lifetime) {
+                    screenSpots.splice(i, 1);
+                }
+            }
+        }
+
+        // ---- 重置 ----
+        function resetAll(clearTrail = true) {
+            dcParticle = null;
+            dcFinished = false;
+            dcTimer = 0;
+            particles = [];
+            screenSpots = [];
+            waveTime = 0;
+            emitTimer = 0;
+            voltageHistory = [];
+            blackboardStartTime = -1;
+            blackboardChars = 0;
+            synthTrailX = [];
+            synthTrailY = [];
+            synthTrailXY = [];
+            if (mode === 'dc' || mode === 'analysis') {
+                createDcParticle();
+            } else if (mode === 'synthesis') {
+                // 合成模式不发射粒子
+            } else {
+                for (let i = 0; i < PARTICLES_PER_CYCLE; i++) {
+                    emitScanParticle();
+                }
+            }
+            statusText.textContent = isRunning ? '运行中' : '已暂停';
+        }
+
+        function updateEmitInterval() {
+            EMIT_INTERVAL = SCAN_PERIOD / PARTICLES_PER_CYCLE;
+        }
+
+        // ---- 绘制示波合成 (粉红紫合运动轨迹) ----
+        function drawSynthesis() {
+            const Ax = parseFloat(synthAx.value);
+            const Ay = parseFloat(synthAy.value);
+            const fx = parseFloat(synthFx.value);
+            const fy = parseFloat(synthFy.value);
+            const phiDeg = parseFloat(synthPhi.value);
+            const phiRad = phiDeg * Math.PI / 180;
+
+            // x 值计算
+            let xVal = 0;
+            if (synthXMode === 'sawtooth') {
+                const period = 1.0 / fx;
+                const t = waveTime % period;
+                xVal = Ax * ((t / period) * 2 - 1);
+            } else if (synthXMode === 'sin') {
+                const omegaX = 2 * Math.PI * fx;
+                xVal = Ax * Math.sin(omegaX * waveTime);
+            }
+
+            // y 值计算
+            let yVal = 0;
+            switch (synthYMode) {
+                case 'const':
+                    yVal = Ay * 0.5;
+                    break;
+                case 'linear':
+                    const yPeriod = 1.0 / fy;
+                    const yt = waveTime % yPeriod;
+                    yVal = Ay * ( (yt / yPeriod) * 2 - 1 );
+                    break;
+                case 'sin':
+                    const omegaY = 2 * Math.PI * fy;
+                    yVal = Ay * Math.sin(omegaY * waveTime + phiRad);
+                    break;
+                case 'accel':
+                    const T_accel = 1.0 / fy;
+                    const t_accel = waveTime % T_accel;
+                    const a_accel = 4.0 * Ay / (T_accel * T_accel);
+                    yVal = 0.5 * a_accel * t_accel * t_accel - Ay;
+                    break;
+                default:
+                    yVal = 0;
+            }
+
+            // 更新轨迹
+            synthTrailX.push({ x: waveTime, y: xVal });
+            synthTrailY.push({ x: waveTime, y: yVal });
+            synthTrailXY.push({ x: xVal, y: yVal });
+            if (synthTrailX.length > MAX_SYNTH_TRAIL) synthTrailX.shift();
+            if (synthTrailY.length > MAX_SYNTH_TRAIL) synthTrailY.shift();
+            if (synthTrailXY.length > MAX_SYNTH_TRAIL) synthTrailXY.shift();
+
+            const r = 120;
+            const r3 = 210;
+            const cx1 = 240, cy1 = 175;
+            const cx2 = 240, cy2 = 470;
+            const cx3 = 870, cy3 = 330;
+
+            drawOscilloscopeGrid(cx1, cy1, r, 'X 方向运动');
+            drawOscilloscopeGrid(cx2, cy2, r, 'Y 方向运动');
+            drawOscilloscopeGrid(cx3, cy3, r3, '合运动 (李萨如)');
+
+            drawSynthTrajectory(cx1, cy1, r, synthTrailX, 'x', Ax, fx);
+            drawSynthTrajectory(cx2, cy2, r, synthTrailY, 'y', Ay, fy);
+            // ★ 合运动轨迹改为粉红紫 (#d946ef)
+            drawSynthXYTrajectory(cx3, cy3, r3, synthTrailXY, Ax, Ay, '#d946ef');
+
+            drawGreenDot(ctx, cx1 + xVal, cy1, 9);
+            drawGreenDot(ctx, cx2, cy2 + yVal, 9);
+            drawGreenDot(ctx, cx3 + xVal, cy3 + yVal, 11);
+
+            // 中心十字
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([3,4]);
+            ctx.beginPath();
+            ctx.moveTo(cx1 - r, cy1); ctx.lineTo(cx1 + r, cy1);
+            ctx.moveTo(cx1, cy1 - r); ctx.lineTo(cx1, cy1 + r);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx2 - r, cy2); ctx.lineTo(cx2 + r, cy2);
+            ctx.moveTo(cx2, cy2 - r); ctx.lineTo(cx2, cy2 + r);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx3 - r3, cy3); ctx.lineTo(cx3 + r3, cy3);
+            ctx.moveTo(cx3, cy3 - r3); ctx.lineTo(cx3, cy3 + r3);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+
+            // 标注
+            ctx.save();
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(160,200,220,0.6)';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            const xModeLabel = synthXMode === 'sawtooth' ? '扫描' : '简谐';
+            const yModeLabel = { const:'定值', linear:'匀速', sin:'简谐', accel:'匀加速' }[synthYMode] || '定值';
+            ctx.fillText(`Ax=${Ax}  fx=${fx.toFixed(1)}Hz 模式:${xModeLabel}`, cx1 - r + 10, cy1 + r + 8);
+            ctx.fillText(`Ay=${Ay}  fy=${fy.toFixed(1)}Hz 模式:${yModeLabel}`, cx2 - r + 10, cy2 + r + 8);
+            ctx.fillText(`φ=${phiDeg}°`, cx3 - r3 + 10, cy3 + r3 + 8);
+            ctx.restore();
+
+            ctx.save();
+            ctx.font = '12px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(100,200,180,0.4)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText('x', cx1 + r + 14, cy1 - 6);
+            ctx.fillText('y', cx2 + 6, cy2 - r - 14);
+            ctx.fillText('x', cx3 + r3 + 14, cy3 - 6);
+            ctx.fillText('y', cx3 + 6, cy3 - r3 - 14);
+            ctx.restore();
+
+            if (synthTrailXY.length > 5) {
+                ctx.save();
+                ctx.shadowColor = 'rgba(217,70,239,0.15)';
+                ctx.shadowBlur = 20;
+                ctx.strokeStyle = 'rgba(217,70,239,0.2)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3,5]);
+                const last = synthTrailXY[synthTrailXY.length - 1];
+                ctx.beginPath();
+                ctx.moveTo(cx3, cy3);
+                ctx.lineTo(cx3 + last.x, cy3 + last.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+        }
+
+        function drawOscilloscopeGrid(cx, cy, r, label) {
+            ctx.save();
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+            grad.addColorStop(0, 'rgba(10,25,40,0.85)');
+            grad.addColorStop(1, 'rgba(5,15,25,0.95)');
+            ctx.fillStyle = grad;
+            ctx.shadowColor = 'rgba(60,180,120,0.05)';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = 'rgba(60,180,120,0.25)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            const rings = [0.25, 0.5, 0.75];
+            ctx.strokeStyle = 'rgba(60,180,120,0.08)';
+            ctx.lineWidth = 0.5;
+            for (let ri of rings) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r * ri, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < 12; i++) {
+                const angle = (i / 12) * 2 * Math.PI;
+                ctx.strokeStyle = 'rgba(60,180,120,0.06)';
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx - r * 0.85, cy);
+            ctx.lineTo(cx + r * 0.85, cy);
+            ctx.moveTo(cx, cy - r * 0.85);
+            ctx.lineTo(cx, cy + r * 0.85);
+            ctx.stroke();
+
+            const as = 6;
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath();
+            ctx.moveTo(cx + r * 0.85, cy);
+            ctx.lineTo(cx + r * 0.85 - as, cy - as * 0.5);
+            ctx.lineTo(cx + r * 0.85 - as, cy + as * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - r * 0.85);
+            ctx.lineTo(cx - as * 0.5, cy - r * 0.85 + as);
+            ctx.lineTo(cx + as * 0.5, cy - r * 0.85 + as);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.font = '14px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.fillStyle = 'rgba(160,200,220,0.4)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, cx, cy - r - 10);
+
+            ctx.restore();
+        }
+
+        function drawSynthTrajectory(cx, cy, r, trail, axis, amp, freq) {
+            if (trail.length < 2) return;
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,255,100,0.08)';
+            ctx.shadowBlur = 10;
+            ctx.strokeStyle = 'rgba(0,255,100,0.35)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            let first = true;
+            for (let i = 0; i < trail.length; i++) {
+                const p = trail[i];
+                let px, py;
+                if (axis === 'x') {
+                    px = cx + p.y;
+                    py = cy;
+                } else {
+                    px = cx;
+                    py = cy + p.y;
+                }
+                if (first) { ctx.moveTo(px, py); first = false; }
+                else { ctx.lineTo(px, py); }
+            }
+            ctx.stroke();
+
+            if (trail.length > 0) {
+                const last = trail[trail.length - 1];
+                let lx, ly;
+                if (axis === 'x') {
+                    lx = cx + last.y;
+                    ly = cy;
+                } else {
+                    lx = cx;
+                    ly = cy + last.y;
+                }
+                ctx.strokeStyle = 'rgba(0,255,100,0.1)';
+                ctx.lineWidth = 0.8;
+                ctx.setLineDash([3,4]);
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(lx, ly);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            ctx.restore();
+        }
+
+        // ★ 合运动轨迹绘制（粉红紫）
+        function drawSynthXYTrajectory(cx, cy, r, trail, Ax, Ay, color = '#d946ef') {
+            if (trail.length < 2) return;
+            ctx.save();
+            ctx.shadowColor = 'rgba(217,70,239,0.25)';
+            ctx.shadowBlur = 20;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            let first = true;
+            const maxTrail = Math.min(trail.length, 300);
+            const start = trail.length - maxTrail;
+            for (let i = start; i < trail.length; i++) {
+                const p = trail[i];
+                const px = cx + p.x;
+                const py = cy + p.y;
+                if (first) { ctx.moveTo(px, py); first = false; }
+                else { ctx.lineTo(px, py); }
+            }
+            ctx.stroke();
+
+            if (trail.length > 30) {
+                ctx.shadowBlur = 8;
+                ctx.strokeStyle = 'rgba(230,150,255,0.25)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                first = true;
+                const len = Math.min(trail.length, 30);
+                const start2 = trail.length - len;
+                for (let i = start2; i < trail.length; i++) {
+                    const p = trail[i];
+                    const px = cx + p.x;
+                    const py = cy + p.y;
+                    if (first) { ctx.moveTo(px, py); first = false; }
+                    else { ctx.lineTo(px, py); }
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawGreenDot(ctx, x, y, radius) {
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5);
+            grad.addColorStop(0, 'rgba(100,255,150,1)');
+            grad.addColorStop(0.2, 'rgba(60,255,120,0.8)');
+            grad.addColorStop(0.5, 'rgba(0,255,80,0.3)');
+            grad.addColorStop(1, 'rgba(0,255,80,0)');
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,255,100,0.6)';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 2.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = 'rgba(120,255,180,0.9)';
+            ctx.beginPath();
+            ctx.arc(x, y, radius * 0.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.beginPath();
+            ctx.arc(x - radius * 0.15, y - radius * 0.2, radius * 0.2, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- 原有绘制函数 (保留，用于非合成模式) ----
+        function drawBackground() {
+            const grad = ctx.createRadialGradient(600, 320, 100, 600, 320, 700);
+            grad.addColorStop(0, '#0a1a3a');
+            grad.addColorStop(1, '#040a18');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.strokeStyle = 'rgba(60,130,220,0.10)';
+            ctx.lineWidth = 0.8;
+            for (let x=0; x<=W; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+            for (let y=0; y<=H; y+=40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+            ctx.strokeStyle = 'rgba(80,170,255,0.06)';
+            ctx.lineWidth = 0.5;
+            for (let x=0; x<=W; x+=160) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+            for (let y=0; y<=H; y+=160) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+            ctx.strokeStyle = 'rgba(100,200,255,0.05)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([6,8]);
+            ctx.beginPath(); ctx.moveTo(20, CENTER_Y); ctx.lineTo(W-20, CENTER_Y); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawReferenceLine() {
+            ctx.shadowColor = 'rgba(255,255,255,0.2)';
+            ctx.shadowBlur = 6;
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(START_X, START_Y);
+            ctx.lineTo(SCREEN.x, CENTER_Y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawAccelerator() {
+            const { xLeft, xRight, yTop, yBottom, plateThick } = ACCEL;
+            ctx.fillStyle = '#c0845a';
+            ctx.shadowColor = 'rgba(255,180,80,0.2)'; ctx.shadowBlur = 12;
+            ctx.fillRect(xLeft, yTop, plateThick, yBottom-yTop);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#d4a060'; ctx.lineWidth = 1.2;
+            ctx.strokeRect(xLeft, yTop, plateThick, yBottom-yTop);
+            const holeY1 = CENTER_Y - 20;
+            const holeY2 = CENTER_Y + 20;
+            ctx.fillStyle = '#6a8ab0';
+            ctx.shadowColor = 'rgba(80,180,255,0.15)'; ctx.shadowBlur = 10;
+            ctx.fillRect(xRight - plateThick, yTop, plateThick, holeY1 - yTop);
+            ctx.fillRect(xRight - plateThick, holeY2, plateThick, yBottom - holeY2);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#7aa8d0';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(xRight - plateThick, yTop, plateThick, holeY1 - yTop);
+            ctx.strokeRect(xRight - plateThick, holeY2, plateThick, yBottom - holeY2);
+            ctx.strokeStyle = 'rgba(120,200,255,0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3,4]);
+            ctx.strokeRect(xRight - plateThick, holeY1, plateThick, holeY2 - holeY1);
+            ctx.setLineDash([]);
+            ctx.font = 'bold 22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(255,200,50,0.3)';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#60a5fa';
+            ctx.fillText('−', xLeft + plateThick/2, yTop - 28);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText('+', xRight - plateThick/2, yTop - 28);
+            ctx.shadowBlur = 0;
+            ctx.font = '18px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.fillStyle = 'rgba(180,220,255,0.6)';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('加速电场', (xLeft + xRight) / 2, yTop - 8);
+            ctx.font = '16px sans-serif';
+            ctx.fillStyle = 'rgba(180,200,230,0.5)';
+            ctx.textBaseline = 'top';
+            ctx.fillText(`U₁ = ${U1} V`, (xLeft + xRight) / 2, yBottom + 8);
+        }
+
+        function drawDeflector() {
+            const { xLeft, xRight, yTop, yBottom, plateThick } = DEFLECT;
+            ctx.fillStyle = '#c0845a';
+            ctx.shadowColor = 'rgba(255,180,80,0.2)'; ctx.shadowBlur = 12;
+            ctx.fillRect(xLeft, yTop, xRight - xLeft, plateThick);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#d4a060';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(xLeft, yTop, xRight - xLeft, plateThick);
+            ctx.fillStyle = '#6a8ab0';
+            ctx.shadowColor = 'rgba(80,180,255,0.15)';
+            ctx.shadowBlur = 10;
+            ctx.fillRect(xLeft, yBottom - plateThick, xRight - xLeft, plateThick);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#7aa8d0';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(xLeft, yBottom - plateThick, xRight - xLeft, plateThick);
+            ctx.font = 'bold 22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(255,200,50,0.3)';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = '#60a5fa';
+            ctx.fillText('−', (xLeft + xRight) / 2, yTop - 28);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText('+', (xLeft + xRight) / 2, yBottom + 28);
+            ctx.shadowBlur = 0;
+            ctx.font = '18px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.fillStyle = 'rgba(180,220,255,0.6)';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('偏转电场', (xLeft + xRight) / 2, yTop - 6);
+            ctx.font = '16px sans-serif';
+            ctx.fillStyle = 'rgba(180,200,230,0.5)';
+            ctx.textBaseline = 'top';
+            const modeLabel = { dc: '直流', analysis: '分析', sawtooth: '扫描', sine: '正弦', synthesis: '合成' }[mode] || '直流';
+            ctx.fillText(`U₂峰值 = ${U2_peak} V (${modeLabel})`, (xLeft + xRight) / 2, yBottom + 8);
+        }
+
+        function drawScreen() {
+            const x = SCREEN.x, yTop = SCREEN.yTop, yBottom = SCREEN.yBottom;
+            const grad = ctx.createLinearGradient(x, 0, x + 14, 0);
+            grad.addColorStop(0, 'rgba(30,50,30,0.95)');
+            grad.addColorStop(0.5, 'rgba(50,80,50,0.9)');
+            grad.addColorStop(1, 'rgba(20,40,20,0.7)');
+            ctx.fillStyle = grad;
+            ctx.shadowColor = 'rgba(80,255,120,0.06)';
+            ctx.shadowBlur = 20;
+            ctx.fillRect(x, yTop, 14, yBottom - yTop);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(100,200,140,0.2)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, yTop, 14, yBottom - yTop);
+            ctx.font = '16px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.fillStyle = 'rgba(160,220,180,0.5)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('荧光屏', x + 7, yTop - 6);
+        }
+
+        function drawElectricFields() {
+            const { xLeft, xRight, yTop, yBottom, plateThick } = ACCEL;
+            const numLines = 7;
+            const spacing = (yBottom - yTop - 20) / (numLines + 1);
+            for (let i = 0; i < numLines; i++) {
+                const y = yTop + 10 + spacing * (i + 0.5);
+                const xStart = xLeft + plateThick + 6;
+                const xEnd = xRight - plateThick - 6;
+                ctx.strokeStyle = 'rgba(0,255,100,0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(xStart, y);
+                ctx.lineTo(xEnd, y);
+                ctx.stroke();
+                const midX = (xStart + xEnd) / 2;
+                const arrowSize = 8;
+                ctx.fillStyle = 'rgba(0,255,100,0.5)';
+                ctx.beginPath();
+                ctx.moveTo(midX - arrowSize, y);
+                ctx.lineTo(midX + arrowSize * 0.4, y - arrowSize * 0.6);
+                ctx.lineTo(midX + arrowSize * 0.4, y + arrowSize * 0.6);
+                ctx.closePath();
+                ctx.fill();
+            }
+            const { xLeft: dxL, xRight: dxR, yTop: dyT, yBottom: dyB, plateThick: dpT } = DEFLECT;
+            const numLinesV = 7;
+            const spacingV = (dxR - dxL - 20) / (numLinesV + 1);
+            for (let i = 0; i < numLinesV; i++) {
+                const x = dxL + 10 + spacingV * (i + 0.5);
+                const yStart = dyT + dpT + 6;
+                const yEnd = dyB - dpT - 6;
+                ctx.strokeStyle = 'rgba(0,255,100,0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(x, yStart);
+                ctx.lineTo(x, yEnd);
+                ctx.stroke();
+                const midY = (yStart + yEnd) / 2;
+                const arrowSize = 8;
+                ctx.fillStyle = 'rgba(0,255,100,0.5)';
+                ctx.beginPath();
+                ctx.moveTo(x, midY - arrowSize);
+                ctx.lineTo(x - arrowSize * 0.6, midY + arrowSize * 0.4);
+                ctx.lineTo(x + arrowSize * 0.6, midY + arrowSize * 0.4);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawTrajectory(particle, color = '#cc2222', lineWidth = 1.8) {
+            const trail = particle.trail;
+            if (trail.length < 2) return;
+            ctx.shadowColor = 'rgba(200,30,30,0.10)';
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(trail[0].x, trail[0].y);
+            for (let i = 1; i < trail.length; i++) {
+                ctx.lineTo(trail[i].x, trail[i].y);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawParticleDot(particle, radius = 12) {
+            if (!particle.active) return;
+            const x = particle.x, y = particle.y;
+            const grad = ctx.createRadialGradient(x, y, 2, x, y, radius);
+            grad.addColorStop(0, 'rgba(255,200,200,0.95)');
+            grad.addColorStop(0.15, 'rgba(230,80,80,0.7)');
+            grad.addColorStop(0.5, 'rgba(180,30,30,0.25)');
+            grad.addColorStop(1, 'rgba(180,30,30,0)');
+            ctx.fillStyle = grad;
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowColor = 'rgba(200,30,30,0.8)';
+            ctx.shadowBlur = 16;
+            ctx.fillStyle = '#ff6666';
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.beginPath();
+            ctx.arc(x - 1, y - 1.5, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawVelocityVectors(particle, posX, posY, vx, vy) {
+            if (!particle) return;
+            const x = (posX !== undefined) ? posX : particle.x;
+            const y = (posY !== undefined) ? posY : particle.y;
+            const vx_ = (vx !== undefined) ? vx : particle.vx;
+            const vy_ = (vy !== undefined) ? vy : particle.vy;
+            const v = Math.sqrt(vx_*vx_ + vy_*vy_);
+            if (v < 0.01) return;
+            const scale = 0.16;
+            const lenVx = vx_ * scale;
+            const lenVy = vy_ * scale;
+            const lenV = v * scale;
+            drawArrow(ctx, x, y, x + lenVx, y, '#3b82f6', 2.5);
+            drawArrow(ctx, x, y, x, y + lenVy, '#22c55e', 2.5);
+            drawArrow(ctx, x, y, x + lenVx, y + lenVy, '#ef4444', 3);
+        }
+
+        function drawArrow(ctx, fromX, fromY, toX, toY, color, lineWidth) {
+            const headLen = 12;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 1) return;
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = lineWidth || 2;
+            ctx.shadowColor = 'rgba(255,255,255,0.1)';
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            ctx.lineTo(toX, toY);
+            ctx.stroke();
+            const headX = toX - headLen * 0.3 * Math.cos(angle);
+            const headY = toY - headLen * 0.3 * Math.sin(angle);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(headX - headLen * 0.5 * Math.sin(angle), headY + headLen * 0.5 * Math.cos(angle));
+            ctx.lineTo(headX + headLen * 0.5 * Math.sin(angle), headY - headLen * 0.5 * Math.cos(angle));
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- ★ 修改此处：小三角形用绿色阴影线填充 ----
+        function drawAuxiliaryLines(particle) {
+            if (!particle || !particle.reachedScreen) return;
+            const ex = particle.exitX, ey = particle.exitY;
+            const vx = particle.exitVx, vy = particle.exitVy;
+            if (vx === 0 && vy === 0) return;
+            const sx = particle.endX, sy = particle.endY;
+            const ax = START_X, ay = START_Y;
+            const bx = SCREEN.x, by = CENTER_Y;
+            const dx_axis = bx - ax, dy_axis = by - ay;
+            const A1 = sx, B1 = sy;
+            const A2 = ex, B2 = ey;
+            const C1 = ax, D1 = ay;
+            const C2 = bx, D2 = by;
+            const dx1 = A2 - A1, dy1 = B2 - B1;
+            const dx2 = C2 - C1, dy2 = D2 - D1;
+            const det = dx1 * dy2 - dx2 * dy1;
+            if (Math.abs(det) < 1e-10) return;
+            const t = ( (C1 - A1) * dy2 - dx2 * (D1 - B1) ) / det;
+            const u = ( (C1 - A1) * dy1 - dx1 * (D1 - B1) ) / det;
+            const ix = A1 + t * dx1;
+            const iy = B1 + t * dy1;
+            const px = ex, py = ey;
+            const len_axis = Math.sqrt(dx_axis*dx_axis + dy_axis*dy_axis);
+            if (len_axis < 1) return;
+            const ux = dx_axis / len_axis, uy = dy_axis / len_axis;
+            const proj = (px - ax) * ux + (py - ay) * uy;
+            const footX = ax + proj * ux;
+            const footY = ay + proj * uy;
+
+            const alphaBig = 0.3 + 0.3 * Math.sin(waveTime * 1.5);
+            const screenCenterX = SCREEN.x, screenCenterY = CENTER_Y;
+
+            // 大三角形：水红色半透明填充（不变）
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(ix, iy);
+            ctx.lineTo(sx, sy);
+            ctx.lineTo(screenCenterX, screenCenterY);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(255, 107, 129, ${alphaBig})`;
+            ctx.fill();
+            ctx.restore();
+
+            // ★ 小三角形：绿色斜线阴影填充（替换原有半透明填充）
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(footX, footY);
+            ctx.lineTo(ix, iy);
+            ctx.closePath();
+
+            // 创建绿色斜线图案 (45° 阴影线)
+            const patternCanvas = document.createElement('canvas');
+            patternCanvas.width = 16;
+            patternCanvas.height = 16;
+            const pCtx = patternCanvas.getContext('2d');
+            pCtx.strokeStyle = '#7bed9f';
+            pCtx.lineWidth = 1.5;
+            pCtx.beginPath();
+            pCtx.moveTo(0, 0);
+            pCtx.lineTo(16, 16);
+            pCtx.moveTo(0, 8);
+            pCtx.lineTo(8, 16);
+            pCtx.moveTo(8, 0);
+            pCtx.lineTo(16, 8);
+            pCtx.stroke();
+            const pattern = ctx.createPattern(patternCanvas, 'repeat');
+            ctx.fillStyle = pattern;
+            ctx.fill();
+
+            // 可选边框
+            ctx.strokeStyle = 'rgba(123, 237, 159, 0.6)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+
+            // ---- 绘制辅助线（虚线） ----
+            ctx.save();
+            ctx.setLineDash([6, 6]);
+            ctx.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(ix, iy);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(footX, footY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(footX, footY, 3, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(ix, iy, 3, 0, 2*Math.PI);
+            ctx.fill();
+
+            drawVelocityVectors(particle, sx, sy, vx, vy);
+            ctx.restore();
+        }
+
+        function drawBlackboard() {
+            if (mode !== 'analysis') return;
+            if (blackboardStartTime < 0) return;
+            const elapsed = waveTime - blackboardStartTime;
+            if (elapsed < 0.1) return;
+            const totalChars = blackboardText.length;
+            const charInterval = 0.08;
+            const maxChars = Math.min(totalChars, Math.floor(elapsed / charInterval) + 1);
+            if (maxChars > blackboardChars) blackboardChars = maxChars;
+            const displayText = blackboardText.substring(0, blackboardChars);
+            if (displayText.length === 0) return;
+            const x = 30, y = 60;
+            ctx.save();
+            ctx.shadowColor = 'rgba(255,255,255,0.2)';
+            ctx.shadowBlur = 8;
+            ctx.font = 'bold 22px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            const metrics = ctx.measureText(displayText);
+            const textWidth = metrics.width;
+            const padding = 10;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 0;
+            ctx.fillRect(x - padding, y - padding, textWidth + 2*padding, 40);
+            ctx.shadowBlur = 8;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(displayText, x, y);
+            if (blackboardChars < totalChars) {
+                const cursorX = x + ctx.measureText(displayText).width;
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 0;
+                ctx.fillRect(cursorX, y, 2, 28);
+            }
+            ctx.restore();
+        }
+
+        function drawDc() {
+            if (!dcParticle) return;
+            drawTrajectory(dcParticle);
+            drawParticleDot(dcParticle);
+        }
+
+        function drawAnalysis() {
+            if (!dcParticle) return;
+            drawTrajectory(dcParticle);
+            if (dcParticle.active && !dcParticle.reachedScreen) {
+                drawParticleDot(dcParticle);
+                drawVelocityVectors(dcParticle);
+            } else if (dcParticle.reachedScreen) {
+                const x = dcParticle.endX, y = dcParticle.endY;
+                const grad = ctx.createRadialGradient(x, y, 2, x, y, 15);
+                grad.addColorStop(0, 'rgba(0, 255, 0, 0.9)');
+                grad.addColorStop(0.5, 'rgba(0, 200, 0, 0.4)');
+                grad.addColorStop(1, 'rgba(0, 150, 0, 0)');
+                ctx.fillStyle = grad;
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(x, y, 15, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.shadowColor = 'rgba(0, 255, 0, 0.5)';
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                drawAuxiliaryLines(dcParticle);
+                drawBlackboard();
+            } else if (dcParticle.hitPlate) {
+                drawParticleDot(dcParticle);
+            }
+        }
+
+        function drawScan() {
+            for (let p of particles) {
+                if (p.trail.length >= 2) drawTrajectory(p, '#cc2222', 1.2);
+                if (p.active) drawParticleDot(p, 10);
+            }
+            for (let spot of screenSpots) {
+                const x = spot.x, y = spot.y;
+                const age = waveTime - spot.birth;
+                const life = spot.lifetime;
+                const alpha = Math.max(0, 1 - age / life);
+                const radius = 6 + 4 * (1 - alpha);
+                const grad = ctx.createRadialGradient(x, y, 2, x, y, radius + 8);
+                grad.addColorStop(0, `rgba(0, 255, 0, ${0.9 * alpha})`);
+                grad.addColorStop(0.5, `rgba(0, 200, 0, ${0.5 * alpha})`);
+                grad.addColorStop(1, `rgba(0, 150, 0, 0)`);
+                ctx.fillStyle = grad;
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(x, y, radius + 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowColor = `rgba(0, 255, 0, ${0.6 * alpha})`;
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = `rgba(0, 255, 0, ${0.9 * alpha})`;
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(2, radius * 0.6), 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function drawVoltageWaveform() {
+            const area = WAVE;
+            const x0 = area.x, y0 = area.y, w = area.width, h = area.height;
+            ctx.fillStyle = 'rgba(10,20,40,0.7)';
+            ctx.shadowBlur = 0;
+            ctx.fillRect(x0, y0, w, h);
+            ctx.strokeStyle = 'rgba(100,200,150,0.2)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x0, y0, w, h);
+            const pad = area.margin;
+            const plotX = x0 + pad.left;
+            const plotY = y0 + pad.top;
+            const plotW = w - pad.left - pad.right;
+            const plotH = h - pad.top - pad.bottom;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(plotX, plotY + plotH / 2);
+            ctx.lineTo(plotX + plotW, plotY + plotH / 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(plotX, plotY);
+            ctx.lineTo(plotX, plotY + plotH);
+            ctx.stroke();
+
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            const peak = U2_peak || 1;
+            const labelY = Math.round(peak / 2);
+            ctx.fillText(`${labelY}V`, plotX - 4, plotY + plotH / 2 - (labelY / peak) * (plotH / 2));
+            ctx.fillText(`0`, plotX - 4, plotY + plotH / 2);
+            ctx.fillText(`-${labelY}V`, plotX - 4, plotY + plotH / 2 + (labelY / peak) * (plotH / 2));
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('U₂ (V)', plotX + plotW / 2, plotY + plotH + 4);
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('t', plotX + plotW, plotY + plotH / 2 - 6);
+            if (voltageHistory.length < 2) return;
+            const data = voltageHistory;
+            const totalTime = data[data.length - 1].time - data[0].time;
+            if (totalTime < 0.01) return;
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = '#4ade80';
+            ctx.shadowColor = 'rgba(80,255,120,0.2)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            let first = true;
+            for (let i = 0; i < data.length; i++) {
+                const t = data[i].time;
+                const v = data[i].voltage;
+                const px = plotX + (t - data[0].time) / totalTime * plotW;
+                const py = plotY + plotH / 2 - (v / (peak || 1)) * (plotH / 2 * 0.9);
+                if (first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            if (data.length > 0) {
+                const last = data[data.length - 1];
+                const v = last.voltage;
+                const px = plotX + plotW;
+                const py = plotY + plotH / 2 - (v / (peak || 1)) * (plotH / 2 * 0.9);
+                ctx.fillStyle = '#4ade80';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(`${v.toFixed(1)}V`, px + 4, py);
+            }
+        }
+
+        // 水印 (保持原有)
+        function drawWatermark() {
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(200,200,200,0.15)';
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('force99', 12, H - 10);
+        }
+
+        function drawLabels() {
+            if (mode === 'synthesis') return;
+            ctx.font = '18px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = 'rgba(180,200,230,0.35)';
+            ctx.fillText('加速区', (ACCEL.xLeft + ACCEL.xRight) / 2, ACCEL.yTop - 44);
+            ctx.fillText('偏转区', (DEFLECT.xLeft + DEFLECT.xRight) / 2, DEFLECT.yTop - 44);
+            ctx.font = '15px "Segoe UI", "PingFang SC", sans-serif';
+            ctx.fillStyle = 'rgba(140,180,210,0.2)';
+            ctx.fillText('漂移', (DRIFT1.xStart + DRIFT1.xEnd) / 2, CENTER_Y + 66);
+            ctx.fillText('漂移', (DRIFT2.xStart + DRIFT2.xEnd) / 2, CENTER_Y + 66);
+            ctx.font = '15px "Segoe UI", sans-serif';
+            ctx.fillStyle = 'rgba(100,150,200,0.2)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            const particleCount = particles.length;
+            ctx.fillText(`扫描粒子: ${particleCount}  | 光斑: ${screenSpots.length}  | 模式: ${ { dc: '直流', analysis: '分析', sawtooth: '扫描', sine: '正弦', synthesis: '合成' }[mode] } | 周期: ${SCAN_PERIOD.toFixed(1)}s`, W - 16, H - 10);
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillStyle = 'rgba(160,200,180,0.4)';
+            ctx.font = '15px "Segoe UI", sans-serif';
+            ctx.fillText('偏转电压波形', WAVE.x + 6, WAVE.y - 4);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            drawBackground();
+
+            if (mode === 'synthesis') {
+                drawSynthesis();
+                drawWatermark();
+                return;
+            }
+
+            drawReferenceLine();
+            drawAccelerator();
+            drawDeflector();
+            drawScreen();
+            drawElectricFields();
+
+            if (mode === 'dc') {
+                drawDc();
+            } else if (mode === 'analysis') {
+                drawAnalysis();
+            } else {
+                drawScan();
+            }
+
+            drawVoltageWaveform();
+            drawWatermark();
+            drawLabels();
+        }
+
+        // ---- 物理更新 ----
+        function updatePhysics(dt) {
+            if (mode === 'synthesis') {
+                waveTime += dt;
+                if (voltageHistory.length < MAX_HISTORY) {
+                    voltageHistory.push({ time: waveTime, voltage: U2_peak * Math.sin(waveTime) });
+                } else {
+                    voltageHistory.shift();
+                    voltageHistory.push({ time: waveTime, voltage: U2_peak * Math.sin(waveTime) });
+                }
+                return;
+            }
+
+            const subSteps = 8;
+            const dtSub = dt / subSteps;
+            for (let s = 0; s < subSteps; s++) {
+                waveTime += dtSub;
+                if (s === 0) {
+                    let U_inst;
+                    if (mode === 'dc' || mode === 'analysis') {
+                        U_inst = U2_peak;
+                    } else if (mode === 'sawtooth') {
+                        const t = waveTime % SCAN_PERIOD;
+                        U_inst = U2_peak * (t / SCAN_PERIOD) * 2 - U2_peak;
+                    } else if (mode === 'sine') {
+                        const omega = 2 * Math.PI / SCAN_PERIOD;
+                        U_inst = U2_peak * Math.sin(omega * waveTime);
+                    } else {
+                        U_inst = 0;
+                    }
+                    voltageHistory.push({ time: waveTime, voltage: U_inst });
+                    if (voltageHistory.length > MAX_HISTORY) voltageHistory.shift();
+                }
+                if (mode === 'dc' || mode === 'analysis') {
+                    updateDc(dtSub);
+                } else {
+                    updateScan(dtSub);
+                }
+            }
+        }
+
+        // ---- 动画循环 ----
+        function animate(timestamp) {
+            if (!isRunning) {
+                animationId = requestAnimationFrame(animate);
+                return;
+            }
+            if (lastTimestamp === 0) lastTimestamp = timestamp;
+            let dt = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+            if (dt > 0.05) dt = 0.05;
+            if (dt < 0.001) dt = 0.001;
+            updatePhysics(dt);
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // ---- 事件绑定 ----
+        // 主模式控制
+        accelSlider.addEventListener('input', function() {
+            U1 = parseFloat(this.value);
+            accelValue.textContent = U1.toFixed(0);
+            if (mode !== 'synthesis') resetAll(true);
+        });
+
+        deflectSlider.addEventListener('input', function() {
+            U2_peak = parseFloat(this.value);
+            deflectValue.textContent = U2_peak.toFixed(0);
+            if (mode !== 'synthesis') resetAll(true);
+        });
+
+        scanPeriodSlider.addEventListener('input', function() {
+            SCAN_PERIOD = parseFloat(this.value);
+            scanPeriodValue.textContent = SCAN_PERIOD.toFixed(1);
+            updateEmitInterval();
+            if (mode !== 'synthesis' && mode !== 'dc' && mode !== 'analysis') resetAll(true);
+        });
+
+        // 合成参数滑块
+        synthAx.addEventListener('input', function() {
+            synthAxVal.textContent = this.value;
+        });
+        synthAy.addEventListener('input', function() {
+            synthAyVal.textContent = this.value;
+        });
+        synthFx.addEventListener('input', function() {
+            synthFxVal.textContent = parseFloat(this.value).toFixed(1);
+        });
+        synthFy.addEventListener('input', function() {
+            synthFyVal.textContent = parseFloat(this.value).toFixed(1);
+        });
+        synthPhi.addEventListener('input', function() {
+            synthPhiVal.textContent = this.value;
+        });
+
+        // X 模式切换
+        const xModeBtns = document.querySelectorAll('#xModeSelector .mode-btn-small');
+        xModeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                xModeBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                synthXMode = this.dataset.xmode;
+                synthTrailX = [];
+                synthTrailY = [];
+                synthTrailXY = [];
+            });
+        });
+
+        // Y 模式切换
+        const yModeBtns = document.querySelectorAll('#yModeSelector .mode-btn-small');
+        yModeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                yModeBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                synthYMode = this.dataset.ymode;
+                synthTrailX = [];
+                synthTrailY = [];
+                synthTrailXY = [];
+            });
+        });
+
+        // 主模式切换
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                mode = this.dataset.mode;
+                synthesisBtn.classList.remove('active');
+                synthesisControls.classList.remove('show');
+                resetAll(true);
+                statusText.textContent = isRunning ? '运行中' : '已暂停';
+            });
+        });
+
+        // 示波合成按钮
+        synthesisBtn.addEventListener('click', function() {
+            if (mode === 'synthesis') {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                document.querySelector('.mode-btn[data-mode="dc"]').classList.add('active');
+                mode = 'dc';
+                synthesisBtn.classList.remove('active');
+                synthesisControls.classList.remove('show');
+                resetAll(true);
+                statusText.textContent = isRunning ? '运行中' : '已暂停';
+            } else {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                mode = 'synthesis';
+                synthesisBtn.classList.add('active');
+                synthesisControls.classList.add('show');
+                resetAll(true);
+                synthTrailX = [];
+                synthTrailY = [];
+                synthTrailXY = [];
+                statusText.textContent = '示波合成模式';
+            }
+        });
+
+        resetBtn.addEventListener('click', function() {
+            resetAll(true);
+            voltageHistory = [];
+            waveTime = 0;
+            if (mode === 'synthesis') {
+                synthTrailX = [];
+                synthTrailY = [];
+                synthTrailXY = [];
+            }
+            statusText.textContent = isRunning ? '运行中' : '已暂停';
+        });
+
+        stopBtn.addEventListener('click', function() {
+            isRunning = !isRunning;
+            stopBtn.textContent = isRunning ? '⏸ 暂停' : '▶ 启动';
+            stopBtn.classList.toggle('active', !isRunning);
+            statusText.textContent = isRunning ? (mode === 'synthesis' ? '示波合成模式' : '运行中') : '已暂停';
+            if (isRunning) lastTimestamp = 0;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' || e.key === 'R') { resetBtn.click(); e.preventDefault(); }
+            if (e.key === ' ' || e.key === 'Space') { stopBtn.click(); e.preventDefault(); }
+        });
+
+        // ---- 初始化 ----
+        function init() {
+            updateEmitInterval();
+            resetAll(true);
+            U1 = parseFloat(accelSlider.value);
+            U2_peak = parseFloat(deflectSlider.value);
+            SCAN_PERIOD = parseFloat(scanPeriodSlider.value);
+            accelValue.textContent = U1.toFixed(0);
+            deflectValue.textContent = U2_peak.toFixed(0);
+            scanPeriodValue.textContent = SCAN_PERIOD.toFixed(1);
+            document.querySelector('.mode-btn[data-mode="dc"]').classList.add('active');
+            mode = 'dc';
+            voltageHistory = [];
+            waveTime = 0;
+            isRunning = true;
+            stopBtn.textContent = '⏸ 暂停';
+            stopBtn.classList.remove('active');
+            statusText.textContent = '运行中';
+            requestAnimationFrame(animate);
+        }
+        init();
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) lastTimestamp = 0;
+            else lastTimestamp = performance.now();
+        });
+    })();
+</script>
+</body>
+</html>
