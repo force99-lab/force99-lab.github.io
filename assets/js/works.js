@@ -1,7 +1,7 @@
 /* ============================================================
    works.js  —  作品数据（集中管理，添加作品只需在此追加一条）
    字段说明：
-     type   : 'article' 文章 | 'animation' HTML动画 | 'video' 视频 | 'work' 作品
+     type   : 'article' 文章 | 'animation' HTML动画 | 'solve' 解题 | 'video' 视频 | 'work' 作品
      title  : 标题
      desc   : 一句话简介
      icon   : 封面图标（emoji，也可用 SVG）
@@ -69,6 +69,18 @@ const WORKS = [
     link:"animations/standing-wave.html", date:"2026-08-13", tag:"波动"
   },
 
+  /* ---------------- 解题 ---------------- */
+  {
+    type:"solve", title:"例题：斜面上物块的受力与运动分析",
+    desc:"分步拆解斜面模型的受力分析、正交分解与牛顿第二定律列式。",
+    icon:"🧩", link:"solutions/sample.html", date:"2026-08-13", tag:"力学"
+  },
+  {
+    type:"solve", title:"例题：带电粒子在匀强磁场中的圆周运动",
+    desc:"从几何关系确定圆心半径，到周期与临界问题的完整解题套路。",
+    icon:"⚡", link:"solutions/sample.html", date:"2026-08-13", tag:"电磁学"
+  },
+
   /* ---------------- 视频 ---------------- */
   {
     type:"video", title:"实验：验证机械能守恒定律",
@@ -96,8 +108,8 @@ const WORKS = [
 
 /* 类型中文映射（用于筛选按钮与标签） */
 const TYPE_LABEL = {
-  article:"文章", animation:"HTML动画", video:"视频", work:"作品"
+  article:"文章", animation:"HTML动画", solve:"解题", video:"视频", work:"作品"
 };
 const TYPE_GRAD = {
-  article:"grad-article", animation:"grad-animation", video:"grad-video", work:"grad-work"
+  article:"grad-article", animation:"grad-animation", solve:"grad-solve", video:"grad-video", work:"grad-work"
 };
