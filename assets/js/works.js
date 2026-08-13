@@ -56,6 +56,12 @@ const WORKS = [
     icon:"〰️", cover:"assets/img/wave-reflection-standing-cover.png",
     link:"animations/wave-reflection-standing.html", date:"2026-08-13", tag:"波动"
   },
+  {
+    type:"animation", title:"纵波的产生",
+    desc:"质点沿波传播方向振动，演示疏密相间的纵波形成过程。",
+    icon:"📳", cover:"assets/img/longitudinal-wave-cover.png",
+    link:"animations/longitudinal-wave.html", date:"2026-08-13", tag:"波动"
+  },
 
   /* ---------------- 视频 ---------------- */
   {
