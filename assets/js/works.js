@@ -62,6 +62,12 @@ const WORKS = [
     icon:"📳", cover:"assets/img/longitudinal-wave-cover.png",
     link:"animations/longitudinal-wave.html", date:"2026-08-13", tag:"波动"
   },
+  {
+    type:"animation", title:"驻波的产生",
+    desc:"两列同频反向波叠加，形成稳定波节与波腹的驻波图样。",
+    icon:"🌐", cover:"assets/img/standing-wave-cover.png",
+    link:"animations/standing-wave.html", date:"2026-08-13", tag:"波动"
+  },
 
   /* ---------------- 视频 ---------------- */
   {
