@@ -13,6 +13,11 @@
 const WORKS = [
   /* ---------------- 文章 ---------------- */
   {
+    type:"article", title:"2026年高考物理压轴题系统性分析",
+    desc:"逐题拆解 2026 高考物理压轴题的命题思路、模型建构与解题通法。",
+    icon:"🏅", link:"articles/2026-gaokao-physics-final-analysis.html", date:"2026-08-13", tag:"高考研究"
+  },
+  {
     type:"article", title:"高三物理一轮复习的四条主线",
     desc:"以「概念—模型—方法—误差」为主线重构复习框架，提升课堂效率。",
     icon:"📐", link:"articles/sample.html", date:"2026-07-20", tag:"复习策略"
