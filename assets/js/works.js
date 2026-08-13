@@ -71,6 +71,11 @@ const WORKS = [
 
   /* ---------------- 解题 ---------------- */
   {
+    type:"solve", title:"2026湖北高考物理压轴题",
+    desc:"电场与磁场中的往复运动综合题，分步拆解高考压轴难点。",
+    icon:"🏆", link:"solutions/2026-hubei-final.html", date:"2026-08-13", tag:"高考压轴"
+  },
+  {
     type:"solve", title:"例题：斜面上物块的受力与运动分析",
     desc:"分步拆解斜面模型的受力分析、正交分解与牛顿第二定律列式。",
     icon:"🧩", link:"solutions/sample.html", date:"2026-08-13", tag:"力学"
