@@ -88,6 +88,12 @@ const WORKS = [
 
   /* ---------------- 视频 ---------------- */
   {
+    type:"video", title:"钱塘大潮",
+    desc:"钱塘江潮汐涌潮航拍实录：把自然界中的“波”搬进物理课堂。",
+    icon:"🌊", cover:"assets/img/qiantang-tide-cover.png",
+    link:"videos/qiantang-tide.html", date:"2026-08-13", tag:"自然现象"
+  },
+  {
     type:"video", title:"实验：验证机械能守恒定律",
     desc:"导轨+光电门的规范操作与数据处理全流程实录。",
     icon:"🎬", link:"#", date:"2026-06-25", tag:"实验视频"
