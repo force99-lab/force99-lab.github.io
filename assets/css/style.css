@@ -289,3 +289,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="prism-dispersion-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 示波器封面完整显示（不裁剪） */
 .card .cover.has-img[style*="oscilloscope-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 圆形磁场区封面完整显示（不裁剪） */
+.card .cover.has-img[style*="circular-bfield-focus-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
