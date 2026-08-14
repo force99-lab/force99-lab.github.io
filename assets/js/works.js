@@ -432,7 +432,17 @@ const WORKS = [
     link:"animations/cavendish-torsion-balance.html",
     date:"2026-08-14",
     tag:"万有引力"
+  },
+  {
+    type:"article",
+    title:"物理迁移能力的野蛮生长",
+    desc:"知识半衰期缩到三五年，AI 让“记住答案”一文不值。本文探讨物理迁移能力如何把一处长出的思维扦插到另一处照样成活。",
+    icon:"🌱",
+    link:"articles/物理迁移能力的野蛮生长.html",
+    date:"2026-08-15",
+    tag:"学习方法"
   }
+
 ];
 
 const TYPE_LABEL = {
