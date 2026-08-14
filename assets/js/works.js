@@ -252,7 +252,7 @@ const WORKS = [
 
     desc:"电场与磁场中的往复运动综合题，分步拆解高考压轴难点。",
 
-    icon:"🏆", link:"solutions/2026-hubei-final.html", date:"2026-08-13", tag:"高考压轴"
+    icon:"🏆", link:"solutions/2026-hubei-final.html", cover:"assets/img/2026-hubei-final-cover.jpg", date:"2026-08-13", tag:"高考压轴"
 
   },
 
