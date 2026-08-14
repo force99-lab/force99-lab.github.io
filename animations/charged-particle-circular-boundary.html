@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>逐条连线 · 暂停与复位</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #061f12;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+        }
+        .container {
+            background: #0a3d2a;
+            padding: 25px 25px 20px;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7), 0 0 60px rgba(0,200,120,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            border-radius: 16px;
+            background: #0a3d2a;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+        }
+        .controls {
+            width: 100%;
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px 40px;
+            padding: 0 10px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 160px;
+        }
+        .control-group label {
+            color: #b0e0c0;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .control-group label span {
+            color: #ffdd88;
+            font-weight: 700;
+            min-width: 48px;
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 180px;
+            height: 6px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #1f6d4a, #7bdfb0);
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 12px #7bdfb0, 0 0 4px #000;
+            border: 2px solid #0a3d2a;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); background: #ffdd88; }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px; height: 18px; border-radius: 50%;
+            background: #fff; cursor: pointer; border: 2px solid #0a3d2a;
+        }
+        .button-group {
+            margin-top: 16px;
+            display: flex;
+            gap: 20px;
+        }
+        .button-group button {
+            background: #1f6d4a;
+            border: none;
+            padding: 8px 28px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #e0f0e0;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #0a3d2a, 0 6px 12px rgba(0,0,0,0.4);
+            transition: 0.1s ease;
+            letter-spacing: 1px;
+        }
+        .button-group button:hover { background: #2f8a5a; transform: translateY(-2px); box-shadow: 0 6px 0 #0a3d2a, 0 8px 16px rgba(0,0,0,0.5); }
+        .button-group button:active { transform: translateY(2px); box-shadow: 0 2px 0 #0a3d2a; }
+        .button-group button#pauseBtn { background: #7b5a2a; }
+        .button-group button#pauseBtn:hover { background: #9a7a3a; }
+        .status {
+            color: #7bc8a0;
+            font-size: 14px;
+            margin-top: 12px;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+        @media (max-width: 640px) {
+            .container { padding: 16px; }
+            .controls { gap: 12px; }
+            input[type="range"] { width: 130px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <div class="controls">
+        <div class="control-group">
+            <label>速度 <span id="speedVal">25.0</span></label>
+            <input type="range" id="speedSlider" min="0" max="50" step="0.1" value="25" />
+        </div>
+        <div class="control-group">
+            <label>方向 <span id="angleVal">0°</span></label>
+            <input type="range" id="angleSlider" min="-90" max="90" step="1" value="0" />
+        </div>
+    </div>
+    <div class="button-group">
+        <button id="pauseBtn">暂停</button>
+        <button id="resetBtn">复位</button>
+    </div>
+    <div class="status">⚡ 拖动滑块 · 连线顺序：轨心→入射/出射 → 磁心→入射/出射 → 入射→出射 → 磁心→轨心</div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = 600, H = 600;
+    const cx = W/2, cy = H/2;      // 磁场圆心
+    const R = 200;                 // 磁场半径
+    const x0 = cx - R, y0 = cy;    // 入射点（最左端）
+
+    const speedSlider = document.getElementById('speedSlider');
+    const angleSlider = document.getElementById('angleSlider');
+    const speedSpan = document.getElementById('speedVal');
+    const angleSpan = document.getElementById('angleVal');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let speed = 25.0, angleDeg = 0;
+    let points = [];
+    let orbitCenter = {x:0, y:0};
+    let exitPoint = {x:0, y:0};
+    let progress = 0;            // 轨迹进度 0~1
+    let lineProgress = 0;        // 连线进度 0~6 (共6条线段)
+    let isPaused = false;        // 用户暂停/继续
+    let lastTime = 0;
+    const animSpeed = 0.30;      // 轨迹动画速度
+    const lineAnimSpeed = 0.45;  // 每条线延伸速度
+
+    // ---------- 计算轨迹 ----------
+    function computeTrajectory() {
+        const theta = angleDeg * Math.PI / 180;
+        let r = speed * 5.0;
+        if (r < 0.5) r = 0.5;
+
+        const cosA = Math.cos(theta), sinA = Math.sin(theta);
+        const ox = x0 - r * sinA;
+        const oy = y0 + r * cosA;
+        orbitCenter = {x: ox, y: oy};
+
+        function circleIntersections(x1,y1,r1, x2,y2,r2) {
+            const dx = x2-x1, dy = y2-y1, d = Math.hypot(dx, dy);
+            if (d === 0 || d > r1+r2 || d < Math.abs(r1-r2)) return [];
+            const a = (r1*r1 - r2*r2 + d*d)/(2*d);
+            const h = Math.sqrt(r1*r1 - a*a);
+            const px = x1 + a*dx/d, py = y1 + a*dy/d;
+            const ux = -dy/d, uy = dx/d;
+            return [{x: px+h*ux, y: py+h*uy}, {x: px-h*ux, y: py-h*uy}];
+        }
+        const pts = circleIntersections(cx, cy, R, ox, oy, r);
+        let pOut;
+        if (pts.length >= 2) {
+            let pIn = pts[0], pOutCand = pts[1];
+            if (Math.hypot(pIn.x-x0, pIn.y-y0) > Math.hypot(pOutCand.x-x0, pOutCand.y-y0)) {
+                [pIn, pOutCand] = [pOutCand, pIn];
+            }
+            if (Math.hypot(pIn.x-x0, pIn.y-y0) > 1) {
+                pIn = {x:x0, y:y0};
+                const other = pts.find(p => Math.hypot(p.x-x0, p.y-y0) > 1);
+                pOutCand = other || pts[0];
+            }
+            pOut = pOutCand;
+        } else {
+            pOut = {x:x0, y:y0};
+        }
+        exitPoint = pOut;
+
+        const theta0 = Math.atan2(y0-oy, x0-ox);
+        const theta1 = Math.atan2(pOut.y-oy, pOut.x-ox);
+        let delta = theta1 - theta0;
+        if (delta < 0) delta += 2*Math.PI;
+        if (Math.abs(delta) < 1e-6) delta = 2*Math.PI;
+
+        const N = 300;
+        const arr = [];
+        for (let i=0; i<=N; i++) {
+            const t = i/N;
+            const a = theta0 + t*delta;
+            arr.push({x: ox + r*Math.cos(a), y: oy + r*Math.sin(a)});
+        }
+        points = arr;
+    }
+
+    // ---------- 绘制 ----------
+    function draw() {
+        ctx.fillStyle = '#0a3d2a';
+        ctx.fillRect(0, 0, W, H);
+
+        // 磁场边界
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, 2*Math.PI);
+        ctx.strokeStyle = '#4dbf8a';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = '#4dbf8a';
+        ctx.font = '20px sans-serif';
+        ctx.fillText('B ⊗', cx+R-70, cy-16);
+
+        // 入射方向箭头
+        const theta = angleDeg * Math.PI / 180;
+        const arrowLen = 30;
+        const ex = x0 + arrowLen*Math.cos(theta);
+        const ey = y0 + arrowLen*Math.sin(theta);
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(ex, ey);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        const ang = Math.atan2(ey-y0, ex-x0);
+        const headLen = 10, headAng = 0.45;
+        const ax = ex - headLen*Math.cos(ang-headAng);
+        const ay = ey - headLen*Math.sin(ang-headAng);
+        const bx = ex - headLen*Math.cos(ang+headAng);
+        const by = ey - headLen*Math.sin(ang+headAng);
+        ctx.beginPath();
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(ax, ay);
+        ctx.moveTo(ex, ey);
+        ctx.lineTo(bx, by);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // ---- 轨迹 ----
+        if (points.length > 1 && speed > 0.1) {
+            const total = points.length;
+            const idx = Math.min(Math.floor(progress * (total - 1)), total - 1);
+            if (idx > 0) {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i=1; i<=idx; i++) ctx.lineTo(points[i].x, points[i].y);
+                ctx.strokeStyle = '#ffdd44';
+                ctx.lineWidth = 3.5;
+                ctx.shadowColor = '#ffdd44';
+                ctx.shadowBlur = 14;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // 粒子
+            const p = points[idx] || points[0];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 7, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#88ddff';
+            ctx.shadowBlur = 24;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 出射点标记
+            const last = points[points.length-1];
+            ctx.beginPath();
+            ctx.arc(last.x, last.y, 5, 0, 2*Math.PI);
+            ctx.fillStyle = '#ff8844';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#ff8844';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // 出射后直线 (虚线)
+            if (progress >= 1 && points.length > 1) {
+                const prev = points[points.length-2];
+                const dx = last.x - prev.x, dy = last.y - prev.y;
+                const len = Math.hypot(dx, dy);
+                if (len > 0) {
+                    const ux = dx/len, uy = dy/len;
+                    const ext = 70;
+                    ctx.beginPath();
+                    ctx.setLineDash([6,8]);
+                    ctx.moveTo(last.x, last.y);
+                    ctx.lineTo(last.x + ux*ext, last.y + uy*ext);
+                    ctx.strokeStyle = '#ff8844';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+
+            // ---- 逐条连线 (仅在轨迹完成后) ----
+            if (progress >= 1 && speed > 0.1) {
+                // 定义6条线段，顺序：
+                // 1. 轨心→入射  2. 轨心→出射  3. 磁心→入射
+                // 4. 磁心→出射  5. 入射→出射  6. 磁心→轨心
+                const segs = [
+                    [{x:orbitCenter.x, y:orbitCenter.y}, {x:x0, y:y0}],
+                    [{x:orbitCenter.x, y:orbitCenter.y}, {x:exitPoint.x, y:exitPoint.y}],
+                    [{x:cx, y:cy}, {x:x0, y:y0}],
+                    [{x:cx, y:cy}, {x:exitPoint.x, y:exitPoint.y}],
+                    [{x:x0, y:y0}, {x:exitPoint.x, y:exitPoint.y}],
+                    [{x:cx, y:cy}, {x:orbitCenter.x, y:orbitCenter.y}]
+                ];
+
+                const totalSegs = segs.length;
+                const currentSeg = Math.floor(lineProgress);
+                const segFrac = lineProgress - currentSeg;
+
+                ctx.save();
+                ctx.setLineDash([6,6]);
+                ctx.strokeStyle = '#ff3333';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#ff3333';
+
+                for (let i=0; i<totalSegs; i++) {
+                    if (i < currentSeg) {
+                        ctx.beginPath();
+                        ctx.moveTo(segs[i][0].x, segs[i][0].y);
+                        ctx.lineTo(segs[i][1].x, segs[i][1].y);
+                        ctx.stroke();
+                    } else if (i === currentSeg && segFrac > 0) {
+                        const sx = segs[i][0].x, sy = segs[i][0].y;
+                        const ex = segs[i][1].x, ey = segs[i][1].y;
+                        const px = sx + (ex - sx) * segFrac;
+                        const py = sy + (ey - sy) * segFrac;
+                        ctx.beginPath();
+                        ctx.moveTo(sx, sy);
+                        ctx.lineTo(px, py);
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.setLineDash([]);
+
+                // 标注点 (所有连线完成后显示)
+                if (lineProgress >= totalSegs) {
+                    ctx.fillStyle = '#ff9999';
+                    ctx.font = '14px sans-serif';
+                    ctx.fillText('O磁', cx+8, cy-8);
+                    ctx.fillText('O轨', orbitCenter.x+8, orbitCenter.y-8);
+                    ctx.fillText('入射', x0+8, y0-8);
+                    ctx.fillText('出射', exitPoint.x+8, exitPoint.y-8);
+                }
+                ctx.restore();
+            }
+        } else if (speed <= 0.1) {
+            // 速度为零
+            ctx.beginPath();
+            ctx.arc(x0, y0, 7, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#88ddff';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#aaddff';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('速度为零，粒子静止', x0-80, y0-30);
+        }
+
+        // 入射点标记 (始终)
+        ctx.beginPath();
+        ctx.arc(x0, y0, 4, 0, 2*Math.PI);
+        ctx.fillStyle = '#aaddff';
+        ctx.fill();
+
+        // 水印 force99
+        ctx.fillStyle = 'rgba(200,200,200,0.35)';
+        ctx.font = 'bold 18px "Segoe UI", "Microsoft YaHei", sans-serif';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('force99', 12, H-10);
+        ctx.textBaseline = 'alphabetic';
+    }
+
+    // ---------- 更新 ----------
+    function update(dt) {
+        if (isPaused) return;
+        if (points.length < 2 || speed <= 0.1) return;
+
+        // 轨迹动画
+        if (progress < 1) {
+            progress += animSpeed * dt;
+            if (progress > 1) progress = 1;
+            return;
+        }
+
+        // 轨迹完成 → 逐条连线动画 (6条线)
+        if (lineProgress < 6) {
+            lineProgress += lineAnimSpeed * dt;
+            if (lineProgress > 6) lineProgress = 6;
+            return;
+        }
+        // 全部完成后，不再更新
+    }
+
+    // ---------- 循环 ----------
+    function loop(time) {
+        if (!lastTime) lastTime = time;
+        const dt = Math.min((time - lastTime) / 1000, 0.05);
+        lastTime = time;
+
+        update(dt);
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // ---------- 参数改变 ----------
+    function onParamChange() {
+        speed = parseFloat(speedSlider.value);
+        angleDeg = parseFloat(angleSlider.value);
+        speedSpan.textContent = speed.toFixed(1);
+        angleSpan.textContent = angleDeg + '°';
+        computeTrajectory();
+        progress = 0;
+        lineProgress = 0;
+        isPaused = false;
+        pauseBtn.textContent = '暂停';
+        lastTime = 0;
+    }
+
+    // ---------- 事件绑定 ----------
+    speedSlider.addEventListener('input', onParamChange);
+    angleSlider.addEventListener('input', onParamChange);
+
+    pauseBtn.addEventListener('click', function() {
+        isPaused = !isPaused;
+        pauseBtn.textContent = isPaused ? '继续' : '暂停';
+        if (!isPaused) lastTime = 0; // 防止时间跳跃
+    });
+
+    resetBtn.addEventListener('click', function() {
+        progress = 0;
+        lineProgress = 0;
+        isPaused = false;
+        pauseBtn.textContent = '暂停';
+        lastTime = 0;
+        // 如果当前速度为零，轨迹不显示，但复位后无碍
+    });
+
+    // 初始化
+    onParamChange();
+    requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
