@@ -1,0 +1,56 @@
+<svg viewBox="0 0 680 410" width="100%" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>白光经三棱镜色散为连续光谱动画（循环4次）</title>
+  <desc>白光从三棱镜左侧面射入即开始色散，各单色光沿发散方向排列（上红下紫）无缝连续、同时向底面偏折传播，整套动画循环播放4次并显示色散规律板书。</desc>
+  <defs>
+    <clipPath id="reveal">
+      <rect x="20" y="0" width="0" height="410">
+        <animate attributeName="width" from="0" to="645" begin="0.3s" dur="2s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+        <animate attributeName="width" from="0" to="645" begin="3.3s" dur="2s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+        <animate attributeName="width" from="0" to="645" begin="6.3s" dur="2s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+        <animate attributeName="width" from="0" to="645" begin="9.3s" dur="2s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1"/>
+      </rect>
+    </clipPath>
+  </defs>
+
+  <rect x="0" y="0" width="680" height="410" fill="#0a0a0a"/>
+
+  <g transform="translate(0,0)">
+    <polygon points="360,70 450,230 270,230" fill="rgba(255,255,255,0.06)" stroke="#d4d4d4" stroke-width="2" stroke-linejoin="round"/>
+    <text x="360" y="258" fill="#8a8a8a" font-size="12" text-anchor="middle" font-family="var(--font-sans, sans-serif)">三棱镜</text>
+  </g>
+
+  <g clip-path="url(#reveal)">
+    <rect x="20" y="143" width="300" height="14" fill="#ffffff"/>
+    <polygon points="315,150 630,195 630,200" fill="hsl(8,90%,55%)"/>
+    <polygon points="315,150 630,200 630,205" fill="hsl(24,90%,55%)"/>
+    <polygon points="315,150 630,205 630,210" fill="hsl(40,90%,55%)"/>
+    <polygon points="315,150 630,210 630,215" fill="hsl(55,90%,55%)"/>
+    <polygon points="315,150 630,215 630,220" fill="hsl(71,90%,55%)"/>
+    <polygon points="315,150 630,220 630,225" fill="hsl(87,90%,55%)"/>
+    <polygon points="315,150 630,225 630,230" fill="hsl(103,90%,55%)"/>
+    <polygon points="315,150 630,230 630,235" fill="hsl(119,90%,55%)"/>
+    <polygon points="315,150 630,235 630,240" fill="hsl(135,90%,55%)"/>
+    <polygon points="315,150 630,240 630,245" fill="hsl(150,90%,55%)"/>
+    <polygon points="315,150 630,245 630,250" fill="hsl(166,90%,55%)"/>
+    <polygon points="315,150 630,250 630,255" fill="hsl(182,90%,55%)"/>
+    <polygon points="315,150 630,255 630,260" fill="hsl(198,90%,55%)"/>
+    <polygon points="315,150 630,260 630,265" fill="hsl(214,90%,55%)"/>
+    <polygon points="315,150 630,265 630,270" fill="hsl(230,90%,55%)"/>
+    <polygon points="315,150 630,270 630,275" fill="hsl(245,90%,55%)"/>
+    <polygon points="315,150 630,275 630,280" fill="hsl(261,90%,55%)"/>
+    <polygon points="315,150 630,280 630,285" fill="hsl(277,90%,55%)"/>
+  </g>
+
+  <text x="20" y="134" fill="#cfcfcf" font-size="12" font-family="var(--font-sans, sans-serif)">白光</text>
+
+  <g opacity="0">
+    <animate attributeName="opacity" values="0;1" begin="2.6s" dur="0.8s" fill="freeze"/>
+    <animate attributeName="opacity" values="0;1" begin="5.6s" dur="0.8s" fill="freeze"/>
+    <animate attributeName="opacity" values="0;1" begin="8.6s" dur="0.8s" fill="freeze"/>
+    <animate attributeName="opacity" values="0;1" begin="11.6s" dur="0.8s" fill="freeze"/>
+    <text x="40" y="330" fill="#ffffff" font-size="15" font-weight="500" font-family="var(--font-sans, sans-serif)">光的色散规律</text>
+    <text x="40" y="356" fill="#d4d4d4" font-size="13" font-family="var(--font-sans, sans-serif)">① 白光（复色光）经三棱镜折射，分解为红橙黄绿蓝靛紫 —— 形成光谱</text>
+    <text x="40" y="378" fill="#d4d4d4" font-size="13" font-family="var(--font-sans, sans-serif)">② 成因：同一介质中不同色光折射率不同，紫光 n 最大、红光 n 最小</text>
+    <text x="40" y="400" fill="#d4d4d4" font-size="13" font-family="var(--font-sans, sans-serif)">③ 偏折：紫光偏折最大、红光最小；说明白光由各种单色光组成</text>
+  </g>
+</svg>
