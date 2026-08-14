@@ -434,3 +434,12 @@ const WORKS = [
     tag:"万有引力"
   }
 ];
+
+const TYPE_LABEL = {
+  article:"文章", animation:"HTML动画", solve:"解题", video:"视频", work:"作品"
+};
+
+const TYPE_GRAD = {
+  article:"grad-article", animation:"grad-animation", solve:"grad-solve", video:"grad-video", work:"grad-work"
+};
+
