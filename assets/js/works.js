@@ -422,23 +422,15 @@ const WORKS = [
 
     icon:"📚", link:"#", date:"2026-01-09", tag:"教材"
 
-  },
-
+  },,
+  {
+    type:"animation",
+    title:"卡文迪许扭秤实验·交互动画讲解",
+    desc:"装置设计精妙、光路放大法测微小扭转、操作数据处理与万有引力常量 G 的现实意义，含光路转动动画。",
+    icon:"⚖️",
+    cover:"assets/img/cavendish-torsion-balance-cover.png",
+    link:"animations/cavendish-torsion-balance.html",
+    date:"2026-08-14",
+    tag:"万有引力"
+  }
 ];
-
-
-
-/* 类型中文映射（用于筛选按钮与标签） */
-
-const TYPE_LABEL = {
-
-  article:"文章", animation:"HTML动画", solve:"解题", video:"视频", work:"作品"
-
-};
-
-const TYPE_GRAD = {
-
-  article:"grad-article", animation:"grad-animation", solve:"grad-solve", video:"grad-video", work:"grad-work"
-
-};
-
