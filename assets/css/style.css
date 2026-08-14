@@ -293,3 +293,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="circular-bfield-focus-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 放射源粒子强磁场封面完整显示（不裁剪） */
 .card .cover.has-img[style*="magnetic-radioactive-source-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 湖北高考压轴题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2026-hubei-final-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
