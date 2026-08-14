@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>放射源 · 匀强磁场中 0–360° 发射粒子交互演示</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:rgba(20,32,48,0.72); --line:rgba(120,160,180,0.18);
+    --teal:#1d9e75; --text:#dce6ef; --muted:#8aa0b2; --focus:#39d98a; --div:#ffae42;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{display:flex;height:100vh;width:100vw;overflow:hidden;}
+  .side{width:312px;min-width:312px;padding:18px 16px;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);backdrop-filter:blur(8px);}
+  .main{flex:1;position:relative;overflow:hidden;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;}
+  h1{font-size:16px;font-weight:600;margin:0 0 2px;color:#eaf2f8;}
+  .sub{font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.5;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text);margin-bottom:5px;}
+  .ctrl label b{color:var(--teal);font-weight:600;font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;accent-color:var(--teal);height:4px;cursor:pointer;}
+  input[type=range]:disabled{opacity:0.35;cursor:not-allowed;}
+  select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:8px;
+    background:rgba(10,18,30,0.6);color:var(--text);font-size:13px;cursor:pointer;}
+  .row{display:flex;gap:8px;margin:14px 0 6px;}
+  button{flex:1;padding:8px 0;border:1px solid var(--line);background:rgba(29,158,117,0.14);
+    color:var(--text);border-radius:8px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:rgba(29,158,117,0.28);}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text);margin:8px 0;}
+  .readout{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;
+    background:rgba(10,18,30,0.5);font-size:12px;line-height:1.9;color:var(--muted);}
+  .readout b{color:var(--text);font-variant-numeric:tabular-nums;}
+  .note{position:absolute;left:16px;top:14px;right:16px;font-size:12px;line-height:1.6;
+    color:var(--muted);background:rgba(10,18,30,0.55);border:1px solid var(--line);
+    border-radius:10px;padding:10px 14px;backdrop-filter:blur(4px);pointer-events:none;}
+  .note b{color:var(--text);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="side">
+    <h1>放射源 · 磁场中 0–360° 发射</h1>
+    <p class="sub">匀强磁场（B 垂直纸面向里 ×）充满选定区域；点状放射源向 0–360° 全向发射带电粒子，在区内做半径 r 的圆周运动，<b>出磁场即停止</b>。<b>释放鼠标可拖动形状边界 / 顶点 / 放射源</b>，距离 d 实时同步。可切换磁场形状：单边、双边界、三角形、四边形。</p>
+
+    <div class="ctrl"><label>磁场形状</label>
+      <select id="shape">
+        <option value="single">单边磁场（上边界半平面）</option>
+        <option value="double">双边界磁场（水平条带）</option>
+        <option value="triangle">三角形磁场</option>
+        <option value="quad">四边形磁场</option>
+      </select>
+    </div>
+    <div class="ctrl"><label>粒子运动半径 r (px) <b id="vR">–</b></label>
+      <input type="range" id="r" min="20" max="320" step="2" value="150"></div>
+    <div class="ctrl"><label>源到边界距离 d (px) <b id="vD">–</b></label>
+      <input type="range" id="d" min="0" max="560" step="2" value="120"></div>
+    <div class="ctrl"><label>发射粒子数 N <b id="vN">24</b></label>
+      <input type="range" id="N" min="6" max="120" step="1" value="24"></div>
+    <div class="ctrl"><label>动画速度 <b id="vs">1.0×</b></label>
+      <input type="range" id="speed" min="0.2" max="2.5" step="0.1" value="1.0"></div>
+
+    <label class="chk"><input type="checkbox" id="qNeg"> 反转电荷符号（翻转偏转方向）</label>
+    <label class="chk"><input type="checkbox" id="showCircle"> 显示完整圆轨迹</label>
+
+    <div class="row">
+      <button id="play">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+    </div>
+
+    <div class="readout">
+      粒子运动半径 r = <b id="rR">–</b><br>
+      源到边界距离 d = <b id="rD">–</b><br>
+      发射粒子数 N = <b id="rN">–</b><br>
+      在场内运动粒子 = <b id="rMov">–</b><br>
+      命中边界后停止 = <b id="rHit">–</b><br>
+      出磁场即静止 = <b id="rStat">–</b>
+    </div>
+  </div>
+
+  <div class="main">
+    <canvas id="cv"></canvas>
+    <div class="note">
+      放射源向 <b>0–360°</b> 全向发射，粒子在磁场内做圆周运动、<b>出磁场边界立即停止</b>（边界处画静止圆环）。
+      <b>放射源（黄点）可任意拖动</b>；<b>橙色边界可上下拖动</b>（双边界为上下两条）；<b>三角形 / 四边形顶点（橙点）也可拖动</b>改变磁场区域形状。
+      当<b>源与边界重合（d=0）</b>时，朝磁场外发射的那一半粒子一出场就已在磁场外，按“出磁即不运动”规则静止，显示为从源沿发射方向的静态短桩（计入“出磁场即静止”）。
+    </div>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const main = document.querySelector('.main');
+let dpr = window.devicePixelRatio || 1;
+let W = 0, H = 0;
+
+const P = {r:150, d:120, N:24, speed:1, qNeg:false, showCircle:false, shape:'single'};
+let playing = true, phase = 0;
+let geom = {};
+let particles = [];
+
+const $ = id => document.getElementById(id);
+
+function readUI(){
+  P.r=+$('r').value; P.d=+$('d').value;
+  P.N=+$('N').value; P.speed=+$('speed').value;
+  P.qNeg=$('qNeg').checked; P.showCircle=$('showCircle').checked;
+  $('vR').textContent=P.r+' px';
+  $('vN').textContent=P.N;
+  $('vs').textContent=P.speed.toFixed(1)+'×';
+}
+
+function centroid(poly){ let cx=0,cy=0; for(const p of poly){cx+=p.x; cy+=p.y;} return {x:cx/poly.length, y:cy/poly.length}; }
+
+function initShape(shape){
+  geom = {shape};
+  if(shape==='single'){
+    geom.yb = H-60; geom.sx = W/2; geom.sy = Math.max(80, geom.yb - P.d);
+  } else if(shape==='double'){
+    geom.ybTop = 70; geom.ybBot = H-60; geom.sx = W/2;
+    geom.sy = Math.max(geom.ybTop+20, geom.ybBot - P.d);
+  } else if(shape==='triangle'){
+    geom.poly = [{x:W/2,y:70},{x:W*0.16,y:H-90},{x:W*0.84,y:H-90}];
+    const c = centroid(geom.poly); geom.sx=c.x; geom.sy=c.y;
+  } else if(shape==='quad'){
+    geom.poly = [{x:W*0.2,y:70},{x:W*0.8,y:70},{x:W*0.88,y:H-70},{x:W*0.12,y:H-70}];
+    const c = centroid(geom.poly); geom.sx=c.x; geom.sy=c.y;
+  }
+}
+
+// 点是否在磁场区域内。strict=true 时边界视为“外”（用于出磁场扫描与朝外判定）；否则含 0.5px 容差（用于源是否在场内）
+function pointInPoly(x,y,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i].x, yi=poly[i].y, xj=poly[j].x, yj=poly[j].y;
+    const hit = ((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+    if(hit) inside=!inside;
+  }
+  return inside;
+}
+function inField(x,y,strict){
+  const s = geom.shape, m = strict ? 0 : 0.5;
+  if(s==='single') return y <= geom.yb + m;
+  if(s==='double') return (y >= geom.ybTop - m) && (y <= geom.ybBot + m);
+  if(s==='triangle'||s==='quad') return pointInPoly(x,y,geom.poly);
+  return false;
+}
+
+function regionInterior(){
+  const s = geom.shape;
+  if(s==='single') return {x:Math.max(20,Math.min(W-20,geom.sx)), y:Math.max(20, geom.yb-40)};
+  if(s==='double') return {x:Math.max(20,Math.min(W-20,geom.sx)), y:(geom.ybTop+geom.ybBot)/2};
+  return centroid(geom.poly);
+}
+function ensureSourceInside(){
+  let sx = Math.max(20, Math.min(W-20, geom.sx));
+  let sy = Math.max(20, Math.min(H-20, geom.sy));
+  if(geom.shape==='single') sy = Math.min(sy, geom.yb-4);
+  else if(geom.shape==='double') sy = Math.max(geom.ybTop+4, Math.min(geom.ybBot-4, sy));
+  if(!inField(sx,sy)){ const c=regionInterior(); sx=c.x; sy=c.y; }
+  geom.sx = sx; geom.sy = sy;
+}
+
+function syncD(){
+  const s = geom.shape;
+  if(s==='single'){ P.d = geom.yb-geom.sy; $('d').disabled=false; $('d').value=P.d; $('vD').textContent=P.d.toFixed(0)+' px'; }
+  else if(s==='double'){ P.d = geom.ybBot-geom.sy; $('d').disabled=false; $('d').value=P.d; $('vD').textContent=P.d.toFixed(0)+' px'; }
+  else { $('d').disabled=true; $('vD').textContent='—'; }
+}
+
+function build(){
+  readUI();
+  // 形状约束：把几何钳制到画布内
+  if(geom.shape==='single'){ geom.yb = Math.max(40, Math.min(H-20, geom.yb)); }
+  else if(geom.shape==='double'){
+    geom.ybTop = Math.max(20, Math.min(H-60, geom.ybTop));
+    geom.ybBot = Math.max(geom.ybTop+40, Math.min(H-20, geom.ybBot));
+  } else if(geom.shape==='triangle'||geom.shape==='quad'){
+    for(const p of geom.poly){ p.x=Math.max(10,Math.min(W-10,p.x)); p.y=Math.max(10,Math.min(H-10,p.y)); }
+  }
+  const r = Math.min(P.r, Math.min(W,H)/2 - 10);
+  const sense = P.qNeg ? -1 : 1;
+  geom.r = r; geom.sense = sense;
+
+  ensureSourceInside();
+  geom.actualD = (geom.shape==='single') ? (geom.yb - geom.sy)
+               : (geom.shape==='double') ? (geom.ybBot - geom.sy) : 0;
+
+  const TWO = 2*Math.PI;
+  const sx = geom.sx, sy = geom.sy;
+  const inside0 = inField(sx, sy, false);
+
+  particles = [];
+  let maxStop = 0, hitCount = 0, staticOut = 0;
+  for(let i=0;i<P.N;i++){
+    const th0 = P.N>1 ? i/P.N*TWO : 0;
+    const v0x = Math.cos(th0), v0y = Math.sin(th0);
+    const perpx = -Math.sin(th0), perpy = Math.cos(th0);   // v0 逆时针转 90°
+    const Ox = sx + sense*r*perpx, Oy = sy + sense*r*perpy;
+    const u0x = (sx-Ox)/r, u0y = (sy-Oy)/r;
+    // 扫描圆弧，求首次出磁场的相位（出磁场即停止）—— 用严格边界
+    let stop = TWO;
+    const steps = 2000;
+    for(let s=1;s<=steps;s++){
+      const ph = s/steps*TWO;
+      const x = Ox + r*(u0x*Math.cos(ph) + v0x*Math.sin(ph));
+      const y = Oy + r*(u0y*Math.cos(ph) + v0y*Math.sin(ph));
+      if(!inField(x,y,true)){ stop = ph; break; }
+    }
+    // 出场即出磁：源在磁场外 或 源在边界上且初速度朝外（朝外判定用严格边界）
+    const insideAhead = inField(sx + 0.8*v0x, sy + 0.8*v0y, true);
+    const isStatic = inside0 ? (!insideAhead) : true;
+    if(isStatic){ stop = 0; staticOut++; }
+    else if(stop < TWO - 0.01) hitCount++;
+    maxStop = Math.max(maxStop, stop);
+    particles.push({th0, v0x, v0y, u0x, u0y, Ox, Oy, stop, outAtEmit:isStatic,
+                    color:`hsl(${Math.round(i/P.N*330)},82%,63%)`});
+  }
+  geom.maxStop = maxStop; geom.hitCount = hitCount; geom.staticOut = staticOut;
+
+  $('rR').textContent = r.toFixed(0)+' px';
+  $('rD').textContent = geom.actualD>0 ? geom.actualD.toFixed(0)+' px' : '—';
+  $('rN').textContent = P.N;
+  $('rMov').textContent = (P.N - staticOut)+' / '+P.N;
+  $('rHit').textContent = hitCount+' / '+P.N;
+  $('rStat').textContent = staticOut+' / '+P.N;
+  syncD();
+  if(phase > geom.maxStop) phase = geom.maxStop;        // 几何变化使 maxStop 变小则钳制，避免拖动时重播闪烁
+}
+
+function polyPath(poly){ ctx.moveTo(poly[0].x,poly[0].y); for(let i=1;i<poly.length;i++) ctx.lineTo(poly[i].x,poly[i].y); }
+function clipRegion(){
+  ctx.beginPath();
+  if(geom.shape==='single') ctx.rect(0,0,W,geom.yb);
+  else if(geom.shape==='double') ctx.rect(0,geom.ybTop,W,geom.ybBot-geom.ybTop);
+  else { polyPath(geom.poly); ctx.closePath(); }
+  ctx.clip();
+}
+
+function drawField(){
+  const s = geom.shape;
+  // 磁场区填充
+  ctx.fillStyle='rgba(29,158,117,0.07)';
+  if(s==='single') ctx.fillRect(0,0,W,geom.yb);
+  else if(s==='double') ctx.fillRect(0,geom.ybTop,W,geom.ybBot-geom.ybTop);
+  else { ctx.beginPath(); polyPath(geom.poly); ctx.closePath(); ctx.fill(); }
+
+  // × 标记（仅画在磁场区内）
+  ctx.strokeStyle='rgba(140,170,190,0.4)'; ctx.lineWidth=1.1;
+  const stp=34, ss=3;
+  for(let gx=stp*0.7; gx<W; gx+=stp){
+    for(let gy=stp*0.7; gy<H; gy+=stp){
+      if(inField(gx,gy)){
+        ctx.beginPath();
+        ctx.moveTo(gx-ss,gy-ss); ctx.lineTo(gx+ss,gy+ss);
+        ctx.moveTo(gx+ss,gy-ss); ctx.lineTo(gx-ss,gy+ss);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // 边界/轮廓
+  ctx.strokeStyle='rgba(255,174,66,0.9)'; ctx.lineWidth=2.6;
+  if(s==='single'){ ctx.beginPath(); ctx.moveTo(0,geom.yb); ctx.lineTo(W,geom.yb); ctx.stroke(); }
+  else if(s==='double'){ ctx.beginPath(); ctx.moveTo(0,geom.ybTop); ctx.lineTo(W,geom.ybTop); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(0,geom.ybBot); ctx.lineTo(W,geom.ybBot); ctx.stroke(); }
+  else { ctx.beginPath(); polyPath(geom.poly); ctx.closePath(); ctx.stroke(); }
+
+  // B 标注
+  ctx.fillStyle='rgba(140,170,190,0.85)'; ctx.font='13px sans-serif';
+  ctx.fillText('匀强磁场 B (×)', 12, H-22);
+
+  // 形状相关的拖动手柄 / 标签
+  if(s==='single'){
+    drawLineHandle(geom.yb,'磁场边界（粒子碰到即停止）');
+  } else if(s==='double'){
+    drawLineHandle(geom.ybTop,'磁场上边界');
+    drawLineHandle(geom.ybBot,'磁场下边界（粒子碰到即停止）');
+  } else {
+    geom.poly.forEach((p,idx)=>drawVertexHandle(p,idx));
+  }
+  // d 标注
+  if(s==='single' || s==='double'){
+    const by = (s==='single') ? geom.yb : geom.ybBot;
+    ctx.fillStyle='#fff'; ctx.fillText('d = '+geom.actualD.toFixed(0)+' px', geom.sx+8, (geom.sy+by)/2);
+  }
+}
+function drawLineHandle(y,label){
+  const hw=92, hh=18, hx=geom.sx-hw/2, hy=y-hh/2;
+  ctx.fillStyle='rgba(255,174,66,0.16)'; ctx.strokeStyle='rgba(255,174,66,0.95)'; ctx.lineWidth=1.4;
+  if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(hx,hy,hw,hh,9); ctx.fill(); ctx.stroke(); }
+  else { ctx.fillRect(hx,hy,hw,hh); ctx.strokeRect(hx,hy,hw,hh); }
+  ctx.fillStyle='#ffae42'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('⇕ 拖动边界', geom.sx, y+4); ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,174,66,0.95)'; ctx.font='13px sans-serif';
+  ctx.fillText(label, 12, y-9);
+}
+function drawVertexHandle(p){
+  ctx.fillStyle='rgba(255,174,66,0.95)';
+  ctx.beginPath(); ctx.arc(p.x,p.y,7,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(255,209,102,0.9)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(p.x,p.y,11,0,7); ctx.stroke();
+}
+
+function posAt(p, ph){
+  return {
+    x: p.Ox + geom.r*(p.u0x*Math.cos(ph) + p.v0x*Math.sin(ph)),
+    y: p.Oy + geom.r*(p.u0y*Math.cos(ph) + p.v0y*Math.sin(ph))
+  };
+}
+
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  drawField();
+  const sx = geom.sx, sy = geom.sy, r = geom.r;
+
+  // 放射源
+  ctx.fillStyle='#ffd166';
+  ctx.beginPath(); ctx.arc(sx,sy,6,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(255,209,102,0.85)'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.arc(sx,sy,11,0,7); ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='13px sans-serif';
+  ctx.fillText('放射源 S', sx+15, sy+4);
+
+  for(const p of particles){
+    // 出磁场即静止：画从源沿发射方向的静态短桩（已发射但不运动）
+    if(p.outAtEmit){
+      const lx = sx + p.v0x*12, ly = sy + p.v0y*12;
+      ctx.strokeStyle = p.color; ctx.globalAlpha = 0.8; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(lx,ly); ctx.stroke();
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(lx,ly,3,0,7); ctx.fill();
+      ctx.globalAlpha = 1;
+      continue;
+    }
+    // 完整圆（可选）—— 只画磁场区内部分
+    if(P.showCircle){
+      ctx.save(); clipRegion();
+      ctx.strokeStyle=p.color; ctx.globalAlpha=0.12; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(p.Ox,p.Oy,r,0,7); ctx.stroke();
+      ctx.restore(); ctx.globalAlpha=1;
+    }
+    const cur = Math.min(phase, p.stop);
+    // 已走过的轨迹（亮）
+    ctx.strokeStyle=p.color; ctx.globalAlpha=0.9; ctx.lineWidth=2;
+    ctx.beginPath();
+    const segN=Math.max(8, Math.round(cur/0.04));
+    for(let s=0;s<=segN;s++){
+      const ph=cur*s/segN;
+      const q=posAt(p,ph);
+      s===0?ctx.moveTo(q.x,q.y):ctx.lineTo(q.x,q.y);
+    }
+    ctx.stroke(); ctx.globalAlpha=1;
+    // 粒子头：运动中发光，停止后无光晕
+    const stopped = phase >= p.stop;
+    const h = posAt(p, cur);
+    ctx.fillStyle = p.color;
+    if(stopped){ ctx.beginPath(); ctx.arc(h.x,h.y,3.2,0,7); ctx.fill(); }
+    else { ctx.shadowColor = p.color; ctx.shadowBlur = 9; ctx.beginPath(); ctx.arc(h.x,h.y,3.2,0,7); ctx.fill(); ctx.shadowBlur = 0; }
+    // 出磁场即停止的标记：在边界处画静止圆环
+    if(p.stop < 2*Math.PI - 0.01){
+      const e = posAt(p, p.stop);
+      ctx.strokeStyle = p.color; ctx.globalAlpha = stopped ? 0.9 : 0.4;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(e.x, e.y, 5, 0, 7); ctx.stroke();
+      ctx.globalAlpha = 1;
+      if(stopped && p === particles[0]){
+        ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif';
+        ctx.fillText('出磁场→停止', e.x + 9, e.y - 6);
+      }
+    }
+  }
+  if(geom.staticOut > 0){
+    ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.font = '12px sans-serif';
+    ctx.fillText('出磁场粒子：静止不运动（'+geom.staticOut+' 个）', sx+15, sy+22);
+  }
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min((now-last)/1000, 0.05); last = now;
+  if(playing){
+    phase += dt * P.speed * 260 / geom.r;          // 角速度 ∝ 1/r
+    if(phase > geom.maxStop + 1.0) phase = 0;
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function resize(){
+  const rect = main.getBoundingClientRect();
+  W = Math.max(rect.width, 320);
+  H = Math.max(rect.height, 240);
+  cv.width = Math.floor(W*dpr);
+  cv.height = Math.floor(H*dpr);
+  if(!geom.shape) initShape(P.shape || 'single');
+  build();
+}
+if(window.ResizeObserver){ new ResizeObserver(resize).observe(main); }
+window.addEventListener('resize', resize);
+
+['r','N','speed'].forEach(id=>$(id).addEventListener('input',build));
+$('d').addEventListener('input',()=>{ readUI();
+  if(geom.shape==='single') geom.sy = geom.yb - P.d;
+  else if(geom.shape==='double') geom.sy = geom.ybBot - P.d;
+  ensureSourceInside(); build(); });
+$('shape').addEventListener('change',()=>{ P.shape=$('shape').value; initShape(P.shape); build(); });
+$('qNeg').addEventListener('change',build);
+$('showCircle').addEventListener('change',build);
+$('play').addEventListener('click',()=>{ playing=!playing; $('play').textContent=playing?'⏸ 暂停':'▶ 播放'; });
+$('reset').addEventListener('click',()=>{ phase=0; });
+
+// 拖动：边界(线) / 顶点 / 放射源
+let dragging = null;
+function evPos(e){ const rect = cv.getBoundingClientRect(); return {x:e.clientX-rect.left, y:e.clientY-rect.top}; }
+function getHandles(){
+  const s = geom.shape, H0 = [];
+  if(s==='single') H0.push({kind:'line', y:geom.yb});
+  else if(s==='double'){ H0.push({kind:'line', y:geom.ybTop, id:'top'}); H0.push({kind:'line', y:geom.ybBot, id:'bot'}); }
+  else if(s==='triangle'||s==='quad'){ geom.poly.forEach((p,idx)=>H0.push({kind:'vertex', idx})); }
+  H0.push({kind:'source'});
+  return H0;
+}
+cv.addEventListener('pointerdown', e=>{
+  const {x,y} = evPos(e);
+  const handles = getHandles();
+  let grabbed = null;
+  for(const h of handles){
+    if(h.kind==='source'){ if(Math.hypot(x-geom.sx, y-geom.sy) < 20){ grabbed=h; break; } }
+    else if(h.kind==='line'){ if(Math.abs(y - h.y) < 24){ grabbed=h; break; } }
+    else if(h.kind==='vertex'){ const v=geom.poly[h.idx]; if(Math.hypot(x-v.x, y-v.y) < 20){ grabbed=h; break; } }
+  }
+  if(grabbed){ dragging = grabbed; cv.style.cursor='grabbing'; cv.setPointerCapture(e.pointerId); }
+});
+cv.addEventListener('pointermove', e=>{
+  const {x,y} = evPos(e);
+  if(!dragging){
+    const handles = getHandles();
+    let near = false;
+    for(const h of handles){
+      if(h.kind==='source'){ if(Math.hypot(x-geom.sx, y-geom.sy) < 20){ near=true; break; } }
+      else if(h.kind==='line'){ if(Math.abs(y - h.y) < 24){ near=true; break; } }
+      else if(h.kind==='vertex'){ const v=geom.poly[h.idx]; if(Math.hypot(x-v.x, y-v.y) < 20){ near=true; break; } }
+    }
+    cv.style.cursor = near ? 'grab' : 'default';
+    return;
+  }
+  if(dragging.kind==='source'){
+    geom.sx = x; geom.sy = y; ensureSourceInside(); build();
+  } else if(dragging.kind==='line'){
+    if(dragging.id==='top') geom.ybTop = Math.max(20, Math.min(geom.ybBot-30, y));
+    else if(dragging.id==='bot') geom.ybBot = Math.max(geom.ybTop+30, Math.min(H-20, y));
+    else geom.yb = Math.max(geom.sy+4, Math.min(H-20, y));   // 单边：边界不越过源
+    ensureSourceInside(); build();
+  } else if(dragging.kind==='vertex'){
+    geom.poly[dragging.idx].x = Math.max(10, Math.min(W-10, x));
+    geom.poly[dragging.idx].y = Math.max(10, Math.min(H-10, y));
+    ensureSourceInside(); build();
+  }
+});
+cv.addEventListener('pointerup',    ()=>{ dragging=null; cv.style.cursor='grab'; });
+cv.addEventListener('pointercancel',()=>{ dragging=null; cv.style.cursor='grab'; });
+
+resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
