@@ -392,6 +392,16 @@ const WORKS = [
     icon:"🧪", link:"videos/galileo_inclined_plane.html", date:"2026-08-14", tag:"运动学"
 
   },
+
+  {
+
+    type:"video", title:"伽利略理想斜面实验",
+
+    desc:"思想实验：无摩擦小球将沿水平面匀速永远运动，为惯性定律埋下伏笔。",
+
+    icon:"🧪", link:"videos/galileo_ideal_inclined_plane.html", date:"2026-08-14", tag:"运动学"
+
+  },
   /* ---------------- 作品 ---------------- */
 
   {
