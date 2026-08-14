@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>圆形磁场区 · 带电粒子圆周运动交互演示</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:rgba(20,32,48,0.72); --line:rgba(120,160,180,0.18);
+    --teal:#1d9e75; --text:#dce6ef; --muted:#8aa0b2; --focus:#39d98a; --div:#ffae42;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{display:flex;height:100vh;width:100vw;overflow:hidden;}
+  .side{width:300px;min-width:300px;padding:18px 16px;overflow-y:auto;
+    background:var(--panel);border-right:1px solid var(--line);backdrop-filter:blur(8px);}
+  .main{flex:1;position:relative;overflow:hidden;}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  h1{font-size:16px;font-weight:600;margin:0 0 2px;color:#eaf2f8;}
+  .sub{font-size:12px;color:var(--muted);margin:0 0 16px;line-height:1.5;}
+  .ctrl{margin-bottom:14px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--text);margin-bottom:5px;}
+  .ctrl label b{color:var(--teal);font-weight:600;font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;accent-color:var(--teal);height:4px;cursor:pointer;}
+  input[type=range]:disabled{opacity:0.35;cursor:not-allowed;}
+  select{width:100%;background:rgba(10,18,30,0.6);color:var(--text);
+    border:1px solid var(--line);border-radius:8px;padding:6px;font-size:13px;cursor:pointer;}
+  .row{display:flex;gap:8px;margin:14px 0 6px;}
+  button{flex:1;padding:8px 0;border:1px solid var(--line);background:rgba(29,158,117,0.14);
+    color:var(--text);border-radius:8px;font-size:13px;cursor:pointer;transition:.15s;}
+  button:hover{background:rgba(29,158,117,0.28);}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text);margin:8px 0;}
+  .readout{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;
+    background:rgba(10,18,30,0.5);font-size:12px;line-height:1.9;color:var(--muted);}
+  .readout b{color:var(--text);font-variant-numeric:tabular-nums;}
+  .note{position:absolute;left:16px;bottom:14px;right:16px;font-size:12px;line-height:1.6;
+    color:var(--muted);background:rgba(10,18,30,0.55);border:1px solid var(--line);
+    border-radius:10px;padding:10px 14px;backdrop-filter:blur(4px);pointer-events:none;}
+  .note b{color:var(--text);}
+  .tag{display:inline-block;padding:1px 7px;border-radius:6px;font-size:11px;margin-right:4px;}
+  .tf{background:rgba(57,217,138,0.18);color:var(--focus);}
+  .td{background:rgba(255,174,66,0.18);color:var(--div);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="side">
+    <h1>圆形磁场区 · 粒子圆周运动</h1>
+    <p class="sub">匀强磁场只存在于圆形区域内（B 垂直纸面向里 ×）。粒子在区内做半径 r 的圆周运动，离开磁场后沿切线做匀速直线运动。两种发射模式：绕圆周多点射入，或从同一点以不同方向大量发射。</p>
+
+    <div class="ctrl"><label>发射模式</label>
+      <select id="mode">
+        <option value="multi">多点射入（绕圆周）</option>
+        <option value="single">同点扇形（大量发射）</option>
+      </select></div>
+    <div class="ctrl"><label>磁场区半径 R (px) <b id="vRb">–</b></label>
+      <input type="range" id="Rpx" min="100" max="320" step="2" value="220"></div>
+    <div class="ctrl"><label>粒子运动半径 r (px) <b id="vR">–</b></label>
+      <input type="range" id="rpx" min="20" max="320" step="2" value="130"></div>
+    <div class="ctrl"><label><span id="phiLabel">入射角 φ（速度对半径）</span> <b id="vPhi">0°</b></label>
+      <input type="range" id="phi" min="0" max="80" step="1" value="0"></div>
+    <div class="ctrl" id="spreadCtrl"><label>扇形张角范围 <b id="vSpread">180°</b></label>
+      <input type="range" id="spread" min="10" max="180" step="1" value="180"></div>
+    <div class="ctrl"><label>粒子数 N <b id="vN">12</b></label>
+      <input type="range" id="N" min="4" max="60" step="1" value="12"></div>
+    <div class="ctrl"><label>动画速度 <b id="vs">1.0×</b></label>
+      <input type="range" id="speed" min="0.2" max="2.5" step="0.1" value="1.0"></div>
+
+    <label class="chk"><input type="checkbox" id="qNeg"> 反转电荷符号（翻转偏转方向）</label>
+    <label class="chk"><input type="checkbox" id="showTraj" checked> 显示完整轨迹</label>
+
+    <div class="row">
+      <button id="play">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+    </div>
+
+    <div class="readout">
+      磁场区半径 R = <b id="rRb">–</b><br>
+      粒子运动半径 r = <b id="rR2">–</b><br>
+      比值 r / R = <b id="rRatio">–</b><br>
+      出射情况 = <b id="rExit">–</b>
+    </div>
+  </div>
+
+  <div class="main">
+    <canvas id="cv"></canvas>
+    <div class="note">
+      <span class="tag tf">r = R</span>走半圆，从圆周正对点射出；
+      <span class="tag td">r &lt; R</span>偏转角 &gt; 180°，提前出界；
+      <span class="tag td">r &gt; R</span>偏转角 &lt; 180°，在区内循环（不出界）。
+      出磁场后无磁力，粒子沿切线做<b>匀速直线运动</b>。「同点扇形」默认 0–180° 全扇入射。
+    </div>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const main = document.querySelector('.main');
+let dpr = window.devicePixelRatio || 1;
+let W = 0, H = 0;
+
+const P = {mode:'multi', Rb:220, r:130, phi:0, spread:180, N:12, speed:1, qNeg:false, showTraj:true};
+let playing = true, phase = 0, lastMode = null;
+let geom = {}, particles = [];
+
+const $ = id => document.getElementById(id);
+function readUI(){
+  P.mode=$('mode').value;
+  if(P.mode!==lastMode){           // 切换模式时给一个合理的角度默认（同点 φ=0 径向射入）
+    P.phi=0; $('phi').value=0;
+    lastMode=P.mode;
+  }
+  P.Rb=+$('Rpx').value; P.r=+$('rpx').value;
+  P.phi=+$('phi').value; P.spread=+$('spread').value;
+  P.N=+$('N').value; P.speed=+$('speed').value;
+  P.qNeg=$('qNeg').checked; P.showTraj=$('showTraj').checked;
+  // 模式相关的 φ 范围与标签
+  const fmin = P.mode==='single' ? -89 : 0;
+  const fmax = P.mode==='single' ? 89 : 80;
+  if(P.phi<fmin){ P.phi=fmin; $('phi').value=fmin; }
+  if(P.phi>fmax){ P.phi=fmax; $('phi').value=fmax; }
+  $('phi').min=fmin; $('phi').max=fmax;
+  $('phiLabel').textContent = P.mode==='single' ? '扇形中心角 φ (±89°)' : '入射角 φ（速度对半径）';
+  $('spread').disabled = (P.mode!=='single');
+  $('showTraj').disabled = (P.mode!=='single');
+  $('vRb').textContent=P.Rb+' px';
+  $('vR').textContent=P.r+' px';
+  $('vPhi').textContent=P.phi+'°';
+  $('vSpread').textContent=P.spread+'°';
+  $('vN').textContent=P.N;
+  $('vs').textContent=P.speed.toFixed(1)+'×';
+}
+
+function build(){
+  readUI();
+  const cx = W/2, cy = H/2;
+  const fitR = Math.min(W,H)/2 - 18;
+  const Rb = Math.min(P.Rb, fitR);
+  const r  = Math.min(P.r, Math.min(W,H)/2 - 10);
+  const sense = P.qNeg ? -1 : 1;
+  geom = {cx, cy, Rb, r, sense};
+
+  particles = [];
+  let maxTheta = 0;
+  for(let i=0;i<P.N;i++){
+    let beta, dirAngle;
+    if(P.mode==='multi'){
+      beta = -Math.PI/2 + i*2*Math.PI/P.N;
+      dirAngle = P.phi*Math.PI/180;
+    } else {
+      beta = -Math.PI/2;                            // 同一点（圆顶）
+      const frac = P.N>1 ? i/(P.N-1) : 0.5;
+      let dev = P.phi + (frac-0.5)*P.spread;         // 偏离径向；±89° 为扇区边界（不含 ±90° 切线）
+      dev = Math.max(-89+0.01, Math.min(89-0.01, dev)); // 严格落在 (-89°,89°) 开区间内
+      dirAngle = dev*Math.PI/180;
+    }
+    const Px = cx + Rb*Math.cos(beta), Py = cy + Rb*Math.sin(beta);
+    const rInX = -Math.cos(beta), rInY = -Math.sin(beta);
+    const tanX = -Math.sin(beta),  tanY =  Math.cos(beta);
+    let vx = Math.cos(dirAngle)*rInX + Math.sin(dirAngle)*tanX;
+    let vy = Math.cos(dirAngle)*rInY + Math.sin(dirAngle)*tanY;
+    const vl = Math.hypot(vx,vy); vx/=vl; vy/=vl;
+    const perpX = -vy, perpY = vx;
+    const Ox = Px + sense*r*perpX, Oy = Py + sense*r*perpY;
+    const u0x = (Px-Ox)/r, u0y = (Py-Oy)/r;
+    let thetaExit = Infinity;
+    const steps = 720;
+    for(let s=2;s<=steps;s++){
+      const th = s/steps*2*Math.PI;
+      const x = Ox + r*(u0x*Math.cos(th) + vx*Math.sin(th));
+      const y = Oy + r*(u0y*Math.cos(th) + vy*Math.sin(th));
+      if(Math.hypot(x-cx, y-cy) >= Rb-0.5){ thetaExit = th; break; }
+    }
+    if(!isFinite(thetaExit)) thetaExit = 2*Math.PI;
+    maxTheta = Math.max(maxTheta, thetaExit);
+    particles.push({Px,Py,vx,vy,Ox,Oy,u0x,u0y,thetaExit,
+                    color:`hsl(${Math.round(i/P.N*300)},80%,62%)`});
+  }
+  geom.maxTheta = maxTheta;
+
+  $('rRb').textContent = Rb.toFixed(0)+' px';
+  $('rR2').textContent = r.toFixed(0)+' px';
+  $('rRatio').textContent = (r/Rb).toFixed(2);
+  const te = particles[0].thetaExit;
+  let exitTxt;
+  if(te >= 2*Math.PI - 0.05) exitTxt = '圆周内循环（不出界）';
+  else if(te > Math.PI)       exitTxt = '弧段出界(偏转>180°)';
+  else if(Math.abs(te-Math.PI) < 0.05) exitTxt = '半圆正对射出';
+  else                         exitTxt = '弧段出界(偏转<180°)';
+  $('rExit').textContent = exitTxt;
+}
+
+function drawField(){
+  const {cx,cy,Rb} = geom;
+  ctx.fillStyle='rgba(29,158,117,0.10)';
+  ctx.beginPath(); ctx.arc(cx,cy,Rb,0,7); ctx.fill();
+  ctx.strokeStyle='rgba(120,200,170,0.65)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,Rb,0,7); ctx.stroke();
+  ctx.strokeStyle='rgba(140,170,190,0.5)'; ctx.lineWidth=1.4;
+  const step = Math.max(28, Rb/4);
+  for(let gx=cx-Rb+step*0.6; gx<cx+Rb; gx+=step){
+    for(let gy=cy-Rb+step*0.6; gy<cy+Rb; gy+=step){
+      if(Math.hypot(gx-cx,gy-cy) < Rb-6){
+        const s=3.2;
+        ctx.beginPath();
+        ctx.moveTo(gx-s,gy-s); ctx.lineTo(gx+s,gy+s);
+        ctx.moveTo(gx+s,gy-s); ctx.lineTo(gx-s,gy+s);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.fillStyle='rgba(140,170,190,0.8)'; ctx.font='13px sans-serif';
+  ctx.fillText('匀强磁场 B (×)', cx-Rb+8, cy-Rb+18);
+}
+
+function drawGauge(){
+  const bw=164, bh=128, gx=W-bw-16, gy=16;
+  const ccx=gx+bw/2, ccy=gy+64, rg=32;
+  ctx.fillStyle='rgba(10,18,30,0.62)'; ctx.strokeStyle='rgba(120,160,180,0.28)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(gx,gy,bw,bh); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='rgba(120,200,170,0.7)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.arc(ccx,ccy,rg,0,7); ctx.stroke();
+  const ex=ccx, ey=ccy-rg;
+  ctx.strokeStyle='rgba(190,210,220,0.6)'; ctx.setLineDash([4,3]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ccx,ccy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const showFan = (P.mode==='single');
+  const center = P.phi, half = showFan ? P.spread/2 : 0;
+  const angles = showFan ? [-half, 0, half] : [0];
+  for(const a of angles){
+    const ang=(center+a)*Math.PI/180;
+    const vx=Math.sin(ang), vy=Math.cos(ang);
+    const L=26, isMain=(a===0);
+    ctx.strokeStyle = isMain ? '#39d98a' : 'rgba(57,217,138,0.5)';
+    ctx.lineWidth = isMain ? 2.6 : 1.5;
+    ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ex+vx*L, ey+vy*L); ctx.stroke();
+    if(isMain){
+      const head=6, hAng=Math.atan2(vy,vx);
+      ctx.beginPath();
+      ctx.moveTo(ex+vx*L, ey+vy*L);
+      ctx.lineTo(ex+vx*L-head*Math.cos(hAng-0.4), ey+vy*L-head*Math.sin(hAng-0.4));
+      ctx.lineTo(ex+vx*L-head*Math.cos(hAng+0.4), ey+vy*L-head*Math.sin(hAng+0.4));
+      ctx.closePath(); ctx.fillStyle='#39d98a'; ctx.fill();
+      ctx.fillStyle='#39d98a'; ctx.font='12px sans-serif';
+      ctx.fillText('v', ex+vx*L+4, ey+vy*L+4);
+    }
+  }
+  const ca = a => Math.atan2(Math.cos(a*Math.PI/180), Math.sin(a*Math.PI/180));
+  ctx.strokeStyle='rgba(255,255,255,0.7)'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.arc(ex,ey,16, ca(center-half), ca(center+half)); ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='12px sans-serif';
+  ctx.fillText('φ='+P.phi+'°'+(showFan?('  张角'+P.spread+'°'):''), gx+8, gy+bh-10);
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ex,ey,3,0,7); ctx.fill();
+}
+
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  drawField();
+
+  const {cx,cy,Rb,r} = geom;
+  const Lmax = 2*Math.max(W,H);
+
+  // 射入点 + 入射速度小箭头
+  for(const p of particles){
+    ctx.fillStyle = P.mode==='single' ? '#ffd166' : 'rgba(220,230,240,0.85)';
+    ctx.beginPath(); ctx.arc(p.Px,p.Py, P.mode==='single'?4:3, 0,7); ctx.fill();
+    const aL=12;
+    ctx.strokeStyle='rgba(120,200,170,0.8)'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.moveTo(p.Px,p.Py); ctx.lineTo(p.Px+p.vx*aL, p.Py+p.vy*aL); ctx.stroke();
+  }
+
+  for(const p of particles){
+    const te = p.thetaExit;
+    const looping = (te >= 2*Math.PI - 0.05);
+    let Ex,Ey,dirX,dirY;
+    if(!looping){
+      Ex = p.Ox + r*(p.u0x*Math.cos(te) + p.vx*Math.sin(te));
+      Ey = p.Oy + r*(p.u0y*Math.cos(te) + p.vy*Math.sin(te));
+      const exX = -p.u0x*Math.sin(te) + p.vx*Math.cos(te);
+      const exY = -p.u0y*Math.sin(te) + p.vy*Math.cos(te);
+      const el = Math.hypot(exX,exY)||1;
+      dirX = exX/el; dirY = exY/el;
+    }
+    // 完整轨迹（弧 + 出磁场后直线）——仅"同点扇形"模式绘制
+    const drawTraj = P.showTraj && P.mode==='single';
+    if(drawTraj){
+      ctx.strokeStyle=p.color; ctx.globalAlpha=0.20; ctx.lineWidth=1.4;
+      ctx.beginPath();
+      for(let s=0;s<=180;s++){
+        const th=s/180*te;
+        const x=p.Ox+r*(p.u0x*Math.cos(th)+p.vx*Math.sin(th));
+        const y=p.Oy+r*(p.u0y*Math.cos(th)+p.vy*Math.sin(th));
+        s===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      }
+      if(!looping) ctx.lineTo(Ex+dirX*Lmax, Ey+dirY*Lmax);
+      ctx.stroke();
+      if(!looping){ // 出磁场点标记
+        ctx.globalAlpha=0.45; ctx.strokeStyle=p.color; ctx.lineWidth=1.2;
+        ctx.beginPath(); ctx.arc(Ex,Ey,3,0,7); ctx.stroke();
+      }
+    }
+    // 动画亮段（弧 + 直线偏移）
+    const inArc = Math.min(phase, te);
+    ctx.strokeStyle=p.color; ctx.globalAlpha=0.95; ctx.lineWidth=2;
+    ctx.beginPath();
+    const segN=120;
+    for(let s=0;s<=segN;s++){
+      const th=inArc*s/segN;
+      const x=p.Ox+r*(p.u0x*Math.cos(th)+p.vx*Math.sin(th));
+      const y=p.Oy+r*(p.u0y*Math.cos(th)+p.vy*Math.sin(th));
+      s===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    let hx,hy;
+    if(!looping && phase>te){
+      const sd = Math.min(r*(phase-te), Lmax);
+      ctx.lineTo(Ex+dirX*sd, Ey+dirY*sd);
+      hx=Ex+dirX*sd; hy=Ey+dirY*sd;
+    } else {
+      hx=p.Ox+r*(p.u0x*Math.cos(inArc)+p.vx*Math.sin(inArc));
+      hy=p.Oy+r*(p.u0y*Math.cos(inArc)+p.vy*Math.sin(inArc));
+    }
+    ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=p.color; ctx.shadowColor=p.color; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(hx,hy,3.4,0,7); ctx.fill();
+    ctx.shadowBlur=0;
+  }
+  ctx.globalAlpha=1;
+
+  // 出磁场标注（仅"同点扇形"模式）
+  const p0=particles[0];
+  if(P.mode==='single' && p0 && p0.thetaExit < 2*Math.PI-0.05){
+    const te=p0.thetaExit;
+    const Ex=p0.Ox+r*(p0.u0x*Math.cos(te)+p0.vx*Math.sin(te));
+    const Ey=p0.Oy+r*(p0.u0y*Math.cos(te)+p0.vy*Math.sin(te));
+    ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.font='12px sans-serif';
+    ctx.fillText('出磁场 → 直线运动', Ex+8, Ey-8);
+  }
+
+  drawGauge();
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min((now-last)/1000, 0.05); last = now;
+  if(playing){
+    phase += dt * P.speed * 300 / geom.r;   // 角速度 ∝ 1/r，与 r 单位无关，视觉匀速一致
+    if(phase > geom.maxTheta + 1.5) phase = 0;
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function resize(){
+  const rect = main.getBoundingClientRect();
+  W = Math.max(rect.width, 320);
+  H = Math.max(rect.height, 240);
+  cv.width = Math.floor(W*dpr);
+  cv.height = Math.floor(H*dpr);
+  build();
+}
+if(window.ResizeObserver){ new ResizeObserver(resize).observe(main); }
+window.addEventListener('resize', resize);
+
+['mode','Rpx','rpx','phi','spread','N','speed'].forEach(id=>$(id).addEventListener('input',build));
+$('qNeg').addEventListener('change',build);
+$('showTraj').addEventListener('change',build);
+$('play').addEventListener('click',()=>{ playing=!playing; $('play').textContent=playing?'⏸ 暂停':'▶ 播放'; });
+$('reset').addEventListener('click',()=>{ phase=0; });
+
+resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
