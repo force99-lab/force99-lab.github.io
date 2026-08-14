@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>二维斜抛 · 固定真实坐标</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #0a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        .main-container {
+            background: #0d1f33;
+            border-radius: 28px;
+            padding: 16px 20px 20px 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(80, 160, 255, 0.12);
+            max-width: 960px;
+            width: 100%;
+        }
+        .top-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .control-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px 20px;
+            background: rgba(10, 30, 50, 0.6);
+            backdrop-filter: blur(6px);
+            padding: 8px 18px;
+            border-radius: 40px;
+            border: 1px solid rgba(100, 180, 255, 0.15);
+        }
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #b0d4f0;
+            font-size: 0.8rem;
+            letter-spacing: 0.3px;
+        }
+        .control-item label {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .control-item input[type="range"] {
+            width: 100px;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(90deg, #1a6b8a, #6fc3ff);
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+        }
+        .control-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff9f9f, #e63e3e);
+            border: 2px solid #fff;
+            box-shadow: 0 0 12px #ff6b6b88;
+            cursor: pointer;
+        }
+        .control-item input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+        .control-item input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ff5e5e;
+            border: 2px solid #fff;
+            cursor: pointer;
+        }
+        .value-badge {
+            min-width: 40px;
+            font-weight: 600;
+            color: #ffbaba;
+            font-size: 0.85rem;
+            text-align: center;
+            background: rgba(0,0,0,0.25);
+            padding: 1px 8px;
+            border-radius: 30px;
+            border: 1px solid #ff6b6b55;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background: rgba(255, 80, 80, 0.12);
+            border: 1px solid #ff6b6b88;
+            color: #ffc8c8;
+            padding: 5px 16px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s;
+            backdrop-filter: blur(4px);
+            letter-spacing: 0.5px;
+            background: rgba(40, 20, 30, 0.25);
+        }
+        .action-btn:hover {
+            background: #ff4f4f44;
+            border-color: #ff9a9a;
+            color: #fff;
+            box-shadow: 0 0 20px #ff3b3b44;
+            transform: scale(1.03);
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        .action-btn.reset-btn {
+            border-color: #6a8cff88;
+            color: #aac4ff;
+            background: rgba(60, 100, 255, 0.1);
+        }
+        .action-btn.reset-btn:hover {
+            background: #4a7aff33;
+            border-color: #8aafff;
+            box-shadow: 0 0 20px #4a7aff44;
+        }
+
+        .canvas-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 4px;
+        }
+        .canvas-box {
+            background: #0a1828;
+            border-radius: 16px;
+            border: 1px solid rgba(80, 160, 255, 0.10);
+            padding: 8px 10px 6px 10px;
+            box-shadow: inset 0 0 30px rgba(0, 20, 40, 0.4);
+            flex: 1 1 340px;
+            min-width: 260px;
+        }
+        .canvas-box .title {
+            color: #7aa5c9;
+            font-size: 0.65rem;
+            letter-spacing: 1.2px;
+            padding: 0 4px 4px 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .canvas-box .title .legends {
+            display: flex;
+            gap: 10px;
+        }
+        .canvas-box .title .legends span {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.6rem;
+        }
+        .canvas-box .title .legends .dot {
+            display: inline-block;
+            width: 12px;
+            height: 2px;
+            border-radius: 2px;
+        }
+        .canvas-box canvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            display: block;
+            border-radius: 10px;
+            background: #060f1a;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+        .charts-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+            justify-content: center;
+        }
+        .chart-box {
+            background: #0a1828;
+            border-radius: 14px;
+            border: 1px solid rgba(80, 160, 255, 0.08);
+            padding: 6px 10px 4px 10px;
+            flex: 1 1 240px;
+            min-width: 170px;
+            box-shadow: inset 0 0 16px rgba(0, 10, 20, 0.3);
+        }
+        .chart-box .title {
+            color: #7aa5c9;
+            font-size: 0.6rem;
+            letter-spacing: 0.8px;
+            padding: 0 2px 3px 2px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .chart-box .title .legends {
+            display: flex;
+            gap: 8px;
+        }
+        .chart-box .title .legends span {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 0.55rem;
+        }
+        .chart-box .title .legends .dot {
+            display: inline-block;
+            width: 10px;
+            height: 2px;
+            border-radius: 2px;
+        }
+        .chart-box canvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 5;
+            display: block;
+            border-radius: 8px;
+            background: #060f1a;
+        }
+        @media (max-width: 600px) {
+            .main-container { padding: 10px; }
+            .control-group { padding: 6px 12px; gap: 6px 10px; border-radius: 30px; }
+            .control-item input[type="range"] { width: 70px; }
+            .control-item { font-size: 0.7rem; }
+            .value-badge { min-width: 28px; font-size: 0.75rem; padding: 0 6px; }
+            .action-btn { font-size: 0.7rem; padding: 4px 12px; }
+            .canvas-box { padding: 6px; }
+            .chart-box { padding: 4px 6px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    <!-- 控制栏 -->
+    <div class="top-row">
+        <div class="control-group">
+            <div class="control-item">
+                <label>🎯 角度 <span style="color:#8fcbff;">θ</span></label>
+                <input type="range" id="angle-slider" min="0" max="90" value="45" step="0.5">
+                <span class="value-badge" id="angle-display">45°</span>
+            </div>
+            <div class="control-item">
+                <label>🚀 初速 <span style="color:#8fcbff;">v₀</span></label>
+                <input type="range" id="speed-slider" min="2" max="50" value="8" step="0.2">
+                <span class="value-badge" id="speed-display">8.0</span>
+            </div>
+            <div class="btn-group">
+                <button class="action-btn" id="launch-btn">⟳ 发射</button>
+                <button class="action-btn reset-btn" id="reset-btn">↺ 复位</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主画布 + 双图 -->
+    <div class="canvas-wrapper">
+        <div class="canvas-box">
+            <div class="title">
+                <span>⚡ 斜抛运动 · 固定真实坐标</span>
+                <div class="legends">
+                    <span><span class="dot" style="background:#ffaa55;"></span> 轨迹</span>
+                    <span><span class="dot" style="background:#ff3b3b;"></span> 小球</span>
+                </div>
+            </div>
+            <canvas id="mainCanvas"></canvas>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-box">
+            <div class="title">
+                <span>📈 位移-时间</span>
+                <div class="legends">
+                    <span><span class="dot" style="background:#ffaa55;"></span> x</span>
+                    <span><span class="dot" style="background:#55ddff;"></span> y</span>
+                </div>
+            </div>
+            <canvas id="chartDisp"></canvas>
+        </div>
+        <div class="chart-box">
+            <div class="title">
+                <span>📊 速度-时间</span>
+                <div class="legends">
+                    <span><span class="dot" style="background:#ff6666;"></span> vx</span>
+                    <span><span class="dot" style="background:#66ff88;"></span> vy</span>
+                </div>
+            </div>
+            <canvas id="chartVel"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // DOM
+    const mainCanvas = document.getElementById('mainCanvas');
+    const ctxMain = mainCanvas.getContext('2d');
+    const chartDisp = document.getElementById('chartDisp');
+    const ctxDisp = chartDisp.getContext('2d');
+    const chartVel = document.getElementById('chartVel');
+    const ctxVel = chartVel.getContext('2d');
+
+    // 物理参数
+    const g = 9.8;
+    let v0 = 8.0;
+    let angleDeg = 45;
+    let angleRad = angleDeg * Math.PI / 180;
+    let vx = 0, vy = 0;
+    let totalTime = 0;
+
+    // 运动状态
+    let isMoving = false;
+    let currentTime = 0;
+    let ballX = 0, ballY = 0;
+    let isBallVisible = true;
+
+    // --- 轨迹存储 ---
+    let allTrails = [];
+    let currentTrailX = [0];
+    let currentTrailY = [0];
+
+    // 图表数据
+    const MAX_HISTORY = 120;
+    let timeHist = [];
+    let xPosHist = [];
+    let yPosHist = [];
+    let vxHist = [];
+    let vyHist = [];
+
+    // --- 固定真实坐标范围 (米) ---
+    const FIXED_MAX_X = 120;   // X轴最大 120 米
+    const FIXED_MAX_Y = 60;    // Y轴最大 60 米
+
+    // --- 复位 ---
+    function fullReset() {
+        isMoving = false;
+        currentTime = 0;
+        ballX = 0;
+        ballY = 0;
+        isBallVisible = true;
+        allTrails = [];
+        currentTrailX = [0];
+        currentTrailY = [0];
+        timeHist = [];
+        xPosHist = [];
+        yPosHist = [];
+        vxHist = [];
+        vyHist = [];
+        drawAll();
+    }
+
+    // --- 发射 ---
+    function launch() {
+        // 保存当前轨迹到历史
+        if (currentTrailX.length > 1) {
+            allTrails.push({
+                trailX: [...currentTrailX],
+                trailY: [...currentTrailY]
+            });
+        }
+
+        const angleSlider = document.getElementById('angle-slider');
+        const speedSlider = document.getElementById('speed-slider');
+        angleDeg = parseFloat(angleSlider.value);
+        v0 = parseFloat(speedSlider.value);
+        document.getElementById('angle-display').textContent = Math.round(angleDeg) + '°';
+        document.getElementById('speed-display').textContent = v0.toFixed(1);
+        angleRad = angleDeg * Math.PI / 180;
+
+        // 处理角度边界
+        if (Math.abs(Math.cos(angleRad)) < 1e-10) {
+            vx = 0;
+            vy = v0;
+        } else {
+            vx = v0 * Math.cos(angleRad);
+            vy = v0 * Math.sin(angleRad);
+        }
+        
+        if (Math.abs(vy) < 1e-10) {
+            totalTime = 0.01;
+        } else {
+            totalTime = (2 * vy) / g;
+            if (totalTime < 0.01) totalTime = 0.01;
+        }
+
+        ballX = 0;
+        ballY = 0;
+        currentTime = 0;
+        isBallVisible = true;
+        currentTrailX = [0];
+        currentTrailY = [0];
+
+        timeHist = [0];
+        xPosHist = [0];
+        yPosHist = [0];
+        vxHist = [vx];
+        vyHist = [vy];
+
+        isMoving = true;
+        drawAll();
+    }
+
+    // --- 物理更新 ---
+    function updatePhysics(dt) {
+        if (!isMoving) return;
+        const step = Math.min(dt, 0.02);
+        currentTime += step;
+
+        if (currentTime >= totalTime) {
+            currentTime = totalTime;
+            isMoving = false;
+            const x = vx * totalTime;
+            const y = 0;
+            ballX = x;
+            ballY = y;
+            // 判断小球是否在视野内（X方向超过固定范围则隐藏）
+            isBallVisible = (x <= FIXED_MAX_X * 1.05);
+            currentTrailX.push(x);
+            currentTrailY.push(y);
+            recordData(totalTime, x, y, vx, vy - g * totalTime);
+            if (currentTrailX.length > 1) {
+                allTrails.push({
+                    trailX: [...currentTrailX],
+                    trailY: [...currentTrailY]
+                });
+                currentTrailX = [x];
+                currentTrailY = [0];
+            }
+            drawAll();
+            return;
+        }
+
+        const x = vx * currentTime;
+        const y = vy * currentTime - 0.5 * g * currentTime * currentTime;
+        const displayY = Math.max(y, 0);
+        ballX = x;
+        ballY = displayY;
+        
+        // 判断小球是否在视野内（X方向超过固定范围则隐藏）
+        isBallVisible = (x <= FIXED_MAX_X * 1.05);
+        
+        // 只记录在合理范围内的轨迹点，防止无限增长
+        if (x <= FIXED_MAX_X * 1.5) {
+            currentTrailX.push(x);
+            currentTrailY.push(displayY);
+        }
+
+        if (currentTrailX.length > 500) {
+            currentTrailX.shift();
+            currentTrailY.shift();
+        }
+
+        const vxNow = vx;
+        const vyNow = vy - g * currentTime;
+        recordData(currentTime, x, displayY, vxNow, vyNow);
+        drawAll();
+    }
+
+    function recordData(t, x, y, vxNow, vyNow) {
+        if (timeHist.length > 0 && t - timeHist[timeHist.length - 1] < 0.01) return;
+        timeHist.push(t);
+        xPosHist.push(x);
+        yPosHist.push(y);
+        vxHist.push(vxNow);
+        vyHist.push(vyNow);
+        if (timeHist.length > MAX_HISTORY) {
+            timeHist.shift();
+            xPosHist.shift();
+            yPosHist.shift();
+            vxHist.shift();
+            vyHist.shift();
+        }
+    }
+
+    // --- 绘制主画布 (固定坐标) ---
+    function drawMain() {
+        const w = mainCanvas.clientWidth;
+        const h = mainCanvas.clientHeight;
+        mainCanvas.width = w * 2;
+        mainCanvas.height = h * 2;
+        mainCanvas.style.width = w + 'px';
+        mainCanvas.style.height = h + 'px';
+        ctxMain.scale(2, 2);
+
+        ctxMain.clearRect(0, 0, w, h);
+
+        const pad = { top: 28, bottom: 28, left: 38, right: 28 };
+        const plotW = w - pad.left - pad.right;
+        const plotH = h - pad.top - pad.bottom;
+
+        // 使用固定真实坐标范围
+        const maxX = FIXED_MAX_X;
+        const maxY = FIXED_MAX_Y;
+
+        const mapX = (x) => pad.left + (x / maxX) * plotW;
+        const mapY = (y) => pad.top + plotH - (y / maxY) * plotH;
+
+        // ---- 网格 (10x10 等分) ----
+        ctxMain.strokeStyle = 'rgba(60, 140, 210, 0.06)';
+        ctxMain.lineWidth = 0.5;
+        for (let i = 0; i <= 10; i++) {
+            const xPos = pad.left + (i / 10) * plotW;
+            ctxMain.beginPath();
+            ctxMain.moveTo(xPos, pad.top);
+            ctxMain.lineTo(xPos, pad.top + plotH);
+            ctxMain.stroke();
+            const yPos = pad.top + (i / 10) * plotH;
+            ctxMain.beginPath();
+            ctxMain.moveTo(pad.left, yPos);
+            ctxMain.lineTo(pad.left + plotW, yPos);
+            ctxMain.stroke();
+        }
+
+        // ---- 坐标轴 (细白线) ----
+        ctxMain.strokeStyle = 'rgba(200, 220, 255, 0.25)';
+        ctxMain.lineWidth = 1.0;
+        const yZero = mapY(0);
+        const xZero = mapX(0);
+        ctxMain.beginPath();
+        ctxMain.moveTo(pad.left, yZero);
+        ctxMain.lineTo(pad.left + plotW, yZero);
+        ctxMain.stroke();
+        ctxMain.beginPath();
+        ctxMain.moveTo(xZero, pad.top);
+        ctxMain.lineTo(xZero, pad.top + plotH);
+        ctxMain.stroke();
+
+        // ---- 坐标轴刻度标签 ----
+        ctxMain.fillStyle = 'rgba(160, 190, 220, 0.3)';
+        ctxMain.font = '9px sans-serif';
+        ctxMain.textAlign = 'center';
+        // X轴刻度 (每10米)
+        for (let i = 0; i <= 12; i++) {
+            const val = i * 10;
+            const pos = mapX(val);
+            ctxMain.fillText(val, pos, yZero + 14);
+        }
+        // Y轴刻度 (每5米)
+        ctxMain.textAlign = 'right';
+        for (let i = 0; i <= 12; i++) {
+            const val = i * 5;
+            if (val > maxY) break;
+            const pos = mapY(val);
+            ctxMain.fillText(val, xZero - 6, pos + 3);
+        }
+
+        // 轴标签
+        ctxMain.fillStyle = 'rgba(160, 190, 220, 0.5)';
+        ctxMain.font = '12px sans-serif';
+        ctxMain.textAlign = 'left';
+        ctxMain.fillText('x (m)', pad.left + plotW - 40, yZero - 8);
+        ctxMain.fillText('y (m)', xZero + 8, pad.top + 16);
+        ctxMain.textAlign = 'center';
+        ctxMain.fillText('O', xZero - 14, yZero + 16);
+
+        // ---- 绘制所有历史轨迹 (细线) ----
+        for (const trail of allTrails) {
+            if (trail.trailX.length < 2) continue;
+            ctxMain.beginPath();
+            ctxMain.strokeStyle = 'rgba(255, 170, 85, 0.25)';
+            ctxMain.lineWidth = 1.0;
+            for (let i = 0; i < trail.trailX.length; i++) {
+                const px = mapX(trail.trailX[i]);
+                const py = mapY(trail.trailY[i]);
+                // 只绘制在范围内的点
+                if (trail.trailX[i] > maxX) break;
+                i === 0 ? ctxMain.moveTo(px, py) : ctxMain.lineTo(px, py);
+            }
+            ctxMain.stroke();
+        }
+
+        // ---- 绘制当前轨迹 (橙色) ----
+        if (currentTrailX.length > 1) {
+            ctxMain.beginPath();
+            ctxMain.strokeStyle = '#ffaa55';
+            ctxMain.lineWidth = 1.8;
+            ctxMain.shadowColor = '#ffaa5544';
+            ctxMain.shadowBlur = 4;
+            for (let i = 0; i < currentTrailX.length; i++) {
+                const px = mapX(currentTrailX[i]);
+                const py = mapY(currentTrailY[i]);
+                if (currentTrailX[i] > maxX) break;
+                i === 0 ? ctxMain.moveTo(px, py) : ctxMain.lineTo(px, py);
+            }
+            ctxMain.stroke();
+            ctxMain.shadowBlur = 0;
+        }
+
+        // ---- 绘制小球 (如果可见) ----
+        if (isBallVisible && ballX <= maxX) {
+            const bx = mapX(ballX);
+            const by = mapY(ballY);
+            const radius = Math.min(plotW, plotH) * 0.018;
+            // 光晕
+            const grad = ctxMain.createRadialGradient(bx - radius*0.3, by - radius*0.3, radius*0.1, bx, by, radius*1.6);
+            grad.addColorStop(0, 'rgba(255, 80, 80, 0.2)');
+            grad.addColorStop(1, 'rgba(255, 80, 80, 0)');
+            ctxMain.fillStyle = grad;
+            ctxMain.beginPath();
+            ctxMain.arc(bx, by, radius * 1.6, 0, Math.PI * 2);
+            ctxMain.fill();
+
+            const grad2 = ctxMain.createRadialGradient(bx - radius*0.3, by - radius*0.4, radius*0.1, bx, by, radius);
+            grad2.addColorStop(0, '#ff6b6b');
+            grad2.addColorStop(0.7, '#e63e3e');
+            grad2.addColorStop(1, '#aa2222');
+            ctxMain.fillStyle = grad2;
+            ctxMain.shadowColor = '#ff444466';
+            ctxMain.shadowBlur = 12;
+            ctxMain.beginPath();
+            ctxMain.arc(bx, by, radius, 0, Math.PI * 2);
+            ctxMain.fill();
+            ctxMain.shadowBlur = 0;
+
+            ctxMain.fillStyle = 'rgba(255,255,255,0.2)';
+            ctxMain.beginPath();
+            ctxMain.arc(bx - radius*0.25, by - radius*0.3, radius*0.2, 0, Math.PI*2);
+            ctxMain.fill();
+        }
+    }
+
+    // --- 绘制图表 ---
+    function drawChart(ctx, canvas, data1, data2, color1, color2, label) {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        canvas.width = w * 2;
+        canvas.height = h * 2;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        ctx.scale(2, 2);
+
+        ctx.clearRect(0, 0, w, h);
+        const len = timeHist.length;
+        if (len < 2) {
+            ctx.fillStyle = 'rgba(100,150,200,0.15)';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('等待数据...', w/2, h/2);
+            return;
+        }
+
+        const pad = { top: 12, bottom: 14, left: 20, right: 8 };
+        const plotW = w - pad.left - pad.right;
+        const plotH = h - pad.top - pad.bottom;
+
+        let maxVal = 0.5;
+        for (let i = 0; i < len; i++) {
+            const v1 = Math.abs(data1[i]);
+            const v2 = Math.abs(data2[i]);
+            if (v1 > maxVal) maxVal = v1;
+            if (v2 > maxVal) maxVal = v2;
+        }
+        maxVal *= 1.15;
+        if (maxVal < 0.5) maxVal = 0.5;
+
+        const tMin = timeHist[0];
+        const tMax = Math.max(timeHist[len-1], tMin + 0.1);
+        const tRange = tMax - tMin;
+
+        const mapX = (t) => pad.left + (t - tMin) / tRange * plotW;
+        const mapY = (val) => pad.top + plotH - (val / maxVal) * plotH * 0.85 - plotH * 0.05;
+
+        // 时间轴 (细白线)
+        ctx.strokeStyle = 'rgba(200, 220, 255, 0.2)';
+        ctx.lineWidth = 0.8;
+        ctx.setLineDash([2, 3]);
+        const yZero = mapY(0);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, yZero);
+        ctx.lineTo(pad.left + plotW, yZero);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.strokeStyle = color1;
+        for (let i = 0; i < len; i++) {
+            const x = mapX(timeHist[i]);
+            const y = mapY(data1[i]);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.strokeStyle = color2;
+        for (let i = 0; i < len; i++) {
+            const x = mapX(timeHist[i]);
+            const y = mapY(data2[i]);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(100,180,255,0.06)';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(pad.left, pad.top, plotW, plotH);
+
+        ctx.fillStyle = 'rgba(140,180,220,0.2)';
+        ctx.font = '8px sans-serif';
+        ctx.fillText(label === '位移' ? 'x/m  y/m' : 'v/(m·s⁻¹)', pad.left + 4, pad.top + 12);
+    }
+
+    function drawAll() {
+        drawMain();
+        drawChart(ctxDisp, chartDisp, xPosHist, yPosHist, '#ffaa55', '#55ddff', '位移');
+        drawChart(ctxVel, chartVel, vxHist, vyHist, '#ff6666', '#66ff88', '速度');
+    }
+
+    // --- 响应式 ---
+    function resizeCanvases() {
+        drawAll();
+    }
+
+    // --- 事件绑定 ---
+    document.getElementById('angle-slider').addEventListener('input', (e) => {
+        document.getElementById('angle-display').textContent = Math.round(e.target.value) + '°';
+    });
+    document.getElementById('speed-slider').addEventListener('input', (e) => {
+        document.getElementById('speed-display').textContent = parseFloat(e.target.value).toFixed(1);
+    });
+    document.getElementById('launch-btn').addEventListener('click', launch);
+    document.getElementById('reset-btn').addEventListener('click', fullReset);
+
+    window.addEventListener('resize', resizeCanvases);
+
+    // --- 初始启动 ---
+    setTimeout(() => {
+        launch();
+    }, 50);
+
+    // --- 动画循环 ---
+    let lastTime = 0;
+    function animate(time) {
+        const dt = lastTime ? (time - lastTime) / 1000 : 0.016;
+        lastTime = time;
+        updatePhysics(dt);
+        requestAnimationFrame(animate);
+    }
+    animate(0);
+
+    const ro = new ResizeObserver(() => drawAll());
+    ro.observe(mainCanvas);
+    ro.observe(chartDisp);
+    ro.observe(chartVel);
+
+    console.log('二维斜抛 · 固定真实坐标 (X:0-120m, Y:0-60m)');
+})();
+</script>
+</body>
+</html>
