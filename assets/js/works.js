@@ -78,6 +78,36 @@ const WORKS = [
     desc:"演示电子束在电场中偏转、逐点扫描合成波形，直观呈现示波器成像原理。",
     icon:"📺", link:"animations/oscilloscope.html", date:"2026-08-13", tag:"电学"
   },
+  {
+    type:"animation", title:"游标卡尺交互动画",
+    desc:"10/20 分度游标卡尺的刻度原理与加减法读数交互演示。",
+    icon:"📏", link:"animations/vernier-caliper.html", date:"2026-08-14", tag:"测量"
+  },
+  {
+    type:"animation", title:"圆形磁场区·磁聚焦与磁发散",
+    desc:"带电粒子在圆形边界磁场中的聚焦与发散轨迹交互演示。",
+    icon:"🧲", link:"animations/circular-bfield-focus.html", date:"2026-08-14", tag:"电磁学"
+  },
+  {
+    type:"animation", title:"带电粒子射入圆形边界磁场",
+    desc:"粒子射入圆形边界磁场的偏转、临界与边界轨迹分析。",
+    icon:"⚡", link:"animations/charged-particle-circular-boundary.html", date:"2026-08-14", tag:"电磁学"
+  },
+  {
+    type:"animation", title:"斜抛运动",
+    desc:"二维斜抛运动的轨迹、射程与最高点交互演示。",
+    icon:"🎯", link:"animations/oblique-projectile.html", date:"2026-08-14", tag:"力学"
+  },
+  {
+    type:"animation", title:"波的反向与驻波",
+    desc:"入射波与反向波叠加形成驻波，演示波节与波腹。",
+    icon:"〰️", link:"animations/wave-reflection-standing-2.html", date:"2026-08-14", tag:"波动"
+  },
+  {
+    type:"animation", title:"放射源粒子在匀强磁场中的运动",
+    desc:"放射源向各方向发射带电粒子，在匀强磁场中做圆周运动。",
+    icon:"☢️", link:"animations/磁场放射源粒子.html", date:"2026-08-14", tag:"电磁学"
+  },
   /* ---------------- 解题 ---------------- */
   {
     type:"solve", title:"2026湖北高考物理压轴题",
@@ -113,6 +143,21 @@ const WORKS = [
     icon:"⚡", link:"#", date:"2026-05-16", tag:"微课"
   },
 
+  {
+    type:"video", title:"杨氏双缝干涉实验",
+    desc:"单色光通过双缝产生等间距干涉条纹，验证光的波动性。",
+    icon:"🔬", link:"videos/young-double-slit.html", date:"2026-08-14", tag:"光学"
+  },
+  {
+    type:"video", title:"蛇形摆（摆波）",
+    desc:"摆长略异的单摆同步释放，呈现蛇形、聚散与复原的周期性图案。",
+    icon:"🌀", link:"videos/蛇形摆.html", date:"2026-08-14", tag:"机械振动"
+  },
+  {
+    type:"video", title:"密立根油滴实验",
+    desc:"带电油滴在电场中受力平衡，测定基本电荷 e，证实电荷量子化。",
+    icon:"💧", link:"videos/millikan-oil-drop.html", date:"2026-08-14", tag:"电场"
+  },
   /* ---------------- 作品 ---------------- */
   {
     type:"work", title:"LXQ 教学品牌视觉设计",
