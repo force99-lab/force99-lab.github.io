@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物理迁移能力的野蛮生长</title>
+<style>
+  :root{
+    --bg-0:#04181a;--bg-1:#062324;--bg-2:#0a3536;
+    --teal:#14b8a6;--teal-deep:#0d6e66;--teal-glow:rgba(20,184,166,.35);
+    --ink:#e8f4f2;--ink-soft:#a9c7c3;--ink-dim:#7fa3a0;
+    --glass:rgba(255,255,255,.06);--glass-line:rgba(255,255,255,.12);
+    --prism:linear-gradient(120deg,#ff5f6d,#feb47b,#f6e27a,#48dbfb,#5b86e5,#a18cd1);
+    --prism-soft:linear-gradient(120deg,rgba(255,95,109,.25),rgba(246,226,122,.22),rgba(72,219,251,.25),rgba(161,140,209,.25));
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Noto Serif SC","Songti SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#0c4748 0%,transparent 55%),
+               radial-gradient(900px 700px at -10% 20%,#0a3a3b 0%,transparent 50%),
+               linear-gradient(180deg,var(--bg-0),var(--bg-1) 40%,var(--bg-2));
+    color:var(--ink);line-height:1.95;overflow-x:hidden;
+  }
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;}
+  .wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:0 24px 120px;}
+
+  header.hero{position:relative;z-index:1;min-height:74vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:80px 24px 40px;}
+  .prism-bar{width:240px;height:6px;border-radius:6px;background:var(--prism);box-shadow:0 0 24px rgba(72,219,251,.5);margin-bottom:34px;}
+  .hero h1{font-size:clamp(28px,4.8vw,48px);font-weight:800;letter-spacing:.5px;line-height:1.35;background:linear-gradient(180deg,#fff,#bfe9e3);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 40px var(--teal-glow);}
+  .hero .sub{margin-top:22px;font-size:clamp(15px,2.2vw,19px);color:var(--ink-soft);font-weight:400;max-width:700px;}
+  .hero .tag{margin-top:34px;display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .hero .tag span{font-family:-apple-system,"Segoe UI",sans-serif;font-size:12.5px;letter-spacing:.5px;padding:6px 14px;border:1px solid var(--glass-line);border-radius:999px;background:var(--glass);color:var(--ink-soft);backdrop-filter:blur(8px);}
+  .scroll-cue{margin-top:48px;font-size:13px;color:var(--ink-dim);letter-spacing:3px;}
+  .scroll-cue::after{content:"↓";display:block;margin-top:6px;animation:bob 1.8s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);opacity:.4;}50%{transform:translateY(8px);opacity:1;}}
+
+  article{padding-top:30px;}
+  section{margin-top:64px;scroll-margin-top:30px;}
+  .sec-label{font-family:-apple-system,"Segoe UI",sans-serif;font-size:12.5px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;margin-bottom:10px;}
+  h2{font-size:clamp(22px,3.4vw,30px);font-weight:800;line-height:1.45;margin-bottom:22px;position:relative;padding-left:18px;}
+  h2::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:5px;border-radius:5px;background:var(--prism);}
+  h3{font-size:18px;color:#d9f3ee;margin:30px 0 12px;font-weight:700;}
+  p{margin:16px 0;color:var(--ink-soft);font-size:16.5px;}
+  strong{color:#fff;font-weight:700;}
+  em{color:var(--teal);font-style:normal;font-weight:600;}
+  .formula{font-family:"Cambria Math","Times New Roman",serif;font-style:italic;color:#cffaf3;background:rgba(20,184,166,.08);padding:1px 7px;border-radius:6px;border:1px solid rgba(20,184,166,.18);white-space:nowrap;}
+
+  blockquote{margin:30px 0;padding:22px 26px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-line);border-left:4px solid var(--teal);backdrop-filter:blur(10px);font-size:18px;color:#eafbf8;font-style:italic;line-height:1.8;box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .lead-quote{font-size:clamp(18px,2.6vw,22px);text-align:center;color:#fff;font-weight:600;background:var(--prism-soft);border:1px solid var(--glass-line);border-radius:18px;padding:30px 28px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(72,219,251,.12);}
+  .lead-quote small{display:block;margin-top:14px;font-size:14px;color:var(--ink-dim);font-weight:400;font-style:normal;}
+
+  .table-glass{width:100%;border-collapse:separate;border-spacing:0;margin:26px 0;background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;overflow:hidden;backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .table-glass th,.table-glass td{padding:16px 20px;text-align:left;font-size:15.5px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top;}
+  .table-glass th{background:rgba(20,184,166,.12);color:#cffaf3;font-weight:700;font-family:-apple-system,"Segoe UI",sans-serif;letter-spacing:.5px;}
+  .table-glass td{color:var(--ink-soft);}
+  .table-glass td b{color:#fff;}
+  .table-glass tr:last-child td{border-bottom:none;}
+
+  .cat{margin:34px 0;}
+  .cat-head{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .cat-head .dot{width:14px;height:14px;border-radius:50%;background:var(--prism);box-shadow:0 0 14px rgba(72,219,251,.6);}
+  .cat-head h3{margin:0;font-size:19px;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+  .card{background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;padding:18px 20px;backdrop-filter:blur(8px);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+  .card:hover{transform:translateY(-4px);border-color:var(--teal);box-shadow:0 12px 36px rgba(20,184,166,.18);}
+  .card .no{font-family:-apple-system,"Segoe UI",sans-serif;font-size:12px;color:var(--teal);letter-spacing:1px;font-weight:700;}
+  .card h4{font-size:16.5px;color:#fff;margin:6px 0 8px;font-weight:700;}
+  .card p{font-size:14px;color:var(--ink-soft);line-height:1.75;margin:0;}
+  .card p b{color:var(--teal);font-weight:700;}
+
+  .path{display:grid;gap:14px;margin:26px 0;}
+  .path .step{display:flex;gap:18px;align-items:flex-start;background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:18px 20px;backdrop-filter:blur(8px);}
+  .path .step .num{flex:0 0 42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:18px;background:var(--prism);color:#04181a;box-shadow:0 6px 18px rgba(72,219,251,.3);font-family:-apple-system,"Segoe UI",sans-serif;}
+  .path .step h4{margin:2px 0 6px;font-size:16.5px;color:#fff;}
+  .path .step p{margin:0;font-size:14.5px;color:var(--ink-soft);}
+
+  .refs{margin-top:30px;background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;padding:24px 26px;backdrop-filter:blur(8px);font-size:14px;color:var(--ink-dim);line-height:1.9;}
+  .refs h3{margin-top:0;color:#cffaf3;font-size:16px;}
+  .refs li{margin:8px 0;padding-left:6px;}
+
+  .note{background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.2);border-left:4px solid var(--teal);border-radius:12px;padding:16px 20px;margin:22px 0;font-size:15px;color:#cdf3ee;}
+  .note b{color:#fff;}
+
+  .warn{background:rgba(255,95,109,.08);border:1px solid rgba(255,95,109,.25);border-left:4px solid #ff5f6d;border-radius:12px;padding:16px 20px;margin:22px 0;font-size:15px;color:#ffd9d9;}
+  .warn b{color:#fff;}
+
+  .viz-box{margin:30px 0;padding:26px 20px 18px;background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;backdrop-filter:blur(10px);text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.22);}
+  .viz-box svg{width:100%;max-width:680px;height:auto;}
+  .py-txt{fill:#04181a;font-family:-apple-system,"Segoe UI",sans-serif;font-weight:800;font-size:16px;text-anchor:middle;}
+  .py-sub2{fill:#dff7f2;font-family:-apple-system,"Segoe UI",sans-serif;font-size:12.5px;text-anchor:middle;}
+  .py-leaf{fill:#fff;font-family:-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:13.5px;text-anchor:middle;}
+  .py-tag{fill:#ffd9a8;font-family:-apple-system,"Segoe UI",sans-serif;font-size:11.5px;text-anchor:middle;font-style:italic;}
+
+  hr.div{border:none;height:1px;margin:60px 0;background:linear-gradient(90deg,transparent,var(--glass-line),transparent);}
+  footer{position:relative;z-index:1;text-align:center;padding:40px 24px;color:var(--ink-dim);font-size:13px;letter-spacing:1px;}
+  footer b{color:var(--teal);}
+
+  @media(max-width:560px){body{line-height:1.85;}.wrap{padding:0 18px 80px;}.table-glass th,.table-glass td{padding:12px 14px;font-size:14px;}}
+
+  /* 交互动画面板 */
+  .sim-panel{background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;padding:22px 22px 14px;margin:30px 0;backdrop-filter:blur(10px);box-shadow:0 10px 36px rgba(0,0,0,.22);}
+  .sim-panel h3{margin:0 0 6px;font-size:19px;color:#d9f3ee;}
+  .sim-panel .desc{color:var(--ink-soft);font-size:14.5px;margin:0 0 14px;line-height:1.7;}
+  canvas.sim{width:100%;height:auto;display:block;border-radius:14px;background:radial-gradient(700px 300px at 50% 0%,rgba(72,219,251,.08),transparent),#03110f;border:1px solid var(--glass-line);}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+  button.ctrl{font-family:-apple-system,"Segoe UI",sans-serif;background:var(--glass);border:1px solid var(--glass-line);color:var(--ink);padding:8px 16px;border-radius:10px;cursor:pointer;font-size:14px;transition:.2s;}
+  button.ctrl:hover{border-color:var(--teal);color:#cffaf3;}
+  button.ctrl.active{background:rgba(20,184,166,.18);border-color:var(--teal);color:#cffaf3;}
+  .controls label{font-family:-apple-system,"Segoe UI",sans-serif;font-size:13px;color:var(--ink-dim);display:flex;align-items:center;gap:8px;}
+  input[type=range]{accent-color:var(--teal);width:120px;}
+  .sim-formula{margin-top:12px;padding:10px 16px;border-radius:12px;background:rgba(20,184,166,.07);border:1px dashed rgba(20,184,166,.25);font-family:"Cambria Math","Times New Roman",serif;font-style:italic;color:#cffaf3;font-size:14px;line-height:1.7;}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<header class="hero">
+  <div class="prism-bar"></div>
+  <h1>物理迁移能力的<br>野蛮生长</h1>
+  <div class="sub">知识半衰期缩到三五年，AI 让"记住答案"一文不值。什么能力能让你不被刷下？——把在一个情境里长出的思维，扦插到另一个土壤里照样成活。</div>
+  <div class="tag">
+    <span>学习迁移</span><span>结构同构</span><span>高路迁移</span><span>负迁移</span><span>思维根系</span>
+  </div>
+  <div class="scroll-cue">向下阅读</div>
+</header>
+
+<div class="wrap">
+<article>
+
+  <div class="lead-quote">
+    "学生将来大概率不会再解一道平抛题，但他因解平抛长出的'分解—合成'思维，能不能在读医、做工程、管项目时照样用？"
+    <small>能，他就活下来了；不能，他只是个背过题型的标本。<strong>迁移能力，就是这种跨情境存活的潜能。</strong></small>
+  </div>
+
+  <section id="s0">
+    <div class="sec-label">引言</div>
+    <h2>不被刷下的"生存潜能"</h2>
+    <p>这是一个知识加速折旧的时代。工程技术类知识的更新周期已压缩到 5—10 年，经验积累的有效期明显缩短，传统"学历教育覆盖整个职业生涯"的模式难以为继。当生成式 AI 让知识获取变得前所未有的廉价，<strong>"学到多少知识"不再是竞争力，"会不会把学过的东西用在新地方"才是</strong>。</p>
+    <p>教育研究对此早有判断：终身学习的目标，正从"知识占有"转向"能力生成"——重点不再是对静态知识的积累，而是如何在动态变化的环境中有针对性地解决问题，并将获得的能力<strong>迁移至不同情境与领域</strong>。"可迁移素养"已被全球主要教育改革列为应对科技变革的核心目标。</p>
+    <div class="note"><b>翻译成课堂大白话：</b>迁移能力，就是这种<strong>跨情境存活的潜能</strong>。它不像刷题量那样能用分数直接量出，却决定了一个人能在多变世界里走多远。下面我们把它从"玄学"拆成"可教、可练、可防"的东西。</div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s1">
+    <div class="sec-label">Part 01</div>
+    <h2>深度解读：什么是迁移能力</h2>
+
+    <h3>1.1 心理学给它定了性</h3>
+    <p>学习迁移（transfer of learning）是指一种情境中习得的知识、技能、态度对另一种情境学习的影响。对物理教学最直接有用的是三组分类：</p>
+    <ul style="margin:14px 0;padding-left:22px;color:var(--ink-soft);font-size:16px;line-height:1.9;">
+      <li><strong style="color:#fff;">低路迁移 vs 高路迁移</strong>（Salomon &amp; Perkins, 1989）：低路是"练到自动化、几乎不假思索"的迁移（如开惯自家车的人轻松开借来的车），前提是<strong>在变化的情境里充分练习</strong>；高路迁移则是<strong>有意识地</strong>把抽象原理应用到新情境，其定义性特征是"潜心概括"——主动抽出不限于特殊情境的一般原理。物理迁移的主战场，是高路迁移。</li>
+      <li><strong style="color:#fff;">近迁移 vs 远迁移</strong>：近迁移是表面相似情境间的迁移（"斜面"题换个数）；远迁移是表面极不相似、但结构相同的情境间的迁移（把"平抛"用到"电场偏转"）。<strong>远迁移最珍贵，也最难教。</strong></li>
+      <li><strong style="color:#fff;">同化 / 顺应 / 重组迁移</strong>（冯忠良）：同化是把原有经验直接用到本质相同的事物（举一反三）；顺应是要调整原有认知、形成更高一级结构去包容新经验；重组是重新组合原有认知要素去应对新情境。</li>
+    </ul>
+
+    <h3>1.2 物理学科里，迁移能力长什么样</h3>
+    <p>在物理学习中，迁移能力表现为一条清晰的进阶链：<strong>解一题</strong>（具体情境会做）→ <strong>解一类</strong>（认出"骨骼相同"用同一套方法）→ <strong>解世界</strong>（把"分解—合成""守恒""临界"抽离出来，用到数学、工程、生活决策）。</p>
+
+    <h3>1.3 迁移能力的本质：识别"结构同构"</h3>
+    <p>剥开所有分类，迁移能力的内核只有一个词——<strong>同构（isomorphism）</strong>。它是在两个表面风马牛不相及的问题之间，识别出"底层数学骨架相同"的本领。</p>
+    <p>很多学生"一听就懂、一做就错、一换就懵"，病根在于：<em>他记住的是题目的"衣服"（表面特征），没抓住题的"骨骼"（结构）</em>。而迁移能力强的人，看到新题先问的不是"这是哪一章的"，而是"它和哪个我已经会了的题，共享同一个结构"。</p>
+    <blockquote>下一节，我们用四道看似毫不相干的题，证明它们共享同一根骨骼——而这，正是迁移能力最锋利的用武之地。</blockquote>
+  </section>
+
+  <hr class="div">
+
+  <section id="s2">
+    <div class="sec-label">Part 02</div>
+    <h2>实例佐证：四道题，一根骨骼</h2>
+    <p>下面四道题分别来自力的合成、运动学、刚体、电磁学——按章节看毫无关系。但请盯住它们的<strong>数学结构</strong>。</p>
+
+    <div class="viz-box">
+      <svg viewBox="0 0 720 380" role="img" aria-label="同构骨架：固定矢量A加大小定方向变矢量B合成矢量C，辐射到四个物理实例">
+        <defs>
+          <linearGradient id="gCore" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6e27a"/><stop offset=".5" stop-color="#48dbfb"/><stop offset="1" stop-color="#a18cd1"/></linearGradient>
+          <marker id="arrT" markerWidth="9" markerHeight="9" refX="4.5" refY="7" orient="auto"><path d="M0,0 L4.5,7 L9,0 Z" fill="#14b8a6"/></marker>
+        </defs>
+        <!-- lines -->
+        <line x1="360" y1="180" x2="135" y2="70" stroke="#14b8a6" stroke-width="2" stroke-dasharray="4 6" marker-end="url(#arrT)"/>
+        <line x1="360" y1="180" x2="585" y2="70" stroke="#14b8a6" stroke-width="2" stroke-dasharray="4 6" marker-end="url(#arrT)"/>
+        <line x1="360" y1="180" x2="135" y2="310" stroke="#14b8a6" stroke-width="2" stroke-dasharray="4 6" marker-end="url(#arrT)"/>
+        <line x1="360" y1="180" x2="585" y2="310" stroke="#14b8a6" stroke-width="2" stroke-dasharray="4 6" marker-end="url(#arrT)"/>
+        <text x="240" y="118" class="py-tag">同构</text>
+        <text x="480" y="118" class="py-tag">同构</text>
+        <text x="240" y="262" class="py-tag">同构</text>
+        <text x="480" y="262" class="py-tag">同构</text>
+        <!-- center -->
+        <circle cx="360" cy="180" r="62" fill="url(#gCore)"/>
+        <text x="360" y="174" class="py-txt">合成骨架</text>
+        <text x="360" y="198" class="py-sub2" style="fill:#04181a;">A固定 + B变 → C</text>
+        <!-- leaves -->
+        <circle cx="135" cy="70" r="42" fill="rgba(255,255,255,.07)" stroke="#48dbfb" stroke-width="2"/>
+        <text x="135" y="66" class="py-leaf" style="fill:#a9e8ff;">①</text>
+        <text x="135" y="86" class="py-sub2">两力合成</text>
+        <circle cx="585" cy="70" r="42" fill="rgba(255,255,255,.07)" stroke="#feb47b" stroke-width="2"/>
+        <text x="585" y="66" class="py-leaf" style="fill:#ffd9a8;">②</text>
+        <text x="585" y="86" class="py-sub2">小船渡河</text>
+        <circle cx="135" cy="310" r="42" fill="rgba(255,255,255,.07)" stroke="#5b86e5" stroke-width="2"/>
+        <text x="135" y="306" class="py-leaf" style="fill:#a9c2ff;">③</text>
+        <text x="135" y="326" class="py-sub2">轮上点速</text>
+        <circle cx="585" cy="310" r="42" fill="rgba(255,255,255,.07)" stroke="#a18cd1" stroke-width="2"/>
+        <text x="585" y="306" class="py-leaf" style="fill:#d9c2ff;">④</text>
+        <text x="585" y="326" class="py-sub2">配速法</text>
+      </svg>
+    </div>
+
+    <h3>2.1 两力合成：一个力固定，另一个力大小不变、方向可变</h3>
+    <p>已知 <span class="formula">F₁</span> 大小、方向均固定，<span class="formula">F₂</span> 大小不变、方向可绕作用点任意旋转。求合力 <span class="formula">F</span> 的变化范围。</p>
+    <p>由平行四边形定则 <span class="formula">F = F₁ + F₂</span>，<span class="formula">F₂</span> 大小固定、方向任意，则合力大小满足 <span class="formula">|F₁|−f₂ ≤ |F| ≤ |F₁|+f₂</span>：同向时最大、反向时最小；<span class="formula">F</span> 方向随 <span class="formula">F₂</span> 方向连续扫过一片扇区。</p>
+    <div class="note"><b>骨骼</b>：固定矢量 A + 大小不变、方向任意的可变矢量 B → 合矢量 C 的范围与方向集合。</div>
+
+    <h3>2.2 小船渡河：船速方向可调，合速度变化</h3>
+    <p>水流速度 <span class="formula">v水</span> 固定，船相对水的速度 <span class="formula">v船</span> 大小不变、船头方向可选。合速度 <span class="formula">v合 = v水 + v船</span>——<strong>和 2.1 是同一个数学模型</strong>：<span class="formula">v水</span> 即固定矢量 A，<span class="formula">v船</span> 即大小不变、方向可变的可变矢量 B。</p>
+    <p>最短渡河时间：令 <span class="formula">v船</span> 垂直河岸（垂直分量最大），与 <span class="formula">v水</span> 大小无关；最短位移（直达对岸）：需 <span class="formula">v合</span> 垂直河岸，要求 <span class="formula">|v船| &gt; |v水|</span>，船头偏向上游角 <span class="formula">θ</span> 满足 <span class="formula">v船·sinθ = v水</span>。</p>
+
+    <h3>2.3 轮在地面纯滚动：轮上某点的瞬时速度</h3>
+    <p>轮心对地速度 <span class="formula">v₀</span>（固定），轮缘上点 P 的速度 = 轮心平动 + 绕心转动（矢量和）：<span class="formula">v_P = v₀ + ω×r</span>，其中 <span class="formula">ω = v₀/R</span>。这里 <span class="formula">ω×r</span> 大小恒为 <span class="formula">v₀</span>、方向随 P 位置绕心旋转——<strong>仍是"大小不变、方向可变的可变矢量 B"</strong>。于是 <span class="formula">v_P</span> 从接触点处的 0（瞬心）连续变到最高点处的 <span class="formula">2v₀</span>，轨迹是著名的<strong>摆线</strong>。骨骼依旧。</p>
+
+    <h3>2.4 匀强磁场中的配速法：主动构造"合成"</h3>
+    <p>带电粒子以初速 <span class="formula">v</span> 进入匀强磁场 <span class="formula">B</span>（不垂直）。配速法核心：<strong>人为把速度分解为沿 B 的 <span class="formula">v∥</span> 和垂直 B 的 <span class="formula">v⊥</span></strong>。沿磁场方向不受洛伦兹力做匀速直线，垂直分量做圆周，实际运动是二者<strong>合成</strong>——一条螺旋线。</p>
+    <div class="note"><b>四题归一：</b>两力合成、小船渡河、轮上点速是<strong>严格同构</strong>（固定矢量 + 大小定方向变矢量的合成）；配速法是<strong>同一合成思想的主动运用</strong>（人为分解、再合成）。从"认出同构"到"造出同构"，正是迁移能力由低到高的跃迁。<br><br>迁移能力强的人，看到第四道题时脑子里立刻弹出前三道的影子——他不是在解一道电磁题，他是在解"那个合成骨架的又一个变体"。<em>这就是野蛮生长：一根思维根系，窜到四个章节里同时结果。</em></div>
+  </section>
+
+  <section id="s2sim">
+    <div class="sec-label">Part 02 · 交互演示</div>
+    <h2>四道题，动起来</h2>
+    <p>光看公式还不够。"固定矢量 A + 大小定方向变矢量 B → 合矢量 C"这根骨骼，最好让学生亲手拨一拨。下面四块可交互动画，把 Part 02 的四道题变成能播放、能调速、能拖船头方向的"活模型"。</p>
+
+    <div class="sim-panel">
+      <h3>① 两力合成：固定力 + 转动的力</h3>
+      <p class="desc">F₁ 大小方向固定，F₂ 大小不变、方向绕圈旋转。合力 F 的末端描出一个圆——这正是"范围 [|F₁|−|F₂|, |F₁|+|F₂|]"的几何来源。</p>
+      <canvas id="cv1" class="sim" width="660" height="430"></canvas>
+      <div class="controls">
+        <button class="ctrl" data-act="toggle" data-cv="1">播放</button>
+        <button class="ctrl" data-act="reset" data-cv="1">重置</button>
+        <label>调速 <input type="range" min="0.2" max="2.5" step="0.1" value="1" data-speed="1"></label>
+      </div>
+      <div class="sim-formula">|F|² = F₁² + F₂² + 2F₁F₂·cosφ　　|F|∈[|F₁|−|F₂|, |F₁|+|F₂|]（φ=0 最大，φ=π 最小）</div>
+    </div>
+
+    <div class="sim-panel">
+      <h3>② 小船渡河：水速（固定）+ 船速（大小定、方向可变）</h3>
+      <p class="desc">水速 v_水 向右固定，船头方向 α 决定船速方向（大小不变）。合速度 = 二者矢量和，决定实际航迹。拖动船头方向，看"可能合速度"如何也描出一个圆（与①同骨骼），并对比两种极值。</p>
+      <canvas id="cv2" class="sim" width="660" height="470"></canvas>
+      <div class="controls">
+        <button class="ctrl" data-act="toggle" data-cv="2">播放</button>
+        <button class="ctrl" data-act="reset" data-cv="2">重置</button>
+        <label>船头方向 α <input type="range" min="-78" max="78" step="1" value="0" data-head="2"></label>
+        <button class="ctrl" data-act="preset" data-cv="2" data-preset="minT">最短时间</button>
+        <button class="ctrl" data-act="preset" data-cv="2" data-preset="minS">最短位移</button>
+      </div>
+      <div class="sim-formula">最短时间：船头垂直对岸（α=0），t_min = 河宽 / v_船（与水速无关）　　|v_船|&gt;|v_水| 时偏上游使合速度垂直对岸 → 位移=河宽</div>
+    </div>
+
+    <div class="sim-panel">
+      <h3>③ 轮上某点的速度：平移速度 ⊕ 转动速度 = 摆线</h3>
+      <p class="desc">轮纯滚动，轮心以 v₀ 水平平移；轮缘标记点 P 还绕轮心以线速度 v₀ 转动。P 的合速度 = 二者矢量和，方向恰好沿其轨迹（摆线）的切线。注意：这条"黑线"就是摆线。</p>
+      <canvas id="cv3" class="sim" width="660" height="430"></canvas>
+      <div class="controls">
+        <button class="ctrl" data-act="toggle" data-cv="3">播放</button>
+        <button class="ctrl" data-act="reset" data-cv="3">重置</button>
+        <label>调速 <input type="range" min="0.2" max="2.5" step="0.1" value="1" data-speed="3"></label>
+      </div>
+      <div class="sim-formula">v_P = v_平移 + v_转动，大小 = 2v₀·cos(θ/2)，方向 = 摆线切线　　P 轨迹：x=R(θ−sinθ)，y=R(1−cosθ) → 标准摆线</div>
+    </div>
+
+    <div class="sim-panel">
+      <h3>④ 配速法（正交电磁场）：匀速直线 ⊕ 匀速圆周 = 摆线</h3>
+      <p class="desc">匀强电场 E ⊥ 匀强磁场 B。把初速度拆成 v₁=E/B（磁力抵消电场力，匀速直线）与 v₂（匀速圆周）。合运动 = 直线 ⊕ 圆周 = 旋轮线；当 v₂=v₁ 时为标准摆线。与③生成骨骼完全相同——只是把"轮子"换成了"洛伦兹力圆"。</p>
+      <canvas id="cv4" class="sim" width="660" height="430"></canvas>
+      <div class="controls">
+        <button class="ctrl" data-act="toggle" data-cv="4">播放</button>
+        <button class="ctrl" data-act="reset" data-cv="4">重置</button>
+        <label>调速 <input type="range" min="0.2" max="2.5" step="0.1" value="1" data-speed="4"></label>
+      </div>
+      <div class="sim-formula">v₁·qB = qE ⇒ v₁ = E/B（直线）　v₂ = v − v₁（圆周，r=mv₂/qB）　轨迹：x′=r(θ−sinθ)，y′=r(1−cosθ)（v₂=v₁ 为摆线，一般为旋轮线）</div>
+    </div>
+
+    <div class="note"><b>动画看完了，伏笔埋下了：</b>③与④的轨迹都是<strong>摆线</strong>。而经典的最速降线，碰巧也是摆线——配速法能不能和最速降线再迁移一次？为什么最速降线"刚好"是摆线？这是第五篇《摆线家族：一个意外的迁移彩蛋》要回答的问题。</div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s3">
+    <div class="sec-label">Part 03</div>
+    <h2>教师如何创造性设计场景，帮学生"长"出迁移</h2>
+    <p>迁移不会自动发生。教师的创造性，就在于把"隐藏的骨骼"摆到台面上，并刻意制造"表面不同、结构相同"的练习土壤。</p>
+    <div class="cards">
+      <div class="card"><div class="no">做法一</div><h4>让骨架可见</h4><p>打破章节壁垒，把"矢量叠加"作为明线贯穿力、运动、刚体、磁场。学生脑子里先有<strong>"网"</strong>，迁移才有挂靠点。</p></div>
+      <div class="card"><div class="no">做法二</div><h4>搭桥，而非只类比</h4><p>在黑板中央写下"固定矢量 A + 大小定方向变矢量 B → C"，依次把四例挂上去，<strong>明确标注"骨骼相同"</strong>。"明示同构"是高路迁移最强的催化剂。</p></div>
+      <div class="card"><div class="no">做法三</div><h4>变式梯度</h4><p>从 B 与 A 共线（退化，标量可算）→ 成任意角 → 加约束 → 换"衣服"（力→速度→角速度）。让学生体会：衣服换了，骨骼没换。</p></div>
+      <div class="card"><div class="no">做法四</div><h4>跨情境任务</h4><p>同一骨架，今天"两人拉橡皮筋"、明天"船渡河"、后天"配速法解磁场"——逼学生在陌生包装下反复识别同一结构，把高路迁移练成低路本能。</p></div>
+      <div class="card"><div class="no">做法五</div><h4>暴露迁移过程</h4><p>让学生大声说："这题我认定它和__同构，因为__。"说得出理由才算真迁移；说不出，就是瞎蒙。</p></div>
+      <div class="card"><div class="no">做法六</div><h4>刻意造题组</h4><p>编"结构相似但表面不同"的题组，在变化情境中充分练习——这正是低路迁移发生的两个条件（自动化 + 知觉相似）。</p></div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s4">
+    <div class="sec-label">Part 04</div>
+    <h2>特别预防"负向"迁移——最危险的，是"结果对了"</h2>
+    <p>迁移不都是好事。<strong>负迁移</strong>指原有认知对新学习的干扰。物理里最典型、也最隐蔽的负迁移，来自<strong>标量思维对矢量概念的入侵</strong>。</p>
+
+    <h3>4.1 那个"结果对了"的陷阱</h3>
+    <p>你点出的现象极为精准：<strong>很多矢量方程被当成标量来算，结果居然对了。</strong> 这恰恰最危险——它用"正确的结果"掩盖了"错误的方法"，学生因此坚信自己"会了"，直到撞上非共线情形才崩盘。</p>
+    <div class="warn"><b>危险样本：</b>两力合成，学生直接 <span class="formula">F = F₁ ± F₂</span>（标量加减）。两力共线时结果碰巧正确；一旦有夹角，正确做法是 <span class="formula">|F|² = F₁²+F₂²+2F₁F₂cosθ</span>，标量法立刻失灵。速度合成、向心加速度的 <span class="formula">Δv</span>（把加速度当"速度大小变化率"忽略方向）同理。<br><br><strong>"结果对了"是负迁移最好的保护色。</strong>它让错误方法在共线特例里蒙混过关，直到一般情形才暴露——教学上必须用语非共线反例戳破它，而不是只看答案对不对。</div>
+
+    <h3>4.2 其他常见负迁移</h3>
+    <table class="table-glass">
+      <thead><tr><th>负迁移来源</th><th>典型错误</th><th>正确认知</th></tr></thead>
+      <tbody>
+        <tr><td><b>路程 → 位移</b></td><td>用"路程/时间"算往返平均速度，得 <span class="formula">2v₁v₂/(v₁+v₂)</span></td><td>全程位移为零，平均速度应为 <strong>0</strong></td></tr>
+        <tr><td><b>场强 → 电势</b></td><td>等量同种电荷中点场强为零，顺推"电势也为零"</td><td>电势是标量叠加，该点电势<strong>不为零</strong></td></tr>
+        <tr><td><b>生活前概念</b></td><td>"运动需要力维持""铁块必沉任何液体"</td><td>干扰牛顿第一定律、阿基米德原理，需认知冲突翻正</td></tr>
+      </tbody>
+    </table>
+
+    <h3>4.3 对策：放大差异，而非掩盖差异</h3>
+    <p>华东师大《物理教学》提出的"<strong>比一比、画一画、说一说、举一举</strong>"极为有效：把标量与矢量的最显著差异摆出来（路程是路径长度、位移是有向线段）；画出矢量图让"位移为零"肉眼可见；让学生用语言描述方向含义；举曲线运动反例。配合<strong>正误对比</strong>与<strong>矢量意识专项训练</strong>（一见物理量先判"标还是矢"），把负迁移掐死在萌芽。</p>
+  </section>
+
+  <hr class="div">
+
+  <section id="s5">
+    <div class="sec-label">Part 05</div>
+    <h2>学生如何"长"出这种能力</h2>
+    <p>迁移能力不是天赋，是可以刻意栽培的"思维根系"。</p>
+    <div class="path">
+      <div class="step"><div class="num">1</div><div><h4>建立模型武器库</h4><p>把"合成骨架""守恒""临界"存进大脑，标注它们的<strong>适用结构</strong>而非题型名字。</p></div></div>
+      <div class="step"><div class="num">2</div><div><h4>同骨架刻意变式</h4><p>主动把一道题换包装重做：力→速度→角速度，共线→成角→加约束。在变化情境中练，迁移才会自动化。</p></div></div>
+      <div class="step"><div class="num">3</div><div><h4>讲题即自我解释</h4><p>对自己讲："这题和__同构，因为骨骼是__。"说得出才真懂——这是把高路迁移压进低路本能的最强手段。</p></div></div>
+      <div class="step"><div class="num">4</div><div><h4>错题反建构，专挖负迁移</h4><p>分析"我为什么把矢量当标量算""为什么把斜面经验错搬到传送带"，强化<strong>模型边界意识</strong>。</p></div></div>
+      <div class="step"><div class="num">5</div><div><h4>元认知监控</h4><p>解题前先问三句：它考什么规律？和哪道旧题同构？这里标还是矢、能直接代数加吗？把监控变习惯。</p></div></div>
+      <div class="step"><div class="num">6</div><div><h4>主动跨域连接</h4><p>把"分解—合成"用到数学向量，把"守恒"用到经济存量分析。连接领域越多，根系越密，越能在未知情境野蛮生长。</p></div></div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s6">
+    <div class="sec-label">结语</div>
+    <h2>让思维根系野蛮生长</h2>
+    <p>知识会过期，模型不会。在 AI 把"记忆"变得免费的时代，<strong>能识别结构同构、能把一个思维扦插到任意土壤里成活的能力，才是真正不会被刷下的生存潜能</strong>。</p>
+    <p>四道风马牛不相及的题，共享一根"合成"的骨骼；千百个陌生的情境，等待被同一套思维模型接管。当学生不再问"这是哪一章的题"，而是本能地想"它和哪个我已会的题同构"；当教师不再讲题、而是把隐藏的骨骼挂上黑板、搭桥、变式、防负迁移——那一刻，迁移能力就在大脑里<strong>野蛮生长</strong>起来。</p>
+    <blockquote style="text-align:center;border-left:none;background:var(--prism-soft);">当迁移成为本能，物理便不再是难题，而是探索世界的通用钥匙。</blockquote>
+  </section>
+
+  <div class="refs">
+    <h3>参考资料</h3>
+    <ul>
+      <li>Salomon, G. &amp; Perkins, D. N. (1989). <em>Rocky Roads to Transfer: Rethinking Mechanisms of a Neglected Phenomenon</em>. 低路/高路迁移经典划分。</li>
+      <li>冯忠良等. 教育心理学（同化性 / 顺应性 / 重组性迁移；近迁移与远迁移界定）。</li>
+      <li>华东师范大学《物理教学》：《矢量概念建构中的负迁移及对策》——标量/矢量负迁移、路程↔位移、场强↔电势反例与"比一比、画一画、说一说、举一举"对策。</li>
+      <li>南方日报整版专论（2025）：《人工智能时代，一个全民终身学习的时代》——能力门槛结构性提升、知识形态快速更新、目标从知识占有转向能力生成与迁移。</li>
+      <li>教育部相关调研与"自主学习"系列论述——知识半衰期缩短（5—10 年）、可迁移素养为 21 世纪核心竞争力。</li>
+      <li>高中物理常规考点：力的平行四边形定则、小船渡河（最短时间/最短位移条件）、纯滚动刚体速度合成与摆线、匀强磁场配速法与螺旋线运动。</li>
+    </ul>
+  </div>
+
+</article>
+</div>
+
+<footer>
+  <b>force99</b> · 高中物理教学 · 科技风教育作品 &nbsp;|&nbsp; 深蓝绿 · 棱镜色散 · 玻璃拟态
+</footer>
+
+<script>
+(function(){
+  const c=document.getElementById('particles'),x=c.getContext('2d');
+  let w,h,pts;
+  function init(){
+    w=c.width=innerWidth;h=c.height=innerHeight;
+    const n=Math.min(70,Math.floor(w*h/22000));
+    pts=Array.from({length:n},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.8+.4,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,a:Math.random()*.5+.2}));
+  }
+  function tick(){
+    x.clearRect(0,0,w,h);
+    for(const p of pts){
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>w)p.vx*=-1;
+      if(p.y<0||p.y>h)p.vy*=-1;
+      x.beginPath();x.arc(p.x,p.y,p.r,0,7);
+      x.fillStyle='rgba(120,220,210,'+p.a+')';x.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+  init();tick();addEventListener('resize',init);
+})();
+</script>
+
+<script>
+(function(){
+  const anims={};
+  function reg(id,obj){anims[id]=Object.assign({playing:false,speed:1,t:0},obj);}
+  function setup(cv){const dpr=Math.min(devicePixelRatio||1,2);
+    const cw=cv.width,ch=cv.height;cv.width=cw*dpr;cv.height=ch*dpr;
+    cv.style.aspectRatio=cw+'/'+ch;
+    const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);return {ctx,w:cw,h:ch};}
+  let last=performance.now();
+  function loop(now){const dt=Math.min((now-last)/1000,.05);last=now;
+    for(const k in anims){const a=anims[k];if(a.playing)a.t+=dt*a.speed;a.draw(a.t);}
+    requestAnimationFrame(loop);}
+  function arrow(ctx,x1,y1,x2,y2,color,wd){ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=wd||3;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    const a=Math.atan2(y2-y1,x2-x1),s=8;
+    ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-s*Math.cos(a-.4),y2-s*Math.sin(a-.4));
+    ctx.lineTo(x2-s*Math.cos(a+.4),y2-s*Math.sin(a+.4));ctx.closePath();ctx.fill();}
+
+  const A='#48dbfb', B='#feb47b', C='#cffaf3', LOC='rgba(161,140,209,.5)';
+
+  /* ① 两力合成 */
+  (function(){const cv=document.getElementById('cv1');const {ctx,w,h}=setup(cv);
+    const O={x:170,y:215},F1=130,F2=85;
+    reg('1',{draw(t){ctx.clearRect(0,0,w,h);
+      const phi=(t*1.1)%(2*Math.PI);
+      const t1={x:O.x+F1,y:O.y}, t2={x:t1.x+F2*Math.cos(phi),y:t1.y+F2*Math.sin(phi)};
+      ctx.beginPath();ctx.arc(t1.x,t1.y,F2,0,7);ctx.strokeStyle=LOC;ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.stroke();ctx.setLineDash([]);
+      arrow(ctx,O.x,O.y,t1.x,t1.y,A,3);
+      arrow(ctx,t1.x,t1.y,t2.x,t2.y,B,3);
+      arrow(ctx,O.x,O.y,t2.x,t2.y,C,4);
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(t2.x,t2.y,4,0,7);ctx.fill();
+      ctx.fillStyle='#a9c7c3';ctx.font='13px sans-serif';
+      ctx.fillText('F₁(固定)',O.x-6,O.y-14);
+      ctx.fillText('F₂(大小不变·转动)',t1.x+10,t1.y+F2*Math.sin(phi)/2);
+      ctx.fillStyle=C;ctx.fillText('F 合力',(O.x+t2.x)/2-10,(O.y+t2.y)/2-8);
+      const mag=Math.hypot(t2.x-O.x,t2.y-O.y);
+      ctx.fillStyle='#e8f4f2';ctx.font='13px Consolas,monospace';
+      ctx.fillText('φ='+(phi*180/Math.PI).toFixed(0)+'°   |F|='+mag.toFixed(0),20,30);
+    }});
+  })();
+
+  /* ② 小船渡河 */
+  (function(){const cv=document.getElementById('cv2');const {ctx,w,h}=setup(cv);
+    const start={x:120,y:90},bankTop=70,bankBot=400,Vw=70,Vb=95;
+    let alpha=0;
+    const head=document.querySelector('[data-head="2"]');
+    if(head)head.addEventListener('input',e=>{alpha=+e.target.value*Math.PI/180;});
+    cv.closest('.sim-panel').querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{
+      const p=b.dataset.preset; if(p==='minT')alpha=0; else if(Vb>Vw)alpha=-Math.asin(Vw/Vb);
+      if(head)head.value=(alpha*180/Math.PI).toFixed(0); anims['2'].t=0;
+    }));
+    reg('2',{draw(t){ctx.clearRect(0,0,w,h);
+      ctx.fillStyle='rgba(72,219,251,.08)';ctx.fillRect(0,bankTop,w,bankBot-bankTop);
+      ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(0,bankTop);ctx.lineTo(w,bankTop);ctx.moveTo(0,bankBot);ctx.lineTo(w,bankBot);ctx.stroke();
+      ctx.fillStyle='#a9c7c3';ctx.font='12px sans-serif';
+      ctx.fillText('近岸',10,bankTop-8);ctx.fillText('对岸',10,bankBot+16);
+      const vb={x:Vb*Math.sin(alpha),y:Vb*Math.cos(alpha)};
+      const vr={x:Vw+vb.x,y:vb.y};
+      const vy=vr.y;const Tcross=(bankBot-start.y)/vy;
+      const el=((t)%Tcross);
+      const bx=start.x+vr.x*el, by=start.y+vr.y*el;
+      ctx.strokeStyle='rgba(207,250,243,.5)';ctx.lineWidth=2;ctx.setLineDash([6,5]);
+      ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.lineTo(start.x+vr.x*Tcross,start.y+vr.y*Tcross);ctx.stroke();ctx.setLineDash([]);
+      ctx.save();ctx.translate(bx,by);ctx.rotate(Math.atan2(vr.y,vr.x)+Math.PI/2);
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(6,8);ctx.lineTo(-6,8);ctx.closePath();ctx.fill();ctx.restore();
+      arrow(ctx,bx,by,bx+Vw,by,A,2.5);
+      arrow(ctx,bx,by,bx+vb.x,by+vb.y,B,2.5);
+      arrow(ctx,bx,by,bx+vr.x,by+vr.y,C,3.5);
+      ctx.fillStyle=A;ctx.fillText('v_水',bx+Vw+4,by-4);
+      ctx.fillStyle=B;ctx.fillText('v_船',bx+vb.x+4,by+vb.y);
+      ctx.fillStyle=C;ctx.fillText('v_合',bx+vr.x+4,by+vr.y-4);
+      const wtip={x:bx+Vw,y:by};
+      ctx.beginPath();ctx.arc(wtip.x,wtip.y,Vb,0,7);ctx.strokeStyle=LOC;ctx.lineWidth=1.3;ctx.setLineDash([5,5]);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#a9c7c3';ctx.font='12px sans-serif';
+      ctx.fillText('可能合速度轨迹（与①同骨骼：圆）',wtip.x-90,wtip.y-Vb-6);
+      const drift=vr.x*Tcross;
+      ctx.fillStyle='#e8f4f2';ctx.font='13px Consolas,monospace';
+      ctx.fillText('α='+(alpha*180/Math.PI).toFixed(0)+'°  下游漂移='+drift.toFixed(0)+'px  过河t='+Tcross.toFixed(1),20,30);
+      ctx.fillStyle='#a9c7c3';ctx.font='12px sans-serif';
+      ctx.fillText('蓝=水速 橙=船速 亮=合速度',20,48);
+    }});
+  })();
+
+  /* ③ 轮上点速 + 摆线 */
+  (function(){const cv=document.getElementById('cv3');const {ctx,w,h}=setup(cv);
+    const R=70, cy=300, v0=90, ground=370;
+    reg('3',{draw(t){ctx.clearRect(0,0,w,h);
+      const rate=1.2; const th=(t*rate)%(2*Math.PI);
+      const cx=110 + (t*rate*R)%(w+200) - 100;
+      ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(0,ground);ctx.lineTo(w,ground);ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.strokeStyle='rgba(72,219,251,.7)';ctx.lineWidth=2;ctx.stroke();
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,ground);ctx.strokeStyle='rgba(255,255,255,.2)';ctx.stroke();
+      ctx.beginPath();ctx.strokeStyle='rgba(207,250,243,.6)';ctx.lineWidth=2;
+      for(let i=0;i<=120;i++){const a=th-i*0.06; if(a<0)break;
+        const X=cx - R*(th-a) + R*Math.sin(a);
+        const Y=cy + R*Math.cos(a);
+        i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);}
+      ctx.stroke();
+      const P={x:cx+R*Math.sin(th), y:cy+R*Math.cos(th)};
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(P.x,P.y,5,0,7);ctx.fill();
+      const vrot={x:v0*Math.cos(th), y:-v0*Math.sin(th)};
+      const vtrans={x:v0,y:0};
+      const vres={x:v0+vrot.x, y:vrot.y};
+      arrow(ctx,P.x,P.y,P.x+vtrans.x*0.5,P.y+vtrans.y*0.5,A,2.5);
+      arrow(ctx,P.x,P.y,P.x+vrot.x*0.5,P.y+vrot.y*0.5,B,2.5);
+      arrow(ctx,P.x,P.y,P.x+vres.x*0.5,P.y+vres.y*0.5,C,3.5);
+      ctx.fillStyle=A;ctx.fillText('v_平移',P.x+v0*0.5+4,P.y-2);
+      ctx.fillStyle=B;ctx.fillText('v_转动',P.x+vrot.x*0.5+4,P.y+vrot.y*0.5);
+      ctx.fillStyle=C;ctx.fillText('v_合(=切线)',P.x+vres.x*0.5+4,P.y+vres.y*0.5-2);
+      ctx.fillStyle='#a9c7c3';ctx.font='12px sans-serif';
+      ctx.fillText('黑线 = 摆线（轮缘点轨迹）',20,28);
+    }});
+  })();
+
+  /* ④ 配速法 */
+  (function(){const cv=document.getElementById('cv4');const {ctx,w,h}=setup(cv);
+    const r=60, midY=230, u=80;
+    reg('4',{draw(t){ctx.clearRect(0,0,w,h);
+      const rate=1.2; const th=(t*rate)%(2*Math.PI);
+      const Cx=110 + (t*rate*u)%(w+200) - 100;
+      const Cy=midY;
+      ctx.beginPath();ctx.strokeStyle='rgba(207,250,243,.6)';ctx.lineWidth=2;
+      for(let i=0;i<=120;i++){const a=th-i*0.06; if(a<0)break;
+        const X=Cx - r*(th-a) - r*Math.sin(a);
+        const Y=Cy + r*Math.cos(a);
+        i===0?ctx.moveTo(X,Y):ctx.lineTo(X,Y);}
+      ctx.stroke();
+      ctx.beginPath();ctx.arc(Cx,Cy,r,0,7);ctx.strokeStyle='rgba(72,219,251,.5)';ctx.lineWidth=1.5;ctx.stroke();
+      const P={x:Cx - r*Math.sin(th), y:Cy + r*Math.cos(th)};
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(P.x,P.y,5,0,7);ctx.fill();
+      const v2={x:-u*Math.cos(th), y:-u*Math.sin(th)};
+      arrow(ctx,P.x,P.y,P.x+u*0.5,P.y,A,2.5);
+      arrow(ctx,P.x,P.y,P.x+v2.x*0.5,P.y+v2.y*0.5,B,2.5);
+      arrow(ctx,P.x,P.y,P.x+(u+v2.x)*0.5,P.y+v2.y*0.5,C,3.5);
+      ctx.fillStyle=A;ctx.fillText('v₁(直线)',P.x+u*0.5+4,P.y-2);
+      ctx.fillStyle=B;ctx.fillText('v₂(圆周)',P.x+v2.x*0.5+4,P.y+v2.y*0.5);
+      ctx.fillStyle=C;ctx.fillText('v_合',P.x+(u+v2.x)*0.5+4,P.y+v2.y*0.5-2);
+      ctx.fillStyle='#a9c7c3';ctx.font='12px sans-serif';
+      ctx.fillText('生成骨骼与③相同：直线⊕圆周=摆线',20,28);
+      ctx.fillText('（B垂直纸面·E向下；v₁=E/B 使磁力抵消电场力）',20,46);
+    }});
+  })();
+
+  /* 控制 */
+  document.querySelectorAll('button.ctrl').forEach(b=>{
+    b.addEventListener('click',()=>{const id=b.dataset.cv, act=b.dataset.act;
+      if(act==='toggle'){anims[id].playing=!anims[id].playing;
+        b.textContent=anims[id].playing?'暂停':'播放';b.classList.toggle('active',anims[id].playing);}
+      else if(act==='reset'){anims[id].t=0;anims[id].playing=false;
+        const tb=document.querySelector('button[data-cv="'+id+'"][data-act="toggle"]');if(tb){tb.textContent='播放';tb.classList.remove('active');}}
+    });
+  });
+  document.querySelectorAll('input[data-speed]').forEach(s=>{
+    s.addEventListener('input',e=>{anims[e.target.dataset.speed].speed=+e.target.value;});
+  });
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
