@@ -382,6 +382,16 @@ const WORKS = [
 
   },
 
+
+  {
+
+    type:"video", title:"伽利略斜面实验",
+
+    desc:"用斜面“冲淡重力”研究自由落体，是匀变速运动与实验科学方法的经典开端。",
+
+    icon:"🧪", link:"videos/galileo_inclined_plane.html", date:"2026-08-14", tag:"运动学"
+
+  },
   /* ---------------- 作品 ---------------- */
 
   {
