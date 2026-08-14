@@ -287,3 +287,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 }
 /* 三棱镜色散封面完整显示（不裁剪） */
 .card .cover.has-img[style*="prism-dispersion-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 示波器封面完整显示（不裁剪） */
+.card .cover.has-img[style*="oscilloscope-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
