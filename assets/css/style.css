@@ -299,3 +299,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="wave-reflection-standing-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 杨氏双缝视频封面完整显示（不裁剪） */
 .card .cover.has-img[style*="young-double-slit-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 蛇形摆视频封面完整显示（不裁剪） */
+.card .cover.has-img[style*="snake-pendulum-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
