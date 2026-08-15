@@ -311,3 +311,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="galileo_inclined_plane-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 密立根油滴封面完整显示（不裁剪） */
 .card .cover.has-img[style*="millikan-oil-drop-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2025河南卷T3 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2025-henan-t3-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
