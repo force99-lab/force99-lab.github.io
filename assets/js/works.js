@@ -310,7 +310,7 @@ const WORKS = [
   {
     type:"solve", title:"2026广东高考物理 · 球形机器人跳跃",
     desc:"球形机器人跳跃的能量转化与动力学过程拆解。",
-    icon:"🤖", link:"solutions/physics_animation.html", cover:"solutions/physics_animation.png", date:"2026-08-14", tag:"力学"
+    icon:"🤖", link:"solutions/physics_animation.html", cover:"assets/img/2026-guangdong-cover.png", date:"2026-08-14", tag:"力学"
   },
 
 
