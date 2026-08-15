@@ -267,6 +267,15 @@ const WORKS = [
     desc:"球形机器人跳跃的能量转化与动力学过程拆解。",
     icon:"🤖", link:"solutions/physics_animation.html", cover:"assets/img/2026-guangdong-cover.png", date:"2026-08-14", tag:"力学"
   },
+  {
+    type:"solve",
+    title:"2026黑吉辽蒙T14 · 单摆碰撞弹簧系统",
+    desc:"单摆与弹簧系统的碰撞综合问题，三页式交互讲解：试题环绕、物理过程动画、交互式填空解题。",
+    icon:"🪀",
+    link:"solutions/doc7_animation.html",
+    date:"2026-08-16",
+    tag:"力学"
+  },
 
   /* ---------------- 视频 ---------------- */
 
