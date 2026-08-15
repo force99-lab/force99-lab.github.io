@@ -368,7 +368,7 @@ const WORKS = [
 
     desc:"摆长略异的单摆同步释放，呈现蛇形、聚散与复原的周期性图案。",
 
-    icon:"🌀", link:"videos/蛇形摆.html", date:"2026-08-14", tag:"机械振动"
+    icon:"🌀", link:"videos/蛇形摆.html", cover:"assets/img/snake-pendulum-cover.jpg", date:"2026-08-14", tag:"机械振动"
 
   },
 
