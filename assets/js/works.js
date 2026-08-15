@@ -290,12 +290,12 @@ const WORKS = [
   {
     type:"solve", title:"2025甘肃卷T10 · 托卡马克环形磁场（三粒子轨迹）",
     desc:"托卡马克截面磁场中三类粒子的轨迹比较与半径判定。",
-    icon:"⚛️", link:"solutions/magnetic4_animation.html", cover:"solutions/magnetic4_animation.png", date:"2026-08-14", tag:"电磁学"
+    icon:"⚛️", link:"solutions/magnetic4_animation.html", cover:"assets/img/2025-gansu-cover.png", date:"2026-08-14", tag:"电磁学"
   },
   {
     type:"solve", title:"2025广西卷T10 · 速度选择器与偏转磁场",
     desc:"速度选择器筛选原理 + 偏转磁场中的圆周运动通法。",
-    icon:"🎯", link:"solutions/magnetic5_animation.html", cover:"solutions/magnetic5_animation.png", date:"2026-08-14", tag:"电磁学"
+    icon:"🎯", link:"solutions/magnetic5_animation.html", cover:"assets/img/2025-guangxi-cover.png", date:"2026-08-14", tag:"电磁学"
   },
   {
     type:"solve", title:"2025广东深圳三模 · 叠加场中小球的运动",
