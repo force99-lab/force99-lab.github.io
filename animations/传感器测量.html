@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>传感器测速 · 脉冲测距与实时速度计算</title>
+<style>
+  :root{
+    --bg:#0a1216; --teal:#19c3b1; --teal2:#0e8d83; --gold:#ffd56b;
+    --red:#ff6b6b; --green:#5be07a; --purple:#ff5fa2; --txt:#e8f2f0;
+    --muted:#8aa39e; --panel:#0f1c23; --line:rgba(120,160,155,.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden;}
+  #app{display:flex;flex-direction:column;height:100vh;}
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px 18px;background:linear-gradient(180deg,#0e1a20,#0a1216);border-bottom:1px solid var(--line);}
+  header h1{font-size:16px;margin:0;font-weight:700;color:var(--teal);white-space:nowrap;}
+  header h1 small{color:var(--muted);font-weight:400;font-size:11px;margin-left:8px;}
+  .seg{display:flex;border:1px solid var(--teal2);border-radius:7px;overflow:hidden;}
+  .seg button{background:transparent;border:none;color:var(--muted);padding:6px 11px;cursor:pointer;font-size:12px;}
+  .seg button.on{background:var(--teal);color:#04201d;font-weight:700;}
+  .ctrl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);}
+  .ctrl input[type=range]{width:104px;accent-color:var(--teal);}
+  .ctrl b{color:var(--txt);font-family:Consolas,monospace;min-width:50px;text-align:right;}
+  .btn{background:transparent;border:1px solid var(--teal2);color:var(--teal);
+    padding:6px 12px;border-radius:7px;cursor:pointer;font-size:12px;}
+  .btn:hover{background:rgba(25,195,177,.12);}
+  .chk{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;}
+  .chk input{accent-color:var(--teal);}
+  #main{flex:1;display:flex;min-height:0;}
+  #stage{position:relative;flex:1;min-width:0;min-height:0;}
+  #stage canvas{position:absolute;inset:0;width:100%;height:100%;}
+  aside#panel{width:330px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;padding:14px;gap:12px;overflow:auto;}
+  .card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:12px;}
+  .card h3{margin:0 0 8px;font-size:13px;color:var(--teal);font-weight:600;letter-spacing:.3px;}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;font-size:13px;}
+  .readout div{display:flex;justify-content:space-between;border-bottom:1px dashed rgba(120,160,155,.18);padding-bottom:3px;}
+  .readout span{color:var(--muted);}
+  .readout b{font-family:Consolas,monospace;color:var(--txt);}
+  .readout b.hi{color:var(--gold);}
+  .formula{font-size:12px;line-height:1.75;color:var(--muted);}
+  .formula code{color:var(--teal);font-family:Consolas,monospace;}
+  .formula .hi{color:var(--gold);font-family:Consolas,monospace;font-weight:700;}
+  .formula .step{color:var(--gold);font-weight:600;}
+  .legend{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-top:6px;flex-wrap:wrap;}
+  .legend i{display:inline-block;width:13px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>传感器测速 <small>脉冲测距 · 实时计算小车速度（必修1）</small></h1>
+    <div class="seg" id="dirSeg">
+      <button data-d="1" class="on">自左向右</button>
+      <button data-d="-1">自右向左</button>
+    </div>
+    <label class="ctrl">初速度 v₀ <input type="range" id="v0" min="0.2" max="1.5" step="0.05" value="0.5"><b id="v0v">0.50</b></label>
+    <label class="ctrl">信号速度 v <input type="range" id="sig" min="3" max="14" step="1" value="6"><b id="sigv">6 m/s</b></label>
+    <label class="ctrl">发射间隔 Δt <input type="range" id="emit" min="0.4" max="2.5" step="0.1" value="1.0"><b id="emitv">1.0 s</b></label>
+    <label class="ctrl">播放速度 <input type="range" id="spd" min="0.25" max="3" step="0.05" value="1"><b id="spdv">1.00×</b></label>
+    <button class="btn" id="play">⏸ 暂停</button>
+    <button class="btn" id="reset">↺ 重置</button>
+    <label class="chk"><input type="checkbox" id="cSig" checked> 显示信号</label>
+  </header>
+  <div id="main">
+    <div id="stage"><canvas id="mc"></canvas></div>
+    <aside id="panel">
+      <div class="card">
+        <h3>实时读数</h3>
+        <div class="readout">
+          <div><span>时间 t</span><b id="rT" class="hi">0.00 s</b></div>
+          <div><span>被测位移 x</span><b id="rS" class="hi">0.00 m</b></div>
+          <div><span>速度 v</span><b id="rV" style="color:var(--green)">0</b></div>
+          <div><span>加速度 a</span><b id="rA" style="color:var(--red)">0</b></div>
+          <div><span>发射次数</span><b id="rN" class="hi">0</b></div>
+          <div><span>信号状态</span><b id="rSt">待发</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>速度测算（实时代入真实数字）</h3>
+        <div class="formula">
+          取最近一对<b>已完成往返</b>的相邻脉冲，按公式实时代入：<br>
+          第 <span id="sp_k1" style="color:var(--purple)">–</span> 次发射：往返 t₁=<span id="sp_t1" class="hi">–</span>，测量距离 x₁=v信·t₁⁄2=<span id="sp_x1" class="hi">–</span><br>
+          第 <span id="sp_k2" style="color:var(--purple)">–</span> 次发射：往返 t₂=<span id="sp_t2" class="hi">–</span>，测量距离 x₂=v信·t₂⁄2=<span id="sp_x2" class="hi">–</span><br>
+          信号发射间隔 Δt=<span id="sp_dt" class="hi">–</span>；小车运动间隔 t=Δt+(t₂−t₁)⁄2=<span id="sp_tt" class="hi">–</span><br>
+          <code id="sp_formula">v车 = (x₂ − x₁) ⁄ t</code>
+        </div>
+      </div>
+      <div class="card">
+        <h3>位移传感器原理</h3>
+        <div class="formula">
+          <span class="step">① 测量</span>：探头周期发射<b>脉冲</b>，测小车到探头的<b>距离 x</b>（往返飞行时间 Δt）。<br>
+          <span class="step">② 转换</span>：非电学量（位移）→ <b>电学量</b>（电压 / 数字量）。<br>
+          <span class="step">③ 传输</span>：数据经导线送到采集器。<br>
+          <span class="step">④ 显示</span>：计算机画出<b>信号位移</b>波形（s–t 图）。<br>
+          <span class="step">⑤ 速度计算（测距法求小车速度）</span>：<br>
+          &nbsp;&nbsp;· 读出相邻两次脉冲的<b>往返时间间隔</b> <code>t₁</code>、<code>t₂</code>，及<b>信号发射间隔</b> <code>Δt</code>；<br>
+          &nbsp;&nbsp;· 两信号<b>刚抵达小车</b>时，小车与探头的间距：<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<code>x₁ = v信 · t₁⁄2</code> ， <code>x₂ = v信 · t₂⁄2</code>；<br>
+          &nbsp;&nbsp;· 小车从 <code>x₁</code> 运动到 <code>x₂</code> 所用时间（两次抵达时刻相差一个单程飞行时间差）：<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<code>t = Δt + (t₂ − t₁)⁄2</code>；<br>
+          &nbsp;&nbsp;· 小车速度：<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<code>v车 = (x₂ − x₁)⁄t = [ v信(t₂ − t₁)⁄2 ] ⁄ [ Δt + (t₂ − t₁)⁄2 ]</code>。<br>
+          &nbsp;&nbsp;（当 Δt 足够小，<code>v车 → dx⁄dt</code>，即 <b>s–t 图像的斜率</b>。）
+          信号<b>往返匀速率</b> → 波形为 ∧ 形折线（去/回斜率大小相等 = v）；两脉冲间距 Δt <b>∝ 距离</b>（距离 = v·Δt⁄2）。
+        </div>
+      </div>
+      <div class="card">
+        <h3>图例</h3>
+        <div class="legend">
+          <span><i style="background:var(--purple)"></i>发射段（去程 +v）</span>
+          <span><i style="background:var(--gold)"></i>接收段（回程 −v）</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('mc'), ctx = cv.getContext('2d');
+const COL = {teal:'#19c3b1', gold:'#ffd56b', red:'#ff6b6b', green:'#5be07a', purple:'#ff5fa2', white:'#eef6f4'};
+const L = 3.0;        // 轨道物理长度 (m)
+const T_TOTAL = 8;    // s-t 图像时间轴固定总长 (s)
+
+const state = {
+  dir:1, v0:0.5, sigSpeed:6, emit:1.0,
+  playing:true, showSig:true, speed:1,
+  t:0
+};
+
+/* ---------- 物理（仅匀速直线运动） ---------- */
+/* 被测物体到传感器的距离（非负，受轨道长度限制） */
+function cartDist(t){
+  let raw=Math.max(0, Math.min(L, state.v0*t));
+  return state.dir>0 ? raw : (L-raw);              // 自左向右：远离；自右向左：靠近
+}
+/* 信号到达小车瞬间，小车到传感器的真实距离（固定点迭代：x = cartDist(te + x/v)） */
+function reflectDist(te){
+  const v=Math.max(state.sigSpeed,0.5);
+  let x=cartDist(te);
+  for(let i=0;i<4;i++) x=cartDist(te + x/v);
+  return Math.max(0, x);
+}
+/* 小车实际速度（含方向：自右向左为负） */
+function cartVel(t){ return state.dir>0 ? state.v0 : -state.v0; }
+function accAt(){ return 0; }
+
+/* ---------- 信号脉冲序列（发射间隔 Δt 可控） ---------- */
+function pulses(){
+  const arr=[]; const v=Math.max(state.sigSpeed,0.5);
+  for(let k=0;;k++){
+    const te=k*state.emit;
+    if(te>=T_TOTAL) break;
+    const xr=reflectDist(te);               // 信号到达小车瞬间的真实距离（测距值）
+    const tau1=xr/v;                        // 单程时间
+    arr.push({te, xr, tau1, tau2:2*tau1});  // tau2：往返总时间（= 2·xr/v信）
+  }
+  return arr;
+}
+/* 当前正在飞行（往返途中）的脉冲信息 */
+function activePulse(){
+  const v=Math.max(state.sigSpeed,0.5);
+  for(const p of pulses()){
+    if(state.t>=p.te && state.t < p.te+p.tau2){
+      const tau=state.t-p.te;
+      let sdist, outbound;
+      if(tau<p.tau1){ sdist=v*tau; outbound=true; }            // 去程：信号位移 0→xr
+      else { sdist=p.xr - v*(tau-p.tau1); outbound=false; }    // 回程：信号位移 xr→0
+      return {p, sdist, outbound};
+    }
+  }
+  return null;
+}
+
+/* ---------- 画布尺寸 ---------- */
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  W=r.width; H=r.height; DPR=window.devicePixelRatio||1;
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+const _ro = new ResizeObserver(()=>resize());
+_ro.observe(cv);
+
+/* ---------- 场景几何 ---------- */
+function scene(){
+  const mT=24, mB=80;
+  const sMin=0, sMax=L;
+  const disp = {x:W-438, y:18, w:420, h:212};
+  const railLeft = 70, railRight = W - 16;
+  const scale = (railRight-railLeft)/(sMax-sMin);
+  const groundY = H - mB;
+  const sx = s => railLeft + (s - sMin)*scale;
+  const carX = sx(cartDist(state.t));
+  const carHalf = 22;
+  const sensorX = sx(0);
+  const sensorY = groundY - 45;     // 探头与小车反射面同高 → 信号水平传播
+  const carY = groundY - 30;
+  return {sMin,sMax,disp,railLeft,railRight,scale,groundY,sx,carX,carHalf,sensorX,sensorY,carY};
+}
+
+/* ---------- 背景：轨道与刻度 ---------- */
+function drawRail(m){
+  const y=m.groundY;
+  ctx.strokeStyle='rgba(180,200,195,.55)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(m.railLeft,y); ctx.lineTo(m.railRight,y); ctx.stroke();
+  ctx.fillStyle='#6f8a85'; ctx.font='11px Consolas,monospace';
+  for(let s=m.sMin; s<=m.sMax+1e-6; s+=0.5){
+    const px=m.sx(s);
+    ctx.strokeStyle='rgba(180,200,195,.4)'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(px,y); ctx.lineTo(px,y+8); ctx.stroke();
+    ctx.fillText(s.toFixed(1)+'m', px-12, y+22);
+  }
+  ctx.fillStyle=COL.gold; ctx.font='11px sans-serif';
+  ctx.fillText('位移 s=0（传感器）', m.sensorX-44, m.sensorY-12);
+}
+
+/* ---------- 探头（位移传感器） ---------- */
+function drawSensor(m){
+  const x=m.sensorX, y=m.sensorY;
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=6; ctx.shadowOffsetY=3;
+  ctx.fillStyle='#2a3b42'; ctx.strokeStyle='rgba(120,160,155,.5)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(x-16,y-18,32,20,4); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle=COL.purple; ctx.beginPath(); ctx.arc(x,y+2,3,0,7); ctx.fill();
+  ctx.fillStyle='#9fb8b3'; ctx.font='11px sans-serif';
+  ctx.fillText('位移传感器', x-26, y-22);
+}
+
+/* ---------- 运动物体（小车） ---------- */
+function drawCar(m){
+  const x=m.carX, y=m.groundY;
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=8; ctx.shadowOffsetY=4;
+  const g=ctx.createLinearGradient(x-m.carHalf,0,x+m.carHalf,0);
+  g.addColorStop(0,'#1d6f66'); g.addColorStop(1,'#2fb3a4');
+  ctx.fillStyle=g; ctx.strokeStyle='rgba(255,255,255,.25)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(x-m.carHalf,y-30,m.carHalf*2,28,5); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle='#16323a';
+  ctx.beginPath(); ctx.arc(x-m.carHalf*0.55,y-2,6,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(x+m.carHalf*0.55,y-2,6,0,7); ctx.fill();
+  ctx.fillStyle=COL.purple; ctx.beginPath(); ctx.arc(x,y-15,3.5,0,7); ctx.fill();
+  // 小车速度矢量（绿，方向随运动改变）
+  const v=cartVel(state.t), k=34;
+  if(Math.abs(v)>0.02){
+    const dir=Math.sign(v);
+    arrow(x,y-15, x+dir*Math.min(Math.abs(v)*k,60), y-15, COL.green, 2.6);
+  }
+}
+
+/* ---------- 信号位移矢量（跟随行进信号，去程增、回程减） ---------- */
+function drawSignalVector(m){
+  const info=activePulse();
+  if(!info) return;
+  const y=m.groundY-60;
+  const ox=m.sx(0), cx=m.sx(info.sdist);
+  ctx.fillStyle=COL.gold; ctx.beginPath(); ctx.arc(ox,y,3.5,0,7); ctx.fill();
+  ctx.fillStyle=COL.gold; ctx.font='11px sans-serif';
+  ctx.fillText('s=0', ox-11, y-9);
+  arrow(ox+8,y, ox+30,y, 'rgba(255,213,107,.6)', 1.8);   // 正方向
+  if(Math.abs(cx-ox)>3) arrow(ox,y,cx,y,COL.gold,3);
+  const lbl='信号位移 s = '+info.sdist.toFixed(2)+' m';
+  ctx.fillStyle=COL.gold; ctx.font='bold 12px Consolas,monospace';
+  ctx.fillText(lbl,(ox+cx)/2-52,y-9);
+}
+
+/* ---------- 轨道上的行进信号（半波脉冲沿水平传播） ---------- */
+function drawRailPulse(cx, y, amp, color){
+  ctx.strokeStyle=color; ctx.lineWidth=2.4; ctx.beginPath();
+  const half=16;
+  for(let x=cx-half; x<=cx+half+0.01; x+=2){
+    const u=(x-(cx-half))/(2*half);
+    const yy=y - amp*Math.sin(Math.PI*u);
+    if(x<=cx-half+0.1) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+  }
+  ctx.stroke();
+}
+function drawSignal(m){
+  if(!state.showSig) return;
+  const S={x:m.sensorX, y:m.sensorY};
+  const D={x:m.disp.x+14, y:m.disp.y+m.disp.h-14};
+  const topY=44;
+  // 静态数据线（探头→采集器，提示连接，非信号本身）
+  ctx.strokeStyle='rgba(255,95,162,.18)'; ctx.lineWidth=1.4; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(S.x,S.y); ctx.lineTo(S.x,topY); ctx.lineTo(D.x,topY); ctx.lineTo(D.x,D.y); ctx.stroke(); ctx.setLineDash([]);
+  const info=activePulse();
+  if(!info) return;
+  const px=m.sx(info.sdist);
+  drawRailPulse(px, m.sensorY, 9, info.outbound?COL.purple:COL.gold);
+  ctx.save(); ctx.shadowColor=info.outbound?COL.purple:COL.gold; ctx.shadowBlur=12;
+  ctx.fillStyle=info.outbound?COL.purple:COL.gold; ctx.beginPath(); ctx.arc(px,m.sensorY,6,0,7); ctx.fill(); ctx.restore();
+}
+
+/* ---------- 显示器内：信号位移 s-t 图像 + 发射/接收时序 ---------- */
+function drawST(m){
+  const b=m.disp;
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.45)'; ctx.strokeStyle='rgba(120,160,155,.4)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(b.x,b.y,b.w,b.h,8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=COL.teal; ctx.font='bold 12px sans-serif';
+  ctx.fillText('数据采集器', b.x+12, b.y+16);
+
+  const padT=26, padB=12, gap=8;
+  const totalH=b.h-padT-padB;
+  const curveH=totalH*0.60, timeH=totalH*0.40-gap;
+  const px0=b.x+34, py0=b.y+padT, pw=b.w-46;
+  const ymin=0, ymax=L;
+  // 固定时间轴：横轴 0 → 8 s 静止不动，波形随时间从左向右生长
+  const X=t=> px0 + (t/T_TOTAL)*pw;
+  const Y=s=> (py0+curveH) - ((s-ymin)/(ymax-ymin))*curveH;
+
+  // 标题
+  ctx.fillStyle='#9fd9d0'; ctx.font='10px sans-serif';
+  ctx.fillText('信号位移 s–t 图像（往返匀速率：去程 +v，回程 −v；时间轴固定 0–8 s）', px0, py0-4);
+
+  // 轴（固定：左端 t=0，右端 t=8 s，刻度静止不动）
+  ctx.strokeStyle='rgba(180,200,195,.35)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(px0,py0); ctx.lineTo(px0,py0+curveH); ctx.lineTo(px0+pw,py0+curveH); ctx.stroke();
+  ctx.fillStyle='#6f8a85'; ctx.font='10px Consolas,monospace';
+  for(let tt=0; tt<=T_TOTAL+1e-6; tt+=2){
+    const xx=X(tt);
+    ctx.strokeStyle='rgba(180,200,195,.16)'; ctx.lineWidth=1;   // 纵向网格（静止）
+    ctx.beginPath(); ctx.moveTo(xx,py0); ctx.lineTo(xx,py0+curveH); ctx.stroke();
+    ctx.fillText(tt.toFixed(0)+'s', xx-6, py0+curveH+13);
+  }
+  ctx.fillStyle='#6f8a85'; ctx.fillText('s', px0-12, py0+6);
+  // 当前时刻游标（淡竖虚线，只指示波形生长位置；坐标刻度本身不动）
+  if(state.t<=T_TOTAL+0.001){
+    const xNow=X(state.t);
+    ctx.strokeStyle='rgba(238,246,244,.28)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xNow,py0); ctx.lineTo(xNow,py0+curveH); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(238,246,244,.55)'; ctx.fillText('现在', xNow-12, py0-2);
+  }
+
+  // ===== 信号位移波形：每个脉冲一个 ∧ 形（去程紫、回程金）=====
+  // 折线线段（按 revealEnd 截断，体现逐渐绘制）
+  function seg(t1,s1,t2,s2,revealEnd,color){
+    if(revealEnd<=t1) return;
+    let tb=t2, sb=s2;
+    if(revealEnd<t2){ tb=revealEnd; sb=s1+(s2-s1)*(revealEnd-t1)/(t2-t1); }
+    ctx.strokeStyle=color; ctx.lineWidth=2.2; ctx.beginPath();
+    ctx.moveTo(X(t1),Y(s1)); ctx.lineTo(X(tb),Y(sb)); ctx.stroke();
+  }
+  const ps=pulses(); const active=activePulse();
+  for(const p of ps){
+    const revealEnd=Math.min(state.t, p.te+p.tau2);
+    if(revealEnd<=p.te) continue;
+    seg(p.te,0, p.te+p.tau1,p.xr, revealEnd, COL.purple);   // 去程：斜率 +v
+    seg(p.te+p.tau1,p.xr, p.te+p.tau2,0, revealEnd, COL.gold); // 回程：斜率 −v
+  }
+  // 当前信号位置标记点
+  if(active){
+    ctx.fillStyle=COL.white; ctx.beginPath();
+    ctx.arc(X(state.t), Y(active.sdist), 3.5,0,7); ctx.fill();
+  }
+
+  // ===== 发射 / 接收时序（与波形底边共用时间轴）=====
+  const ty0=py0+curveH+gap;
+  const baseY=ty0+timeH-12;
+  ctx.fillStyle='#9fb8b3'; ctx.font='10px sans-serif';
+  ctx.fillText('信号时序（发射 / 接收脉冲）', px0, ty0+8);
+  ctx.strokeStyle='rgba(180,200,195,.3)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(px0,baseY); ctx.lineTo(px0+pw,baseY); ctx.stroke();
+  for(const p of ps){
+    const emitOn = active && state.t>=p.te && state.t<p.te+p.tau2;
+    if(p.te<=state.t) spike(X(p.te), baseY, 16, emitOn?COL.purple:'rgba(182,156,255,.45)');
+    const recOn = active && state.t>=p.te+p.tau1 && state.t<p.te+p.tau2;
+    if(p.te+p.tau2<=state.t) spike(X(p.te+p.tau2), baseY, 16, recOn?COL.gold:'rgba(255,213,107,.35)');
+  }
+  // 当前往返标尺 Δt ∝ 距离
+  if(active){
+    const xe=X(active.p.te), xr=X(active.p.te+active.p.tau2);
+    ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.setLineDash([3,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xe,baseY-22); ctx.lineTo(xr,baseY-22); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#cfeee9'; ctx.fillText('Δt ∝ 距离', (xe+xr)/2-22, baseY-24);
+  }
+  ctx.restore();
+}
+/* 竖直脉冲尖峰 */
+function spike(x, baseY, h, color){
+  ctx.strokeStyle=color; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x,baseY); ctx.lineTo(x,baseY-h); ctx.stroke();
+  ctx.fillStyle=color; ctx.beginPath();
+  ctx.moveTo(x,baseY-h); ctx.lineTo(x-3.5,baseY-h+7); ctx.lineTo(x+3.5,baseY-h+7); ctx.closePath(); ctx.fill();
+}
+
+/* ---------- 箭头 ---------- */
+function arrow(x1,y1,x2,y2,color,w){
+  const a=Math.atan2(y2-y1,x2-x1), len=Math.hypot(x2-x1,y2-y1);
+  if(len<2) return;
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=w||2.5;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const h=7;
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-h*Math.cos(a-0.4), y2-h*Math.sin(a-0.4));
+  ctx.lineTo(x2-h*Math.cos(a+0.4), y2-h*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+/* ---------- 主绘制 ---------- */
+function draw(){
+  if(W===0) return;
+  ctx.clearRect(0,0,W,H);
+  const m=scene();
+  drawRail(m);
+  drawSensor(m);
+  drawCar(m);
+  drawSignalVector(m);
+  drawSignal(m);
+  drawST(m);
+  ctx.fillStyle='#9fb8b3'; ctx.font='13px sans-serif';
+  ctx.fillText('运动：'+modeName()+(state.dir>0?'（自左向右）':'（自右向左）')+
+    '   v₀='+state.v0.toFixed(2)+' m/s', m.railLeft, 22);
+  drawWatermark();
+}
+function modeName(m){return '匀速直线运动';}
+
+/* ---------- 水印（右下角，最上层） ---------- */
+function drawWatermark(){
+  ctx.save();
+  ctx.fillStyle='rgba(159,184,179,.32)';
+  ctx.font='600 14px Consolas,monospace';
+  ctx.textAlign='right'; ctx.textBaseline='alphabetic';
+  ctx.fillText('force99', W-16, H-14);
+  ctx.restore();
+}
+
+/* ---------- 读数 ---------- */
+function updateReadout(){
+  const x=cartDist(state.t), v=cartVel(state.t), a=accAt();
+  $('rT').textContent=state.t.toFixed(2)+' s';
+  $('rS').textContent=x.toFixed(2)+' m';
+  $('rV').textContent=v.toFixed(2)+' m/s';
+  $('rA').textContent=a.toFixed(2)+' m/s²';
+  const emitted=pulses().filter(p=>p.te<=state.t).length;
+  $('rN').textContent=emitted;
+  const info=activePulse();
+  $('rSt').textContent = !state.showSig ? '关闭' : (info ? (info.outbound?'发射中':'接收中') : '空闲');
+}
+
+/* ---------- 速度测算（实时代入真实数字） ---------- */
+function updateSpeedCalc(){
+  const ps=pulses();
+  // 最近一对"已完成往返"的相邻脉冲：两脉冲都满足 te+tau2 <= t
+  let idx=-1;
+  for(let i=0;i<ps.length;i++){ if(ps[i].te+ps[i].tau2 <= state.t) idx=i; else break; }
+  const setDash=()=>{ ['sp_k1','sp_k2','sp_t1','sp_t2','sp_x1','sp_x2','sp_dt','sp_tt'].forEach(id=>$(id).textContent='–');
+    $('sp_formula').textContent='v车 = (x₂ − x₁) ⁄ t'; };
+  if(idx<1){ setDash(); return; }
+  const p1=ps[idx-1], p2=ps[idx];
+  const t1=p1.tau2, t2=p2.tau2;            // 往返时间间隔
+  const x1=p1.xr,  x2=p2.xr;               // 测量距离 = v信·t/2
+  const dt=state.emit;
+  const tint=dt + (t2 - t1)/2;             // 小车从 x1 到 x2 的经历时间
+  const vcar = Math.abs(tint)>1e-6 ? (x2 - x1)/tint : 0;
+  $('sp_k1').textContent=(idx-1);
+  $('sp_k2').textContent=(idx);
+  $('sp_t1').textContent=t1.toFixed(3)+' s';
+  $('sp_t2').textContent=t2.toFixed(3)+' s';
+  $('sp_x1').textContent=x1.toFixed(3)+' m';
+  $('sp_x2').textContent=x2.toFixed(3)+' m';
+  $('sp_dt').textContent=dt.toFixed(2)+' s';
+  $('sp_tt').textContent=tint.toFixed(3)+' s';
+  $('sp_formula').textContent='v车 = ('+x2.toFixed(2)+' − '+x1.toFixed(2)+') ⁄ '+tint.toFixed(3)+' = '+vcar.toFixed(3)+' m/s';
+}
+
+/* ---------- 周期循环（固定 8 s） ---------- */
+function maybeReset(){ if(state.t>=T_TOTAL) resetMotion(); }
+function resetMotion(){ state.t=0; }
+
+/* ---------- 动画循环 ---------- */
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000, 0.05); last=now;
+  if(state.playing){
+    state.t += dt * state.speed;
+    maybeReset();
+  }
+  draw();
+  updateReadout();
+  updateSpeedCalc();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 控件 ---------- */
+function bindRange(id,key,fmt){ $(id).addEventListener('input',e=>{ state[key]=parseFloat(e.target.value); fmt(); }); }
+bindRange('v0','v0',()=>$('v0v').textContent=state.v0.toFixed(2));
+bindRange('sig','sigSpeed',()=>$('sigv').textContent=state.sigSpeed.toFixed(0)+' m/s');
+bindRange('emit','emit',()=>$('emitv').textContent=state.emit.toFixed(1)+' s');
+bindRange('spd','speed',()=>$('spdv').textContent=state.speed.toFixed(2)+'×');
+$('dirSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  state.dir=parseInt(b.dataset.d,10);
+  [...$('dirSeg').children].forEach(x=>x.classList.toggle('on', x===b));
+  resetMotion();
+});
+$('play').addEventListener('click',()=>{ state.playing=!state.playing; $('play').textContent=state.playing?'⏸ 暂停':'▶ 播放'; });
+$('reset').addEventListener('click', resetMotion);
+$('cSig').addEventListener('change',e=> state.showSig=e.target.checked);
+
+/* ---------- 启动 ---------- */
+resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
