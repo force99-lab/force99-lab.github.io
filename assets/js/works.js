@@ -441,8 +441,13 @@ const WORKS = [
     link:"articles/物理迁移能力的野蛮生长.html",
     date:"2026-08-15",
     tag:"学习方法"
+  },
+  {
+    type:"video", title:"卡文迪许扭秤实验",
+    desc:"用光路放大法测量微小引力，首次测得万有引力常量 G 并称量地球质量。",
+    icon:"⚖️", cover:"assets/img/cavendish-torsion-balance-cover.png",
+    link:"videos/cavendish_torsion_balance_video.html", date:"2026-08-15", tag:"万有引力"
   }
-
 ];
 
 const TYPE_LABEL = {
