@@ -358,7 +358,7 @@ const WORKS = [
 
     desc:"单色光通过双缝产生等间距干涉条纹，验证光的波动性。",
 
-    icon:"🔬", link:"videos/young-double-slit.html", date:"2026-08-14", tag:"光学"
+    icon:"🔬", link:"videos/young-double-slit.html", cover:"assets/img/young-double-slit-cover.jpg", date:"2026-08-14", tag:"光学"
 
   },
 
