@@ -231,26 +231,6 @@ const WORKS = [
 
   },
 
-  {
-
-    type:"solve", title:"例题：斜面上物块的受力与运动分析",
-
-    desc:"分步拆解斜面模型的受力分析、正交分解与牛顿第二定律列式。",
-
-    icon:"🧩", link:"solutions/sample.html", date:"2026-08-13", tag:"力学"
-
-  },
-
-  {
-
-    type:"solve", title:"例题：带电粒子在匀强磁场中的圆周运动",
-
-    desc:"从几何关系确定圆心半径，到周期与临界问题的完整解题套路。",
-
-    icon:"⚡", link:"solutions/sample.html", date:"2026-08-13", tag:"电磁学"
-
-  },
-
   /* ---- 题典三页式解题讲解（2026-08-14 批量注册）---- */
   {
     type:"solve", title:"2025河南卷T3 · 磁场电场复合场",
