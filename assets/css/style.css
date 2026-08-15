@@ -326,3 +326,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="oblique-projectile-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 传感器测速封面完整显示（不裁剪） */
 .card .cover.has-img[style*="sensor-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 电场线三维动画封面完整显示（不裁剪） */
+.card .cover.has-img[style*="field-lines-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
