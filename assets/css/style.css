@@ -301,3 +301,11 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="young-double-slit-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 蛇形摆视频封面完整显示（不裁剪） */
 .card .cover.has-img[style*="snake-pendulum-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 卡文迪许扭秤封面完整显示（不裁剪） */
+.card .cover.has-img[style*="cavendish-torsion-balance-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+
+/* 伽利略理想斜面实验封面完整显示（不裁剪） */
+.card .cover.has-img[style*="galileo_ideal_inclined_plane-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+
+/* 伽利略斜面实验封面完整显示（不裁剪） */
+.card .cover.has-img[style*="galileo_inclined_plane-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
