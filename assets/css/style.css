@@ -309,3 +309,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 
 /* 伽利略斜面实验封面完整显示（不裁剪） */
 .card .cover.has-img[style*="galileo_inclined_plane-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 密立根油滴封面完整显示（不裁剪） */
+.card .cover.has-img[style*="millikan-oil-drop-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
