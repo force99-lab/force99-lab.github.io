@@ -315,3 +315,8 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="2025-henan-t3-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 2026四川卷T15 解题封面完整显示（不裁剪） */
 .card .cover.has-img[style*="2026-sichuan-t15-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2025-gansu-cover.png 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2025-gansu-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+
+/* 2025-guangxi-cover.png 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2025-guangxi-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
