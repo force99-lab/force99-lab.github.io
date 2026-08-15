@@ -378,7 +378,7 @@ const WORKS = [
 
     desc:"带电油滴在电场中受力平衡，测定基本电荷 e，证实电荷量子化。",
 
-    icon:"💧", link:"videos/millikan-oil-drop.html", date:"2026-08-14", tag:"电场"
+    icon:"💧", cover:"assets/img/millikan-oil-drop-cover.jpg", link:"videos/millikan-oil-drop.html", date:"2026-08-14", tag:"电场"
 
   },
 
