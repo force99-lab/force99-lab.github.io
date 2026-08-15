@@ -367,6 +367,7 @@ const WORKS = [
     title:"传感器测速",
     desc:"脉冲测距与实时速度计算的传感器测速交互动画，演示测速原理、脉冲测距与速度数据处理过程。",
     icon:"📡",
+    cover:"assets/img/sensor-cover.png",
     link:"animations/传感器测量.html",
     date:"2026-08-15",
     tag:"力学"
