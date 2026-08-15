@@ -280,7 +280,7 @@ const WORKS = [
   {
     type:"solve", title:"2025河南卷T3 · 磁场电场复合场",
     desc:"复合场中粒子的偏转与运动，三步拆解电场+磁场综合题。",
-    icon:"🧲", link:"solutions/magnetic2_animation.html", cover:"solutions/magnetic2_animation.png", date:"2026-08-14", tag:"电磁学"
+    icon:"🧲", link:"solutions/magnetic2_animation.html", cover:"assets/img/2025-henan-t3-cover.png", date:"2026-08-14", tag:"电磁学"
   },
   {
     type:"solve", title:"2026四川卷T15 · 带电粒子在组合磁场中的运动",
