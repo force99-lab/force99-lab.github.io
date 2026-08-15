@@ -389,7 +389,7 @@ const WORKS = [
 
     desc:"用斜面“冲淡重力”研究自由落体，是匀变速运动与实验科学方法的经典开端。",
 
-    icon:"🧪", link:"videos/galileo_inclined_plane.html", date:"2026-08-14", tag:"运动学"
+    icon:"🧪", cover:"assets/img/galileo_inclined_plane-cover.jpg", link:"videos/galileo_inclined_plane.html", date:"2026-08-14", tag:"运动学"
 
   },
 
@@ -399,7 +399,7 @@ const WORKS = [
 
     desc:"思想实验：无摩擦小球将沿水平面匀速永远运动，为惯性定律埋下伏笔。",
 
-    icon:"🧪", link:"videos/galileo_ideal_inclined_plane.html", date:"2026-08-14", tag:"运动学"
+    icon:"🧪", cover:"assets/img/galileo_ideal_inclined_plane-cover.jpg", link:"videos/galileo_ideal_inclined_plane.html", date:"2026-08-14", tag:"运动学"
 
   },
   /* ---------------- 作品 ---------------- */
@@ -422,7 +422,7 @@ const WORKS = [
 
     icon:"📚", link:"#", date:"2026-01-09", tag:"教材"
 
-  },,
+  },
   {
     type:"animation",
     title:"卡文迪许扭秤实验·交互动画讲解",
