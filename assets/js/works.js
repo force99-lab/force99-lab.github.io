@@ -20,8 +20,6 @@
 
    ============================================================ */
 
-
-
 const WORKS = [
 
   /* ---------------- 文章 ---------------- */
@@ -65,9 +63,6 @@ const WORKS = [
     icon:"🔬", link:"articles/sample.html", date:"2026-05-02", tag:"实验教学"
 
   },
-
-
-
 
   {
 
@@ -313,9 +308,6 @@ const WORKS = [
     icon:"🤖", link:"solutions/physics_animation.html", cover:"assets/img/2026-guangdong-cover.png", date:"2026-08-14", tag:"力学"
   },
 
-
-
-
   /* ---------------- 视频 ---------------- */
 
   {
@@ -329,28 +321,6 @@ const WORKS = [
     link:"videos/qiantang-tide.html", date:"2026-08-13", tag:"自然现象"
 
   },
-
-  {
-
-    type:"video", title:"实验：验证机械能守恒定律",
-
-    desc:"导轨+光电门的规范操作与数据处理全流程实录。",
-
-    icon:"🎬", link:"#", date:"2026-06-25", tag:"实验视频"
-
-  },
-
-  {
-
-    type:"video", title:"微课：带电粒子在磁场中的运动",
-
-    desc:"10 分钟讲清半径、周期与临界问题的解题套路。",
-
-    icon:"⚡", link:"#", date:"2026-05-16", tag:"微课"
-
-  },
-
-
 
   {
 
@@ -381,7 +351,6 @@ const WORKS = [
     icon:"💧", cover:"assets/img/millikan-oil-drop-cover.jpg", link:"videos/millikan-oil-drop.html", date:"2026-08-14", tag:"电场"
 
   },
-
 
   {
 
