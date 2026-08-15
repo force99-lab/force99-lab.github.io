@@ -272,6 +272,7 @@ const WORKS = [
     title:"2026黑吉辽蒙T14 · 单摆碰撞弹簧系统",
     desc:"单摆与弹簧系统的碰撞综合问题，三页式交互讲解：试题环绕、物理过程动画、交互式填空解题。",
     icon:"🪀",
+    cover:"assets/img/doc7-solve-cover.png",
     link:"solutions/doc7_animation.html",
     date:"2026-08-16",
     tag:"力学"
