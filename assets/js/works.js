@@ -189,7 +189,7 @@ const WORKS = [
 
     desc:"二维斜抛运动的轨迹、射程与最高点交互演示。",
 
-    icon:"🎯", cover:"assets/img/oblique-projectile-cover.jpg",
+    icon:"🎯", cover:"assets/img/oblique-projectile-cover.png",
 
     link:"animations/oblique-projectile.html", date:"2026-08-14", tag:"力学"
 
