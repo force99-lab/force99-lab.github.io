@@ -372,6 +372,15 @@ const WORKS = [
     tag:"学习方法"
   },
   {
+
+    type:"article", title:"与高考物理命题老师的思维同频共振",
+
+    desc:"透视高考物理命题的金字塔结构（一核四层四翼），拆解命题人“建塔”逻辑，给出反向拆题与同频备考路径。",
+
+    icon:"🧠", link:"articles/与高考物理命题老师思维同频共振.html", date:"2026-08-15", tag:"命题思维"
+
+  },
+  {
     type:"video", title:"卡文迪许扭秤实验",
     desc:"用光路放大法测量微小引力，首次测得万有引力常量 G 并称量地球质量。",
     icon:"⚖️", cover:"assets/img/cavendish-torsion-balance-cover.png",
