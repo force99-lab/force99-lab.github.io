@@ -77,26 +77,6 @@ const WORKS = [
 
   {
 
-    type:"animation", title:"平抛运动：合成与分解",
-
-    desc:"可调速、可暂停的交互动画，直观展示水平/竖直分运动。",
-
-    icon:"🎯", link:"animations/demo.html", date:"2026-07-08", tag:"力学"
-
-  },
-
-  {
-
-    type:"animation", title:"波的干涉实时演示",
-
-    desc:"双波源叠加，相位差可调，呈现稳定干涉图样。",
-
-    icon:"🌊", link:"animations/demo.html", date:"2026-04-19", tag:"波动"
-
-  },
-
-  {
-
     type:"animation", title:"三棱镜色散",
 
     desc:"白光经三棱镜分解为七色光谱，直观演示光的色散与折射率。",
