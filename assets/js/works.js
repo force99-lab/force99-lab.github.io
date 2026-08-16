@@ -445,6 +445,12 @@ const WORKS = [
     desc:"用光路放大法测量微小引力，首次测得万有引力常量 G 并称量地球质量。",
     icon:"⚖️", cover:"assets/img/cavendish-torsion-balance-cover.png",
     link:"videos/cavendish_torsion_balance_video.html", date:"2026-08-15", tag:"万有引力"
+  },
+
+  {
+    type:"video", title:"傅科摆",
+    desc:"单摆摆动平面随时间缓慢进动，直观证明地球自转，是课堂上经典的地转演示。",
+    icon:"🌍", link:"videos/foucault_pendulum.html", date:"2026-08-16", tag:"机械振动"
   }
 ];
 
