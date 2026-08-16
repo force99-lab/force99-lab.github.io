@@ -332,3 +332,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="doc7-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 传送带滑块运动封面完整显示（不裁剪） */
 .card .cover.has-img[style*="conveyor-belt-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 水下点光源折射与全反射封面完整显示（不裁剪） */
+.card .cover.has-img[style*="underwater-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
