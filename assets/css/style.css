@@ -330,3 +330,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="field-lines-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 黑吉辽蒙T14解题封面完整显示（不裁剪） */
 .card .cover.has-img[style*="doc7-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 传送带滑块运动封面完整显示（不裁剪） */
+.card .cover.has-img[style*="conveyor-belt-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
