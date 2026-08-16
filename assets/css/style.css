@@ -336,3 +336,5 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="underwater-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 2026云南卷T15解题封面完整显示（不裁剪） */
 .card .cover.has-img[style*="doc4-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2026江苏卷T16解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="doc2-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
