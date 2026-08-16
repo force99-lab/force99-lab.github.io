@@ -340,3 +340,4 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
 .card .cover.has-img[style*="doc2-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
 /* 2026湖北卷T15光滑轨道弹性碰撞链解题封面完整显示（不裁剪） */
 .card .cover.has-img[style*="2026-hubei-t15-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+[style*="block-plank-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
