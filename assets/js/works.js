@@ -282,6 +282,7 @@ const WORKS = [
     title:"2026云南卷T15 · 弹球游戏装置",
     desc:"弹球游戏装置的碰撞与能量综合问题，三页式交互讲解：试题环绕、物理过程动画、交互式填空解题。",
     icon:"🔵",
+    cover:"assets/img/doc4-solve-cover.png",
     link:"solutions/doc4_animation.html",
     date:"2026-08-16",
     tag:"力学"
