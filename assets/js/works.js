@@ -417,6 +417,7 @@ const WORKS = [
     title:"2026江苏卷T16 · 四球双弹簧弹性碰撞",
     desc:"江苏卷压轴：四个小球通过两根弹簧连接，弹簧振子与弹性碰撞耦合，三段式交互讲解碰撞序列与能量分配。",
     icon:"🔵",
+    cover:"assets/img/doc2-solve-cover.png",
     link:"solutions/doc2_animation.html",
     date:"2026-08-16",
     tag:"力学"
