@@ -447,6 +447,7 @@ const WORKS = [
     title:"滑块与木板模型",
     desc:"滑块在木板上的相对运动动力学动画，直观展示摩擦力、加速度与相对位移的关系。",
     icon:"🧱",
+    cover:"assets/img/block-plank-cover.png",
     link:"animations/滑块木板模型.html",
     date:"2026-08-16",
     tag:"力学"
