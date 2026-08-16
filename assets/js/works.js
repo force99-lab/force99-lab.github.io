@@ -402,6 +402,16 @@ const WORKS = [
     tag:"光学"
   },
   {
+    type:"animation",
+    title:"2026江苏卷T16 · 四球双弹簧弹性碰撞",
+    desc:"江苏卷压轴：四个小球通过两根弹簧连接，弹簧振子与弹性碰撞耦合，三段式交互讲解碰撞序列与能量分配。",
+    icon:"🔵",
+    link:"animations/doc2_animation.html",
+    date:"2026-08-16",
+    tag:"力学"
+  },
+
+  {
     type:"article",
     title:"物理迁移能力的野蛮生长",
     desc:"知识半衰期缩到三五年，AI 让“记住答案”一文不值。本文探讨物理迁移能力如何把一处长出的思维扦插到另一处照样成活。",
