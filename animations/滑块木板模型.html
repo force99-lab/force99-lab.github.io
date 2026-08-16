@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>滑块与木板模型 · 动态动画</title>
+<style>
+  :root{
+    --bg:#0d1b22; --panel:#13262f; --panel2:#0f1f27; --line:#1f3a45;
+    --txt:#dbeaf0; --dim:#7fa0b0; --accent:#39d6c8; --accent2:#ffd84d;
+    --wood1:#d49a5a; --wood2:#9a6231; --red:#ff3b30;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -10%,#16323d,#0a151b 70%);
+    color:var(--txt);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 40px;}
+  h1{font-size:21px;margin:6px 0 2px;letter-spacing:1px;}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:14px;}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  @media(max-width:880px){.stage{grid-template-columns:1fr;}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;padding:10px 12px 6px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);}
+  .card h2{font-size:13px;margin:2px 0 6px;color:var(--accent);letter-spacing:1px;font-weight:600;}
+  canvas{display:block;width:100%;border-radius:10px;background:#0a161c;}
+  .controls{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 18px;}
+  .ctl{display:flex;flex-direction:column;gap:5px;}
+  .ctl label{font-size:12.5px;color:var(--dim);display:flex;justify-content:space-between;}
+  .ctl label b{color:var(--txt);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center;}
+  button{background:linear-gradient(180deg,#1c3a44,#152a32);color:var(--txt);
+    border:1px solid var(--line);border-radius:10px;padding:9px 18px;font-size:14px;
+    cursor:pointer;transition:.15s;}
+  button:hover{border-color:var(--accent);color:#fff;}
+  button.primary{background:linear-gradient(180deg,#1f7d72,#155e56);border-color:#2bbfb2;}
+  .readout{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto;font-size:13px;color:var(--dim);}
+  .readout b{color:var(--txt);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .tag.slip{background:rgba(255,59,48,.18);color:#ff7a72;border:1px solid rgba(255,59,48,.4);}
+  .tag.still{background:rgba(57,214,200,.16);color:#5fe6d8;border:1px solid rgba(57,214,200,.4);}
+  .tag.off{background:rgba(255,216,77,.16);color:#ffd84d;border:1px solid rgba(255,216,77,.4);}
+  .note{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>滑块与木板模型</h1>
+  <div class="sub">滑块以初速度滑上木板，木板置于粗糙地面。下方动态显示滑块与木板的速度—时间图像（面积 = 二者相对位移 = 木板上的摩擦痕迹长度）。</div>
+
+  <div class="controls">
+    <div class="grid">
+      <div class="ctl"><label>滑块初速度 v₀ <b><span id="v0v">4.0</span> m/s</b></label>
+        <input id="v0" type="range" min="-6" max="6" step="0.1" value="4"></div>
+      <div class="ctl"><label>木板长度 L <b><span id="Lv">4.0</span> m</b></label>
+        <input id="L" type="range" min="1" max="12" step="0.5" value="4"></div>
+      <div class="ctl"><label>地面摩擦因数 μ<sub>地</sub> <b><span id="muGv">0.05</span></b></label>
+        <input id="muG" type="range" min="0" max="0.6" step="0.01" value="0.05"></div>
+      <div class="ctl"><label>滑块—木板摩擦因数 μ <b><span id="muBv">0.30</span></b></label>
+        <input id="muB" type="range" min="0" max="0.8" step="0.01" value="0.3"></div>
+      <div class="ctl"><label>滑块质量 m <b><span id="mv">1.0</span> kg</b></label>
+        <input id="m" type="range" min="0.5" max="5" step="0.1" value="1"></div>
+      <div class="ctl"><label>木板质量 M <b><span id="Mv">2.0</span> kg</b></label>
+        <input id="M" type="range" min="0.5" max="10" step="0.5" value="2"></div>
+      <div class="ctl"><label>动画速度 <b><span id="spv">1.0</span>×</b></label>
+        <input id="sp" type="range" min="0.2" max="2.5" step="0.1" value="1"></div>
+    </div>
+    <div class="btns">
+      <button id="play" class="primary">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+      <div class="readout">
+        <span>t = <b id="rT">0.00</b> s</span>
+        <span>v块 = <b id="rVb">0.00</b></span>
+        <span>v板 = <b id="rVp">0.00</b></span>
+        <span>痕迹 Δs = <b id="rMark">0.00</b> m</span>
+        <span>状态 <span id="rState" class="tag slip">滑动摩擦</span></span>
+      </div>
+    </div>
+    <div class="note">
+      ① 木块与木板间滑动摩擦使滑块减速、木板加速；当二者速度相等且 <b>μ<sub>地</sub> ≤ μ</b> 时可保持相对静止一起减速。
+      ② 若相对滑动距离超过木板长度，滑块从木板末端滑落（痕迹定格在木板上随板运动）。
+      ③ 地面摩擦为 0 时二者可能以共同速度匀速运动。
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="card"><h2>运动示意图</h2><canvas id="scene" height="330"></canvas></div>
+    <div class="card"><h2>速度 — 时间图像（动态）</h2><canvas id="graph" height="330"></canvas></div>
+  </div>
+</div>
+
+<script>
+/* ===================== 参数与全局 ===================== */
+const P = { v0:4, L:4, muG:0.05, muB:0.30, m:1, M:2 };
+let traj = [], offset = 0, Tmax = 6, TAXIS = 9, playT = 0, playing = true, animSpeed = 1;
+let camMin = -1, camMax = 8;            // 固定世界坐标框（不随物体平移，保证动画方向与 v-t 图一致）
+const GUARD = 40, g = 9.8;
+const S = { ctx:null, W:600, H:330, el:null };
+const G = { ctx:null, W:600, H:330, el:null };
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+
+/* ===================== Canvas 适配 ===================== */
+function fit(c, store){
+  const r = c.getBoundingClientRect();
+  const h = parseInt(c.getAttribute('height')) || 330;
+  c.width = Math.max(320, r.width) * DPR;
+  c.height = h * DPR;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  store.ctx = ctx; store.W = Math.max(320, r.width); store.H = h;
+}
+function setupCanvases(){
+  S.el = document.getElementById('scene'); G.el = document.getElementById('graph');
+  fit(S.el, S); fit(G.el, G);
+}
+
+/* ===================== 物理模拟（双体积分） ===================== */
+function simulate(){
+  const dt = 0.002, eps = 1e-3;
+  const m = P.m, M = P.M, muB = P.muB, muG = P.muG, L = P.L;
+  offset = 0.15 * L;                       // 滑块初始位于木板上 15% 处
+  let xb = offset, vb = P.v0;              // 滑块：位置(相对地面) / 速度
+  let xp = 0, vp = 0;                      // 木板：左端位置 / 速度
+  let stuck = (Math.abs(P.v0) < 1e-6);
+  let onPlank = true;
+  let mR = offset;                           // 木块在木板上的相对位置（掉板后定格）
+  const out = [];
+  let t = 0, acc = 0, guardN = 0, maxN = GUARD / dt;
+  const push = () => out.push({ t, xb, vb, xp, vp, stuck, onPlank, mR });
+  push();
+
+  while(t < GUARD && guardN < maxN){
+    guardN++;
+    let ab, ap, skip = false;
+
+    if(!onPlank){
+      // 已离开木板：二者直接在地面上受地面摩擦
+      ab = (Math.abs(vb) < eps) ? 0 : -Math.sign(vb) * muG * g;
+      ap = (Math.abs(vp) < eps) ? 0 : -Math.sign(vp) * muG * g;
+    } else if(stuck){
+      const v = vb;                        // ≈ vp
+      if(Math.abs(v) < eps){ ab = 0; ap = 0; }
+      else {
+        const a = -Math.sign(v) * muG * g; // 整体一起减速（m+M 抵消）
+        if(Math.abs(a) <= muB * g + 1e-9){ ab = a; ap = a; }
+        else {                             // 地面减速需求超过最大静摩擦 → 不能共速
+          ab = -muB * g;
+          const fp = muB * m * g, fg = -Math.sign(vp) * muG * (m + M) * g;
+          ap = (fp + fg) / M; stuck = false;
+        }
+      }
+    } else {
+      const vrel = vb - vp;
+      let fB, fP;                          // 木块受力、木板受反作用
+      if(vrel > eps){ fB = -muB * m * g; fP = +muB * m * g; }       // 块相对板向前 → 块受阻力向左
+      else if(vrel < -eps){ fB = +muB * m * g; fP = -muB * m * g; } // 向后 → 块受阻力向右
+      else { fB = -muB * m * g; fP = +muB * m * g; }                // 临界：视为向前滑趋势
+      ab = fB / m;
+      let fg;
+      if(Math.abs(vp) < eps){
+        if(Math.abs(fP) <= muG * (m + M) * g + 1e-9) fg = -fP; else fg = 0; // 地面静摩擦托住
+      } else fg = -Math.sign(vp) * muG * (m + M) * g;
+      ap = (fP + fg) / M;
+      // 相对速度过零检测（达到共速）
+      const nvb = vb + ab * dt, nvp = vp + ap * dt;
+      if((vb - vp) * (nvb - nvp) <= 0){
+        const vc = (vb + vp) / 2;
+        if(muG <= muB + 1e-9 || Math.abs(vc) < eps){ vb = vp = vc; ab = 0; ap = 0; skip = true; stuck = true; }
+      }
+    }
+
+    if(!skip){
+      let nvb = vb + ab * dt, nvp = vp + ap * dt;
+      if(vb * nvb < 0) nvb = 0;            // 摩擦使速度不过零振荡
+      if(vp * nvp < 0) nvp = 0;
+      vb = nvb; vp = nvp;
+    }
+    xb += vb * dt; xp += vp * dt;
+    if(onPlank) mR = xb - xp;              // 仅在木板上时更新痕迹位置；掉板后定格
+
+    if(onPlank && (xb > xp + L || xb < xp)) onPlank = false;   // 滑落
+
+    t += dt; acc += dt;
+    if(acc >= 0.02 - 1e-9){ acc = 0; push(); }
+
+    if(onPlank && stuck && Math.abs(vb) < eps){ push(); break; }
+    if(!onPlank && Math.abs(vb) < eps && Math.abs(vp) < eps){ push(); break; }
+  }
+  push();
+  return out;
+}
+
+/* ===================== 取某时刻状态（线性插值） ===================== */
+function getState(t){
+  if(traj.length === 0) return null;
+  if(t <= traj[0].t) return clip(traj[0]);
+  const last = traj[traj.length - 1];
+  if(t >= last.t) return clip(last);
+  let lo = 0, hi = traj.length - 1;
+  while(hi - lo > 1){ const mid = (lo + hi) >> 1; if(traj[mid].t <= t) lo = mid; else hi = mid; }
+  const a = traj[lo], b = traj[hi], f = (t - a.t) / (b.t - a.t || 1);
+  return {
+    t, xb: a.xb + (b.xb - a.xb) * f, vb: a.vb + (b.vb - a.vb) * f,
+    xp: a.xp + (b.xp - a.xp) * f, vp: a.vp + (b.vp - a.vp) * f,
+    stuck: f < 0.5 ? a.stuck : b.stuck, onPlank: f < 0.5 ? a.onPlank : b.onPlank,
+    markR1: a.mR + (b.mR - a.mR) * f
+  };
+}
+function clip(o){ return { t:o.t, xb:o.xb, vb:o.vb, xp:o.xp, vp:o.vp, stuck:o.stuck, onPlank:o.onPlank, markR1:o.mR }; }
+
+/* ===================== 重建（参数变化后） ===================== */
+function rebuild(){
+  traj = simulate();
+
+  // ===== 相机：固定世界坐标框（不随物体平移），确保动画运动方向与 v-t 图一致（同向/反向一目了然）=====
+  let wx0 = Infinity, wx1 = -Infinity;
+  for(const p of traj){
+    if(p.xb < wx0) wx0 = p.xb;
+    if(p.xp < wx0) wx0 = p.xp;
+    const pr = p.xp + P.L;
+    if(p.xb > wx1) wx1 = p.xb;
+    if(pr > wx1) wx1 = pr;
+  }
+  if(!isFinite(wx0)){ wx0 = 0; wx1 = P.L; }
+  const camPad = Math.max(0.8, 0.12 * (wx1 - wx0));
+  const CAM_MAXW = 24, CAM_MINW = Math.max(6, P.L + 2);
+  let windowW = Math.max(CAM_MINW, Math.min(CAM_MAXW, (wx1 - wx0) + 2 * camPad));
+  const camCenter = (wx0 + wx1) / 2;
+  camMin = camCenter - windowW / 2; camMax = camCenter + windowW / 2;
+
+  // 结束时间：二者速度基本为 0 且不再滑动
+  let stopT = traj[traj.length - 1].t;
+  for(let i = traj.length - 1; i >= 0; i--){
+    const p = traj[i];
+    if(Math.abs(p.vb) < 0.02 && Math.abs(p.vp) < 0.02 && (p.stuck || !p.onPlank)) stopT = p.t;
+    else break;
+  }
+  Tmax = Math.min(30, Math.max(2, stopT + 0.6));
+  TAXIS = Math.min(20, Math.max(3, Math.ceil(Tmax)));
+
+  // μ地≈0 时系统持续漂移：裁掉超出视野的尾部，确保全程在框内且方向不反转
+  if(wx1 - wx0 > CAM_MAXW - 1e-6){
+    for(let i = 1; i < traj.length; i++){
+      const pr = traj[i].xp + P.L, lead = Math.max(traj[i].xb, pr), trail = Math.min(traj[i].xb, traj[i].xp);
+      if(lead > camMax - 1.0 || trail < camMin + 1.0){ Tmax = Math.min(Tmax, traj[i].t); break; }
+    }
+  }
+
+  if(playT > Tmax) playT = Tmax;
+  updateReadout(playT);
+}
+
+/* ===================== 绘图工具 ===================== */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function drawArrow(ctx,x1,y1,x2,y2,color,w){
+  const a = Math.atan2(y2-y1, x2-x1), hl = 8;
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2 - hl*Math.cos(a - 0.4), y2 - hl*Math.sin(a - 0.4));
+  ctx.lineTo(x2 - hl*Math.cos(a + 0.4), y2 - hl*Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+/* ===================== 场景绘制 ===================== */
+function drawScene(){
+  const ctx = S.ctx, W = S.W, H = S.H;
+  ctx.clearRect(0,0,W,H);
+  // 背景
+  let bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0e2129'); bg.addColorStop(1,'#081a20');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  const st = getState(playT);
+  const camX = (camMin + camMax) / 2;                // 固定世界坐标（不随物体平移）→ 屏幕速度 = 真实速度，方向天然与 v-t 图一致
+  const scale = W / (camMax - camMin);
+  const sx = x => (x - camX) * scale + W/2;
+  const groundY = H * 0.74;
+  const PLANK_H = 22;
+
+  // 地面
+  let gg = ctx.createLinearGradient(0,groundY,0,H);
+  gg.addColorStop(0,'#15323b'); gg.addColorStop(1,'#0b1e25');
+  ctx.fillStyle = gg; ctx.fillRect(0,groundY,W,H-groundY);
+  ctx.strokeStyle = 'rgba(120,180,195,0.5)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0,groundY); ctx.lineTo(W,groundY); ctx.stroke();
+  // 滚动刻度（体现绝对运动）
+  ctx.strokeStyle = 'rgba(120,180,195,0.18)'; ctx.lineWidth = 1;
+  const tick0 = Math.floor(camX - (W/2)/scale), tick1 = Math.ceil(camX + (W/2)/scale);
+  for(let i = tick0; i <= tick1; i++){
+    const x = sx(i);
+    ctx.beginPath(); ctx.moveTo(x,groundY); ctx.lineTo(x,groundY+10); ctx.stroke();
+  }
+
+  // 木板（原木色）
+  const pxL = sx(st.xp), pxR = sx(st.xp + P.L), topY = groundY - PLANK_H;
+  let wg = ctx.createLinearGradient(0, topY, 0, groundY);
+  wg.addColorStop(0, '#d99c5c'); wg.addColorStop(0.5, '#bd7e3f'); wg.addColorStop(1, '#8a5a2b');
+  ctx.fillStyle = wg;
+  roundRect(ctx, pxL, topY, pxR - pxL, PLANK_H, 4); ctx.fill();
+  // 木纹
+  ctx.strokeStyle = 'rgba(90,55,25,0.35)'; ctx.lineWidth = 1;
+  for(let k = 1; k < 4; k++){
+    const yy = topY + PLANK_H * k / 4;
+    ctx.beginPath(); ctx.moveTo(pxL+4, yy); ctx.lineTo(pxR-4, yy); ctx.stroke();
+  }
+  // 木板上下高光/暗边
+  ctx.strokeStyle = 'rgba(255,225,180,0.55)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pxL, topY+1); ctx.lineTo(pxR, topY+1); ctx.stroke();
+  ctx.strokeStyle = 'rgba(60,35,15,0.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pxL, groundY-1); ctx.lineTo(pxR, groundY-1); ctx.stroke();
+
+  // 摩擦痕迹（红，印在木板上 = 木块相对木板的位移区间）
+  if(st.onPlank || markFrozen){
+    const r0 = offset, r1 = st.markR1;
+    const aR = Math.min(r0, r1), bR = Math.max(r0, r1);
+    const x0 = sx(st.xp + Math.max(0, aR));
+    const x1 = sx(st.xp + Math.min(P.L, bR));
+    if(x1 - x0 > 1){
+      ctx.fillStyle = 'rgba(255,40,40,0.55)';
+      ctx.fillRect(x0, topY + 3, Math.max(2, x1 - x0), PLANK_H - 6);
+    }
+  }
+
+  // 滑块（尺寸固定为像素，与木板长度 L / 缩放 scale 无关，避免调长度时滑块变形）
+  const bw = 44, blockH = 36;
+  const bxc = sx(st.xb);
+  const byTop = topY - blockH;
+  let bg2 = ctx.createLinearGradient(0, byTop, 0, topY);
+  bg2.addColorStop(0, '#6fb0e8'); bg2.addColorStop(1, '#3f7fbf');
+  ctx.fillStyle = bg2;
+  roundRect(ctx, bxc - bw/2, byTop, bw, blockH, 5); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5;
+  roundRect(ctx, bxc - bw/2, byTop, bw, blockH, 5); ctx.stroke();
+  // 滑块上表面高光
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  roundRect(ctx, bxc - bw/2 + 3, byTop + 3, bw - 6, 6, 3); ctx.fill();
+
+  // 速度矢量（分离）：v块 在滑块上（黄），v板 在木板内（青）
+  const vScale = 14;
+  if(Math.abs(st.vb) > 0.02){
+    const len = Math.sign(st.vb) * Math.min(70, Math.abs(st.vb) * vScale);
+    drawArrow(ctx, bxc, byTop + blockH/2, bxc + len, byTop + blockH/2, '#ffd84d', 3);
+    ctx.fillStyle = '#ffd84d'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('v块', bxc + len*0.5, byTop + blockH/2 - 8);
+  }
+  if(Math.abs(st.vp) > 0.02){
+    const len = Math.sign(st.vp) * Math.min(70, Math.abs(st.vp) * vScale);
+    const py = topY + PLANK_H/2;
+    drawArrow(ctx, sx(st.xp + P.L*0.5) - len/2, py, sx(st.xp + P.L*0.5) + len/2, py, '#39d6c8', 3);
+    ctx.fillStyle = '#39d6c8'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('v板', sx(st.xp + P.L*0.5), py - 8);
+  }
+
+  // 状态文字
+  ctx.textAlign = 'left'; ctx.font = '13px sans-serif';
+  let label, col;
+  if(!st.onPlank){ label = '滑块已离开木板'; col = '#ffd84d'; }
+  else if(st.stuck){ label = '相对静止（共速）'; col = '#5fe6d8'; }
+  else { label = '滑动摩擦'; col = '#ff7a72'; }
+  ctx.fillStyle = col; ctx.fillText(label, 12, 22);
+
+  drawForcePanel(ctx, W, H, st);   // 右上角：滑块受力动态图
+  drawWatermark(ctx, W, H);
+}
+
+/* ===================== 滑块受力（动态） ===================== */
+function computeBlockForces(st){
+  const m = P.m, g = 9.8, muB = P.muB, muG = P.muG;
+  const G = m * g;                 // 重力 = 支持力（水平面）
+  const N = m * g;
+  let f = 0, fKind = '';
+  if(!st.onPlank){
+    f = (Math.abs(st.vb) < 1e-3) ? 0 : -Math.sign(st.vb) * muG * G;   // 地面摩擦，阻碍块运动
+    fKind = '地面摩擦';
+  } else if(st.stuck){
+    f = (Math.abs(st.vb) < 1e-3) ? 0 : -Math.sign(st.vb) * muG * G;   // 静摩擦，使块随板一起减速
+    fKind = '静摩擦';
+  } else {
+    const vrel = st.vb - st.vp;                                     // 滑动摩擦，阻碍相对滑动
+    f = (Math.abs(vrel) < 1e-3) ? 0 : -Math.sign(vrel) * muB * G;
+    fKind = (vrel > 0) ? '滑动摩擦(块相对板向前)' : '滑动摩擦(块相对板向后)';
+  }
+  return { G, N, f, fKind };
+}
+function drawForcePanel(ctx, W, H, st){
+  const F = computeBlockForces(st);
+  const pw = 178, ph = 142, px = W - pw - 12, py = 12;
+  ctx.save();
+  // 面板背景
+  ctx.fillStyle = 'rgba(8,22,28,0.84)';
+  roundRect(ctx, px, py, pw, ph, 11); ctx.fill();
+  ctx.strokeStyle = 'rgba(57,214,200,0.55)'; ctx.lineWidth = 1.2;
+  roundRect(ctx, px, py, pw, ph, 11); ctx.stroke();
+  // 标题
+  ctx.fillStyle = '#5fe6d8'; ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('滑块受力（动态）', px + 12, py + 21);
+
+  // 受力图主体（自由体）
+  const cx = px + pw/2, cy = py + 74;
+  const Lref = 30;                  // G = mg → 30px（N 与之等长）
+  const bodyW = 28, bodyH = 18;
+  // 受力物体
+  ctx.fillStyle = 'rgba(110,176,232,0.92)';
+  roundRect(ctx, cx - bodyW/2, cy - bodyH/2, bodyW, bodyH, 3); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
+  roundRect(ctx, cx - bodyW/2, cy - bodyH/2, bodyW, bodyH, 3); ctx.stroke();
+  // 重力 G（向下，红）
+  drawArrow(ctx, cx, cy + bodyH/2, cx, cy + bodyH/2 + Lref, '#ff6b6b', 2.6);
+  // 支持力 N（向上，青）
+  drawArrow(ctx, cx, cy - bodyH/2, cx, cy - bodyH/2 - Lref, '#5fe6d8', 2.6);
+  // 摩擦力 f（水平，黄；长度/方向随状态变化，单独放大更醒目）
+  const LrefF = 54;                       // 摩擦力专属参考长度（比 G/N 的 Lref 更长）
+  let fLen = (F.f / F.G) * LrefF;
+  if(Math.abs(F.f) > 0.05 && Math.abs(fLen) < 14) fLen = Math.sign(F.f) * 14; // 最小可见长度
+  if(Math.abs(F.f) > 0.05){
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,216,77,0.75)'; ctx.shadowBlur = 9;
+    drawArrow(ctx, cx, cy, cx + fLen, cy, '#ffd84d', 3.8);
+    ctx.restore();
+  }
+
+  // 图例数值
+  ctx.font = '11px sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#ff8a8a'; ctx.fillText('G=' + F.G.toFixed(1) + ' N', px + 12, py + ph - 30);
+  ctx.fillStyle = '#7fe6da'; ctx.fillText('N=' + F.N.toFixed(1) + ' N', px + 12, py + ph - 16);
+  const fdir = F.f > 0.05 ? '→' : (F.f < -0.05 ? '←' : '·');
+  ctx.fillStyle = '#ffd84d'; ctx.fillText('f=' + Math.abs(F.f).toFixed(1) + ' N ' + fdir, px + 96, py + ph - 16);
+  // 摩擦类型说明
+  ctx.fillStyle = '#cfe6ee'; ctx.font = '10.5px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText(F.fKind, px + pw - 12, py + ph - 30);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
+/* ===================== v-t 图像（动态） ===================== */
+function drawGraph(){
+  const ctx = G.ctx, W = G.W, H = G.H;
+  ctx.clearRect(0,0,W,H);
+  let bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0e2129'); bg.addColorStop(1,'#081a20');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  const m = { l:46, r:14, t:16, b:30 };
+  const pw = W - m.l - m.r, ph = H - m.t - m.b;
+  let vAbs = 4;
+  for(const p of traj){ if(p.t > TAXIS) break; vAbs = Math.max(vAbs, Math.abs(p.vb), Math.abs(p.vp)); }
+  const vMax = Math.max(4, vAbs);
+  const X = t => m.l + (t / TAXIS) * pw;
+  const Y = v => m.t + (1 - (v + vMax) / (2 * vMax)) * ph;
+  const y0 = Y(0);
+
+  // 网格
+  ctx.strokeStyle = 'rgba(120,160,175,0.12)'; ctx.lineWidth = 1;
+  for(let i = 0; i <= 4; i++){ const v = -vMax + i * (2*vMax/4); const y = Y(v);
+    ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(W - m.r, y); ctx.stroke(); }
+  for(let i = 0; i <= 6; i++){ const t = i * TAXIS/6; const x = X(t);
+    ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke(); }
+
+  // 时间游标之前的区间
+  const tEnd = Math.min(playT, TAXIS);
+  let seg = [];
+  for(const p of traj){ if(p.t > tEnd) break; seg.push({ t:p.t, vb:p.vb, vp:p.vp, onPlank:p.onPlank }); }
+  if(seg.length === 0) seg = [{ t:traj[0].t, vb:traj[0].vb, vp:traj[0].vp, onPlank:traj[0].onPlank }];
+  const cs = getState(tEnd);
+  seg.push({ t: tEnd, vb: cs.vb, vp: cs.vp, onPlank: cs.onPlank });
+
+  // 面积（仅在木板上时 v块 与 v板 之间 = 摩擦痕迹长度）
+  ctx.fillStyle = 'rgba(255,42,42,0.22)';
+  let run = [];
+  const flush = () => {
+    if(run.length > 1){
+      ctx.beginPath();
+      ctx.moveTo(X(run[0].t), Y(run[0].vb));
+      for(const p of run) ctx.lineTo(X(p.t), Y(p.vb));
+      for(let i = run.length - 1; i >= 0; i--) ctx.lineTo(X(run[i].t), Y(run[i].vp));
+      ctx.closePath(); ctx.fill();
+    }
+    run = [];
+  };
+  for(const p of seg){ if(p.onPlank) run.push(p); else flush(); }
+  flush();
+
+  // 坐标轴（实线）：左 Y 轴 + 横轴位于 v=0
+  ctx.strokeStyle = 'rgba(205,230,242,0.92)'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(m.l, m.t); ctx.lineTo(m.l, m.t + ph);     // Y 轴
+  ctx.moveTo(m.l, y0); ctx.lineTo(W - m.r, y0);         // 横轴（v=0）
+  ctx.stroke();
+
+  // 木板速度线 v板（青）
+  ctx.strokeStyle = '#39d6c8'; ctx.lineWidth = 2.4; ctx.beginPath();
+  let first = true;
+  for(const p of seg){ const x = X(p.t), y = Y(p.vp); if(first){ ctx.moveTo(x,y); first=false; } else ctx.lineTo(x,y); }
+  ctx.stroke();
+  // 滑块速度线 v块（黄）
+  ctx.strokeStyle = '#ffd84d'; ctx.lineWidth = 2.4; ctx.beginPath();
+  first = true;
+  for(const p of seg){ const x = X(p.t), y = Y(p.vb); if(first){ ctx.moveTo(x,y); first=false; } else ctx.lineTo(x,y); }
+  ctx.stroke();
+
+  // 时间游标
+  if(playT <= TAXIS){
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(X(playT), m.t); ctx.lineTo(X(playT), m.t + ph); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 刻度与标签
+  ctx.fillStyle = '#7fa0b0'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+  for(let i = 0; i <= 6; i++){ const t = i * TAXIS/6; ctx.fillText(t.toFixed(0), X(t), H - 12); }
+  ctx.fillText('t / s', W/2, H - 1);
+  ctx.textAlign = 'right';
+  for(let i = 0; i <= 4; i++){ const v = -vMax + i * (2*vMax/4); ctx.fillText(v.toFixed(0), m.l - 6, Y(v) + 4); }
+  ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign = 'center'; ctx.fillText('v / (m·s⁻¹)', 0, 0); ctx.restore();
+
+  // 图例
+  ctx.textAlign = 'left'; ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#ffd84d'; ctx.fillRect(W - 120, m.t + 4, 14, 4);
+  ctx.fillText('滑块速度 v块', W - 102, m.t + 11);
+  ctx.fillStyle = '#39d6c8'; ctx.fillRect(W - 120, m.t + 20, 14, 4);
+  ctx.fillText('木板速度 v板', W - 102, m.t + 27);
+}
+
+/* ===================== force99 水印 ===================== */
+function drawWatermark(ctx, W, H){
+  const t = performance.now() / 1000;
+  const ox = Math.sin(t * 0.55) * 4, oy = Math.cos(t * 0.42) * 3;
+  const x = W - 92 + ox, y = H - 36 + oy, w = 80, h = 24;
+  ctx.save();
+  ctx.shadowColor = 'rgba(57,214,200,0.7)'; ctx.shadowBlur = 14;
+  let gg = ctx.createLinearGradient(x, y, x + w, y);
+  gg.addColorStop(0, 'rgba(20,55,64,0.92)'); gg.addColorStop(1, 'rgba(15,40,48,0.92)');
+  ctx.fillStyle = gg; roundRect(ctx, x, y, w, h, 12); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(57,214,200,0.85)'; ctx.lineWidth = 1.4; roundRect(ctx, x, y, w, h, 12); ctx.stroke();
+  ctx.font = 'bold 14px "Segoe UI",sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#bfeef0'; ctx.fillText('force', x + 12, y + h/2);
+  ctx.fillStyle = '#ffcf5c'; ctx.fillText('99', x + 48, y + h/2);
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
+/* ===================== 读数 ===================== */
+let markFrozen = false;
+function updateReadout(t){
+  const st = getState(t); if(!st) return;
+  document.getElementById('rT').textContent = t.toFixed(2) + ' s';
+  document.getElementById('rVb').textContent = st.vb.toFixed(2) + ' m/s';
+  document.getElementById('rVp').textContent = st.vp.toFixed(2) + ' m/s';
+  const markLen = Math.abs(st.markR1 - offset);
+  document.getElementById('rMark').textContent = markLen.toFixed(2) + ' m';
+  const tag = document.getElementById('rState');
+  if(!st.onPlank){ tag.className = 'tag off'; tag.textContent = '已离开木板'; }
+  else if(st.stuck){ tag.className = 'tag still'; tag.textContent = '相对静止(共速)'; }
+  else { tag.className = 'tag slip'; tag.textContent = '滑动摩擦'; }
+  markFrozen = !st.onPlank;
+}
+
+/* ===================== 主循环 ===================== */
+let lastTS = 0;
+function loop(ts){
+  if(!lastTS) lastTS = ts;
+  const dtReal = Math.min(0.05, (ts - lastTS) / 1000); lastTS = ts;
+  if(playing && playT < Tmax){
+    playT += dtReal * animSpeed;
+    if(playT >= Tmax){ playT = Tmax; }
+    updateReadout(playT);
+  }
+  drawScene(); drawGraph();
+  requestAnimationFrame(loop);
+}
+
+/* ===================== 控件绑定 ===================== */
+function bind(id, key, label, fmt){
+  const el = document.getElementById(id), out = document.getElementById(label);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    P[key] = (key === 'v0' || key === 'L' || key === 'm' || key === 'M') ? v : v;
+    out.textContent = fmt ? fmt(v) : v.toFixed(2);
+    rebuild();
+  });
+}
+function init(){
+  setupCanvases();
+  bind('v0','v0','v0v', v => v.toFixed(1));
+  bind('L','L','Lv', v => v.toFixed(1));
+  bind('muG','muG','muGv', v => v.toFixed(2));
+  bind('muB','muB','muBv', v => v.toFixed(2));
+  bind('m','m','mv', v => v.toFixed(1));
+  bind('M','M','Mv', v => v.toFixed(1));
+  const sp = document.getElementById('sp'), spv = document.getElementById('spv');
+  sp.addEventListener('input', () => { animSpeed = parseFloat(sp.value); spv.textContent = animSpeed.toFixed(1); });
+  const playBtn = document.getElementById('play');
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+    if(playing && playT >= Tmax) playT = 0;   // 播完后点击重新播放
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    playT = 0; playing = true; playBtn.textContent = '⏸ 暂停';
+    lastTS = 0; rebuild();
+  });
+  window.addEventListener('resize', () => { setupCanvases(); });
+  rebuild();
+  requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>
