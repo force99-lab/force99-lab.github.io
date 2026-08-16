@@ -410,6 +410,16 @@ const WORKS = [
     date:"2026-08-16",
     tag:"力学"
   },
+  {
+    type:"animation",
+    title:"传送带上的滑块运动",
+    desc:"水平传送带滑块动力学：可调传送带速度、滑块初速与摩擦系数，实时观察相对运动、摩擦方向切换与加速过程。",
+    icon:"🏭",
+    link:"animations/传送带滑块运动.html",
+    date:"2026-08-16",
+    tag:"力学"
+  },
+
 
   {
     type:"article",
