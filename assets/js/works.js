@@ -427,6 +427,7 @@ const WORKS = [
     title:"2026湖北卷T15 · 光滑轨道弹性碰撞链",
     desc:"光滑轨道上的弹性碰撞链问题，三页式交互讲解：试题环绕、物理过程动画、交互式填空解题。",
     icon:"🔵",
+    cover:"assets/img/2026-hubei-t15-cover.png",
     link:"solutions/doc3_animation.html",
     date:"2026-08-16",
     tag:"力学"
