@@ -423,6 +423,15 @@ const WORKS = [
     tag:"力学"
   },
   {
+    type:"solve",
+    title:"2026湖北卷T15 · 光滑轨道弹性碰撞链",
+    desc:"光滑轨道上的弹性碰撞链问题，三页式交互讲解：试题环绕、物理过程动画、交互式填空解题。",
+    icon:"🔵",
+    link:"solutions/doc3_animation.html",
+    date:"2026-08-16",
+    tag:"力学"
+  },
+  {
     type:"animation",
     title:"传送带上的滑块运动",
     desc:"水平传送带滑块动力学：可调传送带速度、滑块初速与摩擦系数，实时观察相对运动、摩擦方向切换与加速过程。",
