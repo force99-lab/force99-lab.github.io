@@ -406,6 +406,7 @@ const WORKS = [
     title:"水下点光源折射与全反射",
     desc:"演示水下点光源发出的光线经水面折射与全反射的三维光路，可调折射率与光源深度观察临界角与光斑。",
     icon:"💡",
+    cover:"assets/img/underwater-cover.png",
     link:"animations/水下点光源折射全反射.html",
     date:"2026-08-16",
     tag:"光学"
