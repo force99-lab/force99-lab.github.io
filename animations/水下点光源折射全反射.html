@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水下点光源 · 折射与全反射（三维）</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#0a121b;color:#d6e8ef;
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden}
+  #app{display:flex;flex-direction:column;height:100%}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;
+    padding:10px 16px;background:linear-gradient(180deg,#10202c,#0c1822);
+    border-bottom:1px solid #1d3340}
+  header h1{font-size:16px;margin:0 8px 0 0;font-weight:600;color:#eaf6ff;white-space:nowrap}
+  header h1 small{font-size:12px;color:#8fb3c2;font-weight:400}
+  .ctrl{display:flex;align-items:center;gap:6px;font-size:13px;color:#bcd6e2}
+  .ctrl select,.ctrl input[type=range]{accent-color:#33d6c2}
+  select{background:#13242f;color:#dceaf0;border:1px solid #2a4655;border-radius:6px;padding:3px 6px;font-size:13px}
+  .chk{display:flex;align-items:center;gap:5px;font-size:13px;color:#bcd6e2}
+  .btn{background:#16323f;color:#dceaf0;border:1px solid #2a4655;border-radius:6px;
+    padding:5px 12px;font-size:13px;cursor:pointer}
+  .btn:hover{background:#1d4253}
+  #main{display:flex;flex-direction:column;flex:1;min-height:0;position:relative}
+  #stage{position:relative;flex:1;min-width:0;min-height:0}
+  #stage canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
+  #stage canvas:active{cursor:grabbing}
+  #legend{position:absolute;left:14px;top:12px;background:rgba(10,22,32,.62);
+    border:1px solid #1d3340;border-radius:8px;padding:9px 12px;font-size:12px;line-height:1.7;color:#cfe2ec}
+  #legend b{color:#eaf6ff}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>水下点光源光路 <small id="sub">折射 · 全反射（三维）</small></h1>
+    <label class="ctrl">水的折射率 n
+      <input type="range" id="n" min="1.0" max="2.0" step="0.01" value="1.33"><b id="nv">1.33</b></label>
+    <label class="ctrl">光源深度 h
+      <input type="range" id="h" min="0.5" max="3" step="0.1" value="1.5"><b id="hv">1.5</b></label>
+    <label class="ctrl">水平 X
+      <input type="range" id="sx" min="-2" max="2" step="0.1" value="0"><b id="sxv">0.0</b></label>
+    <label class="ctrl">水平 Z
+      <input type="range" id="sz" min="-2" max="2" step="0.1" value="0"><b id="szv">0.0</b></label>
+    <label class="ctrl">光线密度
+      <select id="density"><option value="0">疏</option><option value="1" selected>中</option><option value="2">密</option></select></label>
+    <label class="ctrl">视图
+      <select id="view"><option value="3d" selected>三维</option><option value="2d">二维(截面)</option></select></label>
+    <label class="ctrl">动画速度
+      <input type="range" id="speed" min="0.2" max="3" step="0.1" value="1"><b id="speedv">1.0×</b></label>
+    <label class="chk"><input type="checkbox" id="refr" checked> 折射</label>
+    <label class="chk"><input type="checkbox" id="refl" checked> 反射/全反射</label>
+    <label class="chk"><input type="checkbox" id="cone" checked> 逃逸圆锥(倒立)</label>
+    <label class="chk"><input type="checkbox" id="auto" checked> 自动旋转</label>
+    <button class="btn" id="regen">↺ 重置视角</button>
+  </header>
+  <div id="main">
+    <div id="stage"><canvas id="mc"></canvas></div>
+    <div id="legend">
+      <div><span class="sw" style="background:#ff5b52"></span><b>折射光线 · 进入空气（锥内）</b></div>
+      <div><span class="sw" style="background:#4ae682"></span><b>临界角 · 恰好全反射（掠射）</b></div>
+      <div><span class="sw" style="background:#a9ecff"></span><b>全反射光线 · 回水中（锥外）</b></div>
+      <div style="margin-top:5px;color:#9fc2d1">临界角 θ<sub>c</sub> = <b id="tc">48.8°</b></div>
+      <div style="color:#9fc2d1">圆锥顶角 2θ<sub>c</sub> = <b id="tc2">97.5°</b></div>
+      <div style="margin-top:4px;color:#cfe2ec">倒立圆锥：顶点=点光源 · 底面=水面</div>
+      <div style="color:#9fe0c8">· 光线从点光源<b>生长</b>射出（到端点后重新生长）</div>
+      <div style="color:#cfe2ec">· 光线<b>末端箭头</b>指示传播方向</div>
+    </div>
+  </div>
+</div>
+<script>
+const cv = document.getElementById('mc');
+const ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+/* ============ 常量 ============ */
+let BOX = 3.0;           // 水平半宽（动态：随光线入射点扩展，受 BOX_CAP 上限保护）
+let BOT_Y = -3.0;        // 水底（动态）
+const BOX_CAP = 6.0;     // 水面半宽上限（保证最远入射点仍在相机前方，避免投影越界）
+const AIR_TOP = 3.0;     // 空气顶
+let BOT_Y2 = -2.7;       // 2D 视图水底
+const view2 = {cx:0, cy:0, scale:1};   // 2D(截面)视图投影参数
+const nAir = 1.0;        // 空气折射率
+const Lair = 2.6;        // 折射光线绘制长度
+const Lref = 2.4;        // 反射光线绘制长度
+const alphaList = [0, 18, 33, 45, 56, 66, 75];   // 与竖直方向夹角(度)
+const azimuth = {0:8, 1:14, 2:20};
+const COL_REFR=[255,91,82];    // 折射进入空气：红
+const COL_CRIT=[74,230,130];   // 临界角(恰好全反射·掠射)：绿
+const COL_TIR =[169,236,255];  // 全反射：冰蓝
+const GROW_DUR=2.4, HOLD_DUR=0.8, CYCLE=GROW_DUR+HOLD_DUR;  // 光线生长动画周期(秒)
+
+/* ============ 状态 ============ */
+const st = { n:1.33, h:1.5, sx:0, sz:0, density:1, view:'3d',
+  showRefr:true, showRefl:true, showCone:true, autoRot:true, speed:1 };
+let yaw = 0.7, pitch = -0.45;
+let cycT = 0;            // 生长动画计时（秒）
+
+/* ============ 三维投影（偏航+俯仰，正交）============ */
+let W=0, H=0, DPR=1;
+const view = {cx:0, cy:0, scale:1};
+function fitView(){
+  // —— 三维视图缩放 ——
+  view.cx=W/2; view.cy=H*0.54;
+  const vRange = AIR_TOP - BOT_Y;                  // 竖直世界跨度(水底→空气顶)
+  const sV = H / (vRange*1.45);                    // 竖直优先：保证光源深度醒目、不被压扁
+  const sH = W / (2*BOX*1.12);                     // 水平：水面尽量完整可见
+  view.scale = Math.min(sV, sH);
+  // —— 二维(截面)视图缩放：以光源为中心，竖直跨度+水平半宽取小 ——
+  view2.cx=W/2; view2.cy=H*0.52;
+  let mx=1; for(const r of rays){ for(const p of r.path){ const dx=p[0]-st.sx; if(Math.abs(dx)>mx) mx=Math.abs(dx); } }
+  mx += 1;                                          // 边距
+  const vRange2 = AIR_TOP - BOT_Y2;
+  const sV2 = H / (vRange2*1.30);
+  const sH2 = W / (2*mx*1.10);
+  view2.scale = Math.min(sV2, sH2);
+}
+function resize(){
+  const r = cv.getBoundingClientRect();
+  W=r.width; H=r.height; DPR=window.devicePixelRatio||1;
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+  fitView();
+  draw(performance.now());
+}
+const _ro=new ResizeObserver(()=>resize());
+_ro.observe(cv);
+
+function project(p){
+  if(st.view==='2d') return project2D(p);
+  const x=p[0], y=p[1], z=p[2];
+  const cy=Math.cos(yaw), sy=Math.sin(yaw);
+  const x1=x*cy+z*sy, y1=y, z1=-x*sy+z*cy;
+  const cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const y2=y1*cp - z1*sp, z2=y1*sp + z1*cp, x2=x1;
+  const CAM=8.0;                       // 相机距离(世界单位) → 透视投影
+  const denom=Math.max(0.5, CAM - z2); // 钳制分母(防极远点越界到相机后方导致坐标翻转)
+  const f=CAM/denom;                   // 透视因子：近(z2小)f大、远(z2大)f小
+  return { x: view.cx + x2*view.scale*f, y: view.cy - y2*view.scale*f, depth: z2, f };
+}
+/* 二维(截面)投影：竖直平面(y 向上, x 水平)，以光源 x 为水平中心，无透视 */
+function project2D(p){
+  const x = p[0] - st.sx;            // 以光源为中心
+  const y = p[1];
+  return { x: view2.cx + x*view2.scale, y: view2.cy - y*view2.scale, depth: 0, f: 1 };
+}
+
+/* ============ 光线追迹 ============ */
+const S0 = () => [st.sx, -st.h, st.sz];   // 光源（水下）
+function dist3(a,b){ return Math.hypot(a[0]-b[0], a[1]-b[1], a[2]-b[2]); }
+
+let rays = [];      // {path:[S,P,end], kind:'refr'|'TIR', crit:bool, off, info}
+let coneLines = []; // 临界锥母线（仅到水面）
+function buildRays(){
+  if(st.view==='3d') buildRays3D(); else buildRays2D();
+}
+/* 二维(截面)光路：竖直平面内左右对称扇形，与三维共用同一套分类与配色 */
+function buildRays2D(){
+  rays=[]; coneLines=[];
+  const n=st.n, eta=n/nAir;
+  const thetaC=Math.asin(nAir/n); const tcDeg=thetaC*180/Math.PI;
+  const S=[st.sx, -st.h, 0];
+  const d=parseInt(st.density,10);
+  const step = d===0?14 : (d===1?9 : 6);
+  const alphas=[]; for(let a=-75;a<=75+1e-6;a+=step) alphas.push(+a.toFixed(2));
+  for(const sgn of [-1,1]){ const ac=+(tcDeg*sgn).toFixed(2); if(!alphas.some(x=>Math.abs(x-ac)<0.6)) alphas.push(ac); }
+  for(const ad of alphas){
+    const a=ad*Math.PI/180; const ca=Math.cos(a), sa=Math.sin(a);
+    const isCrit=Math.abs(ad-tcDeg)<0.8 || Math.abs(ad+tcDeg)<0.8;
+    const t=st.h/ca; const P=[st.sx+t*sa, 0, 0];
+    const sin2t=eta*eta*(1-ca*ca);
+    let kind, end;
+    if(isCrit){                                          // 临界角(恰好全反射·掠射)
+      kind='crit'; const cost=Math.sqrt(Math.max(0,1-sin2t)); const rd=[eta*sa,cost,0];
+      end=[P[0]+Lair*rd[0], P[1]+Lair*rd[1], 0];
+    } else if(sin2t>1){                                  // 全反射
+      kind='TIR'; const rd=[sa,-ca,0];
+      end=[P[0]+Lref*rd[0], P[1]+Lref*rd[1], 0];
+    } else {                                             // 折射进入空气
+      kind='refr'; const cost=Math.sqrt(1-sin2t); const rd=[eta*sa,cost,0];
+      end=[P[0]+Lair*rd[0], P[1]+Lair*rd[1], 0];
+    }
+    const path=[S.slice(), P.slice(), end.slice()];
+    rays.push({ path, kind, crit:isCrit, off:Math.random(), info:pathInfo(path), reflEnd:null });
+  }
+  BOT_Y2 = -(st.h + 1.2);
+  fitView();
+  $('tc').textContent = tcDeg.toFixed(1)+'°';
+  $('tc2').textContent = (2*tcDeg).toFixed(1)+'°';
+}
+function buildRays3D(){
+  rays = []; coneLines = [];
+  const n = st.n, eta = n/nAir;
+  const thetaC = Math.asin(nAir/n);            // 临界角(弧度)
+  const tcDeg = thetaC*180/Math.PI;
+  const S = S0();
+  const d = parseInt(st.density,10);
+  const naz = azimuth[d];
+  const angles = alphaList.slice();
+  angles.push(tcDeg);                            // 加入临界角（高亮）
+  for(const ad of angles){
+    const a = ad*Math.PI/180;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const isCrit = Math.abs(ad - tcDeg) < 0.8;
+    const incR = st.h * sa / ca;                      // 入射点到光源的水平距离
+    if(!isCrit && incR > BOX_CAP) continue;           // 入射点超出水面(相机安全)：跳过该方向
+    const betaSet = (ad===0) ? [0] : Array.from({length:naz},(_,k)=>2*Math.PI*k/naz);
+    for(const bd of betaSet){
+      const dx=sa*Math.cos(bd), dy=ca, dz=sa*Math.sin(bd);   // 入射方向(单位, dy>0)
+      const t = st.h / ca;                                    // 到达水面 y=0
+      const P = [ st.sx + t*dx, 0, st.sz + t*dz ];
+      const sin2t = eta*eta*(1 - ca*ca);
+      let kind, end, refrDir=null;
+      if(isCrit){                                             // 临界角：恰好全反射(掠射)
+        kind='crit';
+        const cost=Math.sqrt(Math.max(0,1-sin2t));
+        const refrDir=[ eta*dx, cost, eta*dz ];
+        end=[ P[0]+Lair*refrDir[0], P[1]+Lair*refrDir[1], P[2]+Lair*refrDir[2] ];
+      } else if(sin2t > 1){                                   // 全反射
+        kind='TIR';
+        const rdir=[dx, -ca, dz];                             // 反射方向(回水中)
+        end=[ P[0]+Lref*rdir[0], P[1]+Lref*rdir[1], P[2]+Lref*rdir[2] ];
+      } else {                                                // 折射进入空气
+        kind='refr';
+        const cost=Math.sqrt(1-sin2t);
+        const refrDir=[ eta*dx, cost, eta*dz ];               // 已归一化
+        end=[ P[0]+Lair*refrDir[0], P[1]+Lair*refrDir[1], P[2]+Lair*refrDir[2] ];
+      }
+      const reflEnd = (kind==='refr')
+        ? [ P[0]+Lref*dx, P[1]+Lref*(-ca), P[2]+Lref*dz ]    // 部分反射(回水中)
+        : null;
+      const path=[ S.slice(), P.slice(), end.slice() ];
+      rays.push({ path, kind, crit:isCrit, off:Math.random(),
+        info:pathInfo(path), reflEnd });
+      // 临界锥母线（仅画到水面 P）
+      if(isCrit){
+        coneLines.push([ S.slice(), P.slice() ]);
+      } else if(Math.abs(ad - tcDeg) < 0.01){
+        coneLines.push([ S.slice(), P.slice() ]);
+      }
+    }
+  }
+  // 水面随光线入射点扩展：取最远入射点半径作为立方体半宽
+  let maxR = 3.0;
+  for(const r of rays){
+    const dx=r.path[1][0]-st.sx, dz=r.path[1][2]-st.sz;
+    const dr=Math.hypot(dx,dz); if(dr>maxR) maxR=dr;
+  }
+  BOX = Math.max(3.0, maxR*1.06);
+  BOX = Math.min(BOX, BOX_CAP);                       // 受相机安全上限约束
+  BOT_Y = -(st.h + 1.2);
+  fitView();
+  $('tc').textContent = tcDeg.toFixed(1)+'°';
+  $('tc2').textContent = (2*tcDeg).toFixed(1)+'°';
+}
+function pathInfo(path){
+  const L=[]; let total=0;
+  for(let i=1;i<path.length;i++){ total+=dist3(path[i-1],path[i]); L.push(total); }
+  return {L, total};
+}
+function pointOnPath(path,info,u){
+  let target=u*info.total;
+  for(let i=1;i<path.length;i++){
+    const segLen=dist3(path[i-1],path[i]);
+    if(target<=segLen || i===path.length-1){
+      const f=segLen>1e-9?target/segLen:0;
+      return [ path[i-1][0]+(path[i][0]-path[i-1][0])*f,
+               path[i-1][1]+(path[i][1]-path[i-1][1])*f,
+               path[i-1][2]+(path[i][2]-path[i-1][2])*f ];
+    }
+    target-=segLen;
+  }
+  return path[path.length-1];
+}
+
+/* ============ 绘制：水面/水体 ============ */
+function drawWaterBox(){
+  // 水体：底面 + 四侧壁，半透明蓝
+  const c=[ [-BOX,BOT_Y,-BOX],[BOX,BOT_Y,-BOX],[BOX,BOT_Y,BOX],[-BOX,BOT_Y,BOX],
+            [-BOX,0,-BOX],[BOX,0,-BOX],[BOX,0,BOX],[-BOX,0,BOX] ];
+  const faces=[
+    [c[4],c[5],c[6],c[7]],          // 顶面(水面) 不填, 仅网格
+    [c[0],c[1],c[2],c[3]],          // 底面
+    [c[3],c[2],c[6],c[7]],          // 前 z=+
+    [c[0],c[1],c[5],c[4]],          // 后 z=-
+    [c[0],c[3],c[7],c[4]],          // 左 x=-
+    [c[1],c[2],c[6],c[5]]           // 右 x=+
+  ];
+  const fills=['rgba(40,120,150,0)', 'rgba(20,90,120,0.30)','rgba(26,110,140,0.16)',
+               'rgba(26,110,140,0.16)','rgba(26,110,140,0.16)','rgba(26,110,140,0.16)'];
+  // 画家算法：远面先画
+  const idx=faces.map((f,i)=>i);
+  idx.sort((a,b)=>avgDepth(faces[a])-avgDepth(faces[b]));
+  for(const i of idx){
+    if(i===0) continue;            // 顶面单独处理
+    fillQuad(faces[i], fills[i]);
+  }
+  // 水面：半透明着色平面（让水面明显），中心亮、边缘淡
+  const top=[c[4],c[5],c[6],c[7]];
+  const tp=top.map(project);
+  ctx.beginPath(); ctx.moveTo(tp[0].x,tp[0].y);
+  for(let i=1;i<4;i++) ctx.lineTo(tp[i].x,tp[i].y);
+  ctx.closePath();
+  const sc=project([st.sx,0,st.sz]);
+  const sg=ctx.createRadialGradient(sc.x,sc.y,0, sc.x,sc.y, view.scale*BOX*1.5);
+  sg.addColorStop(0,'rgba(120,210,235,0.30)');
+  sg.addColorStop(1,'rgba(64,158,196,0.10)');
+  ctx.fillStyle=sg; ctx.fill();
+}
+function avgDepth(face){ let s=0; for(const p of face) s+=project(p).depth; return s/face.length; }
+function fillQuad(pts,color){
+  ctx.beginPath();
+  const pr=pts.map(project);
+  ctx.moveTo(pr[0].x,pr[0].y);
+  for(let i=1;i<pr.length;i++) ctx.lineTo(pr[i].x,pr[i].y);
+  ctx.closePath(); ctx.fillStyle=color; ctx.fill();
+}
+function drawSurfaceGrid(){
+  ctx.strokeStyle='rgba(150,225,245,0.55)'; ctx.lineWidth=1.2;
+  for(let i=-BOX;i<=BOX;i++){
+    let a=project([i,0,-BOX]), b=project([i,0,BOX]);
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    let c=project([-BOX,0,i]), d=project([BOX,0,i]);
+    ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(d.x,d.y); ctx.stroke();
+  }
+  // 水面边界加亮（粗亮线，强调水面）
+  const corners=[[-BOX,0,-BOX],[BOX,0,-BOX],[BOX,0,BOX],[-BOX,0,BOX]].map(project);
+  ctx.strokeStyle='rgba(180,240,255,0.92)'; ctx.lineWidth=2.2;
+  ctx.beginPath(); ctx.moveTo(corners[0].x,corners[0].y);
+  for(let i=1;i<4;i++) ctx.lineTo(corners[i].x,corners[i].y);
+  ctx.closePath(); ctx.stroke();
+}
+
+/* ============ 绘制：光源（带 3D 高光的发光球）============ */
+function drawSource(){
+  const S=S0(); const pr=project(S); const f=pr.f;
+  const core=6*f;
+  // 外发光晕
+  const R=18*f;
+  const g=ctx.createRadialGradient(pr.x,pr.y,0, pr.x,pr.y,R*1.5);
+  g.addColorStop(0,'rgba(255,247,210,0.95)');
+  g.addColorStop(0.5,'rgba(255,220,120,0.42)');
+  g.addColorStop(1,'rgba(255,200,90,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pr.x,pr.y,R*1.5,0,7); ctx.fill();
+  // 球体本体（径向渐变模拟受光：高光偏左上）
+  const hx=pr.x-2.6*f, hy=pr.y-2.6*f;
+  const core2=ctx.createRadialGradient(hx,hy,0, pr.x,pr.y,core);
+  core2.addColorStop(0,'#fffdf0');
+  core2.addColorStop(0.55,'#ffe89a');
+  core2.addColorStop(1,'#efae29');
+  ctx.fillStyle=core2; ctx.beginPath(); ctx.arc(pr.x,pr.y,core,0,7); ctx.fill();
+  // 镜面高光点
+  ctx.fillStyle='rgba(255,255,255,0.95)';
+  ctx.beginPath(); ctx.arc(hx,hy,1.7*f,0,7); ctx.fill();
+  // 标签
+  ctx.fillStyle='rgba(230,245,250,0.95)'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('点光源', pr.x+core+6, pr.y-6);
+}
+
+/* ============ 绘制：光线 ============ */
+function drawRays(){
+  const growth = Math.min(cycT / GROW_DUR, 1);          // 0→1：光线从光源生长
+  const order=rays.map((r,i)=>i);
+  order.sort((a,b)=>avgDepthR(rays[a])-avgDepthR(rays[b]));
+  for(const i of order){
+    const r=rays[i];
+    const P=r.path[1], S=r.path[0];
+    const col = r.kind==='refr' ? COL_REFR : (r.kind==='crit' ? COL_CRIT : COL_TIR);
+    const w1 = r.kind==='TIR' ? 2.2 : (r.crit ? 2 : 1.6);
+    const f1 = r.info.L[0] / r.info.total;              // 第一段(水中)占全长比例
+    if(growth <= f1){
+      // 仅生长到水中段内部
+      const tip = pointOnPath(r.path, r.info, growth);
+      segRayCol(S, tip, w1, col);
+    } else {
+      // 水中段已长满，继续生长第二段(折射/临界/全反射)
+      segRayCol(S, P, w1, col);
+      if(seg2Visible(r.kind)){
+        const w2 = r.kind==='refr' ? 1.8 : (r.kind==='crit' ? 2.0 : 2.2);
+        const tip = pointOnPath(r.path, r.info, growth);
+        segRayCol(P, tip, w2, col);
+      }
+    }
+    // 末端箭头（位于当前生长尖端，沿可见段；指示传播方向；不画圆点）
+    const onSeg2 = growth > f1;
+    if(!onSeg2 || seg2Visible(r.kind)){
+      if(growth > 0.06){
+        const tip = pointOnPath(r.path, r.info, growth);
+        const pr=project(tip); const f=pr.f;
+        const prev = pointOnPath(r.path, r.info, Math.max(0, growth-0.05));
+        arrowHead(pr, project(prev), col, f);
+      }
+    }
+  }
+}
+function seg2Visible(kind){
+  if(kind==='refr'||kind==='crit') return st.showRefr;
+  return st.showRefl;                                   // TIR
+}
+function avgDepthR(r){ return (project(r.path[0]).depth+project(r.path[2]).depth)/2; }
+/* 固定色线段（用于圆锥辅助线），线宽随透视变化 */
+function seg(a,b,color,w){
+  const pa=project(a), pb=project(b);
+  ctx.strokeStyle=color;
+  ctx.lineWidth=Math.max(0.5, w*(pa.f+pb.f)/2);
+  ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+}
+/* 光线：按类型颜色 + 深度明暗（近亮粗、远淡细），强化立体纵深 */
+function segRayCol(a,b,w,rgb){
+  const pa=project(a), pb=project(b);
+  const f=(pa.f+pb.f)/2;
+  const lw=Math.max(0.5, w*f);
+  const t=(f-0.62)/(1.85-0.62);                 // 归一化
+  const k=Math.max(0,Math.min(1,t));
+  const al=(0.32+0.62*k).toFixed(3);
+  ctx.strokeStyle='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+al+')';
+  ctx.lineWidth=lw; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+}
+/* 末端箭头：在屏幕尖端画 V 形箭头，指示光线传播方向 */
+function arrowHead(pTip, pPrev, col, f){
+  let dx=pTip.x-pPrev.x, dy=pTip.y-pPrev.y;
+  const len=Math.hypot(dx,dy)||1; dx/=len; dy/=len;
+  const size=Math.max(4, 7*f);
+  const ang=Math.atan2(dy,dx);
+  const spread=Math.PI*0.80;
+  ctx.strokeStyle='rgba('+col[0]+','+col[1]+','+col[2]+',0.95)';
+  ctx.lineWidth=Math.max(1, 1.6*f); ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(pTip.x,pTip.y); ctx.lineTo(pTip.x+size*Math.cos(ang+spread), pTip.y+size*Math.sin(ang+spread));
+  ctx.moveTo(pTip.x,pTip.y); ctx.lineTo(pTip.x+size*Math.cos(ang-spread), pTip.y+size*Math.sin(ang-spread));
+  ctx.stroke();
+}
+
+/* ============ 绘制：逃逸圆锥（倒立，顶角=2θc）============ */
+function drawCone(){
+  if(!st.showCone) return;
+  const thetaC = Math.asin(nAir/st.n);
+  if(thetaC >= Math.PI/2 - 0.012) return;          // n≤1：无全反射，不画锥
+  const R = st.h * Math.tan(thetaC);               // 水面处锥底半径（h·tanθc）
+  if(R > BOX*0.95) return;
+  const S = S0();
+  const baseC = [st.sx, 0, st.sz];
+  const N = 64; const ring = [];
+  for(let i=0;i<=N;i++){ const a=2*Math.PI*i/N; ring.push([baseC[0]+R*Math.cos(a),0,baseC[2]+R*Math.sin(a)]); }
+  // 半透明锥面（扇形填充：顶点 + 底环，落在锥侧面上）
+  ctx.fillStyle='rgba(74,230,130,0.05)';
+  ctx.beginPath(); const ap=project(S); ctx.moveTo(ap.x,ap.y);
+  for(let i=0;i<=N;i++){ const p=project(ring[i]); ctx.lineTo(p.x,p.y); }
+  ctx.closePath(); ctx.fill();
+  // 母线（均匀分布，体现倒立圆锥）
+  const mg=[8,12,16][st.density]||12;
+  ctx.strokeStyle='rgba(74,230,130,0.42)'; ctx.lineWidth=1.1;
+  for(let k=0;k<mg;k++){ const a=2*Math.PI*k/mg; const e=[baseC[0]+R*Math.cos(a),0,baseC[2]+R*Math.sin(a)]; seg(S,e,'rgba(74,230,130,0.42)',1.1); }
+  // 底环（水面处的“窗口”，虚线）
+  ctx.save(); ctx.setLineDash([6,5]); ctx.strokeStyle='rgba(74,230,130,0.85)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(project(ring[0]).x,project(ring[0]).y);
+  for(let i=1;i<=N;i++){ const p=project(ring[i]); ctx.lineTo(p.x,p.y); }
+  ctx.closePath(); ctx.stroke(); ctx.restore();
+  // 顶角标注
+  const lbl=project(baseC);
+  const txt='倒立圆锥 顶角 2θc='+(2*thetaC*180/Math.PI).toFixed(1)+'°';
+  ctx.font='12px sans-serif'; ctx.textAlign='center';
+  const tw=ctx.measureText(txt).width;
+  ctx.fillStyle='rgba(8,18,26,0.72)'; ctx.fillRect(lbl.x-tw/2-6, lbl.y+8, tw+12, 18);
+  ctx.fillStyle='rgba(74,230,130,0.95)'; ctx.fillText(txt, lbl.x, lbl.y+21);
+}
+
+/* ============ 绘制：二维(截面)视图 ============ */
+function draw2D(){
+  const surfaceY = view2.cy;                            // 水面(y=0)对应屏幕 y
+  // 背景 + 暗角
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#0c1c28'); grad.addColorStop(0.5,'#0a1620'); grad.addColorStop(1,'#08131c');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  const vg=ctx.createRadialGradient(W/2,H*0.52,Math.min(W,H)*0.22, W/2,H*0.52,Math.max(W,H)*0.78);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.42)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  // 水体着色（水面以下）
+  ctx.fillStyle='rgba(20,90,120,0.16)'; ctx.fillRect(0,surfaceY,W,H-surfaceY);
+  // 逃逸圆锥(二维截面)
+  drawCone2D(surfaceY);
+  // 光线（复用 drawRays，依赖 project→project2D）
+  drawRays();
+  // 光源
+  drawSource();
+  // 水面线（亮线，强调分界面）
+  ctx.strokeStyle='rgba(180,240,255,0.92)'; ctx.lineWidth=2.4;
+  ctx.beginPath(); ctx.moveTo(0,surfaceY); ctx.lineTo(W,surfaceY); ctx.stroke();
+  // 区域标注
+  ctx.fillStyle='rgba(180,230,245,0.9)'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('空气', 14, surfaceY-10);
+  ctx.fillText('水', 14, surfaceY+18);
+  drawWatermark();
+}
+function drawCone2D(surfaceY){
+  if(!st.showCone) return;
+  const thetaC=Math.asin(nAir/st.n);
+  if(thetaC>=Math.PI/2-0.012) return;                 // n≤1：无全反射，不画锥
+  const S=project2D([st.sx,-st.h,0]);
+  const Rpx=st.h*Math.tan(thetaC)*view2.scale;        // 水面处半宽(像素)
+  const xL=S.x-Rpx, xR=S.x+Rpx;
+  // 半透明锥面（顶点=点光源·底=水面）
+  ctx.fillStyle='rgba(74,230,130,0.06)';
+  ctx.beginPath(); ctx.moveTo(S.x,S.y); ctx.lineTo(xL,surfaceY); ctx.lineTo(xR,surfaceY); ctx.closePath(); ctx.fill();
+  // 临界母线（虚线）
+  ctx.save(); ctx.setLineDash([6,5]); ctx.strokeStyle='rgba(74,230,130,0.85)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(S.x,S.y); ctx.lineTo(xL,surfaceY); ctx.moveTo(S.x,S.y); ctx.lineTo(xR,surfaceY); ctx.stroke(); ctx.restore();
+  // 顶角标注
+  const txt='倒立圆锥(截面) 顶角 2θc='+(2*thetaC*180/Math.PI).toFixed(1)+'°';
+  ctx.font='12px sans-serif'; ctx.textAlign='center';
+  const tw=ctx.measureText(txt).width;
+  ctx.fillStyle='rgba(8,18,26,0.72)'; ctx.fillRect(S.x-tw/2-6, surfaceY+8, tw+12, 18);
+  ctx.fillStyle='rgba(74,230,130,0.95)'; ctx.fillText(txt, S.x, surfaceY+21);
+}
+
+/* ============ 右下角游动 logo ============ */
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function drawWatermark(){
+  const t = performance.now()/1000;
+  // 锚定右下角，在小范围内缓慢漂浮（游动）
+  const ax = W - 96, ay = H - 40;
+  const dx = 16*Math.sin(t*0.55) + 6*Math.sin(t*0.31);
+  const dy = 12*Math.cos(t*0.42) + 5*Math.sin(t*0.27);
+  const cxp = ax + dx, cyp = ay + dy;        // logo 中心
+  ctx.save();
+  const text='force99';
+  ctx.font='bold 15px "Segoe UI",Consolas,monospace';
+  const tw = ctx.measureText(text).width;
+  const padX=11, bw=tw+padX*2, bh=24, x0=cxp-bw/2, y0=cyp-bh/2;
+  // 发光底（玻璃拟态 + 科技青）
+  ctx.shadowColor='rgba(70,225,215,0.55)'; ctx.shadowBlur=14;
+  const g=ctx.createLinearGradient(x0,0,x0+bw,0);
+  g.addColorStop(0,'rgba(20,56,62,0.82)');
+  g.addColorStop(1,'rgba(12,42,50,0.82)');
+  rr(x0,y0,bw,bh,12); ctx.fillStyle=g; ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.lineWidth=1; ctx.strokeStyle='rgba(120,225,225,0.5)';
+  rr(x0,y0,bw,bh,12); ctx.stroke();
+  // 文字：force 浅青 + 99 高亮（logo 感）
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  const fx=x0+padX, fy=y0+bh/2+0.5;
+  ctx.fillStyle='rgba(165,238,238,0.92)';
+  ctx.fillText('force', fx, fy);
+  const fw=ctx.measureText('force').width;
+  ctx.fillStyle='rgba(255,205,120,0.95)';   // 99 暖金高亮
+  ctx.fillText('99', fx+fw, fy);
+  ctx.restore();
+}
+
+/* ============ 主绘制 ============ */
+function draw(now){
+  if(W===0) return;
+  if(st.view==='2d'){ draw2D(); return; }
+  // 背景：空气(上)→水(下) 渐变
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#0c1c28'); grad.addColorStop(0.5,'#0a1620'); grad.addColorStop(1,'#08131c');
+  ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+  // 暗角(vignette)：聚焦中心、增强纵深
+  const vg=ctx.createRadialGradient(W/2,H*0.52,Math.min(W,H)*0.22, W/2,H*0.52,Math.max(W,H)*0.78);
+  vg.addColorStop(0,'rgba(0,0,0,0)');
+  vg.addColorStop(1,'rgba(0,0,0,0.42)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  drawWaterBox();
+  drawSurfaceGrid();
+  drawCone();
+  drawRays();
+  drawSource();
+  drawWatermark();
+}
+
+/* ============ 循环 ============ */
+let last=performance.now();
+function loop(now){
+  const dt=Math.min((now-last)/1000,0.05)*st.speed; last=now;
+  if(st.view==='3d' && st.autoRot) yaw += dt*0.35;
+  cycT += dt; if(cycT >= CYCLE) cycT -= CYCLE;          // 生长动画循环（受速度控制）
+  draw(now);
+  requestAnimationFrame(loop);
+}
+
+/* ============ 交互 ============ */
+$('n').addEventListener('input',e=>{ st.n=parseFloat(e.target.value); $('nv').textContent=st.n.toFixed(2); buildRays(); });
+$('h').addEventListener('input',e=>{ st.h=parseFloat(e.target.value); $('hv').textContent=st.h.toFixed(1); buildRays(); });
+$('sx').addEventListener('input',e=>{ st.sx=parseFloat(e.target.value); $('sxv').textContent=st.sx.toFixed(1); buildRays(); });
+$('sz').addEventListener('input',e=>{ st.sz=parseFloat(e.target.value); $('szv').textContent=st.sz.toFixed(1); buildRays(); });
+$('density').addEventListener('change',e=>{ st.density=e.target.value; buildRays(); });
+$('view').addEventListener('change',e=>{ st.view=e.target.value; buildRays(); draw(performance.now()); });
+$('speed').addEventListener('input',e=>{ st.speed=parseFloat(e.target.value); $('speedv').textContent=st.speed.toFixed(1)+'×'; });
+$('refr').addEventListener('change',e=> st.showRefr=e.target.checked);
+$('refl').addEventListener('change',e=> st.showRefl=e.target.checked);
+$('cone').addEventListener('change',e=> st.showCone=e.target.checked);
+$('auto').addEventListener('change',e=> st.autoRot=e.target.checked);
+$('regen').addEventListener('click',()=>{ yaw=0.7; pitch=-0.45; });
+
+let dragging=false, lx=0, ly=0;
+cv.addEventListener('mousedown',e=>{ dragging=true; lx=e.clientX; ly=e.clientY; });
+window.addEventListener('mouseup',()=> dragging=false);
+window.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  if(st.view!=='3d') return;                       // 二维为固定截面，不旋转
+  yaw += (e.clientX-lx)*0.008;
+  pitch += (e.clientY-ly)*0.008;
+  pitch=Math.max(-1.45, Math.min(1.45, pitch));
+  lx=e.clientX; ly=e.clientY;
+});
+
+/* ============ 启动 ============ */
+buildRays();
+resize();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
