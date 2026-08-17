@@ -83,6 +83,11 @@ const WORKS = [
     desc:"带电粒子在电场与磁场构成的“囚笼”中运动的交互演示，直观呈现约束轨迹。",
     icon:"🧲", link:"animations/magnetic-cage.html", date:"2026-08-13", tag:"电磁学"
   },
+  {
+    type:"animation", title:"2026四川T14 · U形框导体棒弹簧电磁感应",
+    desc:"U形框、导体棒与弹簧构成的电磁感应系统，演示导体棒在磁场中阻尼振动与感应电流。",
+    icon:"🧲", link:"animations/doc8_animation.html", date:"2026-08-17", tag:"电磁学"
+  },
 
   /* ---------------- 解题 ---------------- */
   {
@@ -112,6 +117,18 @@ const WORKS = [
     desc:"钱塘江潮汐涌潮航拍实录：把自然界中的“波”搬进物理课堂。",
     icon:"🌊", cover:"assets/img/qiantang-tide-cover.png",
     link:"videos/qiantang-tide.html", date:"2026-08-13", tag:"自然现象"
+  },
+
+  {
+    type:"video", title:"傅科摆",
+    desc:"单摆摆动平面随时间缓慢进动，直观证明地球自转，是课堂上经典的地转演示。",
+    icon:"🌍", link:"videos/foucault_pendulum.html", date:"2026-08-16", tag:"机械振动"
+  },
+
+  {
+    type:"video", title:"时钟变慢",
+    desc:"从爱因斯坦到光钟推导，用动画看懂狭义相对论的时间膨胀。物理小新口播讲解。",
+    icon:"⏳", link:"videos/time_dilation.html", date:"2026-08-17", tag:"近代物理"
   },
   {
     type:"video", title:"实验：验证机械能守恒定律",
