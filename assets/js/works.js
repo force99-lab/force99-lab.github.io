@@ -37,6 +37,11 @@ const WORKS = [
     desc:"用日常材料搭建可量化演示实验，让抽象规律看得见。",
     icon:"🔬", link:"articles/sample.html", date:"2026-05-02", tag:"实验教学"
   },
+  {
+    type:"article", title:"2026黑吉辽蒙T15 试题",
+    desc:"2026 黑吉辽蒙高考物理压轴题原题：时间分辨-能量分析仪，题干与已知量完整呈现。",
+    icon:"📋", link:"articles/2026-heijiliaomeng-t15-problem.html", date:"2026-08-17", tag:"高考真题"
+  },
 
   /* ---------------- HTML 动画 ---------------- */
   {
@@ -84,9 +89,9 @@ const WORKS = [
     icon:"🧲", link:"animations/magnetic-cage.html", date:"2026-08-13", tag:"电磁学"
   },
   {
-    type:"animation", title:"2026四川T14 · U形框导体棒弹簧电磁感应",
-    desc:"U形框、导体棒与弹簧构成的电磁感应系统，演示导体棒在磁场中阻尼振动与感应电流。",
-    icon:"🧲", link:"animations/doc8_animation.html", date:"2026-08-17", tag:"电磁学"
+    type:"animation", title:"2026黑吉辽蒙T15 动画",
+    desc:"时间分辨-能量分析仪物理过程动画：电场偏转、磁场约束与能量分析的动态演示。",
+    icon:"🎬", link:"animations/2026-heijiliaomeng-t15-animation.html", date:"2026-08-17", tag:"高考压轴"
   },
 
   /* ---------------- 解题 ---------------- */
@@ -96,9 +101,9 @@ const WORKS = [
     icon:"🏆", link:"solutions/2026-hubei-final.html", date:"2026-08-13", tag:"高考压轴"
   },
   {
-    type:"solve", title:"2026黑吉辽蒙T15 时间分辨-能量分析仪",
-    desc:"2026 黑吉辽蒙高考物理压轴题，电场+磁场+能量分析三页式交互讲解。",
-    icon:"🔬", link:"solutions/2026-heijiliaomeng-t15.html", date:"2026-08-17", tag:"高考压轴"
+    type:"solve", title:"2026黑吉辽蒙T15 解题",
+    desc:"2026 黑吉辽蒙高考物理压轴题分步拆解：电场+磁场+能量分析完整解题过程。",
+    icon:"💡", link:"solutions/2026-heijiliaomeng-t15-solution.html", date:"2026-08-17", tag:"高考压轴"
   },
   {
     type:"solve", title:"例题：斜面上物块的受力与运动分析",
@@ -117,18 +122,6 @@ const WORKS = [
     desc:"钱塘江潮汐涌潮航拍实录：把自然界中的“波”搬进物理课堂。",
     icon:"🌊", cover:"assets/img/qiantang-tide-cover.png",
     link:"videos/qiantang-tide.html", date:"2026-08-13", tag:"自然现象"
-  },
-
-  {
-    type:"video", title:"傅科摆",
-    desc:"单摆摆动平面随时间缓慢进动，直观证明地球自转，是课堂上经典的地转演示。",
-    icon:"🌍", link:"videos/foucault_pendulum.html", date:"2026-08-16", tag:"机械振动"
-  },
-
-  {
-    type:"video", title:"时钟变慢",
-    desc:"从爱因斯坦到光钟推导，用动画看懂狭义相对论的时间膨胀。物理小新口播讲解。",
-    icon:"⏳", link:"videos/time_dilation.html", date:"2026-08-17", tag:"近代物理"
   },
   {
     type:"video", title:"实验：验证机械能守恒定律",
