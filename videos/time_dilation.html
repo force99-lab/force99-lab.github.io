@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时钟变慢 · 视频 · force99 作品站</title>
+<meta name="description" content="从爱因斯坦的物理成就，到狭义相对论两大假设、光钟数学推导、双生子佯谬与现代科技应用，用动画看懂时间膨胀。物理小新口播讲解。">
+<link rel="icon" href="../assets/img/logo.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+.video-wrap{max-width:980px;margin:0 auto;padding:0 22px 80px}
+.video-player{position:relative;border-radius:18px;overflow:hidden;background:#03181c;border:1px solid var(--border);box-shadow:0 24px 70px rgba(0,0,0,.45);display:flex;justify-content:center;align-items:center}
+.video-player video{display:block;max-width:100%;max-height:90vh;width:auto;height:auto;outline:none}
+.fs-btn{position:absolute;top:12px;right:12px;z-index:3;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:none;border-radius:999px;cursor:pointer;font-family:var(--mono);font-size:.78rem;color:#03181c;background:rgba(127,245,230,.92);box-shadow:0 6px 18px rgba(0,0,0,.35);transition:.2s}
+.fs-btn:hover{background:#7ff5e6;transform:translateY(-1px)}
+.video-meta{display:grid;gap:18px;margin-top:28px}
+.video-meta h1{font-size:clamp(1.7rem,4vw,2.4rem);font-weight:800}
+.video-meta .tags{display:flex;gap:10px;flex-wrap:wrap}
+.video-meta .tags span{font-family:var(--mono);font-size:.72rem;padding:5px 11px;border-radius:999px;background:rgba(15,181,168,.12);border:1px solid rgba(127,245,230,.25);color:var(--teal)}
+.video-meta p{color:var(--text-mute);line-height:1.8;max-width:820px}
+.back{display:inline-flex;align-items:center;gap:8px;color:var(--teal);font-family:var(--mono);font-size:.85rem;margin-top:36px;transition:.25s}
+.back:hover{transform:translateX(-4px)}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="brand" href="../index.html"><img src="../assets/img/logo.png" alt="logo"><span><b>force99</b><br><span>LXQ · PHYSICS</span></span></a>
+  <button class="nav-toggle" aria-label="菜单"><span></span><span></span><span></span></button>
+  <div class="nav-links">
+    <a href="../index.html#about">关于</a>
+    <a href="../index.html#works">作品</a>
+    <a href="../articles.html">文章</a>
+    <a href="../animations.html">动画</a>
+    <a href="../solutions.html">解题</a>
+    <a href="../videos.html">视频</a>
+    <a href="../index.html#contact" class="cta">联系我</a>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="wrap">
+    <span class="crumb">HOME / 视频 / 时钟变慢</span>
+    <h1>时钟变慢</h1>
+    <p>从爱因斯坦的物理成就，到狭义相对论两大假设、光钟数学推导、双生子佯谬与现代科技应用，用动画看懂时间膨胀。</p>
+  </div>
+</section>
+
+<section style="padding-top:20px">
+  <div class="video-wrap">
+    <div class="video-player reveal">
+      <button class="fs-btn" id="fsBtn" type="button" aria-label="全屏播放">⛶ 全屏</button>
+      <video id="timeDilationVideo" controls preload="metadata">
+        <source src="time_dilation.mp4" type="video/mp4">
+        <p>你的浏览器不支持 HTML5 视频播放。</p>
+      </video>
+    </div>
+
+    <div class="video-meta reveal d1">
+      <h1>时钟变慢 · 狭义相对论时间膨胀</h1>
+      <div class="tags"><span>狭义相对论</span><span>时间膨胀</span><span>光钟推导</span><span>双生子佯谬</span><span>物理小新</span></div>
+      <p>本视频由「物理小新」口播讲解，分五部分展开：①爱因斯坦如何以一己之年改变人类对时空的理解；②狭义相对论的两大基本假设——相对性原理与光速不变原理；③用一座运动中的光钟，结合勾股定理，一步步推导出 Δt = γΔt₀ 的时间膨胀公式；④双生子佯谬的关键在于“谁不是惯性系”；⑤GPS 导航、粒子加速器等现代技术为什么必须考虑相对论效应。全程 1920×1080 高清动画，适合课堂引入或学生自学。</p>
+      <a class="back" href="../videos.html">← 返回视频列表</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="fbrand"><img src="../assets/img/logo.png" alt="logo"> force99 · LXQ Physics</div>
+  <div>© 2026 force99. 用科技讲透物理 · Built with GitHub Pages</div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+<script>
+  const fsBtn = document.getElementById('fsBtn');
+  const timeDilationVideo = document.getElementById('timeDilationVideo');
+  fsBtn.addEventListener('click', () => {
+    if (timeDilationVideo.requestFullscreen) timeDilationVideo.requestFullscreen();
+    else if (timeDilationVideo.webkitRequestFullscreen) timeDilationVideo.webkitRequestFullscreen();
+    else timeDilationVideo.play();
+  });
+</script>
+</body>
+</html>
