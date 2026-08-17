@@ -285,3 +285,59 @@ footer .fbrand img{width:30px;height:30px;object-fit:contain;border-radius:5px}
   .hero-actions{flex-direction:column;align-items:stretch}
   .btn{justify-content:center}
 }
+/* 三棱镜色散封面完整显示（不裁剪） */
+.card .cover.has-img[style*="prism-dispersion-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 示波器封面完整显示（不裁剪） */
+.card .cover.has-img[style*="oscilloscope-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 圆形磁场区封面完整显示（不裁剪） */
+.card .cover.has-img[style*="circular-bfield-focus-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 放射源粒子强磁场封面完整显示（不裁剪） */
+.card .cover.has-img[style*="magnetic-radioactive-source-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 湖北高考压轴题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2026-hubei-final-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 波的反射与驻波封面完整显示（不裁剪） */
+.card .cover.has-img[style*="wave-reflection-standing-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 杨氏双缝视频封面完整显示（不裁剪） */
+.card .cover.has-img[style*="young-double-slit-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 蛇形摆视频封面完整显示（不裁剪） */
+.card .cover.has-img[style*="snake-pendulum-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 卡文迪许扭秤封面完整显示（不裁剪） */
+.card .cover.has-img[style*="cavendish-torsion-balance-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+
+/* 伽利略理想斜面实验封面完整显示（不裁剪） */
+.card .cover.has-img[style*="galileo_ideal_inclined_plane-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+
+/* 伽利略斜面实验封面完整显示（不裁剪） */
+.card .cover.has-img[style*="galileo_inclined_plane-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 密立根油滴封面完整显示（不裁剪） */
+.card .cover.has-img[style*="millikan-oil-drop-cover.jpg"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2025河南卷T3 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2025-henan-t3-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2026四川卷T15 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2026-sichuan-t15-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2025-gansu-cover.png 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2025-gansu-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+
+/* 2025-guangxi-cover.png 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2025-guangxi-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2026广东高考 解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2026-guangdong-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 斜抛运动封面完整显示（不裁剪） */
+.card .cover.has-img[style*="oblique-projectile-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 传感器测速封面完整显示（不裁剪） */
+.card .cover.has-img[style*="sensor-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 电场线三维动画封面完整显示（不裁剪） */
+.card .cover.has-img[style*="field-lines-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 黑吉辽蒙T14解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="doc7-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 传送带滑块运动封面完整显示（不裁剪） */
+.card .cover.has-img[style*="conveyor-belt-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 水下点光源折射与全反射封面完整显示（不裁剪） */
+.card .cover.has-img[style*="underwater-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2026云南卷T15解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="doc4-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2026江苏卷T16解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="doc2-solve-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+/* 2026湖北卷T15光滑轨道弹性碰撞链解题封面完整显示（不裁剪） */
+.card .cover.has-img[style*="2026-hubei-t15-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
+[style*="block-plank-cover.png"]{background-size:contain;background-repeat:no-repeat;background-color:#000}
