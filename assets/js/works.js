@@ -73,6 +73,12 @@ const WORKS = [
     icon:"💡", link:"articles/物理开窍教育理论文章.html", date:"2026-08-14", tag:"教育理论"
 
   },
+    {
+    type:"article", title:"2026黑吉辽蒙T15 试题",
+    desc:"2026 黑吉辽蒙高考物理压轴题原题：时间分辨-能量分析仪，题干与已知量完整呈现。",
+    icon:"📋", link:"articles/2026-heijiliaomeng-t15-problem.html", date:"2026-08-17", tag:"高考真题"
+  },
+
   /* ---------------- HTML 动画 ---------------- */
 
   {
@@ -219,6 +225,12 @@ const WORKS = [
 
   },
 
+    {
+    type:"animation", title:"2026黑吉辽蒙T15 动画",
+    desc:"时间分辨-能量分析仪物理过程动画：电场偏转、磁场约束与能量分析的动态演示。",
+    icon:"🎬", link:"animations/2026-heijiliaomeng-t15-animation.html", date:"2026-08-17", tag:"高考压轴"
+  },
+
   /* ---------------- 解题 ---------------- */
 
   {
@@ -288,6 +300,12 @@ const WORKS = [
     tag:"力学"
   },
 
+    {
+    type:"solve", title:"2026黑吉辽蒙T15 解题",
+    desc:"2026 黑吉辽蒙高考物理压轴题分步拆解：电场+磁场+能量分析完整解题过程。",
+    icon:"💡", link:"solutions/2026-heijiliaomeng-t15-solution.html", date:"2026-08-17", tag:"高考压轴"
+  },
+
   /* ---------------- 视频 ---------------- */
 
   {
