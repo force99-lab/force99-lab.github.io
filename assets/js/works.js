@@ -91,6 +91,11 @@ const WORKS = [
     icon:"🏆", link:"solutions/2026-hubei-final.html", date:"2026-08-13", tag:"高考压轴"
   },
   {
+    type:"solve", title:"2026黑吉辽蒙T15 时间分辨-能量分析仪",
+    desc:"2026 黑吉辽蒙高考物理压轴题，电场+磁场+能量分析三页式交互讲解。",
+    icon:"🔬", link:"solutions/2026-heijiliaomeng-t15.html", date:"2026-08-17", tag:"高考压轴"
+  },
+  {
     type:"solve", title:"例题：斜面上物块的受力与运动分析",
     desc:"分步拆解斜面模型的受力分析、正交分解与牛顿第二定律列式。",
     icon:"🧩", link:"solutions/sample.html", date:"2026-08-13", tag:"力学"
