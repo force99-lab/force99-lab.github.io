@@ -148,6 +148,12 @@ const WORKS = [
 
   },
 
+  {
+    type:"article", title:"物理笔忌：从课堂复印机到思维炼炉",
+    desc:"反思物理课堂中的“复印机式”灌输，倡导把课堂从知识搬运变为思维炼炉。",
+    icon:"✍️", link:"articles/physics-pitfalls.html", date:"2026-08-14", tag:"教学反思"
+  },
+
   /* ---------------- HTML 动画 ---------------- */
 
 
