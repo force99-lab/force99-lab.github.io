@@ -777,11 +777,11 @@ const WORKS = [
   },
   {
     type:"animation",
-    title:"电场线三维动画",
-    desc:"演示点电荷、同种/异种电荷及平行板的电场线分布，支持 2D/3D 切换与实时旋转观察。",
+    title:"电势电场线 3D（四类电荷）",
+    desc:"演示四类电荷分布下的电场线与等势面三维模型，支持 2D/3D 切换与实时旋转观察。",
     icon:"⚡",
     cover:"assets/img/field-lines-cover.png",
-    link:"animations/电场线三维动画.html",
+    link:"animations/电势电场线3D.html",
     date:"2026-08-15",
     tag:"电磁学"
   },
