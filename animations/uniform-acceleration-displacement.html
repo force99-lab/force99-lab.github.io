@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>面积求位移 · 两小车对比（匀变速 vs 速度突变匀速）</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #06141a; color: #dbeaf0;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+  header { padding: 14px 20px 6px; }
+  h1 { margin: 0; font-size: 19px; letter-spacing: .5px; color: #eaf6fb; }
+  .sub { margin: 6px 0 0; font-size: 12.5px; line-height: 1.55; color: #9fc0cf; max-width: 1180px; }
+  .wrap { display: flex; gap: 14px; padding: 12px 16px 18px; align-items: stretch; }
+  .canvasBox { flex: 1 1 auto; min-width: 0; background: #0a1a21;
+    border: 1px solid rgba(120,180,195,.18); border-radius: 12px; overflow: hidden; }
+  canvas { display: block; width: 100%; }
+  .controls { width: 312px; flex: 0 0 312px; background: rgba(10,28,36,.9);
+    border: 1px solid rgba(120,180,195,.18); border-radius: 12px; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 12px; max-height: 760px; overflow-y: auto; }
+  .grp { font-size: 11px; color: #7fb4c6; letter-spacing: 1px; border-left: 3px solid rgba(120,180,195,.4);
+    padding-left: 8px; margin-bottom: 2px; }
+  .grp.A { border-color: #39d6c8; color: #39d6c8; }
+  .grp.B { border-color: #ff8a5c; color: #ff8a5c; }
+  .grp.C { border-color: #ffd84d; color: #cdbb6a; }
+  .ctl { display: flex; flex-direction: column; gap: 3px; }
+  .ctl > label { font-size: 12.5px; color: #bfe0ec; display: flex; justify-content: space-between; }
+  .ctl > label b { color: #eaf6fb; font-weight: 600; }
+  .ctl.A > label b { color: #39d6c8; }
+  .ctl.B > label b { color: #ff8a5c; }
+  input[type=range] { width: 100%; accent-color: #39d6c8; }
+  .ctl.A input[type=range] { accent-color: #39d6c8; }
+  .ctl.B input[type=range] { accent-color: #ff8a5c; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btnrow button { flex: 0 0 auto; width: 40px; padding: 6px 0; font-size: 12.5px; cursor: pointer;
+    background: rgba(57,214,200,.10); color: #bfe0ec; border: 1px solid rgba(57,214,200,.35);
+    border-radius: 7px; transition: .12s; }
+  .btnrow button.on { background: #39d6c8; color: #04222b; font-weight: 700; border-color: #39d6c8; }
+  .playrow { display: flex; gap: 8px; }
+  .playrow button { flex: 1; padding: 9px 0; font-size: 13px; cursor: pointer; border-radius: 8px;
+    border: 1px solid rgba(120,180,195,.35); background: rgba(120,180,195,.12); color: #eaf6fb; }
+  .playrow button#play { background: rgba(57,214,200,.18); border-color: rgba(57,214,200,.5); }
+  .readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 12.5px;
+    background: rgba(8,22,28,.6); border: 1px solid rgba(120,180,195,.18); border-radius: 9px; padding: 10px 12px; }
+  .readout span:nth-child(odd) { color: #9fc0cf; }
+  .readout span:nth-child(even) { color: #eaf6fb; text-align: right; font-variant-numeric: tabular-nums; }
+  .readout .err { color: #ff9d4d; }
+  .hlA { color: #39d6c8; }
+  .hlB { color: #ff8a5c; }
+  .ttl { font-size: 12px; color: #7fb4c6; letter-spacing: .5px; }
+  .legend { display: flex; gap: 14px; font-size: 12px; margin-top: 2px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>面积求位移 · 两小车对比（匀变速 vs 速度突变匀速）</h1>
+  <div class="sub">上轨 <b style="color:#39d6c8">小车 A（匀变速直线）</b> 的速度图像是斜直线，用等分时间轴的<b style="color:#39d6c8">矩形逼近法</b>求下方面积（位移）只是近似，等分越细越精确；
+    下轨 <b style="color:#ff8a5c">小车 B（速度突变匀速）</b> 的速度则<b style="color:#ff8a5c">直接取矩形区对应的各分立速度</b>：时间同样等分 n 段，每段匀速、速度 = 该矩形高度 v(tᵢ)。于是 B 的真实位移恰好等于 S_Aₙ，n 越大 B 越贴合 A。两图对比可见："面积 = 位移" 对连续与突变速度都成立，矩形法是通用思想。</div>
+</header>
+
+<div class="wrap">
+  <div class="canvasBox"><canvas id="scene" height="720"></canvas></div>
+
+  <div class="controls">
+    <div class="ttl">控制区</div>
+
+    <div class="grp A">小车 A · 匀变速（矩形逼近）</div>
+    <div class="ctl A"><label>初速度 v₀ <b><span id="v0v">20</span> px/s</b></label>
+      <input id="v0" type="range" min="-60" max="160" step="1" value="20"></div>
+    <div class="ctl A"><label>加速度 a <b><span id="av">8</span> px/s²</b></label>
+      <input id="a" type="range" min="-40" max="40" step="0.5" value="8"></div>
+    <div class="ctl A"><label>等分份数 n <b><span id="nv">8</span></b></label>
+      <div class="btnrow" id="nbtns">
+        <button data-n="2">2</button><button data-n="4">4</button><button data-n="8">8</button>
+        <button data-n="16">16</button><button data-n="32">32</button><button data-n="64">64</button>
+        <button data-n="128">128</button><button data-n="256">256</button>
+      </div></div>
+
+    <div class="grp B">小车 B · 速度突变匀速（自动）</div>
+    <div class="sub" style="font-size:11.5px;color:#cdb79a;line-height:1.55;margin:-4px 0 2px">B 的速度不由手填，而由 v–t 图中 A 的<b style="color:#ff8a5c">矩形区对应分立速度</b>自动赋值：时间等分 n 段，第 i 段匀速、速度 = v(tᵢ)。n 越大，B 越贴近 A。</div>
+
+    <div class="grp C">公共参数</div>
+    <div class="ctl"><label>总时间 T <b><span id="Tv">12</span> s</b></label>
+      <input id="T" type="range" min="6" max="20" step="0.5" value="12"></div>
+    <div class="ctl"><label>动画速度 <b><span id="spv">1.0</span>×</b></label>
+      <input id="sp" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+
+    <div class="playrow">
+      <button id="play">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+    </div>
+
+    <div class="readout">
+      <span>当前时间 t</span><span id="rT">0.00 s</span>
+      <span class="hlA">A 真实位移 S_A</span><span id="rSA">0.0 px</span>
+      <span class="hlA">A 逼近位移 S_Aₙ</span><span id="rSAn">0.0 px</span>
+      <span class="err">A 相对误差</span><span id="rErr" class="err">0.0 %</span>
+      <span class="hlB">B 位移 S_B</span><span id="rSB">0.0 px</span>
+      <span>领先量 Δx = x_B−x_A</span><span id="rDx">0.0 px</span>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:#39d6c8"></i>A 匀变速(上轨)</span>
+      <span><i class="dot" style="background:#ff8a5c"></i>B 突变匀速(下轨)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 参数与状态 ===================== */
+const scene = document.getElementById('scene');
+const S = { ctx: scene.getContext('2d'), W: 760, H: 720 };
+const P = { v0: 20, a: 8, n: 8, T: 12 };
+let tNow = 0, playing = true, animSpeed = 1, lastTS = 0;
+const x0 = 30;                                   // 两车共同起点（世界坐标）
+const COLOR_A = '#39d6c8';                       // 青：小车 A / 矩形逼近
+const COLOR_B = '#ff8a5c';                       // 橙：小车 B / 速度突变
+
+/* ===================== 运动学解析 ===================== */
+// —— 小车 A：匀变速直线 ——
+function trueDisp(T){ return P.v0 * T + 0.5 * P.a * T * T; }
+function approxDisp(T){ return P.v0 * T + 0.5 * P.a * T * T * (1 - 1 / P.n); }
+function vA(t){ return P.v0 + P.a * t; }
+function xA(t){ return x0 + P.v0 * t + 0.5 * P.a * t * t; }
+function trueDispTo(t){ return P.v0 * t + 0.5 * P.a * t * t; }
+function approxDispTo(t){
+  const dt = P.T / P.n, k = Math.floor(t / dt);
+  let s = 0;
+  for(let i = 0; i < k; i++) s += (P.v0 + P.a * i * dt) * dt;
+  const rem = t - k * dt; if(rem > 0) s += (P.v0 + P.a * k * dt) * rem;
+  return s;
+}
+// —— 小车 B：速度突变匀速，速度 = A 的矩形区对应分立速度 ——
+// 时间等分 n 段，第 i 段（[i·Δt, (i+1)·Δt)）匀速，速度取左端点 v(tᵢ)。
+// 故 B 的真实位移 ≡ A 的矩形逼近位移 S_Aₙ，n 越大越贴近 A。
+function vBseg(i){ const dt = P.T / P.n; return P.v0 + P.a * (i * dt); }
+function vB(t){ const dt = P.T / P.n; let i = Math.floor(t / dt); i = Math.max(0, Math.min(P.n - 1, i)); return vBseg(i); }
+function xB(t){
+  const dt = P.T / P.n, tt = Math.min(Math.max(t, 0), P.T);
+  const k = Math.floor(tt / dt);
+  let x = x0;
+  for(let i = 0; i < k; i++) x += vBseg(i) * dt;
+  const rem = tt - k * dt; if(rem > 0) x += vBseg(k) * rem;
+  return x;
+}
+
+/* ===================== 画布尺寸 ===================== */
+function resize(){
+  const r = scene.getBoundingClientRect();
+  S.W = Math.max(360, Math.floor(r.width));
+  S.H = 720;
+  scene.width = S.W; scene.height = S.H;
+}
+window.addEventListener('resize', resize);
+
+/* ===================== 工具 ===================== */
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.arcTo(x+w, y, x+w, y+h, r); ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r); ctx.arcTo(x, y, x+w, y, r); ctx.closePath();
+}
+function drawWatermark(ctx, W, H){
+  const t = performance.now() / 1000;
+  const x = W - 92 + Math.sin(t*0.8)*10, y = H - 30 + Math.cos(t*1.1)*6;
+  ctx.save();
+  ctx.font = 'bold 16px "Segoe UI", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(127,233,255,0.55)';
+  ctx.fillText('force99', x, y);
+  ctx.restore();
+}
+function niceStep(x){
+  if(x <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(x)));
+  const f = x / p;
+  const s = f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10;
+  return s * p;
+}
+function hexToRgb(h){ const m = h.replace('#',''); return [parseInt(m.slice(0,2),16),parseInt(m.slice(2,4),16),parseInt(m.slice(4,6),16)]; }
+function shade(hex, f){
+  const [r,g,b] = hexToRgb(hex);
+  const k = v => Math.max(0, Math.min(255, Math.round(v + (f>0 ? (255-v)*f : v*f))));
+  return `rgb(${k(r)},${k(g)},${k(b)})`;
+}
+
+/* 真实侧视小车：车身渐变 + 车窗玻璃 + 轮毂旋转 + 大灯/尾灯 + 投影 */
+function drawCar(ctx, cx, groundY, s, opt){
+  const { body, glass, dir, wheelAngle } = opt;
+  ctx.save();
+  ctx.translate(cx, groundY);
+  ctx.scale(dir * s, s);
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.beginPath(); ctx.ellipse(0, 3, 52, 6, 0, 0, Math.PI*2); ctx.fill();
+  const bodyGrad = ctx.createLinearGradient(0, -34, 0, 0);
+  bodyGrad.addColorStop(0, shade(body, 0.30)); bodyGrad.addColorStop(0.55, body); bodyGrad.addColorStop(1, shade(body, -0.35));
+  ctx.fillStyle = bodyGrad; ctx.strokeStyle = shade(body, -0.55); ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(-46, -2); ctx.lineTo(-46, -16); ctx.quadraticCurveTo(-44, -18, -40, -18);
+  ctx.lineTo(-26, -18); ctx.lineTo(-20, -34); ctx.lineTo(6, -34); ctx.lineTo(18, -18);
+  ctx.lineTo(44, -18); ctx.quadraticCurveTo(46, -18, 46, -14); ctx.lineTo(46, -2); ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  const gl = ctx.createLinearGradient(0, -34, 0, -18);
+  gl.addColorStop(0, shade(glass, 0.25)); gl.addColorStop(1, shade(glass, -0.10));
+  ctx.fillStyle = gl; ctx.strokeStyle = 'rgba(20,40,50,0.6)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-23, -20); ctx.lineTo(-19, -32); ctx.lineTo(5, -32); ctx.lineTo(16, -20); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(20,40,50,0.45)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-7, -20); ctx.lineTo(-9, -32); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(-38, -16.5); ctx.lineTo(-22, -16.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(8, -32.5); ctx.lineTo(3, -16.5); ctx.stroke();
+  ctx.fillStyle = shade(body, -0.5); ctx.fillRect(-14, -15, 7, 2.2);
+  const wheelR = 11;
+  [-28, 30].forEach(wx => {
+    ctx.save(); ctx.translate(wx, -wheelR); ctx.rotate(wheelAngle);
+    ctx.fillStyle = '#1b1f24'; ctx.beginPath(); ctx.arc(0, 0, wheelR, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#0c0e10'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#cfd8dd'; ctx.beginPath(); ctx.arc(0, 0, wheelR*0.55, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#8a97a0'; ctx.beginPath(); ctx.arc(0, 0, wheelR*0.2, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#8a97a0'; ctx.lineWidth = 1.6;
+    for(let i=0;i<5;i++){ const a = i * (Math.PI*2/5); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*wheelR*0.5, Math.sin(a)*wheelR*0.5); ctx.stroke(); }
+    ctx.restore();
+  });
+  ctx.save(); ctx.shadowColor = 'rgba(255,236,150,0.9)'; ctx.shadowBlur = 8;
+  ctx.fillStyle = '#ffe89a'; ctx.beginPath(); ctx.arc(42, -11, 3.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = '#ff5a4d'; ctx.beginPath(); ctx.arc(-43, -11, 3, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawVelArrow(ctx, sx, sy, v, color){
+  const len = Math.max(-36, Math.min(36, v * 0.20));
+  if(Math.abs(len) < 2) return;
+  const y = sy - 42, dir = len >= 0 ? 1 : -1, L = Math.abs(len);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx + len, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sx + len, y); ctx.lineTo(sx + len - dir*6, y - 4); ctx.lineTo(sx + len - dir*6, y + 4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function arrow(ctx, x, y, tx, ty){
+  const a = Math.atan2(ty - y, tx - x), s = 7;
+  ctx.beginPath(); ctx.moveTo(tx, ty);
+  ctx.lineTo(tx - s*Math.cos(a - 0.4), ty - s*Math.sin(a - 0.4));
+  ctx.lineTo(tx - s*Math.cos(a + 0.4), ty - s*Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fillStyle = 'rgba(150,190,205,0.7)'; ctx.fill();
+}
+
+/* ===================== 主绘制 ===================== */
+function drawScene(){
+  const ctx = S.ctx, W = S.W, H = S.H;
+  ctx.clearRect(0,0,W,H);
+  let bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0e2129'); bg.addColorStop(1,'#081a20');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  const t = Math.min(tNow, P.T);
+  const xAn = xA(t), vAn = vA(t), xBn = xB(t), vBn = vB(t);
+
+  // ---------- 上区：两辆真实小车 ----------
+  const animTop = 14, animBot = 270;
+  const yA = animTop + 104, yB = animTop + 214;   // 两轨道地面线
+
+  const gridStep = 30;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, animTop, W, animBot - animTop); ctx.clip();
+  ctx.strokeStyle = 'rgba(150,190,205,0.10)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let gx = 0; gx <= W; gx += gridStep){ ctx.moveTo(gx, animTop); ctx.lineTo(gx, animBot); }
+  for(let gy = animTop; gy <= animBot; gy += gridStep){ ctx.moveTo(0, gy); ctx.lineTo(W, gy); }
+  ctx.stroke();
+  ctx.restore();
+
+  const worldMax = Math.max(xA(P.T), xB(P.T)) + 60;
+  const worldMin = x0 - 40;
+  const span = Math.max(1, worldMax - worldMin);
+  const sx = x => 16 + (x - worldMin) / span * (W - 32);
+
+  ctx.strokeStyle = 'rgba(150,190,205,0.35)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(16, yA + 4); ctx.lineTo(W - 16, yA + 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(16, yB + 4); ctx.lineTo(W - 16, yB + 4); ctx.stroke();
+  ctx.strokeStyle = 'rgba(120,180,195,0.25)'; ctx.setLineDash([4,4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(sx(x0), animTop + 16); ctx.lineTo(sx(x0), animBot); ctx.stroke();
+  ctx.setLineDash([]);
+
+  const wR = 11;
+  drawCar(ctx, sx(xAn), yA, 1, { body: COLOR_A, glass:'#bfeef0', dir: Math.abs(vAn)<1?1:Math.sign(vAn), wheelAngle:(xAn - x0)/wR });
+  drawCar(ctx, sx(xBn), yB, 1, { body: COLOR_B, glass:'#ffe2cf', dir: Math.abs(vBn)<1?1:Math.sign(vBn), wheelAngle:(xBn - x0)/wR });
+  drawVelArrow(ctx, sx(xAn), yA, vAn, COLOR_A);
+  drawVelArrow(ctx, sx(xBn), yB, vBn, COLOR_B);
+
+  // 位移标注
+  ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  [['A', xAn, yA, COLOR_A], ['B', xBn, yB, COLOR_B]].forEach(([tag, x, y, c]) => {
+    const cx = sx(x);
+    ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = 1.3; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(sx(x0), y - 30); ctx.lineTo(cx, y - 30); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillText('s' + tag + ' = ' + (x - x0).toFixed(0) + ' px', (sx(x0) + cx) / 2, y - 36);
+  });
+  // 领先量
+  const yMid = (yA + yB) / 2 + 4;
+  ctx.strokeStyle = 'rgba(255,216,77,0.8)'; ctx.fillStyle = 'rgba(255,216,77,0.95)';
+  ctx.lineWidth = 1.4; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(sx(xAn), yMid); ctx.lineTo(sx(xBn), yMid); ctx.stroke();
+  ctx.setLineDash([]); ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Δx = ' + (xBn - xAn).toFixed(0) + ' px', (sx(xAn) + sx(xBn)) / 2, yMid - 4);
+
+  ctx.fillStyle = 'rgba(219,234,240,0.9)'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('运动动画（相邻轨道，自左向右）', 16, animTop + 4);
+
+  // ---------- 下区：v-t 图（A 矩形逼近 + B 阶梯突变）----------
+  const gx0 = 72, gx1 = W - 20, gyTop = 312, gyBot = H - 40;
+  const vHi = Math.max(0, P.v0, vA(P.T)) * 1.15 + 1;
+  const vLo = Math.min(0, P.v0, vA(P.T)) * 1.15 - 1;
+  const vSpan = Math.max(1, vHi - vLo);
+  const GX = tt => gx0 + (tt / P.T) * (gx1 - gx0);
+  const GY = v => gyBot - (v - vLo) / vSpan * (gyBot - gyTop);
+
+  ctx.fillStyle = 'rgba(219,234,240,0.9)'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('速度 — 时间图像：面积 = 位移（A 矩形逼近 · B 阶梯突变）', 16, gyTop - 12);
+
+  // 网格
+  ctx.strokeStyle = 'rgba(150,190,205,0.12)'; ctx.lineWidth = 1;
+  const stepV = niceStep(vSpan / 6), stepT = niceStep(P.T / 6);
+  ctx.fillStyle = 'rgba(127,160,176,0.85)'; ctx.font = '10.5px sans-serif';
+  for(let v = Math.ceil(vLo/stepV)*stepV; v <= vHi; v += stepV){
+    const y = GY(v);
+    ctx.beginPath(); ctx.moveTo(gx0, y); ctx.lineTo(gx1, y); ctx.stroke();
+    ctx.textAlign = 'right'; ctx.fillText(v.toFixed(0), gx0 - 6, y + 3);
+  }
+  for(let tt = 0; tt <= P.T + 1e-6; tt += stepT){
+    const x = GX(tt);
+    ctx.beginPath(); ctx.moveTo(x, gyTop); ctx.lineTo(x, gyBot); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.fillText(tt.toFixed(tt % 1 ? 1 : 0), x, gyBot + 14);
+  }
+  ctx.strokeStyle = 'rgba(150,190,205,0.7)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(gx0, gyTop - 4); ctx.lineTo(gx0, gyBot); ctx.lineTo(gx1, gyBot); ctx.stroke();
+  arrow(ctx, gx0, gyTop - 4, gx0, gyTop - 16);
+  arrow(ctx, gx1, gyBot, gx1 + 12, gyBot);
+  ctx.fillStyle = 'rgba(127,160,176,0.9)'; ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left'; ctx.fillText('v / (px·s⁻¹)', gx0 + 4, gyTop - 2);
+  ctx.textAlign = 'right'; ctx.fillText('t / s', gx1 + 8, gyBot - 6);
+
+  // —— A 的真实面积（梯形，浅青参考）——
+  ctx.fillStyle = 'rgba(57,214,200,0.12)';
+  ctx.beginPath();
+  ctx.moveTo(GX(0), GY(0)); ctx.lineTo(GX(0), GY(P.v0));
+  ctx.lineTo(GX(P.T), GY(vA(P.T))); ctx.lineTo(GX(P.T), GY(0)); ctx.closePath(); ctx.fill();
+
+  // —— A 的矩形逼近面积（左端点法，按 tNow 揭示）——
+  const dt = P.T / P.n;
+  ctx.fillStyle = 'rgba(57,214,200,0.42)';
+  ctx.strokeStyle = 'rgba(57,214,200,0.85)'; ctx.lineWidth = 1;
+  for(let i = 0; i < P.n; i++){
+    const t0 = i * dt, t1 = (i + 1) * dt; if(t0 >= t) break;
+    const tEnd = Math.min(t1, t);
+    const vh = P.v0 + P.a * t0;
+    const x0r = GX(t0), x1r = GX(tEnd), yTop = GY(vh), y0 = GY(0);
+    ctx.fillRect(x0r, Math.min(y0, yTop), x1r - x0r, Math.abs(yTop - y0));
+    ctx.strokeRect(x0r, Math.min(y0, yTop), x1r - x0r, Math.abs(yTop - y0));
+  }
+  // A 阶梯折线（浅色虚线，标示矩形高度，作为 B 的参考）
+  ctx.strokeStyle = 'rgba(57,214,200,0.55)'; ctx.lineWidth = 1.4; ctx.setLineDash([3,2]);
+  ctx.beginPath(); let started = false;
+  for(let i = 0; i < P.n; i++){
+    const t0 = i*dt, t1 = (i+1)*dt; if(t0 >= t) break;
+    const tEnd = Math.min(t1, t);
+    const yTop = GY(P.v0 + P.a*t0);
+    if(!started){ ctx.moveTo(GX(t0), yTop); started = true; } else ctx.lineTo(GX(t0), yTop);
+    ctx.lineTo(GX(tEnd), yTop);
+  }
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // —— B 阶梯折线：第 i 段匀速、速度 = 矩形高度 v(tᵢ)，随 tNow 揭示 ——
+  const bdt = P.T / P.n;
+  let bpts = [];
+  for(let i = 0; i < P.n; i++){
+    const t0 = i * bdt, t1 = (i + 1) * bdt, vh = vBseg(i);
+    if(t0 > t + 1e-9) break;
+    bpts.push([t0, vh]);
+    const tEnd = Math.min(t1, t);
+    if(tEnd > t0) bpts.push([tEnd, vh]);
+  }
+  if(bpts.length){
+    ctx.strokeStyle = COLOR_B; ctx.lineWidth = 2.8; ctx.beginPath();
+    bpts.forEach(([tt, v], i) => { const x = GX(tt), y = GY(v); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+  }
+  // B 各分段速度标注（n 较小时，于段中点上方显示该分立速度）
+  if(P.n <= 16){
+    ctx.font = '10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    for(let i = 0; i < P.n; i++){
+      const t0 = i*bdt, t1 = (i+1)*bdt; if(t1 > t) continue;
+      const vh = vBseg(i), xm = GX((t0 + t1)/2), yv = GY(vh);
+      ctx.fillStyle = 'rgba(255,138,92,0.95)';
+      ctx.fillText('v=' + vh.toFixed(0), xm, yv - 5);
+    }
+  }
+  // B 分段边界竖虚线（n 不大时）
+  if(P.n <= 32){
+    ctx.strokeStyle = 'rgba(255,138,92,0.30)'; ctx.lineWidth = 1; ctx.setLineDash([4,3]);
+    for(let i = 1; i < P.n; i++){ const xx = GX(i*bdt); if(i*bdt > t) break; ctx.beginPath(); ctx.moveTo(xx, gyTop); ctx.lineTo(xx, gyBot); ctx.stroke(); }
+    ctx.setLineDash([]);
+  }
+
+  // A 真实速度直线
+  ctx.strokeStyle = COLOR_A; ctx.lineWidth = 2.8;
+  ctx.beginPath(); ctx.moveTo(GX(0), GY(P.v0)); ctx.lineTo(GX(P.T), GY(vA(P.T))); ctx.stroke();
+
+  // 当前时刻竖线
+  const xp = GX(t);
+  ctx.strokeStyle = 'rgba(255,216,77,0.75)'; ctx.setLineDash([4,3]); ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(xp, gyTop); ctx.lineTo(xp, gyBot); ctx.stroke(); ctx.setLineDash([]);
+
+  // 图内读数（S_A / S_Aₙ / 误差 / S_B）
+  const SA = trueDisp(P.T), SAn = approxDisp(P.T), SB = xB(P.T) - x0;
+  const err = Math.abs(SA) < 1e-6 ? '—' : (SAn - SA) / SA * 100;
+  const bx = gx0 + 12, by = gyTop + 12;
+  ctx.font = '12.5px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(57,214,200,0.98)';
+  ctx.fillText('A 真实 S_A = ' + SA.toFixed(1) + ' px', bx, by);
+  ctx.fillText('A 逼近 S_Aₙ = ' + SAn.toFixed(1) + ' px', bx, by + 18);
+  ctx.fillStyle = 'rgba(255,216,77,0.98)';
+  ctx.fillText('A 误差 = ' + (typeof err === 'number' ? err.toFixed(2) + ' %' : err), bx, by + 36);
+  ctx.fillStyle = 'rgba(255,138,92,0.98)';
+  ctx.fillText('B 位移 S_B = ' + SB.toFixed(1) + ' px（≡ S_Aₙ）', bx, by + 54);
+
+  drawWatermark(ctx, W, H);
+}
+
+/* ===================== 控件 ===================== */
+function bind(id, key, fmt, label){
+  const el = document.getElementById(id), out = document.getElementById(label);
+  el.addEventListener('input', () => {
+    P[key] = parseFloat(el.value);
+    if(out) out.textContent = fmt ? fmt(P[key]) : P[key];
+    if(tNow > P.T) tNow = P.T;
+    if(!playing) drawScene();
+  });
+}
+bind('v0', 'v0', v => v.toFixed(0), 'v0v');
+bind('a', 'a', v => v.toFixed(1), 'av');
+bind('T', 'T', v => v.toFixed(1), 'Tv');
+const spEl = document.getElementById('sp');
+spEl.addEventListener('input', () => { animSpeed = parseFloat(spEl.value); document.getElementById('spv').textContent = animSpeed.toFixed(1); });
+
+const nbtns = document.getElementById('nbtns');
+function setN(n){
+  P.n = n; document.getElementById('nv').textContent = n;
+  [...nbtns.children].forEach(b => b.classList.toggle('on', +b.dataset.n === n));
+  if(!playing) drawScene();
+}
+[...nbtns.children].forEach(b => b.addEventListener('click', () => setN(+b.dataset.n)));
+setN(8);
+
+const playBtn = document.getElementById('play');
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+  if(playing && tNow >= P.T) tNow = 0;
+});
+document.getElementById('reset').addEventListener('click', () => {
+  tNow = 0; playing = true; playBtn.textContent = '⏸ 暂停'; drawScene();
+});
+
+function updateReadout(){
+  document.getElementById('rT').textContent = Math.min(tNow, P.T).toFixed(2) + ' s';
+  document.getElementById('rSA').textContent = trueDisp(P.T).toFixed(1) + ' px';
+  document.getElementById('rSAn').textContent = approxDisp(P.T).toFixed(1) + ' px';
+  const SA = trueDisp(P.T), err = Math.abs(SA) < 1e-6 ? '—' : (approxDisp(P.T) - SA) / SA * 100;
+  document.getElementById('rErr').textContent = typeof err === 'string' ? err : err.toFixed(2) + ' %';
+  document.getElementById('rSB').textContent = (xB(P.T) - x0).toFixed(1) + ' px';
+  document.getElementById('rDx').textContent = (xB(Math.min(tNow,P.T)) - xA(Math.min(tNow,P.T))).toFixed(1) + ' px';
+}
+
+/* ===================== 主循环 ===================== */
+function loop(ts){
+  if(!lastTS) lastTS = ts;
+  let dt = (ts - lastTS) / 1000; lastTS = ts;
+  if(dt > 0.05) dt = 0.05;
+  if(playing){
+    tNow += dt * animSpeed;
+    if(tNow >= P.T){ tNow = P.T; playing = false; playBtn.textContent = '▶ 播放'; }
+  }
+  drawScene(); updateReadout();
+  requestAnimationFrame(loop);
+}
+
+/* ===================== 启动 ===================== */
+resize();
+drawScene(); updateReadout();
+requestAnimationFrame(loop);
+
+if(typeof globalThis !== 'undefined'){
+  globalThis.__api = { drawScene, updateReadout, setT: v => { tNow = v; }, getT: () => tNow,
+    P, trueDisp, approxDisp, xA, xB, vA, vB, vBseg };
+}
+</script>
+</body>
+</html>
