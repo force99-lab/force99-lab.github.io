@@ -148,12 +148,6 @@ const WORKS = [
 
   },
 
-    {
-    type:"article", title:"2026黑吉辽蒙T15 试题",
-    desc:"2026 黑吉辽蒙高考物理压轴题原题：时间分辨-能量分析仪，题干与已知量完整呈现。",
-    icon:"📋", link:"articles/2026-heijiliaomeng-t15-problem.html", date:"2026-08-17", tag:"高考真题"
-  },
-
   /* ---------------- HTML 动画 ---------------- */
 
 
