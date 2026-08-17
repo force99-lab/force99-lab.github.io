@@ -871,6 +871,12 @@ const WORKS = [
     type:"video", title:"傅科摆",
     desc:"单摆摆动平面随时间缓慢进动，直观证明地球自转，是课堂上经典的地转演示。",
     icon:"🌍", link:"videos/foucault_pendulum.html", date:"2026-08-16", tag:"机械振动"
+  },
+
+  {
+    type:"video", title:"时钟变慢",
+    desc:"从爱因斯坦到光钟推导，用动画看懂狭义相对论的时间膨胀。物理小新口播讲解。",
+    icon:"⏳", link:"videos/time_dilation.html", date:"2026-08-17", tag:"近代物理"
   }
 ];
 
