@@ -455,7 +455,7 @@ const WORKS = [
   {
     type:"animation", title:"运动学追赶动画",
     desc:"两物体直线追赶的运动学动画，可调初始间距与速度，直观演示追及过程与方法。",
-    icon:"🏃", link:"animations/kinematics-chase.html", date:"2026-08-17", tag:"运动学"
+    icon:"🏃", cover:"assets/img/kinematics-chase-cover.png", link:"animations/kinematics-chase.html", date:"2026-08-17", tag:"运动学"
   },
 
   /* ---------------- 解题 ---------------- */
