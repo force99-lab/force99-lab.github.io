@@ -461,7 +461,7 @@ const WORKS = [
   {
     type:"animation", title:"匀变速位移逼近",
     desc:"匀变速直线运动中用矩形条逼近位移，直观演示极限思想与 v-t 图面积含义。",
-    icon:"📐", link:"animations/uniform-acceleration-displacement.html", date:"2026-08-17", tag:"运动学"
+    icon:"📐", cover:"assets/img/uniform-acceleration-displacement-cover.png", link:"animations/uniform-acceleration-displacement.html", date:"2026-08-17", tag:"运动学"
   },
 
   /* ---------------- 解题 ---------------- */
