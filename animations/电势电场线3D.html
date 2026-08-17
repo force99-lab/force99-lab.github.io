@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>电势与电场线 3D 模型（四类电荷）</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #07111a; color: #dbeaf0;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
+  header { padding: 12px 20px 4px; }
+  h1 { margin: 0; font-size: 19px; letter-spacing: .5px; color: #eaf6fb; }
+  .sub { margin: 5px 0 0; font-size: 12.5px; line-height: 1.55; color: #9fc0cf; max-width: 1180px; }
+  .wrap { display: flex; gap: 14px; padding: 10px 16px 16px; align-items: stretch; }
+  .canvasBox { flex: 1 1 auto; min-width: 0; background: #0a1a21;
+    border: 1px solid rgba(120,180,195,.18); border-radius: 12px; overflow: hidden; position: relative; }
+  canvas { display: block; width: 100%; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  .hint { position: absolute; left: 14px; bottom: 12px; font-size: 11.5px; color: #7fb4c6;
+    background: rgba(8,22,28,.55); padding: 5px 9px; border-radius: 7px; pointer-events: none; }
+  .controls { width: 330px; flex: 0 0 330px; background: rgba(10,28,36,.92);
+    border: 1px solid rgba(120,180,195,.18); border-radius: 12px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 10px; max-height: 800px; overflow-y: auto; }
+  .grp { font-size: 11px; color: #7fb4c6; letter-spacing: 1px; border-left: 3px solid rgba(120,180,195,.4);
+    padding-left: 8px; margin-bottom: 1px; }
+  .ctl { display: flex; flex-direction: column; gap: 3px; }
+  .ctl > label { font-size: 12.5px; color: #bfe0ec; display: flex; justify-content: space-between; }
+  .ctl > label b { color: #eaf6fb; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: #39d6c8; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btnrow button { flex: 1 1 auto; min-width: 64px; padding: 7px 4px; font-size: 12px; cursor: pointer;
+    background: rgba(57,214,200,.10); color: #bfe0ec; border: 1px solid rgba(57,214,200,.35);
+    border-radius: 7px; transition: .12s; }
+  .btnrow button.on { background: #39d6c8; color: #04222b; font-weight: 700; border-color: #39d6c8; }
+  .btnrow.act button { background: rgba(255,138,92,.12); border-color: rgba(255,138,92,.4); color: #ffd9c4; }
+  .btnrow.act button.on { background: #ff8a5c; color: #2a1304; border-color: #ff8a5c; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; }
+  .checks label { font-size: 12px; color: #cfe6ef; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .checks input { accent-color: #39d6c8; width: 15px; height: 15px; }
+  .playrow { display: flex; gap: 8px; }
+  .playrow button { flex: 1; padding: 9px 0; font-size: 13px; cursor: pointer; border-radius: 8px;
+    border: 1px solid rgba(120,180,195,.35); background: rgba(120,180,195,.12); color: #eaf6fb; }
+  .playrow button#start { background: rgba(57,214,200,.18); border-color: rgba(57,214,200,.5); }
+  .readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 12.5px;
+    background: rgba(8,22,28,.6); border: 1px solid rgba(120,180,195,.18); border-radius: 9px; padding: 9px 12px; }
+  .readout span:nth-child(odd) { color: #9fc0cf; }
+  .readout span:nth-child(even) { color: #eaf6fb; text-align: right; font-variant-numeric: tabular-nums; }
+  .readout .st { color: #ffd84d; }
+  .legend { display: flex; gap: 14px; font-size: 12px; margin-top: 2px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>电势与电场线 3D 模型 · 四类电荷</h1>
+  <div class="sub">单个正电荷 / 单个负电荷 / 等量同种电荷 / 等量异种电荷。3D <b style="color:#ff69b4">电场线（粉红带箭头）</b>由子午面场线积分后绕轴旋转生成；<b style="color:#5be38c">等势面 / 等势线（绿色）用竖直高度表示电势高低</b>（高电势在上、低电势在下，不同等势线不在同一水平面）。发射试探电荷观察其在真实 3D 电场中的受力与轨迹。</div>
+</header>
+
+<div class="wrap">
+  <div class="canvasBox"><canvas id="scene" height="760"></canvas>
+    <div class="hint">拖拽旋转视角 · 滚轮缩放</div>
+  </div>
+
+  <div class="controls">
+    <div class="ttl" style="font-size:12px;color:#7fb4c6;letter-spacing:.5px">控制区</div>
+
+    <div class="grp">视图</div>
+    <div class="btnrow" id="viewBtns">
+      <button data-v="3d" class="on">3D 立体</button>
+      <button data-v="2d">2D 截面</button>
+    </div>
+
+    <div class="grp">电荷类型</div>
+    <div class="btnrow" id="typeBtns">
+      <button data-t="pos" class="on">单个正电荷</button>
+      <button data-t="neg">单个负电荷</button>
+      <button data-t="same">等量同种</button>
+      <button data-t="opp">等量异种</button>
+    </div>
+
+    <div class="grp">播放与发射</div>
+    <div class="ctl"><label>播放速度 <b><span id="spv">1.0</span>×</b></label>
+      <input id="sp" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+    <div class="playrow">
+      <button id="start">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+    </div>
+    <div class="btnrow act">
+      <button id="emit">发射试探</button>
+      <button id="repeat">重复</button>
+      <button id="step">单步</button>
+      <button id="rand">随机实验</button>
+    </div>
+
+    <div class="grp">电场线数量</div>
+    <div class="ctl"><label>数量 n <b><span id="nv">10</span></b></label>
+      <input id="nlines" type="range" min="4" max="24" step="1" value="10"></div>
+
+    <div class="grp">电势叠加</div>
+    <div class="btnrow" id="potBtns">
+      <button data-p="comp">只看分量</button>
+      <button data-p="total" class="on">只看总和</button>
+      <button data-p="both">分量+总和</button>
+    </div>
+
+    <div class="grp">可视化配置</div>
+    <div class="checks">
+      <label><input type="checkbox" id="cField" checked> 电场线与粒子</label>
+      <label><input type="checkbox" id="cSurf" checked> 等势面</label>
+      <label><input type="checkbox" id="cLines" checked> 等势线</label>
+      <label><input type="checkbox" id="cVel" checked> 速度箭头</label>
+      <label><input type="checkbox" id="cForce" checked> 受力箭头</label>
+      <label><input type="checkbox" id="cLabels" checked> 电压/量标注</label>
+      <label><input type="checkbox" id="cLight"> 轻量渲染</label>
+      <label><input type="checkbox" id="cAxis" checked> 中轴线</label>
+    </div>
+
+    <div class="readout">
+      <span>运行时间 t</span><span id="rT">0.00 s</span>
+      <span>试探电荷 q</span><span id="rQ">—</span>
+      <span>所在处 V</span><span id="rV">—</span>
+      <span>速率 |v|</span><span id="rVv">—</span>
+      <span>受力 |F|</span><span id="rF">—</span>
+      <span class="st">状态</span><span id="rSt" class="st">待发射</span>
+    </div>
+    <div class="legend">
+      <span><i class="dot" style="background:#ff5a4d"></i>正电荷(+)</span>
+      <span><i class="dot" style="background:#4d8bff"></i>负电荷(−)</span>
+      <span><i class="dot" style="background:#ff69b4"></i>电场线(粉红)</span>
+      <span><i class="dot" style="background:#5be38c"></i>等势线(绿)</span>
+      <span><i class="dot" style="background:#ffd84d"></i>试探电荷</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 3D 数学基础 ===================== */
+function Vsub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function Vadd(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+function Vscale(a,s){return [a[0]*s,a[1]*s,a[2]*s];}
+function Vdot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+function Vcross(a,b){return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];}
+function Vlen(a){return Math.hypot(a[0],a[1],a[2]);}
+function Vnorm(a){const l=Vlen(a)||1;return [a[0]/l,a[1]/l,a[2]/l];}
+
+/* ===================== 全局参数 ===================== */
+const scene = document.getElementById('scene');
+const S = { ctx: scene.getContext('2d'), W: 760, H: 760 };
+const K = 1, Q = 4, D = 1.4;                 // 库仑常数 / 电荷量 / 两电荷半间距
+const CAM = { az: 0.85, el: 0.42, dist: 11, f: 470 };
+const P = { type:'pos', speed:1, nLines:10, potMode:'total', view:'3d',
+  showField:true, showParticles:true, showSurf:true, showLines:true, showVel:true, showForce:true,
+  showLabels:true, light:false, showAxis:true };
+
+let charges = [];                            // [{x, q}]
+let fieldLines = [];                         // 子午面场线：每项为 [{x,y},...]
+let lines3D = [];                            // 绕轴旋转后的 3D 场线
+let reliefData = { meshes: [], contours: [] };   // 势面网格 + 分层等势线（竖直高度=电势）
+let phase = 0;                               // 方向粒子动画相位
+let playing = true, lastTS = 0, tNow = 0;
+const test = { active:false, pos:[0,0,0], vel:[0,0,0], q:1, m:1, trail:[] };
+let lastEmit = null;
+
+// —— 2D 截面临时数据 ——
+let equi2D = [];            // 2D 截面等势线（经典等高线，不抬高度）：{level,sign,segs|circle,kind}
+let vgrid = null;           // 2D 电势采样网格（用于分区底色）
+let cam2D = { scale: 52, panX: 0, panY: 0 };   // 2D 相机：scale=px/单位，panX/panY=平移(px)
+
+/* 相机基向量 */
+let EYE=[0,0,0], FWD=[0,0,1], RIGHT=[1,0,0], UP=[0,1,0];
+function updateCam(){
+  const ce=Math.cos(CAM.el), se=Math.sin(CAM.el), ca=Math.cos(CAM.az), sa=Math.sin(CAM.az);
+  EYE=[CAM.dist*ce*sa, CAM.dist*se, CAM.dist*ce*ca];
+  FWD=Vnorm(Vscale(EYE,-1));
+  RIGHT=Vnorm(Vcross(FWD,[0,1,0]));
+  UP=Vcross(RIGHT,FWD);
+}
+function project(p){
+  const rel=Vsub(p,EYE);
+  const cz=Vdot(rel,FWD);
+  if(cz<=0.05) return {ok:false};
+  const cx=Vdot(rel,RIGHT), cy=Vdot(rel,UP);
+  return { ok:true, x:S.W/2 + CAM.f*cx/cz, y:S.H/2 - CAM.f*cy/cz, z:cz };
+}
+function revolve(x,y,beta){ return [x, y*Math.cos(beta), y*Math.sin(beta)]; }
+
+/* ===================== 物理场 ===================== */
+function field2D(x,y){
+  let ex=0, ey=0;
+  for(const c of charges){
+    const dx=x-c.x, dy=y;
+    const r2=dx*dx+dy*dy+1e-4, r3=r2*Math.sqrt(r2);
+    const f=K*c.q/r3; ex+=f*dx; ey+=f*dy;
+  }
+  return [ex,ey];
+}
+function pot2D(x,y){
+  let v=0;
+  for(const c of charges){ const r=Math.hypot(x-c.x,y)+1e-6; v+=K*c.q/r; }
+  return v;
+}
+function field3D(p){
+  let e=[0,0,0];
+  for(const c of charges){
+    const d=Vsub(p,[c.x,0,0]);
+    const r2=Vdot(d,d)+1e-4, r3=r2*Math.sqrt(r2);
+    e=Vadd(e, Vscale(d, K*c.q/r3));
+  }
+  return e;
+}
+function pot3D(p){
+  let v=0;
+  for(const c of charges){ const r=Vlen(Vsub(p,[c.x,0,0]))+1e-6; v+=K*c.q/r; }
+  return v;
+}
+
+/* ===================== 场线（子午面积分 + 绕轴旋转）===================== */
+function computeCharges(type){
+  if(type==='pos') charges=[{x:0,q:Q}];
+  else if(type==='neg') charges=[{x:0,q:-Q}];
+  else if(type==='same') charges=[{x:-D,q:Q},{x:D,q:Q}];
+  else charges=[{x:-D,q:Q},{x:D,q:-Q}];
+}
+function integrateLine(x0,y0,dir){
+  const pts=[{x:x0,y:y0}];
+  let x=x0,y=y0; const ds=0.16, steps=420, r0=0.28;
+  for(let i=0;i<steps;i++){
+    let [ex,ey]=field2D(x,y); const m=Math.hypot(ex,ey);
+    if(m<1e-9) break; ex/=m; ey/=m;
+    x+=dir*ds*ex; y+=dir*ds*ey;
+    if(y<0) y=0;
+    let stop=false;
+    for(const c of charges){
+      const d=Math.hypot(x-c.x,y);
+      if(d<0.24){ stop=true; break; }
+      if(c.q<0 && d<r0*1.1){ stop=true; break; }
+    }
+    if(Math.hypot(x,y)>7){ stop=true; }
+    pts.push({x,y});
+    if(stop) break;
+  }
+  return pts;
+}
+function lineEndsAtPos(line){
+  // 判断子午面场线终点是否落在某个正电荷上
+  const p=line[line.length-1];
+  for(const c of charges){ if(c.q>0 && Math.hypot(p.x-c.x,p.y)<0.26) return true; }
+  return false;
+}
+function computeFieldLines(){
+  fieldLines=[];
+  const seeds=P.nLines, r0=0.28;
+  for(const c of charges){
+    for(let s=0;s<seeds;s++){
+      const a=Math.PI*(s+0.5)/seeds;
+      const x=c.x+r0*Math.cos(a), y=r0*Math.sin(a);
+      const line=integrateLine(x,y, c.q>0?1:-1);
+      if(line.length>3){
+        // 负电荷反向追踪若终点落在正电荷上，说明它是“正→负”连接线的重复份
+        // （正电荷已正向描出同一曲线），跳过以免同一条连接线被画两遍、看起来成对重叠
+        if(c.q<0 && lineEndsAtPos(line)) continue;
+        line.flow = (c.q>0 ? 1 : -1);   // +1:电场向外(从+出发)  -1:电场指向电荷(终止于−)
+        fieldLines.push(line);
+      }
+    }
+  }
+  buildLines3D();
+}
+function buildLines3D(){
+  lines3D=[];
+  const AZ = P.light?6:12;
+  for(const line of fieldLines){
+    const L=line.length;
+    if(L<2) continue;
+    for(let k=0;k<AZ;k++){
+      const beta=k*2*Math.PI/AZ, arr=[];
+      for(let i=0;i<L;i++){ const p=line[i]; arr.push(revolve(p.x,p.y,beta)); }
+      lines3D.push(arr);
+    }
+  }
+}
+
+/* ===================== 势面 / 等势线：竖直高度 = 电势高低 ===================== */
+const YMAX = 3.4;                         // 势面最大竖直高度
+const VREF = K*Q/0.9;                     // 电势归一参考（r=0.9 处）
+function heightOf(V){ return YMAX * Math.tanh(V / VREF); }   // 电势 → 竖直高度（有界平滑）
+
+function potOf(x, z, field){
+  if(field.all){ let v=0; for(const c of charges){ const r=Math.hypot(x-c.x, z)+1e-6; v += K*c.q/r; } return v; }
+  const r=Math.hypot(x-field.cx, z)+1e-6; return K*field.q/r;
+}
+function fieldsToRender(){
+  if(P.potMode==='comp')  return charges.map(c=>({cx:c.x, q:c.q, all:false, kind:'comp'}));
+  if(P.potMode==='total') return [{all:true, kind:'total'}];
+  return [{all:true, kind:'total'}, ...charges.map(c=>({cx:c.x, q:c.q, all:false, kind:'comp'}))];
+}
+function reliefLevels(field){
+  const base=[0.3,0.6,1.0,1.6];
+  if(field.all){ const lv=[]; for(const s of [1,-1]) for(const b of base) lv.push(s*b*VREF); lv.push(0); return lv; }
+  const s=field.q>0?1:-1; return base.map(b=>s*b*VREF);
+}
+function computeRelief(){
+  reliefData={ meshes:[], contours:[] };
+  const nx=P.light?26:44, nz=P.light?26:44, x0=-6,x1=6,z0=-6,z1=6;
+  for(const f of fieldsToRender()){
+    const isTotal=f.kind==='total';
+    const V=[]; for(let i=0;i<=nx;i++){ V[i]=[]; const X=x0+(x1-x0)*i/nx;
+      for(let j=0;j<=nz;j++){ const Z=z0+(z1-z0)*j/nz; V[i][j]=potOf(X,Z,f); } }
+    reliefData.meshes.push({nx,nz,x0,x1,z0,z1,V, alpha: isTotal?0.22:0.12, kind: isTotal?'total':'comp'});
+    for(const L of reliefLevels(f)){
+      const segs=[];
+      for(let i=0;i<nx;i++) for(let j=0;j<nz;j++){
+        const Xa=x0+(x1-x0)*i/nx, Xb=x0+(x1-x0)*(i+1)/nx;
+        const Za=z0+(z1-z0)*j/nz, Zb=z0+(z1-z0)*(j+1)/nz;
+        const v00=V[i][j], v10=V[i+1][j], v11=V[i+1][j+1], v01=V[i][j+1];
+        let idx=0; if(v00>L)idx|=1; if(v10>L)idx|=2; if(v11>L)idx|=4; if(v01>L)idx|=8;
+        if(idx===0||idx===15) continue;
+        const t=(va,vb)=>(L-va)/(vb-va);
+        const pA=[Xa+(Xb-Xa)*t(v00,v10), Za], pB=[Xb, Za+(Zb-Za)*t(v10,v11)],
+              pC=[Xb-(Xb-Xa)*t(v11,v01), Zb], pD=[Xa, Zb-(Zb-Za)*t(v01,v00)];
+        const push=(u,v)=>segs.push([u[0],u[1],v[0],v[1]]);
+        if(idx===1) push(pA,pD); else if(idx===2) push(pA,pB);
+        else if(idx===3) push(pD,pB); else if(idx===4) push(pB,pC);
+        else if(idx===5){ push(pA,pD); push(pB,pC); } else if(idx===6) push(pA,pC);
+        else if(idx===7) push(pD,pC); else if(idx===8) push(pC,pD);
+        else if(idx===9) push(pA,pC); else if(idx===10){ push(pA,pB); push(pC,pD); }
+        else if(idx===11) push(pB,pC); else if(idx===12) push(pB,pD);
+        else if(idx===13) push(pA,pB); else if(idx===14) push(pA,pD);
+      }
+      if(segs.length) reliefData.contours.push({ level:L, y:heightOf(L), sign:L>0?1:(L<0?-1:0), segs, alpha: isTotal?0.95:0.5 });
+    }
+  }
+}
+function drawRelief(){
+  const ctx=S.ctx;
+  if(P.showSurf){
+    // 立体网格线：蓝色细线（低调，衬托绿色等势线与粉红电场线）
+    const col='rgba(96,165,255,0.5)';
+    const lw=1;
+    for(const m of reliefData.meshes){
+      const {nx,nz,x0,x1,z0,z1,V}=m;
+      for(let i=0;i<=nx;i++){ const X=x0+(x1-x0)*i/nx, pts=[];
+        for(let j=0;j<=nz;j++){ const Z=z0+(z1-z0)*j/nz; pts.push([X, heightOf(V[i][j]), Z]); }
+        drawPolyline3D(pts, col, lw, 1); }
+      for(let j=0;j<=nz;j++){ const Z=z0+(z1-z0)*j/nz, pts=[];
+        for(let i=0;i<=nx;i++){ const X=x0+(x1-x0)*i/nx; pts.push([X, heightOf(V[i][j]), Z]); }
+        drawPolyline3D(pts, col, lw, 1); }
+    }
+  }
+  if(P.showLines){
+    for(const c of reliefData.contours){
+      const col = c.sign>0?'rgba(120,235,150,'+c.alpha+')':(c.sign<0?'rgba(60,200,120,'+c.alpha+')':'rgba(220,255,225,'+c.alpha+')');
+      for(const s of c.segs) drawPolyline3D([[s[0],c.y,s[1]],[s[2],c.y,s[3]]], col, c.sign===0?1.9:2.5, 1);
+    }
+  }
+}
+
+/* ===================== 2D 截面视图 ===================== */
+function map2D(x, y){
+  const cx = S.W/2 + cam2D.panX, cy = S.H/2 + cam2D.panY;
+  return [ cx + x*cam2D.scale, cy - y*cam2D.scale ];
+}
+function computeEqui2D(){
+  equi2D = []; vgrid = null;
+  const nx = P.light?40:70, ny = P.light?34:58, x0=-6,x1=6,y0=-5,y1=5;
+  // 分区底色网格（仅开"等势面"时采样）
+  if(P.showSurf){
+    const V=[]; for(let i=0;i<=nx;i++){ V[i]=[]; const X=x0+(x1-x0)*i/nx;
+      for(let j=0;j<=ny;j++){ const Y=y0+(y1-y0)*j/ny; V[i][j]=pot2D(X,Y); } }
+    vgrid = { nx, ny, x0, x1, y0, y1, V };
+  }
+  for(const f of fieldsToRender()){
+    if(f.kind!=='total'){            // 分量：同心等势圆
+      const base=[0.9,1.4,2.2,3.4];
+      for(const b of base){ const r=K*Math.abs(f.q)/b; equi2D.push({ level:b, sign:f.q>0?1:-1, circle:{cx:f.cx,cy:0,r}, kind:'comp' }); }
+      continue;
+    }
+    const base=[0.3,0.6,1.0,1.6], levels=[];
+    for(const s of [1,-1]) for(const b of base) levels.push(s*b*VREF); levels.push(0);
+    const V=[]; for(let i=0;i<=nx;i++){ V[i]=[]; const X=x0+(x1-x0)*i/nx;
+      for(let j=0;j<=ny;j++){ const Y=y0+(y1-y0)*j/ny; V[i][j]=pot2D(X,Y); } }
+    for(const L of levels){
+      const segs=[];
+      for(let i=0;i<nx;i++) for(let j=0;j<ny;j++){
+        const Xa=x0+(x1-x0)*i/nx, Xb=x0+(x1-x0)*(i+1)/nx;
+        const Ya=y0+(y1-y0)*j/ny, Yb=y0+(y1-y0)*(j+1)/ny;
+        const v00=V[i][j], v10=V[i+1][j], v11=V[i+1][j+1], v01=V[i][j+1];
+        let idx=0; if(v00>L)idx|=1; if(v10>L)idx|=2; if(v11>L)idx|=4; if(v01>L)idx|=8;
+        if(idx===0||idx===15) continue;
+        const t=(va,vb)=>(L-va)/(vb-va);
+        const pA=[Xa+(Xb-Xa)*t(v00,v10), Ya], pB=[Xb, Ya+(Yb-Ya)*t(v10,v11)],
+              pC=[Xb-(Xb-Xa)*t(v11,v01), Yb], pD=[Xa, Yb-(Yb-Ya)*t(v01,v00)];
+        const push=(u,v)=>segs.push({ax:u[0],ay:u[1],bx:v[0],by:v[1]});
+        if(idx===1) push(pA,pD); else if(idx===2) push(pA,pB); else if(idx===3) push(pD,pB);
+        else if(idx===4) push(pB,pC); else if(idx===5){ push(pA,pD); push(pB,pC); }
+        else if(idx===6) push(pA,pC); else if(idx===7) push(pD,pC); else if(idx===8) push(pC,pD);
+        else if(idx===9) push(pA,pC); else if(idx===10){ push(pA,pB); push(pC,pD); }
+        else if(idx===11) push(pB,pC); else if(idx===12) push(pB,pD);
+        else if(idx===13) push(pA,pB); else if(idx===14) push(pA,pD);
+      }
+      if(segs.length) equi2D.push({ level:L, sign:L>0?1:(L<0?-1:0), segs, kind:'total' });
+    }
+  }
+}
+function drawScene2D(){
+  const ctx=S.ctx, W=S.W, H=S.H;
+  ctx.clearRect(0,0,W,H);
+  let bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#0e222c'); bg.addColorStop(1,'#081a20');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // 2D 显示完整平面（取消上半部裁切）
+
+  // （已移除 2D 电势分区矩形底色：画面仅保留线与背景）
+  // 坐标轴（原 x 向右 / y 向上 / y 向下三条淡线，因与背景色相近被误认作散落电场线）已移除，保持"只显示线与背景"
+
+  // 等势线（绿色）
+  if(P.showLines){
+    for(const e of equi2D){
+      if(e.circle){
+        const c=map2D(e.circle.cx, e.circle.cy);
+        ctx.strokeStyle = e.sign>0?'rgba(120,235,150,0.5)':'rgba(70,200,120,0.5)';
+        ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(c[0],c[1], e.circle.r*cam2D.scale, 0, 2*Math.PI); ctx.stroke();
+      } else {
+        const col = e.sign>0?'rgba(120,235,150,0.95)':(e.sign<0?'rgba(60,200,120,0.95)':'rgba(220,255,225,0.95)');
+        ctx.strokeStyle=col; ctx.lineWidth= e.sign===0?1.9:2.3; ctx.beginPath();
+        for(const s of e.segs){ const a=map2D(s.ax,s.ay), b=map2D(s.bx,s.by);
+          ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); }
+        ctx.stroke();
+      }
+    }
+  }
+
+  // 电场线（粉红）+ 流动粒子 + 末端箭头（上下对称镜像，显示完整平面）
+  if(P.showField){
+    for(const sy of [1, -1]){
+      for(const line of fieldLines){
+        ctx.strokeStyle='rgba(255,105,180,0.9)'; ctx.lineWidth= P.light?1.2:1.9; ctx.beginPath();
+        line.forEach((p,i)=>{ const q=map2D(p.x, p.y*sy); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); });
+        ctx.stroke();
+      }
+    }
+    if(P.showParticles && !P.light){
+      for(const sy of [1, -1]){
+        for(const line of fieldLines){
+          const base=(phase + (line.length%7)*0.13)%1;
+          const fr = (line.flow===-1) ? (1-base)%1 : base;   // 负电荷线：粒子流向电荷
+          const [x,y]=pointAtFraction(line, fr);
+          const p=map2D(x, y*sy);
+          ctx.fillStyle='rgba(255,200,225,0.95)';
+          ctx.beginPath(); ctx.arc(p[0],p[1],3,0,2*Math.PI); ctx.fill();
+        }
+      }
+    }
+    for(const sy of [1, -1]){
+      for(const line of fieldLines){
+        const L=line.length; if(L<4) continue;
+        // 下游端(电场方向指向处)：正电荷线在末端指向外，负电荷线在起点指向电荷
+        const tail = (line.flow===-1) ? line[0] : line[L-1];
+        const prev = (line.flow===-1) ? line[3] : line[L-4];
+        const b=map2D(tail.x, tail.y*sy), a=map2D(prev.x, prev.y*sy);
+        drawArrow2D(b, a, 'rgba(255,120,190,0.97)', 9);
+      }
+    }
+  }
+
+  // 试探电荷（2D 视图下严格在 z=0 截面运动）
+  if(test.active || test.trail.length){
+    if(test.trail.length>1){
+      ctx.strokeStyle='rgba(255,216,77,0.8)'; ctx.lineWidth=1.6; ctx.beginPath();
+      test.trail.forEach((p,i)=>{ const q=map2D(p[0],p[1]); i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); });
+      ctx.stroke();
+    }
+    if(test.active){
+      const p=map2D(test.pos[0],test.pos[1]), rs=Math.max(5,0.2*cam2D.scale);
+      const g=ctx.createRadialGradient(p[0],p[1],1,p[0],p[1],rs);
+      g.addColorStop(0,'#fff3b0'); g.addColorStop(1,'#e0a000');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p[0],p[1],rs,0,2*Math.PI); ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1; ctx.stroke();
+      if(P.showVel && Vlen(test.vel)>1e-4){
+        const tip=[p[0]+test.vel[0]*cam2D.scale*0.5, p[1]-test.vel[1]*cam2D.scale*0.5];
+        drawArrow2D(tip, p, '#7fe9ff', 9);
+      }
+      if(P.showForce){ const E=field3D(test.pos); const F=Vscale(E,test.q/test.m);
+        if(Vlen(F)>1e-5){ const tip=[p[0]+F[0]*cam2D.scale*0.5, p[1]-F[1]*cam2D.scale*0.5];
+          drawArrow2D(tip, p, '#ff7a5c', 11); } }
+    }
+  }
+  // 标注
+  if(P.showLabels && test.active){
+    const V=pot2D(test.pos[0],test.pos[1]), sp=Vlen(test.vel);
+    const E=field3D(test.pos), F=Vlen(Vscale(E,test.q/test.m));
+    ctx.font='12px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='rgba(255,216,77,0.95)';
+    const px=map2D(test.pos[0],test.pos[1]);
+    ctx.fillText('q='+(test.q>0?'+':'−')+'  V='+V.toFixed(2), px[0]+12, px[1]-30);
+    ctx.fillText('|v|='+sp.toFixed(2)+'  |F|='+F.toFixed(2), px[0]+12, px[1]-15);
+  }
+
+  // 电荷（完整圆形落在 x 轴上）
+  for(const c of charges){
+    const p=map2D(c.x,0), rs=Math.max(9, 0.42*cam2D.scale);
+    const g=ctx.createRadialGradient(p[0]-rs*0.3,p[1]-rs*0.3,rs*0.1,p[0],p[1],rs);
+    const base=c.q>0?[255,90,77]:[77,139,255];
+    g.addColorStop(0,`rgb(${base[0]},${base[1]},${base[2]})`);
+    g.addColorStop(1,`rgb(${Math.round(base[0]*0.45)},${Math.round(base[1]*0.45)},${Math.round(base[2]*0.45)})`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p[0],p[1],rs,0,2*Math.PI); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(13,rs*0.9)}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(c.q>0?'+':'−', p[0],p[1]);
+    if(P.showLabels){ ctx.fillStyle='rgba(220,235,242,0.95)'; ctx.font='12px sans-serif';
+      ctx.fillText((c.q>0?'+':'−')+'Q', p[0], p[1]-rs-10); }
+  }
+
+  drawWatermark(ctx, W, H);
+}
+function drawAxis2D(o, e){
+  const ctx=S.ctx; ctx.strokeStyle='rgba(150,190,205,0.5)'; ctx.lineWidth=1.2; ctx.beginPath();
+  ctx.moveTo(o[0],o[1]); ctx.lineTo(e[0],e[1]); ctx.stroke();
+  const ang=Math.atan2(e[1]-o[1], e[0]-o[0]), s=7;
+  ctx.beginPath(); ctx.moveTo(e[0],e[1]);
+  ctx.lineTo(e[0]-s*Math.cos(ang-0.4), e[1]-s*Math.sin(ang-0.4));
+  ctx.lineTo(e[0]-s*Math.cos(ang+0.4), e[1]-s*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fillStyle='rgba(150,190,205,0.7)'; ctx.fill();
+}
+function drawArrow2D(tip, from, color, s){
+  const ctx=S.ctx; ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2.4; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(from[0],from[1]); ctx.lineTo(tip[0],tip[1]); ctx.stroke();
+  const ang=Math.atan2(tip[1]-from[1], tip[0]-from[0]);
+  ctx.beginPath(); ctx.moveTo(tip[0],tip[1]);
+  ctx.lineTo(tip[0]-s*Math.cos(ang-0.4), tip[1]-s*Math.sin(ang-0.4));
+  ctx.lineTo(tip[0]-s*Math.cos(ang+0.4), tip[1]-s*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+/* ===================== 尺寸 ===================== */
+function resize(){
+  const r=scene.getBoundingClientRect();
+  S.W=Math.max(360, Math.floor(r.width)); S.H=760;
+  scene.width=S.W; scene.height=S.H;
+  CAM.f=0.6*S.H;
+}
+window.addEventListener('resize', resize);
+
+/* ===================== 工具绘制 ===================== */
+function drawPolyline3D(pts, color, width, alpha){
+  const ctx=S.ctx; ctx.strokeStyle=color; ctx.globalAlpha=alpha; ctx.lineWidth=width;
+  ctx.beginPath(); let started=false;
+  for(const p of pts){ const pr=project(p); if(!pr.ok){ started=false; continue; }
+    if(!started){ ctx.moveTo(pr.x,pr.y); started=true; } else ctx.lineTo(pr.x,pr.y); }
+  ctx.stroke(); ctx.globalAlpha=1;
+}
+function pointAtFraction(line, frac){
+  // line: 子午面 [{x,y}]；返回 [x,y]
+  let total=0; const seg=[];
+  for(let i=1;i<line.length;i++){ const d=Math.hypot(line[i].x-line[i-1].x, line[i].y-line[i-1].y); seg.push(d); total+=d; }
+  if(total<1e-6) return [line[0].x,line[0].y];
+  let target=frac*total, acc=0;
+  for(let i=1;i<line.length;i++){ if(acc+seg[i-1]>=target){ const t=(target-acc)/(seg[i-1]||1);
+    return [line[i-1].x+(line[i].x-line[i-1].x)*t, line[i-1].y+(line[i].y-line[i-1].y)*t]; }
+    acc+=seg[i-1]; }
+  return [line[line.length-1].x, line[line.length-1].y];
+}
+function drawArrow3D(base, vec, color, len){
+  const ctx=S.ctx; const d=Vnorm(vec); if(!isFinite(d[0])) return;
+  const tip=Vadd(base, Vscale(d, len));
+  const pb=project(base), pt=project(tip); if(!pb.ok||!pt.ok) return;
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2.4; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(pb.x,pb.y); ctx.lineTo(pt.x,pt.y); ctx.stroke();
+  const ang=Math.atan2(pt.y-pb.y, pt.x-pb.x), s=7;
+  ctx.beginPath(); ctx.moveTo(pt.x,pt.y);
+  ctx.lineTo(pt.x-s*Math.cos(ang-0.4), pt.y-s*Math.sin(ang-0.4));
+  ctx.lineTo(pt.x-s*Math.cos(ang+0.4), pt.y-s*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fill();
+}
+function drawSphereWire(center, R, color, alpha){
+  const ctx=S.ctx;
+  const nLat=6, nLon=8;
+  for(let i=1;i<=nLat;i++){ const th=Math.PI*i/(nLat+1), ring=[];
+    for(let k=0;k<=24;k++){ const ph=2*Math.PI*k/24;
+      ring.push([center[0]+R*Math.sin(th)*Math.cos(ph), center[1]+R*Math.cos(th), center[2]+R*Math.sin(th)*Math.sin(ph)]); }
+    drawPolyline3D(ring, color, 1, alpha);
+  }
+  for(let k=0;k<nLon;k++){ const ph=2*Math.PI*k/nLon, ring=[];
+    for(let i=0;i<=20;i++){ const th=Math.PI*i/20;
+      ring.push([center[0]+R*Math.sin(th)*Math.cos(ph), center[1]+R*Math.cos(th), center[2]+R*Math.sin(th)*Math.sin(ph)]); }
+    drawPolyline3D(ring, color, 1, alpha);
+  }
+}
+function drawWatermark(ctx, W, H){
+  const t=performance.now()/1000;
+  const x=W-92+Math.sin(t*0.8)*8, y=H-28+Math.cos(t*1.1)*5;
+  ctx.save(); ctx.font='bold 16px "Segoe UI",sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(127,233,255,0.55)'; ctx.fillText('force99', x, y); ctx.restore();
+}
+
+/* ===================== 试探电荷 ===================== */
+function emitTest(rand){
+  let pos, q, vel;
+  if(rand){
+    do { pos=[ (Math.random()*2-1)*3, (Math.random()*2-1)*3, (Math.random()*2-1)*3 ]; }
+    while(Math.min(...charges.map(c=>Vlen(Vsub(pos,[c.x,0,0]))))<0.8);
+    q=Math.random()<0.5?1:-1;
+    vel=[ (Math.random()*2-1)*1.2, (Math.random()*2-1)*1.2, (Math.random()*2-1)*1.2 ];
+  } else {
+    pos=[ -3.2, 1.4, 0.6 ]; q=1; vel=[0.6,0,0];
+  }
+  test.pos=pos; test.vel=vel; test.q=q; test.m=1; test.active=true; test.trail=[];
+  lastEmit={pos:pos.slice(), vel:vel.slice(), q, m:1, rand};
+  if(P.view==='2d'){ test.pos[2]=0; test.vel[2]=0; }
+}
+function stepTest(dt){
+  if(!test.active) return;
+  const E=field3D(test.pos);
+  const F=Vscale(E, test.q/test.m);
+  test.vel=Vadd(test.vel, Vscale(F,dt));
+  test.pos=Vadd(test.pos, Vscale(test.vel,dt));
+  test.trail.push(test.pos.slice()); if(test.trail.length>500) test.trail.shift();
+  for(const c of charges){ if(Vlen(Vsub(test.pos,[c.x,0,0]))<0.3){ test.active=false; break; } }
+  if(Vlen(test.pos)>9) test.active=false;
+  if(P.view==='2d'){ test.pos[2]=0; test.vel[2]=0; }
+}
+
+/* ===================== 主绘制 ===================== */
+function drawScene(){
+  if(P.view==='2d'){ drawScene2D(); return; }
+  const ctx=S.ctx, W=S.W, H=S.H;
+  updateCam();
+  ctx.clearRect(0,0,W,H);
+  let bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#0e222c'); bg.addColorStop(1,'#081a20');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // 中轴线
+  if(P.showAxis){ drawPolyline3D([[-6,0,0],[6,0,0]], 'rgba(150,190,205,0.35)', 1, 1); }
+
+  // 势面 / 等势线（竖直高度 = 电势高低）
+  drawRelief();
+
+  // 电场线（粉红）+ 方向粒子 + 箭头
+  if(P.showField){
+    for(const ln of lines3D){ drawPolyline3D(ln, 'rgba(255,105,180,0.9)', P.light?1.2:1.9, 1); }
+    const AZ = P.light?6:12;
+    // 方向粒子（流动）：所有绕轴副本均显示，不再只画一个/两个面
+    if(P.showParticles && !P.light){
+      for(const line of fieldLines){
+        for(let k=0;k<AZ;k++){
+          const beta=k*2*Math.PI/AZ;
+          const base=(phase + (line.length%7)*0.13 + k*0.061)%1;
+          const fr = (line.flow===-1) ? (1-base)%1 : base;   // 负电荷线：粒子流向电荷
+          const [x,y]=pointAtFraction(line, fr);
+          const pr=project(revolve(x,y,beta)); if(!pr.ok) continue;
+          ctx.fillStyle='rgba(255,200,225,0.95)';
+          ctx.beginPath(); ctx.arc(pr.x,pr.y,2.6,0,2*Math.PI); ctx.fill();
+        }
+      }
+    }
+    // 箭头（电场方向）：正电荷线在末端指向外，负电荷线在起点指向电荷；所有绕轴副本均显示
+    for(const line of fieldLines){
+      const L=line.length; if(L<4) continue;
+      const tail = (line.flow===-1) ? line[0] : line[L-1];
+      const prev = (line.flow===-1) ? line[3] : line[L-4];
+      const dir=[tail.x-prev.x, tail.y-prev.y]; const m=Math.hypot(dir[0],dir[1])||1;
+      for(let k=0;k<AZ;k++){
+        const beta=k*2*Math.PI/AZ;
+        drawArrow3D(revolve(tail.x,tail.y,beta),
+          [dir[0]/m, dir[1]/m*Math.cos(beta), dir[1]/m*Math.sin(beta)],
+          'rgba(255,120,190,0.97)', 0.36);
+      }
+    }
+  }
+
+  // 电荷（球体 + 符号）
+  for(const c of charges){
+    const pr=project([c.x,0,0]); if(!pr.ok) continue;
+    const R=0.42, rs=CAM.f*R/pr.z;
+    const g=ctx.createRadialGradient(pr.x-rs*0.3, pr.y-rs*0.3, rs*0.1, pr.x, pr.y, rs);
+    const base = c.q>0? [255,90,77] : [77,139,255];
+    g.addColorStop(0, `rgb(${base[0]},${base[1]},${base[2]})`);
+    g.addColorStop(1, `rgb(${Math.round(base[0]*0.45)},${Math.round(base[1]*0.45)},${Math.round(base[2]*0.45)})`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pr.x,pr.y,Math.max(6,rs),0,2*Math.PI); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(12,rs*0.9)}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(c.q>0?'+':'−', pr.x, pr.y);
+    if(P.showLabels){ ctx.fillStyle='rgba(220,235,242,0.95)'; ctx.font='12px sans-serif';
+      ctx.fillText((c.q>0?'+':'−')+'Q', pr.x, pr.y-Math.max(6,rs)-10); }
+  }
+
+  // 试探电荷
+  if(test.active || test.trail.length){
+    if(test.trail.length>1) drawPolyline3D(test.trail, 'rgba(255,216,77,0.8)', 1.6, 1);
+    if(test.active){
+      const pr=project(test.pos);
+      if(pr.ok){
+        const rs=CAM.f*0.2/pr.z;
+        const g=ctx.createRadialGradient(pr.x,pr.y,1,pr.x,pr.y,Math.max(4,rs));
+        g.addColorStop(0,'#fff3b0'); g.addColorStop(1,'#e0a000');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(pr.x,pr.y,Math.max(4,rs),0,2*Math.PI); ctx.fill();
+        ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1; ctx.stroke();
+        if(P.showVel && Vlen(test.vel)>1e-4) drawArrow3D(test.pos, test.vel, '#7fe9ff', 0.7);
+        if(P.showForce){ const E=field3D(test.pos); const F=Vscale(E,test.q/test.m);
+          if(Vlen(F)>1e-5) drawArrow3D(test.pos, F, '#ff7a5c', 0.9); }
+      }
+    }
+  }
+
+  // 标注
+  if(P.showLabels && test.active){
+    const pr=project(test.pos);
+    if(pr.ok){ const V=pot3D(test.pos), sp=Vlen(test.vel), E=field3D(test.pos), F=Vlen(Vscale(E,test.q/test.m));
+      ctx.font='12px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='rgba(255,216,77,0.95)';
+      const tx=pr.x+12, ty=pr.y-30;
+      ctx.fillText('q='+(test.q>0?'+':'−')+'  V='+V.toFixed(2), tx, ty);
+      ctx.fillText('|v|='+sp.toFixed(2)+'  |F|='+F.toFixed(2), tx, ty+15);
+    }
+  }
+
+  drawWatermark(ctx, W, H);
+}
+
+/* ===================== 控件 ===================== */
+function bindSlider(id, key, fmt, label){
+  const el=document.getElementById(id), out=document.getElementById(label);
+  el.addEventListener('input', ()=>{ P[key]=parseFloat(el.value); if(out) out.textContent=fmt?fmt(P[key]):P[key];
+    if(key==='nLines') computeFieldLines(); if(!playing) drawScene(); });
+}
+bindSlider('sp','speed', v=>v.toFixed(1), 'spv');
+bindSlider('nlines','nLines', v=>v.toFixed(0), 'nv');
+
+document.getElementById('typeBtns').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on', x===b));
+  P.type=b.dataset.t; computeCharges(P.type); computeFieldLines(); computeRelief(); computeEqui2D();
+  if(!playing) drawScene();
+});
+document.getElementById('potBtns').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on', x===b));
+  P.potMode=b.dataset.p; computeRelief(); computeEqui2D(); if(!playing) drawScene();
+});
+document.getElementById('viewBtns').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on', x===b));
+  P.view=b.dataset.v; computeEqui2D();
+  const hint=document.querySelector('.hint');
+  if(hint) hint.textContent = P.view==='2d' ? '拖拽平移 · 滚轮缩放' : '拖拽旋转视角 · 滚轮缩放';
+  if(!playing) drawScene();
+});
+const checkMap={ cField:'showField', cSurf:'showSurf', cLines:'showLines', cVel:'showVel',
+  cForce:'showForce', cLabels:'showLabels', cLight:'light', cAxis:'showAxis' };
+for(const id in checkMap){
+  const el=document.getElementById(id);
+  el.addEventListener('change', ()=>{ P[checkMap[id]]=el.checked;
+    if(id==='cLight'||id==='cSurf'){ if(id==='cLight') buildLines3D(); computeRelief(); computeEqui2D(); }
+    if(!playing) drawScene(); });
+}
+const startBtn=document.getElementById('start');
+startBtn.addEventListener('click', ()=>{ playing=!playing; startBtn.textContent=playing?'⏸ 暂停':'▶ 播放';
+  if(playing && test.active && !test.pos) {} });
+document.getElementById('reset').addEventListener('click', ()=>{
+  playing=true; startBtn.textContent='⏸ 暂停'; tNow=0; phase=0;
+  test.active=false; test.trail=[]; lastEmit=null; drawScene();
+});
+document.getElementById('emit').addEventListener('click', ()=>{ emitTest(false); if(!playing){ playing=true; startBtn.textContent='⏸ 暂停'; } });
+document.getElementById('repeat').addEventListener('click', ()=>{ if(lastEmit){ test.pos=lastEmit.pos.slice(); test.vel=lastEmit.vel.slice(); test.q=lastEmit.q; test.m=lastEmit.m; test.active=true; test.trail=[]; } });
+document.getElementById('rand').addEventListener('click', ()=>{ emitTest(true); if(!playing){ playing=true; startBtn.textContent='⏸ 暂停'; } });
+document.getElementById('step').addEventListener('click', ()=>{ const dt=0.02*P.speed; stepTest(dt); phase=(phase+0.01)%1; drawScene(); updateReadout(); });
+
+/* 相机交互 */
+let dragging=false, lx=0, ly=0;
+scene.addEventListener('mousedown', e=>{ dragging=true; lx=e.clientX; ly=e.clientY; });
+window.addEventListener('mouseup', ()=>dragging=false);
+window.addEventListener('mousemove', e=>{ if(!dragging) return;
+  if(P.view==='2d'){ cam2D.panX += (e.clientX-lx); cam2D.panY += (e.clientY-ly); }
+  else { CAM.az += (e.clientX-lx)*0.008; CAM.el += (e.clientY-ly)*0.008; CAM.el=Math.max(-1.4, Math.min(1.4, CAM.el)); }
+  lx=e.clientX; ly=e.clientY; if(!playing) drawScene(); });
+scene.addEventListener('wheel', e=>{ e.preventDefault();
+  if(P.view==='2d'){ cam2D.scale*=(1 - e.deltaY*0.0012); cam2D.scale=Math.max(20, Math.min(140, cam2D.scale)); }
+  else { CAM.dist*=(1+e.deltaY*0.0012); CAM.dist=Math.max(4, Math.min(30, CAM.dist)); }
+  if(!playing) drawScene(); }, {passive:false});
+
+function updateReadout(){
+  document.getElementById('rT').textContent=tNow.toFixed(2)+' s';
+  if(test.active || test.trail.length){
+    document.getElementById('rQ').textContent=(test.q>0?'+':'−')+'Q';
+    document.getElementById('rV').textContent=pot3D(test.pos).toFixed(2);
+    document.getElementById('rVv').textContent=Vlen(test.vel).toFixed(2);
+    const E=field3D(test.pos); document.getElementById('rF').textContent=Vlen(Vscale(E,test.q/test.m)).toFixed(2);
+    document.getElementById('rSt').textContent=test.active?'运动中':'已停止';
+  } else {
+    document.getElementById('rQ').textContent='—'; document.getElementById('rV').textContent='—';
+    document.getElementById('rVv').textContent='—'; document.getElementById('rF').textContent='—';
+    document.getElementById('rSt').textContent='待发射';
+  }
+}
+
+/* ===================== 主循环 ===================== */
+function loop(ts){
+  if(!lastTS) lastTS=ts;
+  let dt=(ts-lastTS)/1000; lastTS=ts; if(dt>0.05) dt=0.05;
+  if(playing){
+    tNow+=dt*P.speed; phase=(phase+dt*0.6*P.speed)%1;
+    if(test.active) stepTest(dt*P.speed);
+  }
+  drawScene(); updateReadout();
+  requestAnimationFrame(loop);
+}
+
+/* ===================== 启动 ===================== */
+computeCharges(P.type); computeFieldLines(); computeRelief(); computeEqui2D();
+resize(); drawScene(); updateReadout(); requestAnimationFrame(loop);
+
+if(typeof globalThis!=='undefined'){
+  globalThis.__api={ drawScene, updateReadout, emitTest, stepTest,
+    setType:t=>{ P.type=t; computeCharges(t); computeFieldLines(); computeRelief(); computeEqui2D(); },
+    setPot:m=>{ P.potMode=m; computeRelief(); }, setFlag:(k,v)=>{ P[k]=v; if(k==='light'){ buildLines3D(); computeRelief(); } },
+    setN:n=>{ P.nLines=n; computeFieldLines(); },
+    P, test, fieldLines, reliefData, cam2D,
+    getFieldLines: () => fieldLines, getRelief: () => reliefData, getEqui2D: () => equi2D,
+    setView: v => { P.view=v; computeEqui2D(); } };
+}
+</script>
+</body>
+</html>
