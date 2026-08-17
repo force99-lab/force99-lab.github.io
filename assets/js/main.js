@@ -119,7 +119,7 @@ function initArticles(){
   const box = document.getElementById('articleList');
   if (!box) return;
   const fmt = d => { const [y,m,day]=d.split('-'); return `<div class="date"><b>${day}</b>${y}.${m}</div>`; };
-  box.innerHTML = WORKS.filter(w=>w.type==='article').map(it => `
+  box.innerHTML = WORKS.filter(w=>w.type==='article').sort((a,b)=>b.date.localeCompare(a.date)).map(it => `
     <a class="article-row reveal" href="${it.link}">
       ${fmt(it.date)}
       <div><h3>${it.title}</h3><p>${it.desc}</p></div>
