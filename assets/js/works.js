@@ -37,12 +37,6 @@ const WORKS = [
     desc:"用日常材料搭建可量化演示实验，让抽象规律看得见。",
     icon:"🔬", link:"articles/sample.html", date:"2026-05-02", tag:"实验教学"
   },
-  {
-    type:"article", title:"2026黑吉辽蒙T15 试题",
-    desc:"2026 黑吉辽蒙高考物理压轴题原题：时间分辨-能量分析仪，题干与已知量完整呈现。",
-    icon:"📋", link:"articles/2026-heijiliaomeng-t15-problem.html", date:"2026-08-17", tag:"高考真题"
-  },
-
   /* ---------------- HTML 动画 ---------------- */
   {
     type:"animation", title:"平抛运动：合成与分解",
@@ -88,22 +82,11 @@ const WORKS = [
     desc:"带电粒子在电场与磁场构成的“囚笼”中运动的交互演示，直观呈现约束轨迹。",
     icon:"🧲", link:"animations/magnetic-cage.html", date:"2026-08-13", tag:"电磁学"
   },
-  {
-    type:"animation", title:"2026黑吉辽蒙T15 动画",
-    desc:"时间分辨-能量分析仪物理过程动画：电场偏转、磁场约束与能量分析的动态演示。",
-    icon:"🎬", link:"animations/2026-heijiliaomeng-t15-animation.html", date:"2026-08-17", tag:"高考压轴"
-  },
-
   /* ---------------- 解题 ---------------- */
   {
     type:"solve", title:"2026湖北高考物理压轴题",
     desc:"电场与磁场中的往复运动综合题，分步拆解高考压轴难点。",
     icon:"🏆", link:"solutions/2026-hubei-final.html", date:"2026-08-13", tag:"高考压轴"
-  },
-  {
-    type:"solve", title:"2026黑吉辽蒙T15 解题",
-    desc:"2026 黑吉辽蒙高考物理压轴题分步拆解：电场+磁场+能量分析完整解题过程。",
-    icon:"💡", link:"solutions/2026-heijiliaomeng-t15-solution.html", date:"2026-08-17", tag:"高考压轴"
   },
   {
     type:"solve", title:"例题：斜面上物块的受力与运动分析",
