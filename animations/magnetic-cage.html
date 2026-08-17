@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>磁场囚笼</title>
+<style>
+  :root{
+    --bg:#0d1b22; --panel:#13262f; --panel2:#0f1f27; --line:#1f3a45;
+    --txt:#dbeaf0; --dim:#7fa0b0; --accent:#39d6c8; --accent2:#ffd84d;
+    --red:#ff5b52;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -10%,#16323d,#0a151b 70%);
+    color:var(--txt);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:18px 16px 40px;}
+  h1{font-size:21px;margin:6px 0 2px;letter-spacing:1px;}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:14px;line-height:1.6;}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;padding:10px 12px 6px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);}
+  .card h2{font-size:13px;margin:2px 0 6px;color:var(--accent);letter-spacing:1px;font-weight:600;}
+  canvas{display:block;width:100%;border-radius:10px;background:#0a161c;}
+  .controls{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px;}
+  .ctl{display:flex;flex-direction:column;gap:5px;}
+  .ctl label{font-size:12.5px;color:var(--dim);display:flex;justify-content:space-between;}
+  .ctl label b{color:var(--txt);font-weight:600;}
+  input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer;}
+  .btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center;}
+  button{background:linear-gradient(180deg,#1c3a44,#152a32);color:var(--txt);
+    border:1px solid var(--line);border-radius:10px;padding:9px 18px;font-size:14px;
+    cursor:pointer;transition:.15s;}
+  button:hover{border-color:var(--accent);color:#fff;}
+  button.primary{background:linear-gradient(180deg,#1f7d72,#155e56);border-color:#2bbfb2;}
+  .readout{display:flex;gap:16px;flex-wrap:wrap;margin-left:auto;font-size:13px;color:var(--dim);}
+  .readout b{color:var(--txt);}
+  .note{font-size:12px;color:var(--dim);margin-top:10px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>磁场囚笼</h1>
+  <div class="sub">磁场囚笼：由<b>内外半径可控</b>的环形匀强磁场构成。放射源发出带电粒子，粒子在<b>磁场区外</b>做匀速直线运动，进入<b>环形磁场区</b>后受洛伦兹力做匀速圆周运动（回旋半径 R = v / ω），穿出后恢复直线运动。可调内/外半径、放射源位置、粒子速度与磁场强度。</div>
+
+  <div class="controls">
+    <div class="grid">
+      <div class="ctl"><label>内半径 Rᵢ <b><span id="Riv">70</span> px</b></label>
+        <input id="Ri" type="range" min="20" max="150" step="5" value="70"></div>
+      <div class="ctl"><label>外半径 Rₒ <b><span id="Rov">150</span> px</b></label>
+        <input id="Ro" type="range" min="60" max="230" step="5" value="150"></div>
+      <div class="ctl"><label>放射源 X <b><span id="srcXv">0</span> px</b></label>
+        <input id="srcX" type="range" min="-220" max="220" step="5" value="0"></div>
+      <div class="ctl"><label>放射源 Y <b><span id="srcYv">0</span> px</b></label>
+        <input id="srcY" type="range" min="-220" max="220" step="5" value="0"></div>
+      <div class="ctl"><label>粒子速度 v <b><span id="vv">120</span> px/s</b></label>
+        <input id="v" type="range" min="40" max="260" step="5" value="120"></div>
+      <div class="ctl"><label>磁场强度 ω <b><span id="Bv">1.5</span> rad/s</b></label>
+        <input id="B" type="range" min="0.4" max="4" step="0.1" value="1.5"></div>
+      <div class="ctl"><label>发射密度 <b><span id="ratev">20</span> /s</b></label>
+        <input id="rate" type="range" min="1" max="60" step="1" value="20"></div>
+      <div class="ctl"><label>动画速度 <b><span id="spv">1.0</span>×</b></label>
+        <input id="sp" type="range" min="0.2" max="3" step="0.1" value="1"></div>
+    </div>
+    <div class="btns">
+      <button id="play" class="primary">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+      <button id="bdir">磁场方向：垂直纸面向里 ⊗</button>
+      <button id="single">单粒子：关</button>
+      <div class="readout">
+        <span>t = <b id="rT">0.00</b> s</span>
+        <span>粒子数 <b id="rN">0</b></span>
+        <span>回旋半径 R = <b id="rRc">80</b> px</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card"><h2>磁场囚笼 · 粒子运动</h2><canvas id="scene" height="470"></canvas></div>
+</div>
+
+<script>
+/* ===================== 参数与全局 ===================== */
+const P = { Ri:70, Ro:150, srcX:0, srcY:0, v:120, B:1.5, rate:20, Binto:true, single:false };
+let particles = [], emitAcc = 0, playT = 0, playing = true, animSpeed = 1, singleEmitted = false;
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+const S = { ctx:null, W:600, H:470, el:null };
+
+/* ===================== Canvas 适配 ===================== */
+function fit(c, store){
+  const r = c.getBoundingClientRect();
+  const h = parseInt(c.getAttribute('height')) || 470;
+  c.width = Math.max(320, r.width) * DPR;
+  c.height = h * DPR;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  store.ctx = ctx; store.W = Math.max(320, r.width); store.H = h;
+}
+function setupCanvases(){ S.el = document.getElementById('scene'); fit(S.el, S); }
+
+/* ===================== 有效环形边界（保证 Ri < Ro） ===================== */
+function ringBounds(){
+  const ri = Math.min(P.Ri, P.Ro - 12);
+  const ro = Math.max(P.Ro, P.Ri + 12);
+  return { ri, ro };
+}
+
+/* ===================== 物理更新 ===================== */
+/* 从放射源发射一个粒子（密度发射与单粒子模式共用）：随机方向、初速 v */
+function emitOne(sx, sy){
+  const ang = Math.random() * Math.PI * 2;
+  particles.push({ x:sx, y:sy, lpx:sx, lpy:sy, dsAcc:0, vx:P.v*Math.cos(ang), vy:P.v*Math.sin(ang), age:0, trail:[], done:false });
+}
+function update(dt){
+  const cx = S.W/2, cy = S.H/2;
+  const sx = cx + P.srcX, sy = cy + P.srcY;
+  // 发射：单粒子模式只发射 1 个（置 singleEmitted 后不再发射）；多粒子模式按密度连续发射
+  if(P.single){
+    if(!singleEmitted){ emitOne(sx, sy); singleEmitted = true; }
+  } else {
+    emitAcc += dt;
+    const interval = 1 / P.rate;
+    while(emitAcc >= interval){
+      emitAcc -= interval;
+      emitOne(sx, sy);
+    }
+  }
+  const { ri, ro } = ringBounds();
+  const omega = (P.Binto ? 1 : -1) * P.B;     // 向里为正 → 顺时针偏转（与推导一致）
+  const ds = 0.016;
+  const steps = Math.max(1, Math.ceil(dt / ds));
+  const sdt = dt / steps;
+  for(const p of particles){
+    if(p.done) continue;                         // 单粒子出界后冻结，保留轨迹
+    for(let s = 0; s < steps; s++){
+      const dx = p.x - cx, dy = p.y - cy;
+      const rho = Math.hypot(dx, dy);
+      const inField = rho >= ri && rho <= ro;    // 环形磁场：只有落在环带内（Ri..Ro）才受洛伦兹力偏转；无场区（内孔/环外）保持直线
+      if(inField){
+        const phi = omega * sdt;
+        const c = Math.cos(phi), sn = Math.sin(phi);
+        const nvx = p.vx * c - p.vy * sn;
+        const nvy = p.vx * sn + p.vy * c;
+        p.vx = nvx; p.vy = nvy;
+      }
+      p.x += p.vx * sdt; p.y += p.vy * sdt;
+    }
+    p.age += dt;
+    // 完整轨迹：按移动距离采样存点（防止帧率相关点数爆炸），保留粒子走过的全部路径
+    p.dsAcc += Math.hypot(p.x - p.lpx, p.y - p.lpy);
+    p.lpx = p.x; p.lpy = p.y;
+    if(p.dsAcc >= 2.6){ p.trail.push({ x:p.x, y:p.y }); p.dsAcc = 0; }
+    // 单粒子：飞出画布即冻结（停止移动与采样），完整轨迹保留在屏幕上便于观察
+    if(P.single && (p.x < -70 || p.x > S.W + 70 || p.y < -70 || p.y > S.H + 70)) p.done = true;
+  }
+  // 多粒子模式按寿命/出界清理；单粒子模式不裁（冻结后仍保留轨迹，直至重置）
+  if(!P.single){
+    particles = particles.filter(p => p.age < 16 && p.x > -70 && p.x < S.W + 70 && p.y > -70 && p.y < S.H + 70);
+  }
+}
+
+/* ===================== 绘图工具 ===================== */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/* ===================== 磁场区与符号 ===================== */
+function drawField(ctx, cx, cy, ri, ro){
+  // 环形磁场填充（evenodd 挖孔）
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, ro, 0, Math.PI*2);
+  ctx.arc(cx, cy, ri, 0, Math.PI*2, true);
+  ctx.fillStyle = 'rgba(57,150,214,0.16)';
+  ctx.fill('evenodd');
+  ctx.restore();
+  // 边界圆
+  ctx.strokeStyle = 'rgba(120,200,235,0.85)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, ri, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, ro, 0, Math.PI*2); ctx.stroke();
+  // 磁场方向符号（⊗ 向里 / ⊙ 向外），环形内均匀散布
+  const rmids = [ri + (ro-ri)*0.34, ri + (ro-ri)*0.66];
+  ctx.lineWidth = 1.6;
+  for(const rm of rmids){
+    for(let a = 0; a < Math.PI*2; a += Math.PI/3){
+      const x = cx + rm*Math.cos(a), y = cy + rm*Math.sin(a);
+      if(P.Binto){
+        ctx.strokeStyle = 'rgba(140,210,245,0.8)';
+        ctx.beginPath(); ctx.moveTo(x-5,y-5); ctx.lineTo(x+5,y+5); ctx.moveTo(x+5,y-5); ctx.lineTo(x-5,y+5); ctx.stroke();
+      } else {
+        ctx.strokeStyle = 'rgba(140,210,245,0.8)';
+        ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle = 'rgba(140,210,245,0.9)'; ctx.beginPath(); ctx.arc(x,y,1.6,0,Math.PI*2); ctx.fill();
+      }
+    }
+  }
+}
+
+/* ===================== 放射源 ===================== */
+function drawSource(ctx, x, y){
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,91,82,0.9)'; ctx.shadowBlur = 16;
+  let g = ctx.createRadialGradient(x,y,1,x,y,9);
+  g.addColorStop(0,'#ffd0cb'); g.addColorStop(1,'#ff5b52');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffd0cb'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('放射源', x, y - 13);
+  ctx.restore();
+}
+
+/* ===================== 粒子 ===================== */
+function drawParticles(ctx){
+  for(const p of particles){
+    const tr = p.trail;
+    const n = tr.length;
+    if(n > 1){
+      // 完整轨迹：整条路径一次性描边（半透明橙黄主线，多条重叠处自然叠亮）
+      ctx.strokeStyle = 'rgba(255,196,58,0.30)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(tr[0].x, tr[0].y);
+      for(let i = 1; i < n; i++) ctx.lineTo(tr[i].x, tr[i].y);
+      ctx.stroke();
+      // 头部高亮段（最近若干点，由暗到亮渐变），增强运动感
+      const k = Math.min(36, n);
+      for(let i = n - k + 1; i < n; i++){
+        const a = (i - (n - k)) / k;
+        ctx.strokeStyle = 'rgba(255,226,96,' + (0.18 + 0.78 * a) + ')';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(tr[i-1].x, tr[i-1].y); ctx.lineTo(tr[i].x, tr[i].y); ctx.stroke();
+      }
+    }
+    // 头部亮点
+    ctx.fillStyle = '#fff4cf';
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, Math.PI*2); ctx.fill();
+  }
+}
+
+/* ===================== 主绘制 ===================== */
+function drawScene(){
+  const ctx = S.ctx, W = S.W, H = S.H;
+  ctx.clearRect(0,0,W,H);
+  let bg = ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0e2129'); bg.addColorStop(1,'#081a20');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+
+  const cx = W/2, cy = H/2;
+  const { ri, ro } = ringBounds();
+
+  // 环心十字参考
+  ctx.strokeStyle = 'rgba(120,180,195,0.18)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx-6,cy); ctx.lineTo(cx+6,cy); ctx.moveTo(cx,cy-6); ctx.lineTo(cx,cy+6); ctx.stroke();
+
+  drawField(ctx, cx, cy, ri, ro);
+
+  const sx = cx + P.srcX, sy = cy + P.srcY;
+  drawParticles(ctx);
+  drawSource(ctx, sx, sy);   // 放射源（单/多粒子模式均显示）
+
+  drawWatermark(ctx, W, H);
+}
+
+/* ===================== force99 水印 ===================== */
+function drawWatermark(ctx, W, H){
+  const t = performance.now() / 1000;
+  const ox = Math.sin(t * 0.55) * 4, oy = Math.cos(t * 0.42) * 3;
+  const x = W - 92 + ox, y = H - 36 + oy, w = 80, h = 24;
+  ctx.save();
+  ctx.shadowColor = 'rgba(57,214,200,0.7)'; ctx.shadowBlur = 14;
+  let gg = ctx.createLinearGradient(x, y, x + w, y);
+  gg.addColorStop(0, 'rgba(20,55,64,0.92)'); gg.addColorStop(1, 'rgba(15,40,48,0.92)');
+  ctx.fillStyle = gg; roundRect(ctx, x, y, w, h, 12); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = 'rgba(57,214,200,0.85)'; ctx.lineWidth = 1.4; roundRect(ctx, x, y, w, h, 12); ctx.stroke();
+  ctx.font = 'bold 14px "Segoe UI",sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#bfeef0'; ctx.fillText('force', x + 12, y + h/2);
+  ctx.fillStyle = '#ffcf5c'; ctx.fillText('99', x + 48, y + h/2);
+  ctx.restore();
+  ctx.textBaseline = 'alphabetic';
+}
+
+/* ===================== 读数 ===================== */
+function updateReadout(){
+  document.getElementById('rT').textContent = playT.toFixed(2) + ' s';
+  document.getElementById('rN').textContent = particles.length;
+  const Rc = P.B > 1e-6 ? (P.v / P.B).toFixed(0) : '∞';
+  document.getElementById('rRc').textContent = Rc;
+}
+
+/* ===================== 主循环 ===================== */
+let lastTS = 0;
+function loop(ts){
+  if(!lastTS) lastTS = ts;
+  const dtReal = Math.min(0.05, (ts - lastTS) / 1000); lastTS = ts;
+  if(playing){
+    const dt = dtReal * animSpeed;
+    playT += dt;
+    update(dt);
+    updateReadout();
+  }
+  drawScene();
+  requestAnimationFrame(loop);
+}
+
+/* ===================== 控件绑定 ===================== */
+function bind(id, key, label, fmt){
+  const el = document.getElementById(id), out = document.getElementById(label);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    P[key] = v; out.textContent = fmt ? fmt(v) : v;
+  });
+}
+function init(){
+  setupCanvases();
+  bind('Ri','Ri','Riv', v => v.toFixed(0));
+  bind('Ro','Ro','Rov', v => v.toFixed(0));
+  bind('srcX','srcX','srcXv', v => v.toFixed(0));
+  bind('srcY','srcY','srcYv', v => v.toFixed(0));
+  bind('v','v','vv', v => v.toFixed(0));
+  bind('B','B','Bv', v => v.toFixed(1));
+  bind('rate','rate','ratev', v => v.toFixed(0));
+  bind('sp','sp','spv', v => v.toFixed(1));
+  const animEl = document.getElementById('sp');
+  animEl.addEventListener('input', () => { animSpeed = parseFloat(animEl.value); });
+  const playBtn = document.getElementById('play');
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.textContent = playing ? '⏸ 暂停' : '▶ 播放';
+  });
+  document.getElementById('reset').addEventListener('click', () => {
+    particles = []; emitAcc = 0; playT = 0; playing = true; lastTS = 0; singleEmitted = false;
+    playBtn.textContent = '⏸ 暂停';
+    if(P.single){ const cx = S.W/2, cy = S.H/2; emitOne(cx + P.srcX, cy + P.srcY); singleEmitted = true; }
+    updateReadout();
+  });
+  const bdir = document.getElementById('bdir');
+  bdir.addEventListener('click', () => {
+    P.Binto = !P.Binto;
+    bdir.textContent = '磁场方向：垂直纸面' + (P.Binto ? '向里 ⊗' : '向外 ⊙');
+  });
+  const singleBtn = document.getElementById('single');
+  singleBtn.addEventListener('click', () => {
+    P.single = !P.single;
+    singleBtn.textContent = '单粒子：' + (P.single ? '开' : '关');
+    particles = []; emitAcc = 0; singleEmitted = false;
+    if(P.single){ const cx = S.W/2, cy = S.H/2; emitOne(cx + P.srcX, cy + P.srcY); singleEmitted = true; }
+    updateReadout();
+  });
+  window.addEventListener('resize', () => { setupCanvases(); });
+  updateReadout();
+  requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>
