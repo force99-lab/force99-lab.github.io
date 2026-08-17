@@ -836,7 +836,7 @@ const WORKS = [
     tag:"力学"
   },
   {
-    type:"animation",
+    type:"solve",
     title:"2026四川T14 · U形框导体棒弹簧电磁感应",
     desc:"U形框-导体棒-弹簧电磁感应系统，演示导体棒在磁场中运动产生感应电流与阻尼振动的过程。",
     icon:"🧲",
