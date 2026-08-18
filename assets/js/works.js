@@ -464,6 +464,12 @@ const WORKS = [
     icon:"📐", cover:"assets/img/uniform-acceleration-displacement-cover.png", link:"animations/uniform-acceleration-displacement.html", date:"2026-08-17", tag:"运动学"
   },
 
+  {
+    type:"animation", title:"高中物理实验数据处理系统",
+    desc:"高中物理实验数据处理系统：数据记录、数据变换、坐标建立、描点、线形拟合、由线出结果。",
+    icon:"📊", link:"animations/物理实验数据处理系统.html", date:"2026-08-18", tag:"实验探究"
+  },
+
   /* ---------------- 解题 ---------------- */
 
 
