@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>高中物理实验数据处理系统</title>
+<style>
+  :root{
+    --bg0:#0a1420; --bg1:#0d1b2a; --bg2:#102a3a;
+    --glass:rgba(18,42,58,0.55);
+    --glass-b:rgba(80,200,210,0.18);
+    --cyan:#39e0d0; --teal:#2bb6c9; --green:#5ee08a;
+    --pink:#ff6fb5; --amber:#ffcf6b; --txt:#e8f6f5; --mut:#8fb3b8;
+    --danger:#ff7a7a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:
+     radial-gradient(1200px 600px at 80% -10%, rgba(43,182,201,0.18), transparent 60%),
+     radial-gradient(900px 500px at -10% 110%, rgba(94,224,138,0.14), transparent 60%),
+     linear-gradient(160deg,#08111c,#0a1826 60%,#081420);
+     color:var(--txt); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;}
+  header{position:relative;padding:18px 26px 14px;border-bottom:1px solid var(--glass-b);
+     background:linear-gradient(90deg, rgba(43,182,201,0.12), rgba(94,224,138,0.06));}
+  header h1{margin:0;font-size:22px;letter-spacing:2px;
+     background:linear-gradient(90deg,var(--cyan),var(--green));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800;}
+  header .sub{margin-top:4px;color:var(--mut);font-size:13px;letter-spacing:1px;}
+  .wm{position:absolute;right:22px;top:18px;font-size:12px;color:var(--teal);opacity:.7;letter-spacing:2px;}
+  .wrap{display:grid;grid-template-columns:300px 1fr 320px;gap:14px;padding:14px;align-items:start;}
+  @media (max-width:1100px){.wrap{grid-template-columns:1fr;}}
+  .card{background:var(--glass);border:1px solid var(--glass-b);border-radius:14px;
+     padding:13px 14px;margin-bottom:14px;backdrop-filter:blur(8px);
+     box-shadow:0 8px 30px rgba(0,0,0,.25) inset, 0 4px 18px rgba(0,0,0,.25);}
+  .card h2{margin:0 0 10px;font-size:14px;letter-spacing:1px;color:var(--cyan);
+     display:flex;align-items:center;gap:8px;}
+  .card h2 .n{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,var(--cyan),var(--teal));
+     color:#04121a;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
+  label{font-size:12px;color:var(--mut);display:block;margin:8px 0 3px;}
+  input,select,button{font-family:inherit;}
+  input[type=text],input[type=number],select{width:100%;background:rgba(4,16,24,.6);
+     border:1px solid var(--glass-b);color:var(--txt);border-radius:8px;padding:7px 8px;font-size:13px;outline:none;}
+  input:focus,select:focus{border-color:var(--cyan);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  button{background:linear-gradient(135deg,var(--teal),var(--cyan));color:#04121a;font-weight:700;
+     border:none;border-radius:8px;padding:8px 10px;font-size:13px;cursor:pointer;letter-spacing:1px;
+     transition:.15s;}
+  button:hover{filter:brightness(1.1);transform:translateY(-1px);}
+  button.ghost{background:transparent;border:1px solid var(--glass-b);color:var(--txt);font-weight:600;}
+  button.pink{background:linear-gradient(135deg,var(--pink),#ff9ccb);}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  th,td{padding:4px 4px;text-align:center;}
+  th{color:var(--mut);font-weight:600;font-size:11px;border-bottom:1px solid var(--glass-b);}
+  td input{width:64px;padding:5px 4px;text-align:center;}
+  td .del{color:var(--danger);cursor:pointer;font-weight:800;padding:0 4px;}
+  .plotbox{position:relative;width:100%;height:430px;border-radius:12px;overflow:hidden;
+     border:1px solid var(--glass-b);background:radial-gradient(700px 400px at 50% 0%, rgba(43,182,201,.08), #06101a);}
+  #plot{width:100%;height:100%;display:block;}
+  .plotbadge{position:absolute;right:10px;bottom:8px;font-size:11px;color:var(--teal);opacity:.6;letter-spacing:1px;}
+  .fitbox{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+  .stat{background:rgba(4,16,24,.5);border:1px solid var(--glass-b);border-radius:10px;padding:8px;text-align:center;}
+  .stat .k{font-size:11px;color:var(--mut);}
+  .stat .v{font-size:17px;font-weight:800;color:var(--green);margin-top:2px;}
+  .eq{margin-top:10px;padding:8px 10px;border-radius:10px;background:rgba(94,224,138,.08);
+     border:1px solid rgba(94,224,138,.25);font-size:14px;color:var(--green);text-align:center;letter-spacing:1px;}
+  .warn{color:var(--amber);font-size:12px;margin-top:6px;min-height:14px;}
+  .tpl{display:block;margin:6px 0;padding:8px 10px;border-radius:9px;background:rgba(4,16,24,.5);
+     border:1px solid var(--glass-b);cursor:pointer;font-size:13px;transition:.15s;}
+  .tpl:hover{border-color:var(--cyan);background:rgba(43,182,201,.1);}
+  .tpl b{color:var(--cyan);}
+  .tpl small{color:var(--mut);display:block;margin-top:2px;font-size:11px;}
+  .res{margin-top:10px;}
+  .res .item{background:rgba(4,16,24,.5);border:1px solid rgba(94,224,138,.25);border-radius:9px;
+     padding:8px 10px;margin-top:7px;}
+  .res .item .lab{font-size:12px;color:var(--mut);}
+  .res .item .val{font-size:18px;font-weight:800;color:var(--green);}
+  .res .item .val .u{font-size:12px;color:var(--mut);font-weight:600;margin-left:4px;}
+  .hint{font-size:11px;color:var(--mut);margin-top:6px;line-height:1.5;}
+  .switch{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);margin-top:8px;cursor:pointer;}
+  .switch input{width:auto;}
+  footer{padding:10px 26px 22px;color:var(--mut);font-size:11px;text-align:center;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>高中物理实验数据处理系统</h1>
+  <div class="sub">数据记录 · 数据变换 · 坐标建立 · 描点 · 线形拟合 · 由线出结果</div>
+  <div class="wm">force99 · LXQ</div>
+</header>
+
+<div class="wrap">
+  <!-- 左列：数据记录 + 数据变换 -->
+  <div>
+    <div class="card">
+      <h2><span class="n">1</span>数据记录</h2>
+      <div class="row2">
+        <div><label>X 列名称</label><input id="xName" type="text" value="x" /></div>
+        <div><label>Y 列名称</label><input id="yName" type="text" value="y" /></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th id="thx">x</th><th id="thy">y</th><th></th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="btnrow">
+        <button class="ghost" id="addRow">+ 增加一行</button>
+        <button class="ghost" id="clearRows">清空</button>
+      </div>
+      <div class="warn" id="warn"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>数据变换（线性化）</h2>
+      <label>横轴 X 变换</label>
+      <select id="tx">
+        <option value="none">不变 (x)</option>
+        <option value="square">平方 (x²)</option>
+        <option value="inverse">倒数 (1/x)</option>
+        <option value="sqrt">平方根 (√x)</option>
+        <option value="ln">自然对数 (ln x)</option>
+        <option value="cube">立方 (x³)</option>
+        <option value="invsq">平方倒数 (1/x²)</option>
+      </select>
+      <label>纵轴 Y 变换</label>
+      <select id="ty">
+        <option value="none">不变 (y)</option>
+        <option value="square">平方 (y²)</option>
+        <option value="inverse">倒数 (1/y)</option>
+        <option value="sqrt">平方根 (√y)</option>
+        <option value="ln">自然对数 (ln y)</option>
+        <option value="cube">立方 (y³)</option>
+        <option value="invsq">平方倒数 (1/y²)</option>
+      </select>
+      <div class="hint">变换用于把非线性关系线性化（如单摆 T²–l、自由落体 h–t²、a–1/m）。非法值（ln 负数、1/0）将被自动排除。</div>
+    </div>
+  </div>
+
+  <!-- 中列：坐标 + 画布 + 拟合 -->
+  <div>
+    <div class="card">
+      <h2><span class="n">3</span>坐标建立</h2>
+      <div class="row2">
+        <div><label>横轴刻度</label>
+          <select id="xs"><option value="linear">线性</option><option value="log">对数(log)</option></select></div>
+        <div><label>纵轴刻度</label>
+          <select id="ys"><option value="linear">线性</option><option value="log">对数(log)</option></select></div>
+      </div>
+      <label class="switch"><input type="checkbox" id="autoR" checked /> 自动范围（取消勾选可手动设定）</label>
+      <div class="row2" id="manual" style="display:none">
+        <div><label>X 最小</label><input id="xmin" type="number" value="0" /></div>
+        <div><label>X 最大</label><input id="xmax" type="number" value="1" /></div>
+      </div>
+      <div class="row2" id="manualY" style="display:none">
+        <div><label>Y 最小</label><input id="ymin" type="number" value="0" /></div>
+        <div><label>Y 最大</label><input id="ymax" type="number" value="1" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>描点绘图</h2>
+      <div class="plotbox">
+        <canvas id="plot"></canvas>
+        <div class="plotbadge">force99</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">5</span>线形拟合</h2>
+      <label class="switch"><input type="checkbox" id="showFit" checked /> 显示拟合直线</label>
+      <label>拟合方式</label>
+      <select id="fitMode">
+        <option value="auto">自动（最小二乘）</option>
+        <option value="manual">手工（手动输入 k、b）</option>
+      </select>
+      <div class="row2" id="manualFit" style="display:none">
+        <div><label>斜率 k</label><input id="kManual" type="number" step="any" value="1" /></div>
+        <div><label>截距 b</label><input id="bManual" type="number" step="any" value="0" /></div>
+      </div>
+      <div class="eq" id="eq">y = k·x + b</div>
+      <div class="fitbox">
+        <div class="stat"><div class="k">斜率 k</div><div class="v" id="kVal">–</div></div>
+        <div class="stat"><div class="k">截距 b</div><div class="v" id="bVal">–</div></div>
+        <div class="stat"><div class="k">相关 R²</div><div class="v" id="rVal">–</div></div>
+      </div>
+      <div class="hint" id="nInfo">有效数据点：0</div>
+    </div>
+  </div>
+
+  <!-- 右列：由线出结果 + 样例/导出 -->
+  <div>
+    <div class="card">
+      <h2><span class="n">6</span>由线出结果（实验模板）</h2>
+      <div id="tpls"></div>
+      <div id="tplFields" class="hint"></div>
+      <button id="computeRes" class="pink" style="width:100%;margin-top:8px;">由 k、b 计算结果</button>
+      <div class="res" id="res"></div>
+    </div>
+
+    <div class="card">
+      <h2>样例数据（一键载入）</h2>
+      <div class="btnrow">
+        <button class="ghost" data-sample="emf">电动势内阻</button>
+        <button class="ghost" data-sample="pendulum">单摆测g</button>
+        <button class="ghost" data-sample="freefall">自由落体g</button>
+        <button class="ghost" data-sample="resistor">伏安法R</button>
+        <button class="ghost" data-sample="accelF">a–F</button>
+        <button class="ghost" data-sample="accelInvM">a–1/m</button>
+      </div>
+      <div class="hint">载入样例会自动套用对应变换与轴设置，方便对照学习。</div>
+    </div>
+
+    <div class="card">
+      <h2>导出</h2>
+      <div class="btnrow">
+        <button class="ghost" id="copyCsv">复制数据 CSV</button>
+        <button class="ghost" id="copyRes">复制结果与方程</button>
+      </div>
+      <div class="hint">结果可粘贴到实验报告或表格软件中。</div>
+    </div>
+  </div>
+</div>
+
+<footer>force99 · 高中物理实验数据处理系统 · 单文件零依赖 · 线形拟合用于实验教学，正式误差分析请按教材要求计算不确定度</footer>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const canvas = $('plot');
+  const ctx = canvas.getContext('2d');
+
+  // ---------- 状态 ----------
+  const S = {
+    rows: [ {x:0.10,y:1.45},{x:0.20,y:1.38},{x:0.30,y:1.30},{x:0.40,y:1.22},{x:0.50,y:1.15} ],
+    xName:'I', yName:'U', tx:'none', ty:'none',
+    xs:'linear', ys:'linear', autoR:true,
+    xmin:0,xmax:1,ymin:0,ymax:1, showFit:true,
+    fitMode:'auto', kManual:1, bManual:0
+  };
+
+  // ---------- 变换 ----------
+  const TRANS = {
+    none:v=>v, square:v=>v*v, inverse:v=>1/v, sqrt:v=>Math.sqrt(v),
+    ln:v=>Math.log(v), cube:v=>v*v*v, invsq:v=>1/(v*v)
+  };
+  const TRANS_SYM = { none:'', square:'²', inverse:'⁻¹', sqrt:'^½', ln:'ln', cube:'³', invsq:'⁻²' };
+  function axisLabel(name, trans){
+    if(trans==='none') return name;
+    if(trans==='ln') return 'ln('+name+')';
+    return name + TRANS_SYM[trans];
+  }
+
+  // ---------- 实验模板 ----------
+  const TEMPLATES = {
+    emf:{ name:'测电源电动势 E 与内阻 r', sub:'U–I 图：U = E − r·I',
+      tx:'none', ty:'none', xs:'linear', ys:'linear', xName:'I', yName:'U',
+      fields:[], compute:(k,b,args)=>({ '电动势 E = b':[b,'V'], '内阻 r = −k':[-k,'Ω'] }) },
+    pendulum:{ name:'单摆测重力加速度 g', sub:'T²–l 图：T² = (4π²/g)·l',
+      tx:'none', ty:'square', xs:'linear', ys:'linear', xName:'l', yName:'T',
+      fields:[], compute:(k,b)=>({ 'g = 4π²/k':[4*Math.PI*Math.PI/k,'m/s²'] }) },
+    freefall:{ name:'自由落体测 g', sub:'h–t² 图：h = ½g·t²',
+      tx:'square', ty:'none', xs:'linear', ys:'linear', xName:'t²', yName:'h',
+      fields:[], compute:(k,b)=>({ 'g = 2k':[2*k,'m/s²'] }) },
+    resistor:{ name:'伏安法测电阻 R', sub:'U–I 图：U = R·I',
+      tx:'none', ty:'none', xs:'linear', ys:'linear', xName:'I', yName:'U',
+      fields:[], compute:(k,b)=>({ '电阻 R = k':[k,'Ω'] }) },
+    accelF:{ name:'探究 a–F（质量一定）', sub:'a = F/m',
+      tx:'none', ty:'none', xs:'linear', ys:'linear', xName:'F', yName:'a',
+      fields:[{key:'m',label:'小车质量 m',unit:'kg',def:1}],
+      compute:(k,b,args)=>({ '质量 m = 1/k':[1/k,'kg'], '截距检验 b':[b,'m/s²'] }) },
+    accelInvM:{ name:'探究 a–1/m（拉力一定）', sub:'a = F·(1/m)',
+      tx:'inverse', ty:'none', xs:'linear', ys:'linear', xName:'1/m', yName:'a',
+      fields:[{key:'F',label:'拉力 F',unit:'N',def:1}],
+      compute:(k,b,args)=>({ '拉力 F = k':[k,'N'] }) }
+  };
+  const SAMPLES = {
+    emf:{ xName:'I', yName:'U', tx:'none', ty:'none',
+      rows:[{x:0.10,y:1.45},{x:0.20,y:1.38},{x:0.30,y:1.30},{x:0.40,y:1.22},{x:0.50,y:1.15}] },
+    pendulum:{ xName:'l', yName:'T', tx:'none', ty:'square',
+      rows:[{x:0.30,y:1.10},{x:0.40,y:1.27},{x:0.50,y:1.42},{x:0.60,y:1.55},{x:0.70,y:1.68},{x:0.80,y:1.79}] },
+    freefall:{ xName:'t', yName:'h', tx:'square', ty:'none',
+      rows:[{x:0.10,y:0.049},{x:0.20,y:0.196},{x:0.30,y:0.441},{x:0.40,y:0.784},{x:0.50,y:1.225}] },
+    resistor:{ xName:'I', yName:'U', tx:'none', ty:'none',
+      rows:[{x:0.1,y:1.2},{x:0.2,y:2.4},{x:0.3,y:3.6},{x:0.4,y:4.8},{x:0.5,y:6.0}] },
+    accelF:{ xName:'F', yName:'a', tx:'none', ty:'none',
+      rows:[{x:0.5,y:0.49},{x:1.0,y:0.98},{x:1.5,y:1.47},{x:2.0,y:1.96},{x:2.5,y:2.45}] },
+    accelInvM:{ xName:'m', yName:'a', tx:'inverse', ty:'none',
+      rows:[{x:2.0,y:0.5},{x:1.0,y:1.0},{x:0.667,y:1.5},{x:0.5,y:2.0},{x:0.4,y:2.5}] }
+  };
+
+  // ---------- 工具：nice ticks ----------
+  function niceNum(range, round){
+    if(range<=0) return 1;
+    const exp = Math.floor(Math.log10(range));
+    const f = range/Math.pow(10,exp);
+    let nf;
+    if(round){ nf = f<1.5?1 : f<3?2 : f<7?5 : 10; }
+    else     { nf = f<=1?1 : f<=2?2 : f<=5?5 : 10; }
+    return nf*Math.pow(10,exp);
+  }
+  function linTicks(min,max,n){
+    if(min===max){ min-=1; max+=1; }
+    const range = niceNum(max-min,false);
+    const step = niceNum(range/(n-1),true);
+    const lo = Math.floor(min/step)*step;
+    const hi = Math.ceil(max/step)*step;
+    const ticks=[];
+    for(let v=lo; v<=hi+step*0.5; v+=step) ticks.push(v);
+    return {ticks, lo, hi, step};
+  }
+  function logTicks(min,max){
+    const ld=Math.log10, lp=Math.pow;
+    let d0=Math.floor(ld(min)), d1=Math.ceil(ld(max));
+    const ticks=[]; const mult=[1,2,5];
+    for(let d=d0; d<=d1; d++){
+      for(const m of mult){ const v=m*lp(10,d); if(v>=min-1e-9 && v<=max+1e-9) ticks.push(v); }
+    }
+    return {ticks, lo:min, hi:max};
+  }
+
+  // ---------- 计算绘图需要的数据 ----------
+  function computePoints(){
+    const pts=[]; const invalid=[];
+    for(const r of S.rows){
+      const x=parseFloat(r.x), y=parseFloat(r.y);
+      if(isNaN(x)||isNaN(y)){ invalid.push(r); continue; }
+      const Xt=TRANS[S.tx](x), Yt=TRANS[S.ty](y);
+      if(!isFinite(Xt)||!isFinite(Yt)){ invalid.push(r); continue; }
+      if(S.xs==='log' && Xt<=0){ invalid.push(r); continue; }
+      if(S.ys==='log' && Yt<=0){ invalid.push(r); continue; }
+      pts.push({x:Xt,y:Yt,rawX:x,rawY:y});
+    }
+    return {pts, invalid};
+  }
+
+  function getRange(pts, axis){
+    if(!S.autoR){
+      const a = axis==='x' ? [S.xmin,S.xmax] : [S.ymin,S.ymax];
+      let lo=Math.min(a[0],a[1]), hi=Math.max(a[0],a[1]);
+      if(lo===hi){ hi=lo+1; }
+      return {lo,hi};
+    }
+    if(pts.length===0) return {lo:0,hi:1};
+    let lo=Infinity, hi=-Infinity;
+    for(const p of pts){ const v=axis==='x'?p.x:p.y; if(v<lo)lo=v; if(v>hi)hi=v; }
+    if(axis==='x' ? S.xs!=='log' : S.ys!=='log'){ lo=Math.min(lo,0); hi=Math.max(hi,0); } // 坐标轴过零点：范围自动包含 0
+    const pad=(hi-lo)*0.08 || Math.abs(hi)*0.08 || 1;
+    return {lo:lo-pad, hi:hi+pad};
+  }
+
+  // ---------- 最小二乘拟合 ----------
+  function fit(pts){
+    const n=pts.length;
+    if(n<2) return null;
+    let sx=0,sy=0,sxx=0,sxy=0,syy=0;
+    for(const p of pts){ sx+=p.x; sy+=p.y; sxx+=p.x*p.x; sxy+=p.x*p.y; syy+=p.y*p.y; }
+    const d = n*sxx - sx*sx;
+    if(Math.abs(d)<1e-12) return null;
+    const k = (n*sxy - sx*sy)/d;
+    const b = (sy - k*sx)/n;
+    const meanY=sy/n;
+    let ssTot=0, ssRes=0;
+    for(const p of pts){ const f=k*p.x+b; ssRes+=(p.y-f)*(p.y-f); ssTot+=(p.y-meanY)*(p.y-meanY); }
+    const r2 = ssTot<1e-12 ? 1 : 1 - ssRes/ssTot;
+    return {k,b,r2,n};
+  }
+  function rSquared(pts,k,b){
+    if(pts.length<2) return 0;
+    let sy=0; for(const p of pts) sy+=p.y; const my=sy/pts.length;
+    let ssTot=0, ssRes=0;
+    for(const p of pts){ const fv=k*p.x+b; ssRes+=(p.y-fv)*(p.y-fv); ssTot+=(p.y-my)*(p.y-my); }
+    return ssTot<1e-12 ? 1 : 1 - ssRes/ssTot;
+  }
+  function currentFit(pts){
+    if(S.fitMode==='manual'){
+      const k=S.kManual, b=S.bManual;
+      return {k, b, r2:rSquared(pts,k,b), n:pts.length, manual:true};
+    }
+    return fit(pts);
+  }
+
+  // ---------- 绘制 ----------
+  const M = {l:62,r:18,t:18,b:48};
+  function resize(){
+    const dpr = window.devicePixelRatio||1;
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.round(r.width*dpr);
+    canvas.height = Math.round(r.height*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+  }
+  function toPix(p, rngX, rngY, W, H, axis){
+    const ax = axis==='x'?S.xs:S.ys;
+    const mapV=(v,lo,hi,log)=>{
+      if(log){ const lv=Math.log10(v); const llo=Math.log10(lo); const lhi=Math.log10(hi);
+        return (lv-llo)/(lhi-llo); }
+      return (v-lo)/(hi-lo);
+    };
+    if(axis==='x'){
+      const t = mapV(p.x, rngX.lo, rngX.hi, S.xs==='log');
+      return M.l + t*(W-M.l-M.r);
+    } else {
+      const t = mapV(p.y, rngY.lo, rngY.hi, S.ys==='log');
+      return H-M.b - t*(H-M.t-M.b);
+    }
+  }
+
+  function draw(){
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    ctx.clearRect(0,0,W,H);
+    const {pts, invalid} = computePoints();
+    const rngX = getRange(pts,'x'), rngY = getRange(pts,'y');
+    const plotW = W-M.l-M.r, plotH = H-M.t-M.b;
+
+    // 小方格背景（仅绘图区 clip）
+    ctx.save();
+    ctx.beginPath(); ctx.rect(M.l,M.t,plotW,plotH); ctx.clip();
+    ctx.strokeStyle='rgba(140,190,205,0.12)'; ctx.lineWidth=1;
+    const gstep=28;
+    for(let gx=M.l; gx<=W-M.r+0.5; gx+=gstep){ ctx.beginPath(); ctx.moveTo(gx,M.t); ctx.lineTo(gx,H-M.b); ctx.stroke(); }
+    for(let gy=M.t; gy<=H-M.b+0.5; gy+=gstep){ ctx.beginPath(); ctx.moveTo(M.l,gy); ctx.lineTo(W-M.r,gy); ctx.stroke(); }
+    ctx.restore();
+
+    // 主刻度网格线
+    ctx.lineWidth=1;
+    const xt = S.xs==='log' ? logTicks(rngX.lo,rngX.hi).ticks : linTicks(rngX.lo,rngX.hi,6).ticks;
+    const yt = S.ys==='log' ? logTicks(rngY.lo,rngY.hi).ticks : linTicks(rngY.lo,rngY.hi,6).ticks;
+    ctx.strokeStyle='rgba(80,160,180,0.30)';
+    for(const v of xt){
+      const px = toPix({x:v,y:0}, rngX, rngY, W, H, 'x');
+      ctx.beginPath(); ctx.moveTo(px,M.t); ctx.lineTo(px,H-M.b); ctx.stroke();
+    }
+    for(const v of yt){
+      const py = toPix({x:0,y:v}, rngX, rngY, W, H, 'y');
+      ctx.beginPath(); ctx.moveTo(M.l,py); ctx.lineTo(W-M.r,py); ctx.stroke();
+    }
+    // 坐标轴（穿过零点：横轴纵坐标 = y0，纵轴横坐标 = x0）
+    const axY = Math.max(M.t, Math.min(H-M.b, toPix({x:0,y:0},rngX,rngY,W,H,'y')));
+    const axX = Math.max(M.l, Math.min(W-M.r, toPix({x:0,y:0},rngX,rngY,W,H,'x')));
+    ctx.strokeStyle='rgba(120,220,230,0.95)'; ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.moveTo(M.l, axY); ctx.lineTo(W-M.r, axY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(axX, M.t); ctx.lineTo(axX, H-M.b); ctx.stroke();
+    // 坐标轴箭头（正向末端）
+    ctx.fillStyle='rgba(120,220,230,0.95)';
+    ctx.beginPath(); // x 轴箭头（右端，指向 +x）
+    ctx.moveTo(W-M.r, axY); ctx.lineTo(W-M.r-12, axY-6); ctx.lineTo(W-M.r-12, axY+6);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); // y 轴箭头（上端，指向 +y）
+    ctx.moveTo(axX, M.t-12); ctx.lineTo(axX-6, M.t-1); ctx.lineTo(axX+6, M.t-1);
+    ctx.closePath(); ctx.fill();
+    // 刻度数字（贴轴，避免压线）
+    ctx.fillStyle='#9fc4c8'; ctx.font='11px system-ui';
+    const upper = axY < M.t + (H-M.b-M.t)*0.5;
+    const ySide = upper ? 5 : -13, yBase = upper ? 'top' : 'bottom';
+    ctx.textAlign='center'; ctx.textBaseline = yBase;
+    for(const v of xt){
+      const px = toPix({x:v,y:0}, rngX, rngY, W, H, 'x');
+      ctx.fillText(fmt(v), px, axY+ySide);
+    }
+    const xRight = axX < (M.l+W-M.r)*0.5;
+    const xSide = xRight ? 6 : -6, xBase = xRight ? 'left' : 'right';
+    ctx.textAlign = xBase; ctx.textBaseline='middle';
+    for(const v of yt){
+      const py = toPix({x:0,y:v}, rngX, rngY, W, H, 'y');
+      ctx.fillText(fmt(v), axX+xSide, py);
+    }
+    // 坐标轴代表符号（用用户输入的 x/y 字母，置于箭头处）
+    ctx.fillStyle='#cdeef0'; ctx.font='bold 14px system-ui';
+    const xSym = axisLabel(S.xName,S.tx)+(S.xs==='log'?' (log)':'');
+    const ySym = axisLabel(S.yName,S.ty)+(S.ys==='log'?' (log)':'');
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText(xSym, W-M.r, axY - 9);
+    ctx.textAlign='right'; ctx.textBaseline='top';
+    ctx.fillText(ySym, axX - 8, M.t - 16);
+
+    // 拟合直线（自动=最小二乘 / 手工=用户 k、b；虚线区分）
+    const f = currentFit(pts);
+    if(S.showFit && f){
+      const x0=rngX.lo, x1=rngX.hi;
+      const y0=f.k*x0+f.b, y1=f.k*x1+f.b;
+      const p0={x:x0,y:y0}, p1={x:x1,y:y1};
+      ctx.strokeStyle = f.manual ? 'rgba(255,207,107,0.95)' : 'rgba(94,224,138,0.9)';
+      ctx.lineWidth=2.4; ctx.setLineDash(f.manual?[9,5]:[]);
+      ctx.beginPath();
+      ctx.moveTo(toPix(p0,rngX,rngY,W,H,'x'), toPix(p0,rngX,rngY,W,H,'y'));
+      ctx.lineTo(toPix(p1,rngX,rngY,W,H,'x'), toPix(p1,rngX,rngY,W,H,'y'));
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    // 数据点
+    for(const p of pts){
+      const px=toPix(p,rngX,rngY,W,H,'x'), py=toPix(p,rngX,rngY,W,H,'y');
+      ctx.beginPath(); ctx.arc(px,py,4.2,0,7); ctx.fillStyle='#ff6fb5'; ctx.fill();
+      ctx.lineWidth=1.4; ctx.strokeStyle='#fff'; ctx.stroke();
+    }
+    // 更新面板
+    $('kVal').textContent = f? fmt(f.k):'–';
+    $('bVal').textContent = f? fmt(f.b):'–';
+    $('rVal').textContent = f? f.r2.toFixed(4):'–';
+    $('eq').textContent = f? (axisLabel(S.yName,S.ty)+' = '+fmt(f.k)+'·'+axisLabel(S.xName,S.tx)+' + '+fmt(f.b)) : '数据点不足，无法拟合';
+    $('nInfo').textContent = '有效数据点：'+pts.length+'　|　排除非法点：'+invalid.length;
+    $('warn').textContent = invalid.length? ('⚠ 已排除 '+invalid.length+' 个非法/越界数据点（如 ln 负、1/0、对数≤0）') : '';
+  }
+
+  function fmt(v){
+    if(!isFinite(v)) return '–';
+    const a=Math.abs(v);
+    if(a!==0 && (a<0.001 || a>=1e5)) return v.toExponential(2);
+    return (Math.round(v*1e4)/1e4).toString();
+  }
+
+  // ---------- 表格渲染 ----------
+  function renderTable(){
+    const tb=$('tbody'); tb.innerHTML='';
+    S.rows.forEach((r,i)=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = '<td style="color:#8fb3b8">'+(i+1)+'</td>'+
+        '<td><input type="number" step="any" value="'+r.x+'" data-i="'+i+'" data-c="x"></td>'+
+        '<td><input type="number" step="any" value="'+r.y+'" data-i="'+i+'" data-c="y"></td>'+
+        '<td><span class="del" data-i="'+i+'">✕</span></td>';
+      tb.appendChild(tr);
+    });
+    $('thx').textContent=S.xName; $('thy').textContent=S.yName;
+  }
+
+  // ---------- 事件 ----------
+  function bind(){
+    $('addRow').onclick=()=>{ S.rows.push({x:0,y:0}); renderTable(); draw(); };
+    $('clearRows').onclick=()=>{ S.rows=[]; renderTable(); draw(); };
+    $('tbody').addEventListener('input',e=>{
+      const t=e.target; if(t.tagName==='INPUT'){ const i=+t.dataset.i, c=t.dataset.c;
+        S.rows[i][c]=t.value; draw(); }
+    });
+    $('tbody').addEventListener('click',e=>{
+      if(e.target.classList.contains('del')){ S.rows.splice(+e.target.dataset.i,1); renderTable(); draw(); }
+    });
+    $('xName').oninput=e=>{ S.xName=e.target.value; renderTable(); draw(); };
+    $('yName').oninput=e=>{ S.yName=e.target.value; renderTable(); draw(); };
+    ['tx','ty','xs','ys'].forEach(id=>$(id).onchange=e=>{ S[id]=e.target.value; draw(); });
+    $('showFit').onchange=e=>{ S.showFit=e.target.checked; draw(); };
+    $('fitMode').onchange=e=>{ S.fitMode=e.target.value; $('manualFit').style.display = S.fitMode==='manual'?'grid':'none'; draw(); };
+    $('kManual').oninput=e=>{ S.kManual=parseFloat(e.target.value)||0; draw(); };
+    $('bManual').oninput=e=>{ S.bManual=parseFloat(e.target.value)||0; draw(); };
+    $('autoR').onchange=e=>{
+      S.autoR=e.target.checked;
+      $('manual').style.display = S.autoR?'none':'grid';
+      $('manualY').style.display = S.autoR?'none':'grid';
+      draw();
+    };
+    ['xmin','xmax','ymin','ymax'].forEach(id=>$(id).oninput=e=>{ S[id]=parseFloat(e.target.value)||0; draw(); });
+
+    // 模板
+    const box=$('tpls'); box.innerHTML='';
+    Object.keys(TEMPLATES).forEach(key=>{
+      const t=TEMPLATES[key];
+      const d=document.createElement('div'); d.className='tpl';
+      d.innerHTML='<b>'+t.name+'</b><small>'+t.sub+'</small>';
+      d.onclick=()=>applyTemplate(key);
+      box.appendChild(d);
+    });
+    $('computeRes').onclick=computeResult;
+
+    // 样例
+    document.querySelectorAll('[data-sample]').forEach(b=>{
+      b.onclick=()=>loadSample(b.dataset.sample);
+    });
+
+    // 导出
+    $('copyCsv').onclick=()=>{
+      const head=S.xName+','+S.yName;
+      const body=S.rows.map(r=>r.x+','+r.y).join('\n');
+      copyText(head+'\n'+body);
+    };
+    $('copyRes').onclick=()=>{
+      const f=currentFit(computePoints().pts);
+      const txt='拟合方程：'+(f?axisLabel(S.yName,S.ty)+' = '+fmt(f.k)+'·'+axisLabel(S.xName,S.tx)+' + '+fmt(f.b)+'  (R²='+f.r2.toFixed(4)+')':'无');
+      copyText(txt);
+    };
+
+    window.addEventListener('resize', resize);
+  }
+
+  function applyTemplate(key){
+    const t=TEMPLATES[key];
+    S.tx=t.tx; S.ty=t.ty; S.xs=t.xs; S.ys=t.ys;
+    S.xName=t.xName; S.yName=t.yName; S.autoR=true; S.showFit=true;
+    $('tx').value=t.tx; $('ty').value=t.ty; $('xs').value=t.xs; $('ys').value=t.ys;
+    $('xName').value=t.xName; $('yName').value=t.yName;
+    $('autoR').checked=true; $('manual').style.display='none'; $('manualY').style.display='none';
+    $('showFit').checked=true;
+    renderTable();
+    // 渲染字段
+    const fld=$('tplFields'); fld.innerHTML='';
+    t.fields.forEach(f=>{
+      const lab=document.createElement('label'); lab.textContent=f.label+' ('+f.unit+')';
+      const inp=document.createElement('input'); inp.type='number'; inp.step='any'; inp.value=f.def; inp.id='arg_'+f.key;
+      fld.appendChild(lab); fld.appendChild(inp);
+    });
+    currentTemplate=key;
+    draw();
+  }
+  let currentTemplate=null;
+
+  function computeResult(){
+    if(!currentTemplate){ $('res').innerHTML='<div class="hint">请先在上方选择一个实验模板。</div>'; return; }
+    const t=TEMPLATES[currentTemplate];
+    const f=currentFit(computePoints().pts);
+    if(!f){ $('res').innerHTML='<div class="hint">数据点不足，无法计算。</div>'; return; }
+    const args={}; t.fields.forEach(ff=>{ args[ff.key]=parseFloat($('arg_'+ff.key).value)||0; });
+    const out=t.compute(f.k,f.b,args);
+    let html='';
+    for(const lab in out){
+      const [val,unit]=out[lab];
+      html+='<div class="item"><div class="lab">'+lab+'</div><div class="val">'+fmt(val)+'<span class="u">'+unit+'</span></div></div>';
+    }
+    $('res').innerHTML=html;
+  }
+
+  function loadSample(key){
+    const s=SAMPLES[key]; if(!s) return;
+    S.rows=s.rows.map(r=>({x:r.x,y:r.y}));
+    S.xName=s.xName; S.yName=s.yName; S.tx=s.tx; S.ty=s.ty; S.xs='linear'; S.ys='linear';
+    S.autoR=true; S.showFit=true;
+    $('xName').value=S.xName; $('yName').value=S.yName;
+    $('tx').value=S.tx; $('ty').value=S.ty; $('xs').value='linear'; $('ys').value='linear';
+    $('autoR').checked=true; $('manual').style.display='none'; $('manualY').style.display='none';
+    $('showFit').checked=true;
+    currentTemplate=key;
+    const t=TEMPLATES[key];
+    const fld=$('tplFields'); fld.innerHTML='';
+    t.fields.forEach(ff=>{
+      const lab=document.createElement('label'); lab.textContent=ff.label+' ('+ff.unit+')';
+      const inp=document.createElement('input'); inp.type='number'; inp.step='any'; inp.value=ff.def; inp.id='arg_'+ff.key;
+      fld.appendChild(lab); fld.appendChild(inp);
+    });
+    renderTable(); draw();
+  }
+
+  function copyText(txt){
+    navigator.clipboard?.writeText(txt).then(()=>{
+      const b=$('copyCsv'); // 仅提示
+    }).catch(()=>{});
+    // 兼容：选中临时
+    const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(ta);
+  }
+
+  // ---------- 启动 ----------
+  renderTable();
+  bind();
+  resize();
+})();
+</script>
+</body>
+</html>
