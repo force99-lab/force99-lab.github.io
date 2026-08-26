@@ -1904,7 +1904,13 @@ const WORKS = [
     icon:"💧", cover:"assets/img/fountain-cover.png", link:"animations/fountain_animation.html", date:"2026-08-27", tag:"流体动画"
   },
 
-  /* ---------------- 解题 ---------------- */
+    {
+    type:"animation", title:"带电粒子在环形磁场中的运动",
+    desc:"带电粒子在环形磁场中的圆周运动与偏转动画演示。",
+    icon:"⭕", link:"animations/环形磁场_particle_ring_field.html", date:"2026-08-27", tag:"电磁学"
+  },
+
+/* ---------------- 解题 ---------------- */
 
 
 
