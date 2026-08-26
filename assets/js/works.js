@@ -1901,7 +1901,7 @@ const WORKS = [
   {
     type:"animation", title:"七彩喷泉粒子动画",
     desc:"喷泉彩色粒子动画，演示水流喷射与粒子扩散的视觉效果。",
-    icon:"💧", link:"animations/fountain_animation.html", date:"2026-08-27", tag:"流体动画"
+    icon:"💧", cover:"assets/img/fountain-cover.png", link:"animations/fountain_animation.html", date:"2026-08-27", tag:"流体动画"
   },
 
   /* ---------------- 解题 ---------------- */
