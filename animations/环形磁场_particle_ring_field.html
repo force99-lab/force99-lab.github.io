@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>带电粒子在环形磁场中的运动</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060d2b;
+    color: #e0e8f0;
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: auto;
+  }
+  .container {
+    display: flex;
+    gap: 18px;
+    padding: 20px;
+    align-items: flex-start;
+  }
+  .canvas-wrapper { position: relative; flex-shrink: 0; }
+  canvas {
+    background: #0a1a3a;
+    border-radius: 12px;
+    box-shadow: 0 0 40px rgba(0, 80, 200, 0.25);
+    display: block;
+  }
+  .controls {
+    width: 290px;
+    background: rgba(12, 25, 55, 0.92);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(80, 140, 255, 0.18);
+  }
+  .controls h2 {
+    font-size: 15px;
+    margin-bottom: 14px;
+    color: #6ab0ff;
+    text-align: center;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(80, 140, 255, 0.15);
+    padding-bottom: 10px;
+  }
+  .mode-toggle {
+    display: flex;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(80, 140, 255, 0.25);
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 9px 6px;
+    border: none;
+    background: rgba(20, 35, 70, 0.8);
+    color: #80a0c0;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    font-weight: 600;
+    border-radius: 0;
+  }
+  .mode-btn.active {
+    background: rgba(30, 80, 160, 0.9);
+    color: #ffffff;
+  }
+  .control-group { margin-bottom: 14px; }
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 5px;
+    color: #9ab0cc;
+  }
+  .control-group label .val {
+    color: #ffd060;
+    font-weight: bold;
+    font-family: 'Consolas', monospace;
+    min-width: 50px;
+    text-align: right;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 5px;
+    -webkit-appearance: none;
+    background: rgba(40, 70, 110, 0.8);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #4a9eff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(74, 158, 255, 0.6);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 15px; height: 15px;
+    background: #4a9eff; border-radius: 50%;
+    cursor: pointer; border: none;
+    box-shadow: 0 0 8px rgba(74, 158, 255, 0.6);
+  }
+  .btn-group { display: flex; gap: 10px; margin-top: 16px; margin-bottom: 8px; }
+  button {
+    flex: 1; padding: 9px 12px;
+    border: none; border-radius: 7px;
+    cursor: pointer; font-size: 13px;
+    font-family: inherit; transition: all 0.2s;
+    font-weight: 600;
+  }
+  .btn-play { background: #1565c0; color: white; }
+  .btn-play:hover { background: #1976d2; }
+  .btn-reset { background: #b71c1c; color: white; }
+  .btn-reset:hover { background: #c62828; }
+  .status-bar {
+    text-align: center; margin-top: 6px;
+    font-size: 12px; color: #6ab0ff; min-height: 18px;
+  }
+  .info-panel {
+    margin-top: 12px; padding: 12px;
+    background: rgba(15, 30, 65, 0.7);
+    border-radius: 8px; font-size: 12px;
+    line-height: 1.9; color: #80a0c0;
+    border: 1px solid rgba(60, 100, 160, 0.15);
+  }
+  .info-panel .hl { color: #ffd060; }
+  .info-panel .blue { color: #6ab0ff; }
+  .info-panel .pink { color: #ff4081; }
+  .info-panel .title { color: #8ab8ff; font-weight: 600; margin-bottom: 4px; }
+  .legend { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 3px; border-radius: 2px; }
+  .hidden { display: none !important; }
+  .logo-overlay {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.88;
+  }
+  .logo-overlay svg {
+    width: 160px;
+    height: auto;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="canvas-wrapper">
+    <canvas id="canvas" width="640" height="640"></canvas>
+    <div class="logo-overlay" id="logoOverlay">
+      <svg viewBox="0 0 640 240" width="320" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lxq-dark-rb" x1="360" y1="90" x2="360" y2="150" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#FF2D55"/><stop offset="0.166" stop-color="#FF9500"/><stop offset="0.333" stop-color="#FFCC00"/><stop offset="0.5" stop-color="#34C759"/><stop offset="0.666" stop-color="#0A84FF"/><stop offset="0.833" stop-color="#5E5CE6"/><stop offset="1" stop-color="#BF5AF2"/>
+          </linearGradient>
+          <linearGradient id="lxq-dark-wtl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#DFF4FC"/></linearGradient>
+          <linearGradient id="lxq-dark-wtr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CFEFFB"/><stop offset="1" stop-color="#7FB8D8"/></linearGradient>
+          <linearGradient id="lxq-dark-wba" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FB8D8"/><stop offset="1" stop-color="#20567C"/></linearGradient>
+          <radialGradient id="lxq-dark-wg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#9FE9FF" stop-opacity="0.6"/><stop offset="0.5" stop-color="#4FCBF5" stop-opacity="0.24"/><stop offset="1" stop-color="#4FCBF5" stop-opacity="0"/></radialGradient>
+        </defs>
+        <path d="M210 72 L210 168 L258 168" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="222" cy="120" r="9" fill="#FFFFFF"/>
+        <g transform="translate(308,122)">
+          <circle cx="0" cy="0" r="54" fill="url(#lxq-dark-wg)"/>
+          <g transform="rotate(-46)">
+            <polygon points="0,-55 -20,38 0,54" fill="url(#lxq-dark-wtl)"/>
+            <polygon points="0,-55 20,38 0,54" fill="url(#lxq-dark-wtr)"/>
+            <polygon points="-20,38 20,38 0,54" fill="url(#lxq-dark-wba)"/>
+            <line x1="0" y1="-55" x2="0" y2="54" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="1.3"/>
+            <polyline points="-20,38 0,54 20,38" fill="none" stroke="#13405E" stroke-opacity="0.5" stroke-width="1"/>
+          </g>
+          <g transform="rotate(46)">
+            <polygon points="0,-55 -20,38 0,54" fill="url(#lxq-dark-wtl)"/>
+            <polygon points="0,-55 20,38 0,54" fill="url(#lxq-dark-wtr)"/>
+            <polygon points="-20,38 20,38 0,54" fill="url(#lxq-dark-wba)"/>
+            <line x1="0" y1="-55" x2="0" y2="54" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="1.3"/>
+            <polyline points="-20,38 0,54 20,38" fill="none" stroke="#13405E" stroke-opacity="0.5" stroke-width="1"/>
+          </g>
+        </g>
+        <path d="M390 90 A30 30 0 0 1 390 150" stroke="#FFFFFF" stroke-width="8"/>
+        <path d="M390 90 A30 30 0 0 0 390 150" stroke="url(#lxq-dark-rb)" stroke-width="8"/>
+        <path d="M415 139 L429 139 L429 156" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="429" cy="156" r="5" fill="#FFFFFF"/>
+        <text x="378" y="122" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" text-anchor="middle" dominant-baseline="central">E=mc</text>
+        <text x="402" y="112" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" fill="#00C08A" text-anchor="middle" dominant-baseline="central">²</text>
+      </svg>
+    </div>
+  </div>
+  <div class="controls">
+    <h2>⚡ 参数控制面板</h2>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeSingle">单粒子模式</button>
+      <button class="mode-btn" id="modeMulti">多粒子模式 (每10°)</button>
+    </div>
+
+    <div class="control-group">
+      <label>内半径 r₁ <span class="val" id="rin-val">80</span></label>
+      <input type="range" id="rin" min="20" max="220" value="80">
+    </div>
+    <div class="control-group">
+      <label>外半径 r₂ <span class="val" id="rout-val">230</span></label>
+      <input type="range" id="rout" min="80" max="300" value="230">
+    </div>
+    <div class="control-group">
+      <label>回旋半径 R <span class="val" id="rl-val">110</span></label>
+      <input type="range" id="rl" min="15" max="400" value="110">
+    </div>
+    <div class="control-group" id="angleGroup">
+      <label>发射角度 θ <span class="val" id="angle-val">0°</span></label>
+      <input type="range" id="angle" min="0" max="359" value="0">
+    </div>
+    <div class="control-group">
+      <label>动画速度 <span class="val" id="speed-val">1.0×</span></label>
+      <input type="range" id="speed" min="0.2" max="3" step="0.1" value="1">
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-play" id="playBtn">▶ 播放</button>
+      <button class="btn-reset" id="resetBtn">↻ 重置</button>
+    </div>
+    <div class="status-bar" id="status">就绪 — 点击播放开始</div>
+
+    <div class="legend" id="legendSingle">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ff4081;"></div>
+        <span style="color:#80a0c0;">磁场区轨迹</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ffb74d;"></div>
+        <span style="color:#80a0c0;">无场区轨迹</span>
+      </div>
+    </div>
+    <div class="legend hidden" id="legendMulti">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:linear-gradient(90deg,red,yellow,lime,cyan,blue,magenta,red);"></div>
+        <span style="color:#80a0c0;">36粒子彩虹色轨迹</span>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="title">物理说明</div>
+      <div>🔵 环形区域内 <span class="blue">B ⊗</span> 垂直环面向里</div>
+      <div>🔵 内圆及环外：无磁场</div>
+      <div>🔵 粒子(+)从圆心沿半径射出</div>
+      <div>🔵 仅受洛仑兹力 F = qv×B</div>
+      <div class="hl">R = mv/(qB) 为回旋半径</div>
+      <div style="margin-top:6px;">
+        <span class="pink">■ 单粒子：</span>粉红轨迹，持续运动至恢复初始状态
+      </div>
+      <div>
+        <span style="color:#8bc34a;">■ 多粒子：</span>36粒子每隔10°同时发射，运动至回归初始状态
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== Canvas Setup ==========
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const cx = W / 2, cy = H / 2;
+
+// Offscreen: static elements (background, ring, field marks, labels)
+const staticCanvas = document.createElement('canvas');
+staticCanvas.width = W; staticCanvas.height = H;
+const sCtx = staticCanvas.getContext('2d');
+
+// Offscreen: trail (incrementally drawn, persistent)
+const trailCanvas = document.createElement('canvas');
+trailCanvas.width = W; trailCanvas.height = H;
+const tCtx = trailCanvas.getContext('2d');
+
+// ========== Parameters ==========
+let r_in = 80, r_out = 230, R_larmor = 110;
+let speedFactor = 1, launchAngle = 0;
+let mode = 'single';
+const v0 = 2.0;
+
+// ========== State ==========
+let particle = null;
+let particles = [];
+let isPlaying = false;
+let animationId = null;
+let stepCount = 0;
+let orbitCenter = null;
+let passCount = 0;
+let wasNearOrigin = false;
+
+// ========== HSL to RGBA ==========
+function hslColor(h, s, l, a) {
+  if (a === undefined) a = 1;
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const f = n => {
+    const x = s * Math.min(l, 1 - l);
+    return l - x * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  };
+  return 'rgba(' + Math.round(255*f(0)) + ',' + Math.round(255*f(8)) + ',' + Math.round(255*f(4)) + ',' + a + ')';
+}
+
+// ========== Coordinate Conversion ==========
+function toCX(x) { return cx + x; }
+function toCY(y) { return cy - y; }
+
+// ========== Field Check ==========
+function isInField(x, y) {
+  const r2 = x * x + y * y;
+  return r2 > r_in * r_in && r2 < r_out * r_out;
+}
+
+// ========== Field Marks ==========
+let fieldMarks = [];
+function buildFieldMarks() {
+  fieldMarks = [];
+  const spacing = 32;
+  const range = r_out + spacing;
+  for (let dx = -range; dx <= range; dx += spacing) {
+    for (let dy = -range; dy <= range; dy += spacing) {
+      const r = Math.sqrt(dx*dx + dy*dy);
+      if (r > r_in + 10 && r < r_out - 10) {
+        fieldMarks.push({ dx, dy });
+      }
+    }
+  }
+}
+
+// ========== Static Canvas ==========
+function rebuildStatic() {
+  const c = sCtx;
+  c.clearRect(0, 0, W, H);
+
+  // Background
+  c.fillStyle = '#0a1a3a';
+  c.fillRect(0, 0, W, H);
+
+  // Ring fill
+  c.fillStyle = 'rgba(25, 50, 110, 0.35)';
+  c.beginPath();
+  c.arc(cx, cy, r_out, 0, Math.PI * 2);
+  c.arc(cx, cy, r_in, 0, Math.PI * 2, true);
+  c.fill();
+
+  // Field marks (×)
+  c.strokeStyle = 'rgba(100, 160, 240, 0.3)';
+  c.lineWidth = 1;
+  const ms = 3.5;
+  for (const m of fieldMarks) {
+    const x = cx + m.dx, y = cy + m.dy;
+    c.beginPath();
+    c.moveTo(x - ms, y - ms); c.lineTo(x + ms, y + ms);
+    c.moveTo(x + ms, y - ms); c.lineTo(x - ms, y + ms);
+    c.stroke();
+  }
+
+  // Ring boundaries
+  c.setLineDash([5, 5]);
+  c.lineWidth = 1.5;
+  c.strokeStyle = 'rgba(100, 180, 255, 0.4)';
+  c.beginPath(); c.arc(cx, cy, r_out, 0, Math.PI * 2); c.stroke();
+  c.beginPath(); c.arc(cx, cy, r_in, 0, Math.PI * 2); c.stroke();
+  c.setLineDash([]);
+
+  // Center point
+  c.fillStyle = 'rgba(255, 200, 100, 0.4)';
+  c.beginPath(); c.arc(cx, cy, 2.5, 0, Math.PI * 2); c.fill();
+
+  // Labels
+  c.fillStyle = 'rgba(140, 190, 255, 0.55)';
+  c.font = '12px Consolas, monospace';
+  c.textAlign = 'left';
+  c.fillText('r\u2081 = ' + r_in, cx + r_in * 0.707 + 6, cy - r_in * 0.707 - 4);
+  c.fillText('r\u2082 = ' + r_out, cx + r_out * 0.707 + 6, cy - r_out * 0.707 - 4);
+
+  c.fillStyle = 'rgba(120, 180, 255, 0.6)';
+  c.font = '13px Microsoft YaHei';
+  c.textAlign = 'center';
+  c.fillText('B \u2297\uff08\u5140\u5f3a\u78c1\u573a\uff0c\u5782\u76f4\u73af\u9762\u5411\u91cc\uff09', cx, cy - r_out - 16);
+
+  c.fillStyle = 'rgba(100, 140, 180, 0.3)';
+  c.font = '11px Microsoft YaHei';
+  c.fillText('\u65e0\u78c1\u573a', cx, cy + r_in * 0.5);
+}
+
+// ========== Reset Functions ==========
+function resetSingle() {
+  tCtx.clearRect(0, 0, W, H);
+  const angle = launchAngle * Math.PI / 180;
+  particle = {
+    x: 0, y: 0,
+    vx: v0 * Math.cos(angle),
+    vy: v0 * Math.sin(angle)
+  };
+  stepCount = 0;
+  passCount = 0;
+  wasNearOrigin = false;
+  orbitCenter = null;
+}
+
+function resetMulti() {
+  tCtx.clearRect(0, 0, W, H);
+  particles = [];
+  for (let i = 0; i < 36; i++) {
+    const angle = i * 10 * Math.PI / 180;
+    const hue = (i / 36) * 360;
+    particles.push({
+      x: 0, y: 0,
+      vx: v0 * Math.cos(angle),
+      vy: v0 * Math.sin(angle),
+      initAngle: angle,
+      hue: hue,
+      active: true,
+      lastX: 0, lastY: 0,
+      wasNearOrigin: false,
+      passCount: 0,
+      returned: false
+    });
+  }
+  stepCount = 0;
+  orbitCenter = null;
+}
+
+function reset() {
+  isPlaying = false;
+  if (animationId) cancelAnimationFrame(animationId);
+  document.getElementById('playBtn').textContent = '\u25b6 \u64ad\u653e';
+  if (mode === 'single') {
+    resetSingle();
+    document.getElementById('status').textContent = '\u5c31\u7eea \u2014 \u70b9\u51fb\u64ad\u653e\u5f00\u59cb';
+  } else {
+    resetMulti();
+    document.getElementById('status').textContent = '\u5c31\u7eea \u2014 36 \u7c92\u5b50\u5f85\u53d1\u5c04';
+  }
+  draw();
+}
+
+// ========== Simulation: Single ==========
+function stepSingle() {
+  if (!particle) return;
+  const omega = v0 / R_larmor;
+  const subSteps = 8;
+  const ddt = speedFactor / subSteps;
+
+  for (let s = 0; s < subSteps; s++) {
+    const px = particle.x, py = particle.y;
+    const inField = isInField(px, py);
+
+    if (inField) {
+      const dtheta = omega * ddt;
+      const ct = Math.cos(dtheta), st = Math.sin(dtheta);
+      particle.x = px + (particle.vx * st + particle.vy * (ct - 1)) / omega;
+      particle.y = py + (particle.vy * st - particle.vx * (ct - 1)) / omega;
+      const nvx = particle.vx * ct - particle.vy * st;
+      const nvy = particle.vx * st + particle.vy * ct;
+      particle.vx = nvx; particle.vy = nvy;
+    } else {
+      particle.x = px + particle.vx * ddt;
+      particle.y = py + particle.vy * ddt;
+    }
+
+    // Draw trail segment on trail canvas
+    const color = inField ? 'rgba(255, 64, 129, 0.85)' : 'rgba(255, 183, 77, 0.85)';
+    tCtx.strokeStyle = color;
+    tCtx.lineWidth = 2;
+    tCtx.beginPath();
+    tCtx.moveTo(toCX(px), toCY(py));
+    tCtx.lineTo(toCX(particle.x), toCY(particle.y));
+    tCtx.stroke();
+
+    stepCount++;
+
+    // Check return to origin
+    if (stepCount > 80) {
+      const r = Math.sqrt(particle.x * particle.x + particle.y * particle.y);
+      if (r < 4 && !wasNearOrigin) {
+        wasNearOrigin = true;
+        passCount++;
+        // Check velocity direction
+        const vAngle = Math.atan2(particle.vy, particle.vx);
+        const iAngle = launchAngle * Math.PI / 180;
+        let diff = vAngle - iAngle;
+        while (diff > Math.PI) diff -= 2 * Math.PI;
+        while (diff < -Math.PI) diff += 2 * Math.PI;
+        if (Math.abs(diff) < 0.1) {
+          isPlaying = false;
+          document.getElementById('status').textContent =
+            '\u2714 \u7c92\u5b50\u6062\u590d\u521d\u59cb\u72b6\u6001\uff01\uff08\u7ecf\u8fc7\u5706\u5fc3 ' + passCount + ' \u6b21\uff09';
+          document.getElementById('playBtn').textContent = '\u25b6 \u64ad\u653e';
+        }
+      }
+      if (r > 12) wasNearOrigin = false;
+    }
+  }
+
+  // Update orbit center
+  if (isInField(particle.x, particle.y)) {
+    const ocx = particle.x - particle.vy / (v0 / R_larmor);
+    const ocy = particle.y + particle.vx / (v0 / R_larmor);
+    orbitCenter = { x: toCX(ocx), y: toCY(ocy) };
+  } else {
+    orbitCenter = null;
+  }
+
+  // Check fly away
+  const r = Math.sqrt(particle.x * particle.x + particle.y * particle.y);
+  if (r > 450) {
+    isPlaying = false;
+    document.getElementById('status').textContent =
+      '\u7c92\u5b50\u98de\u51fa\u533a\u57df\uff08\u7ecf\u8fc7\u5706\u5fc3 ' + passCount + ' \u6b21\uff09';
+    document.getElementById('playBtn').textContent = '\u25b6 \u64ad\u653e';
+  }
+  if (stepCount > 100000) {
+    isPlaying = false;
+    document.getElementById('status').textContent =
+      '\u5df2\u8fbe\u6700\u5927\u6b65\u6570\uff08\u7ecf\u8fc7\u5706\u5fc3 ' + passCount + ' \u6b21\uff09';
+    document.getElementById('playBtn').textContent = '\u25b6 \u64ad\u653e';
+  }
+}
+
+// ========== Simulation: Multi ==========
+function stepMulti() {
+  const omega = v0 / R_larmor;
+  const subSteps = 8;
+  const ddt = speedFactor / subSteps;
+
+  for (let s = 0; s < subSteps; s++) {
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      if (!p.active) continue;
+
+      const px = p.x, py = p.y;
+      const inField = isInField(px, py);
+
+      if (inField) {
+        const dtheta = omega * ddt;
+        const ct = Math.cos(dtheta), st = Math.sin(dtheta);
+        p.x = px + (p.vx * st + p.vy * (ct - 1)) / omega;
+        p.y = py + (p.vy * st - p.vx * (ct - 1)) / omega;
+        const nvx = p.vx * ct - p.vy * st;
+        const nvy = p.vx * st + p.vy * ct;
+        p.vx = nvx; p.vy = nvy;
+      } else {
+        p.x = px + p.vx * ddt;
+        p.y = py + p.vy * ddt;
+      }
+
+      // Draw trail segment
+      tCtx.strokeStyle = inField ? hslColor(p.hue, 85, 60, 0.8) : hslColor(p.hue, 85, 60, 0.3);
+      tCtx.lineWidth = 1.5;
+      tCtx.beginPath();
+      tCtx.moveTo(toCX(px), toCY(py));
+      tCtx.lineTo(toCX(p.x), toCY(p.y));
+      tCtx.stroke();
+
+      // Check return to origin (same logic as single particle)
+      const r = Math.sqrt(p.x * p.x + p.y * p.y);
+      if (r > 450) {
+        p.active = false;
+      }
+      if (stepCount > 80) {
+        if (r < 4 && !p.wasNearOrigin) {
+          p.wasNearOrigin = true;
+          p.passCount++;
+          // Check velocity direction matches initial
+          const vAngle = Math.atan2(p.vy, p.vx);
+          let diff = vAngle - p.initAngle;
+          while (diff > Math.PI) diff -= 2 * Math.PI;
+          while (diff < -Math.PI) diff += 2 * Math.PI;
+          if (Math.abs(diff) < 0.1) {
+            p.active = false;
+            p.returned = true;
+          }
+        }
+        if (r > 12) p.wasNearOrigin = false;
+      }
+    }
+    stepCount++;
+  }
+
+  // Update status
+  const activeCount = particles.filter(p => p.active).length;
+  const returnedCount = particles.filter(p => p.returned).length;
+  if (activeCount === 0) {
+    isPlaying = false;
+    document.getElementById('status').textContent =
+      '\u5168\u90e8\u7c92\u5b50\u8fd0\u52a8\u5b8c\u6210 \u2014 \u56de\u5f52\u521d\u59cb\u72b6\u6001: ' + returnedCount + ' / 36';
+    document.getElementById('playBtn').textContent = '\u25b6 \u64ad\u653e';
+  } else if (isPlaying) {
+    document.getElementById('status').textContent =
+      '\u8fd0\u52a8\u4e2d... \u6d3b\u8dc3: ' + activeCount + ' / 36  \u5df2\u56de\u5f52: ' + returnedCount;
+  }
+
+  if (stepCount > 100000) {
+    isPlaying = false;
+    document.getElementById('status').textContent =
+      '\u5df2\u8fbe\u6700\u5927\u6b65\u6570 \u2014 \u6d3b\u8dc3: ' + activeCount + ' / 36  \u5df2\u56de\u5f52: ' + returnedCount;
+    document.getElementById('playBtn').textContent = '\u25b6 \u64ad\u653e';
+  }
+}
+
+function step() {
+  if (mode === 'single') stepSingle(); else stepMulti();
+}
+
+// ========== Drawing ==========
+function drawSingle() {
+  ctx.drawImage(staticCanvas, 0, 0);
+  ctx.drawImage(trailCanvas, 0, 0);
+
+  // Orbit circle
+  if (orbitCenter) {
+    ctx.strokeStyle = 'rgba(255, 100, 180, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.arc(orbitCenter.x, orbitCenter.y, R_larmor, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255, 100, 180, 0.4)';
+    ctx.beginPath();
+    ctx.arc(orbitCenter.x, orbitCenter.y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Launch arrow (at start)
+  if (stepCount < 30) {
+    const angle = launchAngle * Math.PI / 180;
+    const alen = 28;
+    const ax = cx + alen * Math.cos(angle);
+    const ay = cy - alen * Math.sin(angle);
+    ctx.strokeStyle = 'rgba(255, 200, 100, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ax, ay); ctx.stroke();
+    const hl = 7;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - hl * Math.cos(angle - 0.35), ay + hl * Math.sin(angle - 0.35));
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - hl * Math.cos(angle + 0.35), ay + hl * Math.sin(angle + 0.35));
+    ctx.stroke();
+  }
+
+  // Particle
+  if (particle) {
+    const px = toCX(particle.x), py = toCY(particle.y);
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, 18);
+    grad.addColorStop(0, 'rgba(255, 64, 129, 0.7)');
+    grad.addColorStop(0.4, 'rgba(255, 64, 129, 0.2)');
+    grad.addColorStop(1, 'rgba(255, 64, 129, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ff4081';
+    ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('+', px, py);
+  }
+
+  // Info readout
+  if (particle) {
+    const r = Math.sqrt(particle.x * particle.x + particle.y * particle.y);
+    const inF = isInField(particle.x, particle.y);
+    ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
+    ctx.font = '11px Consolas, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(
+      'r = ' + r.toFixed(1) + '  ' + (inF ? '[\u78c1\u573a\u533a]' : '[\u65e0\u573a\u533a]') +
+      '  \u7ecf\u8fc7\u5706\u5fc3: ' + passCount + ' \u6b21',
+      12, H - 14
+    );
+  }
+}
+
+function drawMulti() {
+  ctx.drawImage(staticCanvas, 0, 0);
+  ctx.drawImage(trailCanvas, 0, 0);
+
+  // Draw all active particles
+  for (const p of particles) {
+    if (!p.active) continue;
+    const px = toCX(p.x), py = toCY(p.y);
+
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, 10);
+    grad.addColorStop(0, hslColor(p.hue, 85, 60, 0.8));
+    grad.addColorStop(1, hslColor(p.hue, 85, 60, 0));
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(px, py, 10, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = hslColor(p.hue, 85, 70, 1);
+    ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Info readout
+  const activeCount = particles.filter(p => p.active).length;
+  const returnedCount = particles.filter(p => p.returned).length;
+  ctx.fillStyle = 'rgba(200, 220, 255, 0.5)';
+  ctx.font = '11px Consolas, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('\u6d3b\u8dc3: ' + activeCount + '/36  \u5df2\u56de\u5f52: ' + returnedCount + '  \u6b65\u6570: ' + stepCount, 12, H - 14);
+}
+
+function draw() {
+  if (mode === 'single') drawSingle(); else drawMulti();
+}
+
+// ========== Animation ==========
+function animate() {
+  if (isPlaying) {
+    step();
+    draw();
+    animationId = requestAnimationFrame(animate);
+  }
+}
+
+// ========== Init ==========
+function init() {
+  r_in = parseInt(document.getElementById('rin').value);
+  r_out = parseInt(document.getElementById('rout').value);
+  R_larmor = parseInt(document.getElementById('rl').value);
+  speedFactor = parseFloat(document.getElementById('speed').value);
+  launchAngle = parseInt(document.getElementById('angle').value);
+
+  if (r_out <= r_in + 15) {
+    r_out = r_in + 15;
+    document.getElementById('rout').value = r_out;
+    document.getElementById('rout-val').textContent = r_out;
+    updateSliderFill(document.getElementById('rout'));
+  }
+
+  buildFieldMarks();
+  rebuildStatic();
+  reset();
+}
+
+// ========== Slider Fill ==========
+function updateSliderFill(el) {
+  const min = parseFloat(el.min), max = parseFloat(el.max);
+  const val = parseFloat(el.value);
+  const pct = ((val - min) / (max - min)) * 100;
+  el.style.background = 'linear-gradient(to right, #4a9eff ' + pct + '%, rgba(40,70,110,0.8) ' + pct + '%)';
+}
+
+document.querySelectorAll('input[type="range"]').forEach(el => {
+  updateSliderFill(el);
+  el.addEventListener('input', () => updateSliderFill(el));
+});
+
+// ========== Mode Toggle ==========
+document.getElementById('modeSingle').addEventListener('click', () => {
+  if (mode === 'single') return;
+  mode = 'single';
+  document.getElementById('modeSingle').classList.add('active');
+  document.getElementById('modeMulti').classList.remove('active');
+  document.getElementById('angleGroup').classList.remove('hidden');
+  document.getElementById('legendSingle').classList.remove('hidden');
+  document.getElementById('legendMulti').classList.add('hidden');
+  init();
+});
+
+document.getElementById('modeMulti').addEventListener('click', () => {
+  if (mode === 'multi') return;
+  mode = 'multi';
+  document.getElementById('modeMulti').classList.add('active');
+  document.getElementById('modeSingle').classList.remove('active');
+  document.getElementById('angleGroup').classList.add('hidden');
+  document.getElementById('legendSingle').classList.add('hidden');
+  document.getElementById('legendMulti').classList.remove('hidden');
+  init();
+});
+
+// ========== Slider Events ==========
+document.getElementById('rin').addEventListener('input', (e) => {
+  r_in = parseInt(e.target.value);
+  document.getElementById('rin-val').textContent = r_in;
+  if (r_in >= r_out - 15) {
+    r_out = r_in + 15;
+    document.getElementById('rout').value = r_out;
+    document.getElementById('rout-val').textContent = r_out;
+    updateSliderFill(document.getElementById('rout'));
+  }
+  init();
+});
+
+document.getElementById('rout').addEventListener('input', (e) => {
+  r_out = parseInt(e.target.value);
+  document.getElementById('rout-val').textContent = r_out;
+  if (r_out <= r_in + 15) {
+    r_in = Math.max(20, r_out - 15);
+    document.getElementById('rin').value = r_in;
+    document.getElementById('rin-val').textContent = r_in;
+    updateSliderFill(document.getElementById('rin'));
+  }
+  init();
+});
+
+document.getElementById('rl').addEventListener('input', (e) => {
+  R_larmor = parseInt(e.target.value);
+  document.getElementById('rl-val').textContent = R_larmor;
+  init();
+});
+
+document.getElementById('angle').addEventListener('input', (e) => {
+  launchAngle = parseInt(e.target.value);
+  document.getElementById('angle-val').textContent = launchAngle + '\u00b0';
+  init();
+});
+
+document.getElementById('speed').addEventListener('input', (e) => {
+  speedFactor = parseFloat(e.target.value);
+  document.getElementById('speed-val').textContent = speedFactor.toFixed(1) + '\u00d7';
+});
+
+// ========== Button Events ==========
+document.getElementById('playBtn').addEventListener('click', () => {
+  const st = document.getElementById('status').textContent;
+  if (st.includes('\u98de\u51fa') || st.includes('\u6062\u590d') || st.includes('\u6700\u5927\u6b65\u6570') || st.includes('\u7ed3\u675f') || st.includes('\u5b8c\u6210')) {
+    reset();
+  }
+  isPlaying = !isPlaying;
+  document.getElementById('playBtn').textContent = isPlaying ? '\u23f8 \u6682\u505c' : '\u25b6 \u64ad\u653e';
+  if (isPlaying) {
+    if (mode === 'single') document.getElementById('status').textContent = '\u8fd0\u52a8\u4e2d...';
+    else document.getElementById('status').textContent = '\u8fd0\u52a8\u4e2d... \u6d3b\u8dc3: 36 / 36';
+    animate();
+  } else {
+    document.getElementById('status').textContent = '\u5df2\u6682\u505c';
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  reset();
+});
+
+// ========== Initialize ==========
+init();
+</script>
+</body>
+</html>
