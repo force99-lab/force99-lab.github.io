@@ -1893,7 +1893,7 @@ const WORKS = [
   {
     type:"animation", title:"薄膜干涉·平面检测",
     desc:"薄膜干涉原理与平面检测动画演示，展示等厚干涉条纹的形成过程。",
-    icon:"🔬", link:"animations/thin-film-interference.html", date:"2026-08-27", tag:"光学"
+    icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-interference.html", date:"2026-08-27", tag:"光学"
   },
   /* ---------------- 解题 ---------------- */
 
