@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光通过半圆形玻璃砖 · 时序生长</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background: #1e2a3a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            color: #e0e8f0;
+        }
+        .container {
+            background: #0f1722;
+            padding: 24px 30px 30px 30px;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.06);
+            border: 1px solid #2a3a4a;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        h1 {
+            font-weight: 400;
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            margin: 0;
+            color: #b6cdff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            background: #0b1119;
+            border-radius: 18px;
+            padding: 10px;
+            box-shadow: inset 0 4px 8px rgba(0,0,0,0.6);
+        }
+        canvas {
+            display: block;
+            width: 720px;
+            height: 480px;
+            border-radius: 12px;
+            background: #101720;
+            cursor: pointer;
+            box-shadow: 0 0 0 1px #2b3d4e;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px 35px;
+            margin-top: 20px;
+            padding: 16px 20px 10px 20px;
+            background: #131e2b;
+            border-radius: 20px;
+            border: 1px solid #293b4a;
+            justify-content: center;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1 0 140px;
+        }
+        .control-group label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #8aa3c0;
+            letter-spacing: 0.3px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .control-group label span {
+            color: #b8d4ff;
+            background: #1c2c3e;
+            padding: 0 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #2d4055;
+            border-radius: 10px;
+            outline: none;
+            transition: background 0.2s;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #7aaaff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px #3f7eff66, 0 2px 4px #00000066;
+            border: 2px solid #c0daff;
+            transition: 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #9ac0ff;
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: #1a2838;
+            padding: 4px 10px 4px 14px;
+            border-radius: 40px;
+            border: 1px solid #30445a;
+        }
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: #7e96b0;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .mode-btn.active {
+            background: #2b4b70;
+            color: #ffffff;
+            box-shadow: 0 2px 8px #1b3a5e;
+        }
+        .mode-btn:hover {
+            color: #ccdeff;
+        }
+        .color-picker-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a2838;
+            padding: 4px 14px 4px 14px;
+            border-radius: 40px;
+            border: 1px solid #30445a;
+        }
+        .color-picker-wrap label {
+            color: #8aa3c0;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+            outline: none;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 2px solid #3a5068;
+            border-radius: 50%;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #8ba0b9;
+            margin: 12px 0 4px 0;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .color-dot {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 4px;
+        }
+        .status-info {
+            text-align: center;
+            font-size: 0.85rem;
+            background: #0d1722;
+            padding: 5px 12px;
+            border-radius: 40px;
+            border: 1px solid #253746;
+            color: #b6ceea;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        .flex-center {
+            display: flex;
+            justify-content: center;
+        }
+        .progress-bar {
+            width: 200px;
+            height: 4px;
+            background: #263544;
+            border-radius: 4px;
+            margin: 10px auto 0;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            width: 0%;
+            background: currentColor;
+            transition: width 0.05s linear;
+        }
+        @media (max-width: 780px) {
+            .container { padding: 12px; }
+            canvas { width: 100%; height: auto; aspect-ratio: 720/480; }
+            .controls { gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>光通过半圆形玻璃砖</h1>
+    </div>
+
+    <div class="canvas-wrapper">
+        <canvas id="canvas" width="720" height="480"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>单光线位置 <span id="posLabel">0.00</span></label>
+            <input type="range" id="posSlider" min="-195" max="195" value="60" step="0.5">
+        </div>
+        <div class="control-group">
+            <label>折射率 (n) <span id="nLabel">1.50</span></label>
+            <input type="range" id="nSlider" min="1.10" max="2.50" value="1.50" step="0.01">
+        </div>
+        <div class="control-group" style="flex: 0 0 auto;">
+            <label>光束宽度 (≤直径) <span id="widthLabel">0</span></label>
+            <input type="range" id="widthSlider" min="0" max="400" value="0" step="2">
+        </div>
+        <div class="control-group" style="flex: 0 0 auto; flex-direction: row; gap: 10px; align-items: center;">
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="single">单光线</button>
+                <button class="mode-btn" data-mode="multi">多光线</button>
+            </div>
+            <div class="color-picker-wrap">
+                <label for="colorPicker">光色</label>
+                <input type="color" id="colorPicker" value="#00e5ff">
+            </div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <span class="legend-item"><span class="color-dot" style="background:#00e5ff; box-shadow:0 0 8px #00e5ff88;" id="legendDot"></span> 光线 (可调色)</span>
+        <span class="legend-item"><span class="color-dot" style="background:#7e8c9e; border:1px solid #9bb0c5;"></span> 法线 (半径)</span>
+    </div>
+    <div class="flex-center" style="flex-direction: column; gap: 4px;">
+        <div class="status-info" id="statusText">入射角: 0.0° | 临界角: 41.8° | 状态: 折射</div>
+        <div class="progress-bar"><div class="progress-bar-inner" id="progressFill" style="background:#00e5ff;"></div></div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 几何参数
+        const CX = 360, CY = 380;
+        const R = 200;
+
+        // DOM 元素
+        const posSlider = document.getElementById('posSlider');
+        const nSlider = document.getElementById('nSlider');
+        const widthSlider = document.getElementById('widthSlider');
+        const colorPicker = document.getElementById('colorPicker');
+        const posLabel = document.getElementById('posLabel');
+        const nLabel = document.getElementById('nLabel');
+        const widthLabel = document.getElementById('widthLabel');
+        const statusText = document.getElementById('statusText');
+        const progressFill = document.getElementById('progressFill');
+        const legendDot = document.getElementById('legendDot');
+        const modeBtns = document.querySelectorAll('.mode-btn');
+
+        // 状态
+        let mode = 'single';
+        let offset = 60;
+        let n = 1.50;
+        let beamWidth = 0;
+        let LIGHT_COLOR = '#00e5ff';
+
+        // 动画进度：0~1 入射光生长，1~2 出射光生长
+        let growthProgress = 0;
+        let animationId = null;
+        const GROWTH_SPEED = 0.016;
+
+        // ---------- 绘图核心 ----------
+        function drawScene(progress) {
+            ctx.clearRect(0, 0, 720, 480);
+            drawGlass();
+
+            // 收集光线入口 x 坐标
+            let positions = [];
+            if (mode === 'single') {
+                positions.push(offset);
+            } else {
+                if (beamWidth < 1) {
+                    positions.push(0);
+                } else {
+                    const step = Math.max(4, beamWidth / 14);
+                    for (let x = -beamWidth; x <= beamWidth; x += step) {
+                        if (Math.abs(x) < R) positions.push(x);
+                    }
+                    if (positions.length > 0 && Math.abs(positions[positions.length-1] - beamWidth) > 2) positions.push(beamWidth);
+                    if (positions.length > 0 && Math.abs(positions[0] + beamWidth) > 2) positions.unshift(-beamWidth);
+                }
+            }
+
+            let totalRefract = 0, totalReflect = 0;
+            for (let dx of positions) {
+                if (Math.abs(dx) >= R) continue;
+                const result = traceRay(dx, progress);
+                if (result === 'refract') totalRefract++;
+                else if (result === 'reflect') totalReflect++;
+            }
+
+            // 状态信息
+            const critAngle = Math.asin(1/n) * 180 / Math.PI;
+            const singleDx = (mode === 'single') ? offset : 0;
+            const incAngle = Math.abs(singleDx) < R ? (Math.asin(Math.abs(singleDx)/R) * 180 / Math.PI) : 0;
+            let status = `入射角: ${incAngle.toFixed(1)}° | 临界角: ${critAngle.toFixed(1)}° | `;
+            if (mode === 'single') {
+                if (incAngle < critAngle - 0.1) status += '✅ 折射';
+                else if (incAngle > critAngle + 0.1) status += '🔴 全反射';
+                else status += '⚡ 临界状态';
+            } else {
+                status += `折射 ${totalRefract} 条, 全反射 ${totalReflect} 条`;
+            }
+            statusText.textContent = status;
+
+            // 进度条
+            const pct = Math.min(progress / 2, 1) * 100;
+            progressFill.style.width = pct + '%';
+            progressFill.style.background = LIGHT_COLOR;
+
+            drawCriticalMark(critAngle);
+
+            // ----- 左下角水印：force99 -----
+            ctx.save();
+            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            ctx.font = '14px "Segoe UI", sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('⚡ force99', 16, canvas.height - 12);
+            ctx.restore();
+        }
+
+        function drawGlass() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(CX, CY, R, Math.PI, 0, false);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(120, 190, 255, 0.13)';
+            ctx.fill();
+            ctx.strokeStyle = '#7aa9dd';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(CX - R, CY);
+            ctx.lineTo(CX + R, CY);
+            ctx.strokeStyle = '#9bb8e0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(CX, CY, 3, 0, 2*Math.PI);
+            ctx.fillStyle = '#b8d4ff';
+            ctx.fill();
+
+            ctx.fillStyle = '#7897b0';
+            ctx.font = '13px "Segoe UI", sans-serif';
+            ctx.fillText('空气 (n=1)', 20, 40);
+            ctx.fillText('玻璃 (n='+n.toFixed(2)+')', 20, 70);
+            ctx.fillStyle = '#4f6f8a';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('直径面 (垂直入射)', CX+30, CY-6);
+            ctx.fillText('圆弧面 (折射/全反射)', CX-140, 30);
+            ctx.restore();
+        }
+
+        // 追踪单条光线，返回 'refract' 或 'reflect'
+        function traceRay(dx, progress) {
+            const yArc = Math.sqrt(R*R - dx*dx);
+            const px = CX + dx;
+            const py = CY - yArc;
+
+            // 入射光参数
+            const inStartX = px;
+            const inStartY = CY + 40;
+            const inEndX = px;
+            const inEndY = py;
+            const inFullLen = inStartY - inEndY;
+
+            const incProgress = Math.min(progress, 1);
+            const currentInLen = inFullLen * incProgress;
+            const curInEndY = inStartY - currentInLen;
+
+            ctx.save();
+
+            // ----- 入射光 -----
+            ctx.beginPath();
+            ctx.moveTo(inStartX, inStartY);
+            ctx.lineTo(inStartX, curInEndY);
+            ctx.strokeStyle = LIGHT_COLOR;
+            ctx.lineWidth = 2.8;
+            ctx.shadowColor = LIGHT_COLOR + '88';
+            ctx.shadowBlur = 14;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            if (incProgress > 0.05) {
+                drawArrow(inStartX, curInEndY - 6, inStartX, curInEndY - 16, LIGHT_COLOR);
+            }
+
+            // ----- 法线 -----
+            const nx = dx / R;
+            const ny = -yArc / R;
+            ctx.beginPath();
+            ctx.moveTo(CX, CY);
+            ctx.lineTo(CX + nx * (R + 18), CY + ny * (R + 18));
+            ctx.strokeStyle = '#7e8c9e';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 角度弧 (进度 > 1.5 且单光线)
+            if (progress > 1.5 && dx !== 0 && mode === 'single') {
+                const sinTheta = Math.abs(dx) / R;
+                const thetaI = Math.asin(sinTheta);
+                const angleDir = dx > 0 ? 1 : -1;
+                const startA = Math.PI/2;
+                const endA = Math.PI/2 - angleDir * thetaI;
+                ctx.beginPath();
+                ctx.arc(CX, CY, 25, Math.min(startA, endA), Math.max(startA, endA));
+                ctx.strokeStyle = '#a0b8d0';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.fillStyle = '#a0b8d0';
+                ctx.font = '11px sans-serif';
+                const labelAngle = Math.PI/2 - angleDir * thetaI/2;
+                ctx.fillText('θi', CX + 32*Math.cos(labelAngle), CY + 32*Math.sin(labelAngle) + 4);
+            }
+
+            // ----- 折射或反射 (出射光) -----
+            let result = 'refract';
+            const sinTheta = Math.abs(dx) / R;
+            const critSin = 1 / n;
+            let outProgress = Math.max(0, progress - 1);
+
+            if (sinTheta >= critSin) {
+                result = 'reflect';
+                const dot = -ny;
+                const rx = -2 * dot * nx;
+                const ry = -1 - 2 * dot * ny;
+                const len = Math.sqrt(rx*rx + ry*ry);
+                const dirX = rx / len;
+                const dirY = ry / len;
+                const outLen = 120;
+
+                if (outProgress > 0) {
+                    const curOutLen = outLen * outProgress;
+                    const curEndX = px + dirX * curOutLen;
+                    const curEndY = py + dirY * curOutLen;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(curEndX, curEndY);
+                    ctx.strokeStyle = LIGHT_COLOR;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = LIGHT_COLOR + '88';
+                    ctx.shadowBlur = 16;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    if (outProgress > 0.05) {
+                        drawArrow(px + dirX * (curOutLen - 14), py + dirY * (curOutLen - 14),
+                                  curEndX, curEndY, LIGHT_COLOR);
+                    }
+                }
+            } else {
+                result = 'refract';
+                const sinThetaT = n * sinTheta;
+                const thetaT = Math.asin(sinThetaT);
+                const angleDir = dx > 0 ? 1 : -1;
+                const normalAngle = Math.atan2(ny, nx);
+                const refrAngle = normalAngle - angleDir * thetaT;
+                const dirX = Math.cos(refrAngle);
+                const dirY = Math.sin(refrAngle);
+                const outLen = 140;
+
+                if (outProgress > 0) {
+                    const curOutLen = outLen * outProgress;
+                    const curEndX = px + dirX * curOutLen;
+                    const curEndY = py + dirY * curOutLen;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(curEndX, curEndY);
+                    ctx.strokeStyle = LIGHT_COLOR;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = LIGHT_COLOR + '88';
+                    ctx.shadowBlur = 16;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    if (outProgress > 0.05) {
+                        drawArrow(px + dirX * (curOutLen - 14), py + dirY * (curOutLen - 14),
+                                  curEndX, curEndY, LIGHT_COLOR);
+                    }
+                    // 折射角弧
+                    if (progress > 1.9 && dx !== 0 && mode === 'single') {
+                        const startA = normalAngle;
+                        const endA = refrAngle;
+                        ctx.beginPath();
+                        ctx.arc(px, py, 22, Math.min(startA, endA), Math.max(startA, endA));
+                        ctx.strokeStyle = '#7ab8d9';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                        ctx.fillStyle = '#7ab8d9';
+                        ctx.font = '11px sans-serif';
+                        const midA = (startA + endA) / 2;
+                        ctx.fillText('θt', px + 32*Math.cos(midA), py + 32*Math.sin(midA) + 4);
+                    }
+                }
+            }
+
+            // 入射点标记
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#ffffff88';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+            return result;
+        }
+
+        function drawArrow(x1, y1, x2, y2, color) {
+            const dx = x2 - x1, dy = y2 - y1;
+            const len = Math.sqrt(dx*dx + dy*dy);
+            if (len < 6) return;
+            const ux = dx/len, uy = dy/len;
+            const arrowSize = 8;
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = color + '66';
+            ctx.beginPath();
+            ctx.moveTo(x2, y2);
+            ctx.lineTo(x2 - ux*arrowSize - uy*arrowSize*0.5, y2 - uy*arrowSize + ux*arrowSize*0.5);
+            ctx.lineTo(x2 - ux*arrowSize + uy*arrowSize*0.5, y2 - uy*arrowSize - ux*arrowSize*0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawCriticalMark(critAngleDeg) {
+            const critRad = critAngleDeg * Math.PI / 180;
+            const xCrit = R * Math.sin(critRad);
+            const yCrit = R * Math.cos(critRad);
+            if (xCrit < R && xCrit > 0) {
+                ctx.save();
+                ctx.setLineDash([3, 6]);
+                ctx.strokeStyle = '#ffaa66';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                ctx.arc(CX, CY, R, Math.PI/2 - critRad, Math.PI/2 + critRad);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.arc(CX + xCrit, CY - yCrit, 5, 0, 2*Math.PI);
+                ctx.fillStyle = '#ffaa66';
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#ffaa6688';
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(CX - xCrit, CY - yCrit, 5, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ddaa77';
+                ctx.font = '11px sans-serif';
+                ctx.fillText('临界', CX + xCrit + 8, CY - yCrit + 4);
+                ctx.fillText('临界', CX - xCrit - 40, CY - yCrit + 4);
+                ctx.restore();
+            }
+        }
+
+        // ---------- 动画循环 ----------
+        function animate() {
+            if (growthProgress < 2) {
+                growthProgress = Math.min(2, growthProgress + GROWTH_SPEED);
+            }
+            drawScene(growthProgress);
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function resetAndDraw() {
+            growthProgress = 0;
+            drawScene(0);
+        }
+
+        // 更新参数并重置
+        function updateParamsAndReset() {
+            n = parseFloat(nSlider.value);
+            offset = parseFloat(posSlider.value);
+            beamWidth = parseFloat(widthSlider.value);
+            LIGHT_COLOR = colorPicker.value;
+            posLabel.textContent = offset.toFixed(1);
+            nLabel.textContent = n.toFixed(2);
+            widthLabel.textContent = beamWidth.toFixed(0);
+            legendDot.style.background = LIGHT_COLOR;
+            legendDot.style.boxShadow = `0 0 8px ${LIGHT_COLOR}88`;
+            resetAndDraw();
+        }
+
+        // ---------- 事件绑定 ----------
+        posSlider.addEventListener('input', updateParamsAndReset);
+        nSlider.addEventListener('input', updateParamsAndReset);
+        widthSlider.addEventListener('input', updateParamsAndReset);
+        colorPicker.addEventListener('input', updateParamsAndReset);
+
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                mode = this.dataset.mode;
+                posSlider.disabled = (mode === 'multi');
+                widthSlider.disabled = (mode === 'single');
+                if (mode === 'single') {
+                    widthSlider.value = '0';
+                    widthLabel.textContent = '0';
+                    beamWidth = 0;
+                } else {
+                    posSlider.value = '0';
+                    posLabel.textContent = '0.0';
+                    offset = 0;
+                }
+                updateParamsAndReset();
+            });
+        });
+
+        // 点击canvas重置位置 (仅单光线)
+        canvas.addEventListener('click', function(e) {
+            if (mode !== 'single') return;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleX;
+            if (Math.abs(my - CY) < 30 && mx > CX - R && mx < CX + R) {
+                const newPos = mx - CX;
+                if (Math.abs(newPos) < R) {
+                    posSlider.value = newPos;
+                    offset = newPos;
+                    posLabel.textContent = offset.toFixed(1);
+                    resetAndDraw();
+                }
+            }
+        });
+
+        // 启动动画
+        function startAnimation() {
+            if (animationId) cancelAnimationFrame(animationId);
+            growthProgress = 0;
+            animate();
+        }
+
+        // 初始化
+        widthSlider.disabled = true;
+        posSlider.value = '60';
+        nSlider.value = '1.50';
+        widthSlider.value = '0';
+        colorPicker.value = '#00e5ff';
+        offset = 60;
+        n = 1.50;
+        beamWidth = 0;
+        LIGHT_COLOR = '#00e5ff';
+        posLabel.textContent = '60.0';
+        nLabel.textContent = '1.50';
+        widthLabel.textContent = '0';
+        legendDot.style.background = LIGHT_COLOR;
+        legendDot.style.boxShadow = `0 0 8px ${LIGHT_COLOR}88`;
+        startAnimation();
+    })();
+</script>
+</body>
+</html>
