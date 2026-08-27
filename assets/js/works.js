@@ -1895,6 +1895,14 @@ const WORKS = [
     desc:"薄膜干涉原理与平面检测动画演示，展示等厚干涉条纹的形成过程。",
     icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-interference.html", date:"2026-08-27", tag:"光学"
   },
+  /* ---------------- 解题 -----------
+  },
+  
+  {
+    type:"animation", title:"光通过半圆形玻璃砖·时序生长",
+    desc:"光从空气射入半圆形玻璃砖的折射动画，展示入射角、折射角与折射率关系，时序生长演示光路。",
+    icon:"💎", link:"animations/glass-brick-refraction.html", date:"2026-08-27", tag:"光学"
+  },
   /* ---------------- 解题 ---------------- */
 
 
