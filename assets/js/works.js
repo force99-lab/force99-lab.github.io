@@ -1903,6 +1903,11 @@ const WORKS = [
     desc:"光从空气射入半圆形玻璃砖的折射动画，展示入射角、折射角与折射率关系，时序生长演示光路。",
     icon:"💎", link:"animations/glass-brick-refraction.html", date:"2026-08-27", tag:"光学"
   },
+    {
+      type:"animation", title:"光通过半圆形玻璃砖·时序生长",
+      desc:"光从空气射入半圆形玻璃砖的折射动画，展示入射角、折射角与折射率关系，时序生长演示光路。",
+      icon:"💎", cover:"assets/img/glass-brick-cover.png", link:"animations/glass-brick-refraction.html", date:"2026-08-27", tag:"光学"
+    },
   /* ---------------- 解题 ---------------- */
 
 
