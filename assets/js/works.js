@@ -1806,30 +1806,6 @@ const WORKS = [
 
 
 
-    type:"animation", title:"2026黑吉辽蒙T15 动画",
-
-
-
-    desc:"时间分辨-能量分析仪物理过程动画：电场偏转、磁场约束与能量分析的动态演示。",
-
-
-
-    icon:"🎬",     link:"animations/2026-heijiliaomeng-t15-animation.html", date:"2026-08-17", tag:"高考压轴"
-
-
-
-  },
-
-
-
-
-
-
-
-  {
-
-
-
     type:"animation", title:"运动学追赶动画",
 
 
