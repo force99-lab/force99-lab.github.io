@@ -1886,7 +1886,16 @@ const WORKS = [
     icon:"⭕", cover:"assets/img/ring-field-cover.png", link:"animations/环形磁场_particle_ring_field.html", date:"2026-08-27", tag:"电磁学"
   },
 
-/* ---------------- 解题 ---------------- */
+/* ---------------- 解题 ------------
+  },
+
+
+  {
+    type:"animation", title:"薄膜干涉·平面检测",
+    desc:"薄膜干涉原理与平面检测动画演示，展示等厚干涉条纹的形成过程。",
+    icon:"🔬", link:"animations/thin-film-interference.html", date:"2026-08-27", tag:"光学"
+  },
+  /* ---------------- 解题 ---------------- */
 
 
 
