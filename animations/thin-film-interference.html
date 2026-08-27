@@ -1,918 +1,350 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>薄膜干涉 · 平面检测</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>薄膜干涉 - 双视图</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0b0f1a;
-            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 16px;
+            background: #0a0e1a;
+            font-family: 'Microsoft YaHei', sans-serif;
             color: #e8ecf4;
             height: 100vh;
-            overflow: hidden;
-        }
-        .app {
-            width: 100%;
-            max-width: 1600px;
-            height: calc(100vh - 32px);
-            max-height: 950px;
-            background: #0a0e1a;
-            border-radius: 28px;
-            padding: 18px 20px 20px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.95);
-            border: 1px solid #2a3450;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            padding: 10px;
         }
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
+            text-align: center;
+            padding: 10px;
+            font-size: 20px;
+            color: #6a9cf5;
         }
-        .header h1 {
-            font-size: 22px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #b7c9ff, #6a9cf5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
-        .header .sub {
-            font-size: 13px;
-            color: #6f82ac;
-            background: #1a2139;
-            padding: 4px 16px;
-            border-radius: 30px;
-            border: 1px solid #2c3858;
-        }
-        .body {
-            display: flex;
-            gap: 18px;
+        .main {
             flex: 1;
+            display: flex;
+            gap: 15px;
             min-height: 0;
         }
         .viewers {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            min-height: 0;
+            gap: 10px;
         }
-        .viewer-2d {
+        .viewer {
             flex: 1;
-            background: #0a0e1a;
-            border-radius: 16px;
-            overflow: hidden;
+            background: #1a1a2e;
             border: 1px solid #2a3450;
+            border-radius: 10px;
             position: relative;
-            min-height: 150px;
-            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
         }
-        .viewer-2d canvas {
-            display: block;
+        .viewer canvas {
             width: 100%;
             height: 100%;
-        }
-        .viewer-3d {
-            flex: 1.2;
-            background: #0a0e1a;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid #2a3450;
-            position: relative;
-            min-height: 200px;
-            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8);
-        }
-        .viewer-3d canvas {
             display: block;
-            width: 100% !important;
-            height: 100% !important;
         }
-        .label-overlay {
+        .viewer-label {
             position: absolute;
             top: 8px;
             left: 12px;
             font-size: 12px;
-            color: rgba(180, 200, 240, 0.4);
+            color: rgba(180, 200, 240, 0.6);
             background: rgba(0, 0, 0, 0.5);
-            padding: 2px 14px;
-            border-radius: 30px;
-            pointer-events: none;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2px 10px;
+            border-radius: 15px;
         }
-        .logo-overlay {
-            position: absolute;
-            bottom: 12px;
-            left: 16px;
-            font-size: 18px;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.25);
-            letter-spacing: 2px;
-            pointer-events: none;
-            text-shadow: 0 0 20px rgba(100, 150, 255, 0.1);
-            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
-            user-select: none;
-        }
-        .logo-overlay span {
-            color: rgba(100, 180, 255, 0.35);
-        }
-
         .controls {
-            width: 280px;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-        .controls::-webkit-scrollbar {
-            width: 4px;
-        }
-        .controls::-webkit-scrollbar-track {
-            background: #141b2e;
-        }
-        .controls::-webkit-scrollbar-thumb {
-            background: #3a4a72;
-            border-radius: 10px;
-        }
-
-        .panel {
+            width: 260px;
             background: #0c1222;
-            border-radius: 16px;
-            padding: 14px 16px 16px;
             border: 1px solid #1f2848;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
         }
         .panel-title {
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
             color: #7e92c0;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
             margin-bottom: 12px;
-            border-bottom: 1px solid #1a2340;
             padding-bottom: 6px;
+            border-bottom: 1px solid #1a2340;
         }
         .control-group {
             margin-bottom: 12px;
-        }
-        .control-group:last-child {
-            margin-bottom: 0;
         }
         .control-label {
             display: flex;
             justify-content: space-between;
             font-size: 13px;
-            color: #c4d0ea;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         .control-label .val {
             color: #7aa2f7;
-            font-weight: 600;
-            min-width: 56px;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
+            font-weight: bold;
         }
         input[type="range"] {
-            -webkit-appearance: none;
             width: 100%;
             height: 4px;
-            border-radius: 4px;
             background: #1d2744;
+            border-radius: 4px;
             outline: none;
-            transition: background 0.2s;
         }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #5f7edb;
-            cursor: pointer;
-            border: 2px solid #8aacff;
-            box-shadow: 0 0 16px rgba(80, 130, 255, 0.25);
-            transition: 0.15s;
+        .info-box {
+            background: #0a1020;
+            border: 1px solid #1f2848;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 11px;
+            line-height: 1.6;
+            margin-top: 15px;
         }
-        input[type="range"]::-webkit-slider-thumb:hover {
-            transform: scale(1.15);
-            background: #7a9aff;
-        }
-        input[type="range"]::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #5f7edb;
-            cursor: pointer;
-            border: 2px solid #8aacff;
+        .info-box strong {
+            color: #ffa657;
         }
         .color-indicator {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-top: 2px;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 12px;
         }
         .color-swatch {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             border: 2px solid #2a3450;
-            box-shadow: 0 0 12px rgba(0, 0, 0, 0.4);
-            transition: 0.3s;
-        }
-        .info-text {
-            font-size: 12px;
-            color: #8a9bc0;
-            line-height: 1.6;
-            padding: 4px 4px;
-        }
-        .info-text strong {
-            color: #b7c9ff;
-        }
-        .info-text .highlight {
-            color: #f7c84a;
-        }
-        .click-hint {
-            font-size: 12px;
-            color: #4e6390;
-            margin-top: 6px;
-            padding: 5px 10px;
-            background: #0a1020;
-            border-radius: 10px;
-            border: 1px dashed #1f2a4a;
-            text-align: center;
-        }
-        .click-hint i {
-            font-style: normal;
-            color: #7aa2f7;
-        }
-        .reset-btn {
-            background: #1a2440;
-            border: 1px solid #2f3d62;
-            color: #b0c8f0;
-            padding: 5px 12px;
-            border-radius: 30px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-            margin-top: 2px;
-        }
-        .reset-btn:hover {
-            background: #2a3860;
-            border-color: #5a7ac0;
-            color: #fff;
-        }
-
-        @media (max-width: 860px) {
-            .app {
-                height: auto;
-                max-height: none;
-                padding: 12px;
-            }
-            .body {
-                flex-direction: column;
-            }
-            .controls {
-                width: 100%;
-                flex-direction: row;
-                flex-wrap: wrap;
-                overflow-y: visible;
-            }
-            .controls .panel {
-                flex: 1;
-                min-width: 180px;
-            }
-            .viewers {
-                min-height: 400px;
-            }
-            .viewer-2d {
-                min-height: 120px;
-            }
-            .viewer-3d {
-                min-height: 200px;
-            }
-        }
-        @media (max-width: 480px) {
-            .controls .panel {
-                min-width: 100%;
-            }
-            .header h1 {
-                font-size: 17px;
-            }
-            .logo-overlay {
-                font-size: 14px;
-                bottom: 8px;
-                left: 12px;
-            }
         }
     </style>
 </head>
 <body>
-
-    <div class="app">
-        <div class="header">
-            <h1>🧪 薄膜干涉 · 平面检测</h1>
-            <span class="sub">等厚干涉 | 点击 3D 平面设置凹凸</span>
+    <div class="header">薄膜干涉 · 双视图演示</div>
+    <div class="main">
+        <div class="viewers">
+            <div class="viewer" id="viewer2d">
+                <canvas id="canvas2d"></canvas>
+                <div class="viewer-label">干涉条纹（俯视）</div>
+            </div>
+            <div class="viewer" id="viewer3d">
+                <canvas id="canvas3d"></canvas>
+                <div class="viewer-label">截面示意图</div>
+            </div>
         </div>
-
-        <div class="body">
-            <div class="viewers">
-                <div class="viewer-2d">
-                    <canvas id="canvas2d"></canvas>
-                    <div class="label-overlay">⬆ 2D 干涉条纹 (俯视)</div>
-                </div>
-                <div class="viewer-3d" id="three-container">
-                    <div class="label-overlay">⬇ 3D 立体视图 (两平面)</div>
-                    <div class="logo-overlay">force<span>99</span></div>
+        <div class="controls">
+            <div class="panel-title">控制参数</div>
+            <div class="control-group">
+                <div class="control-label"><span>楔角 θ</span><span class="val" id="angleVal">0.5°</span></div>
+                <input type="range" id="angle" min="0.1" max="2.0" step="0.1" value="0.5">
+            </div>
+            <div class="control-group">
+                <div class="control-label"><span>波长 λ</span><span class="val" id="wavelengthVal">580 nm</span></div>
+                <input type="range" id="wavelength" min="380" max="780" step="10" value="580">
+                <div class="color-indicator">
+                    <span>光源颜色</span>
+                    <div class="color-swatch" id="colorSwatch"></div>
                 </div>
             </div>
-
-            <div class="controls">
-                <div class="panel">
-                    <div class="panel-title">🎛 控制参数</div>
-
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>楔角 θ</span>
-                            <span class="val" id="angleDisplay">0.50°</span>
-                        </div>
-                        <input type="range" id="angleSlider" min="0.05" max="2.50" step="0.01" value="0.50" />
-                    </div>
-
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>波长 λ</span>
-                            <span class="val" id="wavelengthDisplay">580 nm</span>
-                        </div>
-                        <input type="range" id="wavelengthSlider" min="380" max="780" step="1" value="580" />
-                        <div class="color-indicator">
-                            <span style="font-size:12px;color:#7e92c0;">颜色</span>
-                            <div class="color-swatch" id="colorSwatch" style="background:#f7c84a;"></div>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>凹凸幅度</span>
-                            <span class="val" id="bumpDisplay">2.00 μm</span>
-                        </div>
-                        <input type="range" id="bumpSlider" min="-3.00" max="3.00" step="0.01" value="2.00" />
-                    </div>
-
-                    <div class="control-group">
-                        <div class="control-label">
-                            <span>凹凸宽度</span>
-                            <span class="val" id="widthDisplay">0.25</span>
-                        </div>
-                        <input type="range" id="widthSlider" min="0.05" max="0.60" step="0.01" value="0.25" />
-                    </div>
-
-                    <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between;">
-                        <div class="click-hint" style="margin:0; flex:1;">
-                            💡 点击 3D 平面 <i>设置凹凸位置</i>
-                        </div>
-                        <button class="reset-btn" id="resetBtn">↺ 重置</button>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-title">📖 检测原理及条纹弯曲规律</div>
-                    <div class="info-text">
-                        <strong>检测原理：</strong>利用等厚干涉，被检平面（下）与标准平面（上）形成空气楔层，单色光照射后产生等厚干涉条纹。<br /><br />
-                        <strong>弯曲规律：</strong>
-                        • 凸起处条纹向<span class="highlight">左</span>移动（空气层变薄，条纹向楔棱方向移动）<br />
-                        • 凹陷处条纹向<span class="highlight">右</span>移动（空气层变厚，条纹向厚度增大方向移动）<br /><br />
-                        <strong>当前设置：</strong>波长×0.1，移动幅度×4，影响区域×4，凹凸形变缩小至120，<strong>条纹宽度严格不变</strong>。
-                    </div>
-                </div>
+            <div class="control-group">
+                <div class="control-label"><span>凸起幅度 h</span><span class="val" id="bumpVal">2.0 μm</span></div>
+                <input type="range" id="bump" min="-3.0" max="3.0" step="0.1" value="2.0">
+            </div>
+            <div class="control-group">
+                <div class="control-label"><span>凸起位置</span><span class="val" id="posVal">50%</span></div>
+                <input type="range" id="pos" min="0" max="100" step="5" value="50">
+            </div>
+            <div class="info-box">
+                <strong>物理原理：</strong><br>
+                光程差 δ = 2d + λ/2（含半波损失）<br>
+                亮纹：2d + λ/2 = kλ<br>
+                暗纹：2d + λ/2 = (2k+1)λ/2<br><br>
+                <strong>条纹弯曲规律：</strong><br>
+                • 凸起(h>0)：空气膜变薄 → 条纹远离接触端<br>
+                • 凹陷(h<0)：空气膜变厚 → 条纹靠近接触端
             </div>
         </div>
     </div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-
-    <script type="module">
-        // ============================================================
-        //  薄膜干涉 · 平面检测
-        //  方向正确：凸起向左，凹陷向右，条纹宽度严格不变
-        // ============================================================
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
-        // ---------- DOM ----------
+    <script>
+        // DOM元素
         const canvas2d = document.getElementById('canvas2d');
         const ctx2d = canvas2d.getContext('2d');
-        const container3d = document.getElementById('three-container');
+        const canvas3d = document.getElementById('canvas3d');
+        const ctx3d = canvas3d.getContext('2d');
 
-        const angleSlider = document.getElementById('angleSlider');
-        const wavelengthSlider = document.getElementById('wavelengthSlider');
-        const bumpSlider = document.getElementById('bumpSlider');
-        const widthSlider = document.getElementById('widthSlider');
-        const angleDisplay = document.getElementById('angleDisplay');
-        const wavelengthDisplay = document.getElementById('wavelengthDisplay');
-        const bumpDisplay = document.getElementById('bumpDisplay');
-        const widthDisplay = document.getElementById('widthDisplay');
-        const colorSwatch = document.getElementById('colorSwatch');
-        const resetBtn = document.getElementById('resetBtn');
-
-        // ---------- 参数 ----------
+        // 参数
         const params = {
-            angle: 0.50,
+            angle: 0.5,
             wavelength: 580,
-            bumpAmp: 2.00,
-            bumpWidth: 0.25,
-            bumpCx: 0.50,
-            bumpCy: 0.50,
+            bump: 2.0,
+            bumpPos: 0.5
         };
 
-        const WIDTH_MM = 10;
-        const DEPTH_MM = 6;
-
-        // ---------- 2D Canvas 尺寸 ----------
-        function resizeCanvas2d() {
-            const rect = canvas2d.parentElement.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            const w = rect.width;
-            const h = rect.height;
-            canvas2d.width = w * dpr;
-            canvas2d.height = h * dpr;
-            canvas2d.style.width = w + 'px';
-            canvas2d.style.height = h + 'px';
-            ctx2d.scale(dpr, dpr);
-            return { w, h };
-        }
-
-        // ---------- 波长转 RGB ----------
+        // 波长转RGB
         function wavelengthToRGB(wl) {
             let r, g, b;
-            if (wl >= 380 && wl < 440) { r = -(wl - 440) / 60;
-                g = 0;
-                b = 1; } else if (wl >= 440 && wl < 490) { r = 0;
-                g = (wl - 440) / 50;
-                b = 1; } else if (wl >= 490 && wl < 510) { r = 0;
-                g = 1;
-                b = -(wl - 510) / 20; } else if (wl >= 510 && wl < 580) { r = (wl - 510) / 70;
-                g = 1;
-                b = 0; } else if (wl >= 580 && wl < 645) { r = 1;
-                g = -(wl - 645) / 65;
-                b = 0; } else if (wl >= 645 && wl <= 780) { r = 1;
-                g = 0;
-                b = 0; } else { r = 0;
-                g = 0;
-                b = 0; }
+            if (wl < 440) { r = -(wl - 440) / 60; g = 0; b = 1; }
+            else if (wl < 490) { r = 0; g = (wl - 440) / 50; b = 1; }
+            else if (wl < 510) { r = 0; g = 1; b = -(wl - 510) / 20; }
+            else if (wl < 580) { r = (wl - 510) / 70; g = 1; b = 0; }
+            else if (wl < 645) { r = 1; g = -(wl - 645) / 65; b = 0; }
+            else { r = 1; g = 0; b = 0; }
+
             let factor;
-            if (wl >= 380 && wl < 420) factor = 0.3 + 0.7 * (wl - 380) / 40;
-            else if (wl >= 420 && wl <= 700) factor = 1.0;
-            else if (wl > 700 && wl <= 780) factor = 0.3 + 0.7 * (780 - wl) / 80;
-            else factor = 0;
+            if (wl < 420) factor = 0.3 + 0.7 * (wl - 380) / 40;
+            else if (wl <= 700) factor = 1.0;
+            else factor = 0.3 + 0.7 * (780 - wl) / 80;
+
             return [r * factor, g * factor, b * factor];
         }
 
-        // ---------- 生成干涉纹理 (条纹宽度严格不变，方向正确：凸起向左) ----------
-        function generateInterferenceTexture(thetaDeg, wlNm, bumpAmpUm, bumpWidth, bumpCx, bumpCy, width, height) {
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
+        // 调整画布大小
+        function resizeCanvas(canvas, container) {
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const w = rect.width || 300;
+            const h = rect.height || 200;
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+            canvas.style.width = w + 'px';
+            canvas.style.height = h + 'px';
             const ctx = canvas.getContext('2d');
-            const imageData = ctx.createImageData(width, height);
-            const data = imageData.data;
+            ctx.scale(dpr, dpr);
+            return { w, h, ctx };
+        }
 
-            const theta = thetaDeg * Math.PI / 180;
-            const lambda_mm = wlNm / 1000;
-            const lambda_eff = lambda_mm * 0.1;
-            const amp_mm = bumpAmpUm / 1000;
-            const bw = bumpWidth * 0.25;
-            const cx_mm = bumpCx * WIDTH_MM;
-            const cy_mm = bumpCy * DEPTH_MM;
+        // 渲染2D干涉条纹
+        function render2D() {
+            const { w, h, ctx } = resizeCanvas(canvas2d, document.getElementById('viewer2d'));
 
-            const [rBase, gBase, bBase] = wavelengthToRGB(wlNm);
-            const bright = 1.0;
+            const imgData = ctx.createImageData(w, h);
+            const data = imgData.data;
 
-            const SHIFT_FACTOR = 4.0;
-            const VERTICAL_STRETCH = 0.25;
+            const theta = params.angle * Math.PI / 180;
+            const lambda_eff = params.wavelength * 1e-6 * 10;
+            const amp = params.bump * 1e-3;
+            const bumpX = params.bumpPos * w;
 
-            for (let py = 0; py < height; py++) {
-                for (let px = 0; px < width; px++) {
-                    const u = px / width;
-                    const v = py / height;
-                    const x_mm = u * WIDTH_MM;
-                    const z_mm = v * DEPTH_MM;
+            const [rBase, gBase, bBase] = wavelengthToRGB(params.wavelength);
 
-                    // 基础相位：只沿x方向变化，保证条纹宽度恒定
-                    const basePhase = 2 * Math.PI * x_mm * Math.tan(theta) / lambda_eff;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let d = x * Math.tan(theta) * 0.01;
+                    const dx = (x - bumpX) / 80;
+                    const bumpEffect = amp * Math.exp(-dx * dx / 2);
+                    d -= bumpEffect;
 
-                    // 凹凸偏移量：高斯函数
-                    const dx = (x_mm - cx_mm) / (bw * WIDTH_MM);
-                    const dz = (z_mm - cy_mm) / (bw * DEPTH_MM) * VERTICAL_STRETCH;
-                    const dist2 = dx * dx + dz * dz;
-                    const bump = amp_mm * Math.exp(-dist2 / 2);
-                    const shift = bump * SHIFT_FACTOR; // 移动幅度×4
+                    const phase = 4 * Math.PI * d / lambda_eff;
+                    const intensity = Math.pow(Math.sin(phase / 2), 2);
 
-                    // 相位偏移：将横向移动转换为相位偏移
-                    // ★★★ 正确方向：凸起（bump>0）时条纹向左移动（相位减小）★★★
-                    const phaseShift = 2 * Math.PI * shift / lambda_eff;
-                    const totalPhase = basePhase - phaseShift; // 凸起向左
-
-                    let intensity = Math.sin(totalPhase) ** 2;
-                    intensity = Math.pow(intensity, 0.5);
-
-                    const r = rBase * intensity * bright;
-                    const g = gBase * intensity * bright;
-                    const b = bBase * intensity * bright;
-                    const idx = (py * width + px) * 4;
-                    data[idx] = Math.min(255, Math.round(r * 255));
-                    data[idx + 1] = Math.min(255, Math.round(g * 255));
-                    data[idx + 2] = Math.min(255, Math.round(b * 255));
+                    const idx = (y * w + x) * 4;
+                    data[idx] = Math.min(255, Math.round(rBase * intensity * 255));
+                    data[idx + 1] = Math.min(255, Math.round(gBase * intensity * 255));
+                    data[idx + 2] = Math.min(255, Math.round(bBase * intensity * 255));
                     data[idx + 3] = 255;
                 }
             }
-            ctx.putImageData(imageData, 0, 0);
-            return canvas;
+
+            ctx.putImageData(imgData, 0, 0);
+
+            // 标注
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText(`θ=${params.angle.toFixed(1)}°  λ=${params.wavelength}nm`, 8, 18);
+            ctx.fillText('← 接触端          厚度增加 →', w/2 - 60, h - 8);
         }
 
-        // ---------- 更新 2D ----------
-        function update2D() {
-            const rect = canvas2d.parentElement.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            const cw = canvas2d.width / dpr;
-            const ch = canvas2d.height / dpr;
+        // 渲染3D截面图
+        function render3D() {
+            const { w, h, ctx } = resizeCanvas(canvas3d, document.getElementById('viewer3d'));
 
-            const texCanvas = generateInterferenceTexture(
-                params.angle,
-                params.wavelength,
-                params.bumpAmp,
-                params.bumpWidth,
-                params.bumpCx,
-                params.bumpCy,
-                Math.floor(cw),
-                Math.floor(ch)
-            );
-            ctx2d.clearRect(0, 0, cw, ch);
-            ctx2d.drawImage(texCanvas, 0, 0, cw, ch);
-            ctx2d.fillStyle = 'rgba(200,215,240,0.4)';
-            ctx2d.font = '13px sans-serif';
-            ctx2d.fillText(`θ = ${params.angle.toFixed(2)}°   λ = ${params.wavelength} nm`, 12, 24);
-        }
+            ctx.fillStyle = '#0a0e1a';
+            ctx.fillRect(0, 0, w, h);
 
-        // ---------- Three.js 3D 场景 ----------
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x080c18);
+            const margin = 40;
+            const plotW = w - 2 * margin;
+            const plotH = h - 2 * margin;
+            const ox = margin;
+            const oy = h - margin;
 
-        const camera = new THREE.PerspectiveCamera(32, container3d.clientWidth / container3d.clientHeight, 0.1, 50);
-        camera.position.set(10, 7, 13);
-        camera.lookAt(WIDTH_MM / 2, 0.3, DEPTH_MM / 2);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setSize(container3d.clientWidth, container3d.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.4;
-        renderer.outputColorSpace = THREE.SRGBColorSpace;
-        container3d.appendChild(renderer.domElement);
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(WIDTH_MM / 2, 0.3, DEPTH_MM / 2);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.minDistance = 4;
-        controls.maxDistance = 25;
-        controls.update();
-
-        // 光照
-        const ambient = new THREE.AmbientLight(0x446688, 0.5);
-        scene.add(ambient);
-
-        const mainLight = new THREE.DirectionalLight(0xffeedd, 2.0);
-        mainLight.position.set(8, 15, 10);
-        mainLight.castShadow = true;
-        mainLight.shadow.mapSize.width = 1024;
-        mainLight.shadow.mapSize.height = 1024;
-        mainLight.shadow.camera.near = 0.5;
-        mainLight.shadow.camera.far = 30;
-        mainLight.shadow.camera.left = -10;
-        mainLight.shadow.camera.right = 10;
-        mainLight.shadow.camera.top = 10;
-        mainLight.shadow.camera.bottom = -10;
-        scene.add(mainLight);
-
-        const fillLight = new THREE.DirectionalLight(0x8899ff, 0.8);
-        fillLight.position.set(-5, 6, -4);
-        scene.add(fillLight);
-
-        const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        rimLight.position.set(-2, 1, -8);
-        scene.add(rimLight);
-
-        // 背景网格
-        const gridHelper = new THREE.GridHelper(18, 20, 0x4466aa, 0x223366);
-        gridHelper.position.set(WIDTH_MM / 2, -0.3, DEPTH_MM / 2);
-        scene.add(gridHelper);
-
-        const groundGeo = new THREE.PlaneGeometry(18, 12);
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: 0x0a1020,
-            transparent: true,
-            opacity: 0.5,
-            roughness: 0.8,
-            metalness: 0.0,
-            side: THREE.DoubleSide,
-        });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.set(WIDTH_MM / 2, -0.25, DEPTH_MM / 2);
-        ground.receiveShadow = true;
-        scene.add(ground);
-
-        // ---------- 下平面 (被测) ----------
-        const SEG_X = 128;
-        const SEG_Z = 128;
-        const geoBottom = new THREE.BufferGeometry();
-        const vertsBottom = [];
-        const idxs = [];
-        const uvsBottom = [];
-        for (let iz = 0; iz <= SEG_Z; iz++) {
-            const v = iz / SEG_Z;
-            const z = v * DEPTH_MM;
-            for (let ix = 0; ix <= SEG_X; ix++) {
-                const u = ix / SEG_X;
-                const x = u * WIDTH_MM;
-                vertsBottom.push(x, 0, z);
-                uvsBottom.push(u, v);
-            }
-        }
-        for (let iz = 0; iz < SEG_Z; iz++) {
-            for (let ix = 0; ix < SEG_X; ix++) {
-                const a = iz * (SEG_X + 1) + ix;
-                const b = a + 1;
-                const c = (iz + 1) * (SEG_X + 1) + ix;
-                const d = c + 1;
-                idxs.push(a, b, c);
-                idxs.push(b, d, c);
-            }
-        }
-        geoBottom.setAttribute('position', new THREE.Float32BufferAttribute(vertsBottom, 3));
-        geoBottom.setIndex(idxs);
-        geoBottom.setAttribute('uv', new THREE.Float32BufferAttribute(uvsBottom, 2));
-        geoBottom.computeVertexNormals();
-
-        const texCanvas = document.createElement('canvas');
-        const texture = new THREE.CanvasTexture(texCanvas);
-        texture.wrapS = THREE.ClampToEdgeWrapping;
-        texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.minFilter = THREE.LinearMipmapLinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.colorSpace = THREE.SRGBColorSpace;
-
-        const matBottom = new THREE.MeshStandardMaterial({
-            map: texture,
-            roughness: 0.25,
-            metalness: 0.15,
-            side: THREE.DoubleSide,
-            emissive: new THREE.Color(0x112244),
-            emissiveIntensity: 0.05,
-        });
-        const meshBottom = new THREE.Mesh(geoBottom, matBottom);
-        meshBottom.castShadow = true;
-        meshBottom.receiveShadow = true;
-        scene.add(meshBottom);
-
-        const edgeMat = new THREE.LineBasicMaterial({ color: 0xf7c84a, transparent: true, opacity: 0.4 });
-        const edgeGeo = new THREE.EdgesGeometry(geoBottom);
-        const edgeLine = new THREE.LineSegments(edgeGeo, edgeMat);
-        scene.add(edgeLine);
-
-        // ---------- 上平面 (参考) ----------
-        const geoTop = new THREE.BufferGeometry();
-        const vertsTop = [];
-        const uvsTop = [];
-        for (let iz = 0; iz <= SEG_Z; iz++) {
-            const v = iz / SEG_Z;
-            const z = v * DEPTH_MM;
-            for (let ix = 0; ix <= SEG_X; ix++) {
-                const u = ix / SEG_X;
-                const x = u * WIDTH_MM;
-                vertsTop.push(x, 0, z);
-                uvsTop.push(u, v);
-            }
-        }
-        geoTop.setAttribute('position', new THREE.Float32BufferAttribute(vertsTop, 3));
-        geoTop.setIndex(idxs);
-        geoTop.setAttribute('uv', new THREE.Float32BufferAttribute(uvsTop, 2));
-        geoTop.computeVertexNormals();
-
-        const matTop = new THREE.MeshStandardMaterial({
-            color: 0x88ccff,
-            transparent: true,
-            opacity: 0.18,
-            roughness: 0.05,
-            metalness: 0.0,
-            side: THREE.DoubleSide,
-            depthWrite: false,
-        });
-        const meshTop = new THREE.Mesh(geoTop, matTop);
-        meshTop.castShadow = true;
-        meshTop.receiveShadow = true;
-        scene.add(meshTop);
-
-        const topEdgeMat = new THREE.LineBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0.5 });
-        const topEdgeGeo = new THREE.EdgesGeometry(geoTop);
-        const topEdgeLine = new THREE.LineSegments(topEdgeGeo, topEdgeMat);
-        scene.add(topEdgeLine);
-
-        // ---------- 更新 3D ----------
-        function update3D() {
             const theta = params.angle * Math.PI / 180;
-            const amp_mm = params.bumpAmp / 1000;
-            const bw = params.bumpWidth * 0.25;
-            const cx_mm = params.bumpCx * WIDTH_MM;
-            const cy_mm = params.bumpCy * DEPTH_MM;
+            const amp_mm = Math.abs(params.bump) * 1e-3;
+            const bumpSign = params.bump > 0 ? 1 : -1;
+            const bumpX_pos = params.bumpPos * plotW + ox;
 
-            const Y_SCALE_WEDGE = 3.0;
-            const Y_SCALE_BUMP = 120;
-            const OFFSET = 0.08;
+            ctx.strokeStyle = 'rgba(136,204,255,0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            ctx.lineTo(ox + plotW, oy - plotH * 0.6);
+            ctx.stroke();
 
-            // 更新下平面顶点
-            const posBottom = geoBottom.attributes.position;
-            const posBottomArray = posBottom.array;
-            for (let i = 0; i < posBottomArray.length / 3; i++) {
-                const idx = i * 3;
-                const x = posBottomArray[idx];
-                const z = posBottomArray[idx + 2];
-                const dx = (x - cx_mm) / (bw * WIDTH_MM);
-                const dz = (z - cy_mm) / (bw * DEPTH_MM);
-                const dist2 = dx * dx + dz * dz;
-                const bump = amp_mm * Math.exp(-dist2 / 2);
-                posBottomArray[idx + 1] = bump * Y_SCALE_BUMP;
+            ctx.strokeStyle = 'rgba(255,200,100,0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ox, oy);
+            for (let i = 0; i <= 100; i++) {
+                const x = ox + (i / 100) * plotW;
+                let y = oy;
+                const dist = Math.abs(x - bumpX_pos) / (plotW * 0.15);
+                const bumpY = bumpSign * amp_mm * 30 * Math.exp(-dist * dist / 2);
+                y -= bumpY;
+                ctx.lineTo(x, y);
             }
-            posBottom.needsUpdate = true;
-            geoBottom.computeVertexNormals();
+            ctx.stroke();
 
-            // 更新上平面顶点
-            const posTop = geoTop.attributes.position;
-            const posTopArray = posTop.array;
-            for (let i = 0; i < posTopArray.length / 3; i++) {
-                const idx = i * 3;
-                const x = posTopArray[idx];
-                const y = x * Math.tan(theta) * Y_SCALE_WEDGE + OFFSET;
-                posTopArray[idx + 1] = y;
-            }
-            posTop.needsUpdate = true;
-            geoTop.computeVertexNormals();
+            ctx.fillStyle = 'rgba(255,100,100,0.9)';
+            ctx.beginPath();
+            ctx.arc(bumpX_pos, oy - bumpSign * amp_mm * 30, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText(params.bump > 0 ? '凸起' : '凹陷', bumpX_pos + 8, oy - bumpSign * amp_mm * 30 - 5);
 
-            // 更新纹理
-            const texCanvas2 = generateInterferenceTexture(
-                params.angle,
-                params.wavelength,
-                params.bumpAmp,
-                params.bumpWidth,
-                params.bumpCx,
-                params.bumpCy,
-                1024,
-                768
-            );
-            texture.image = texCanvas2;
-            texture.needsUpdate = true;
-
-            // 更新颜色指示器
-            const [r, g, b] = wavelengthToRGB(params.wavelength);
-            colorSwatch.style.background = `rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`;
+            ctx.fillStyle = 'rgba(150,170,200,0.5)';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('x (mm)', ox + plotW - 35, oy + 15);
+            ctx.fillText('接触点 d=0', ox - 45, oy + 15);
         }
 
-        // ---------- 统一更新 ----------
+        // 更新所有
         function updateAll() {
-            update2D();
-            update3D();
+            render2D();
+            render3D();
+
+            const [r, g, b] = wavelengthToRGB(params.wavelength);
+            document.getElementById('colorSwatch').style.background = `rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`;
         }
 
-        // ---------- 滑块事件 ----------
-        angleSlider.addEventListener('input', () => {
-            params.angle = parseFloat(angleSlider.value);
-            angleDisplay.textContent = params.angle.toFixed(2) + '°';
-            updateAll();
-        });
-        wavelengthSlider.addEventListener('input', () => {
-            params.wavelength = parseInt(wavelengthSlider.value);
-            wavelengthDisplay.textContent = params.wavelength + ' nm';
-            updateAll();
-        });
-        bumpSlider.addEventListener('input', () => {
-            params.bumpAmp = parseFloat(bumpSlider.value);
-            bumpDisplay.textContent = params.bumpAmp.toFixed(2) + ' μm';
-            updateAll();
-        });
-        widthSlider.addEventListener('input', () => {
-            params.bumpWidth = parseFloat(widthSlider.value);
-            widthDisplay.textContent = params.bumpWidth.toFixed(2);
+        // 事件监听
+        document.getElementById('angle').addEventListener('input', (e) => {
+            params.angle = parseFloat(e.target.value);
+            document.getElementById('angleVal').textContent = params.angle.toFixed(1) + '°';
             updateAll();
         });
 
-        // ---------- 重置 ----------
-        resetBtn.addEventListener('click', () => {
-            params.angle = 0.50;
-            params.wavelength = 580;
-            params.bumpAmp = 2.00;
-            params.bumpWidth = 0.25;
-            params.bumpCx = 0.50;
-            params.bumpCy = 0.50;
-            angleSlider.value = 0.50;
-            wavelengthSlider.value = 580;
-            bumpSlider.value = 2.00;
-            widthSlider.value = 0.25;
-            angleDisplay.textContent = '0.50°';
-            wavelengthDisplay.textContent = '580 nm';
-            bumpDisplay.textContent = '2.00 μm';
-            widthDisplay.textContent = '0.25';
+        document.getElementById('wavelength').addEventListener('input', (e) => {
+            params.wavelength = parseInt(e.target.value);
+            document.getElementById('wavelengthVal').textContent = params.wavelength + ' nm';
             updateAll();
         });
 
-        // ---------- 点击 3D 设置凹凸 ----------
-        const raycaster = new THREE.Raycaster();
-        const pointer = new THREE.Vector2();
-
-        function onPointerDown(event) {
-            const rect = renderer.domElement.getBoundingClientRect();
-            const clientX = event.clientX ?? (event.touches?.[0]?.clientX ?? 0);
-            const clientY = event.clientY ?? (event.touches?.[0]?.clientY ?? 0);
-            pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-            pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(pointer, camera);
-            const intersects = raycaster.intersectObject(meshBottom);
-            if (intersects.length > 0) {
-                const point = intersects[0].point;
-                const localX = point.x;
-                const localZ = point.z;
-                if (localX >= 0 && localX <= WIDTH_MM && localZ >= 0 && localZ <= DEPTH_MM) {
-                    params.bumpCx = localX / WIDTH_MM;
-                    params.bumpCy = localZ / DEPTH_MM;
-                    if (Math.abs(params.bumpAmp) < 0.01) {
-                        params.bumpAmp = 2.00;
-                        bumpSlider.value = params.bumpAmp;
-                        bumpDisplay.textContent = params.bumpAmp.toFixed(2) + ' μm';
-                    }
-                    updateAll();
-                }
-            }
-        }
-
-        renderer.domElement.addEventListener('click', onPointerDown);
-        renderer.domElement.addEventListener('touchstart', (e) => {
-            onPointerDown(e);
-            e.preventDefault();
-        }, { passive: false });
-
-        // ---------- 窗口自适应 ----------
-        function resizeAll() {
-            resizeCanvas2d();
-            const w = container3d.clientWidth;
-            const h = container3d.clientHeight;
-            renderer.setSize(w, h);
-            camera.aspect = w / h;
-            camera.updateProjectionMatrix();
+        document.getElementById('bump').addEventListener('input', (e) => {
+            params.bump = parseFloat(e.target.value);
+            document.getElementById('bumpVal').textContent = params.bump.toFixed(1) + ' μm';
             updateAll();
-        }
+        });
 
-        window.addEventListener('resize', resizeAll);
-        setTimeout(() => resizeAll(), 50);
+        document.getElementById('pos').addEventListener('input', (e) => {
+            params.bumpPos = parseInt(e.target.value) / 100;
+            document.getElementById('posVal').textContent = e.target.value + '%';
+            updateAll();
+        });
 
-        // ---------- 动画循环 ----------
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
+        window.addEventListener('resize', updateAll);
 
-        // ---------- 启动 ----------
-        updateAll();
-        animate();
-
-        console.log('✅ 薄膜干涉 · 平面检测 已启动 (方向正确：凸起向左)');
-        console.log('💡 点击 3D 平面设置凹凸位置 · 拖拽旋转视角');
+        // 初始渲染
+        setTimeout(updateAll, 50);
     </script>
-
 </body>
 </html>
