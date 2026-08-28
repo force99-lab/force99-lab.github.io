@@ -1887,7 +1887,6 @@ const WORKS = [
   },
 
 /* ---------------- 解题 ------------
-  },
 
 
   {
@@ -1896,7 +1895,6 @@ const WORKS = [
     icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-interference.html", date:"2026-08-27", tag:"光学"
   },
   /* ---------------- 解题 -----------
-  },
   
   {
       type:"animation", title:"光通过半圆形玻璃砖·时序生长",
