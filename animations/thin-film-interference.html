@@ -1,350 +1,729 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>薄膜干涉 - 双视图</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #0a0e1a;
-            font-family: 'Microsoft YaHei', sans-serif;
-            color: #e8ecf4;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 10px;
-        }
-        .header {
-            text-align: center;
-            padding: 10px;
-            font-size: 20px;
-            color: #6a9cf5;
-        }
-        .main {
-            flex: 1;
-            display: flex;
-            gap: 15px;
-            min-height: 0;
-        }
-        .viewers {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .viewer {
-            flex: 1;
-            background: #1a1a2e;
-            border: 1px solid #2a3450;
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        .viewer canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        .viewer-label {
-            position: absolute;
-            top: 8px;
-            left: 12px;
-            font-size: 12px;
-            color: rgba(180, 200, 240, 0.6);
-            background: rgba(0, 0, 0, 0.5);
-            padding: 2px 10px;
-            border-radius: 15px;
-        }
-        .controls {
-            width: 260px;
-            background: #0c1222;
-            border: 1px solid #1f2848;
-            border-radius: 10px;
-            padding: 15px;
-            overflow-y: auto;
-        }
-        .panel-title {
-            font-size: 13px;
-            color: #7e92c0;
-            margin-bottom: 12px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #1a2340;
-        }
-        .control-group {
-            margin-bottom: 12px;
-        }
-        .control-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-        .control-label .val {
-            color: #7aa2f7;
-            font-weight: bold;
-        }
-        input[type="range"] {
-            width: 100%;
-            height: 4px;
-            background: #1d2744;
-            border-radius: 4px;
-            outline: none;
-        }
-        .info-box {
-            background: #0a1020;
-            border: 1px solid #1f2848;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 11px;
-            line-height: 1.6;
-            margin-top: 15px;
-        }
-        .info-box strong {
-            color: #ffa657;
-        }
-        .color-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 4px;
-            font-size: 12px;
-        }
-        .color-swatch {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid #2a3450;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薄膜干涉（等厚干涉）· 双视图教学演示</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: #0f1f2e;
+        font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        color: #dce6f0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        gap: 10px;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+        padding: 0 6px;
+    }
+    .header h1 {
+        font-size: 19px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #7fd8e8, #4a9fd8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .header .sub {
+        font-size: 12px;
+        color: #6f8ba8;
+        background: #16293a;
+        padding: 4px 14px;
+        border-radius: 20px;
+        border: 1px solid #24405a;
+    }
+    .main { flex: 1; display: flex; gap: 14px; min-height: 0; }
+    .viewers { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    .viewer {
+        flex: 1;
+        background: #081420;
+        border: 1px solid #24405a;
+        border-radius: 10px;
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
+    }
+    .viewer canvas { display: block; width: 100%; height: 100%; }
+    .viewer-label {
+        position: absolute; top: 8px; left: 12px;
+        font-size: 12px; color: #8fb8d8;
+        background: rgba(6, 18, 30, 0.75);
+        padding: 3px 12px; border-radius: 14px;
+        pointer-events: none;
+        border: 1px solid #24405a;
+    }
+    .controls {
+        width: 268px; flex-shrink: 0;
+        background: #122334;
+        border: 1px solid #24405a;
+        border-radius: 10px;
+        padding: 14px;
+        overflow-y: auto;
+    }
+    .panel-title {
+        font-size: 12px; font-weight: 600; color: #6f9dc0;
+        letter-spacing: 1px; margin-bottom: 11px;
+        padding-bottom: 6px; border-bottom: 1px solid #1e3448;
+    }
+    .control-group { margin-bottom: 13px; }
+    .control-label {
+        display: flex; justify-content: space-between;
+        font-size: 13px; margin-bottom: 4px;
+    }
+    .control-label .val { color: #5fc8e8; font-weight: 600; font-variant-numeric: tabular-nums; }
+    input[type="range"] {
+        width: 100%; height: 4px; -webkit-appearance: none;
+        background: #1e3448; border-radius: 4px; outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 15px; height: 15px;
+        border-radius: 50%; background: #4a9fd8; cursor: pointer;
+        border: 2px solid #8fd4f0;
+    }
+    .color-row { display: flex; align-items: center; gap: 9px; margin-top: 5px; font-size: 12px; color: #7f9cb8; }
+    .swatch { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #24405a; }
+    .checkbox-row {
+        display: flex; align-items: center; gap: 7px;
+        font-size: 12.5px; color: #a8c0d8; margin-bottom: 12px; cursor: pointer;
+    }
+    .checkbox-row input { cursor: pointer; }
+    .readout {
+        background: #0b1a28; border: 1px solid #1e3448;
+        border-radius: 8px; padding: 10px 11px; margin-top: 6px;
+    }
+    .readout-title { font-size: 11px; color: #6f9dc0; margin-bottom: 7px; letter-spacing: 0.5px; }
+    .readout-grid {
+        display: grid; grid-template-columns: auto 1fr; gap: 4px 10px;
+        font-size: 12px; font-variant-numeric: tabular-nums;
+    }
+    .readout-grid .k { color: #7f9cb8; }
+    .readout-grid .v { color: #7fd8e8; font-weight: 600; text-align: right; }
+    .formula-box {
+        background: #0b1a28; border: 1px solid #1e3448;
+        border-radius: 8px; padding: 10px 11px; margin-top: 10px;
+        font-size: 11.5px; line-height: 1.75; color: #8fabc4;
+    }
+    .formula-box .eq {
+        color: #ffb567; font-family: 'Cambria Math', 'Times New Roman', serif; font-style: italic;
+    }
+    .formula-box .hl { color: #7fd8e8; }
+    .rule-box {
+        background: #0b1a28; border: 1px solid #1e3448;
+        border-radius: 8px; padding: 10px 11px; margin-top: 10px;
+        font-size: 11.5px; line-height: 1.7; color: #8fabc4;
+    }
+    .rule-box strong { color: #7fd8e8; }
+    .rule-box .warn { color: #ffb567; }
+    .hint {
+        font-size: 11.5px; color: #5f7f9c; text-align: center;
+        padding: 6px; background: #0b1a28; border: 1px dashed #1e3448;
+        border-radius: 7px; margin-bottom: 11px;
+    }
+    .hint i { font-style: normal; color: #5fc8e8; }
+    .btn-row { display: flex; gap: 7px; margin-top: 9px; }
+    .btn {
+        flex: 1; background: #1a2f44; border: 1px solid #2a4a68;
+        color: #a8c8e0; padding: 6px; border-radius: 7px;
+        font-size: 12px; cursor: pointer; transition: 0.18s;
+    }
+    .btn:hover { background: #24405a; border-color: #4a9fd8; color: #fff; }
+</style>
 </head>
 <body>
-    <div class="header">薄膜干涉 · 双视图演示</div>
-    <div class="main">
-        <div class="viewers">
-            <div class="viewer" id="viewer2d">
-                <canvas id="canvas2d"></canvas>
-                <div class="viewer-label">干涉条纹（俯视）</div>
-            </div>
-            <div class="viewer" id="viewer3d">
-                <canvas id="canvas3d"></canvas>
-                <div class="viewer-label">截面示意图</div>
-            </div>
+
+<div class="header">
+    <h1>薄膜干涉（等厚干涉）· 双视图教学演示</h1>
+    <span class="sub">视场 0.50 mm × 0.33 mm · 真实物理量直算</span>
+</div>
+
+<div class="main">
+    <div class="viewers">
+        <div class="viewer">
+            <canvas id="canvas2d"></canvas>
+            <div class="viewer-label">干涉条纹（俯视）· 点击可移动缺陷位置</div>
         </div>
-        <div class="controls">
-            <div class="panel-title">控制参数</div>
-            <div class="control-group">
-                <div class="control-label"><span>楔角 θ</span><span class="val" id="angleVal">0.5°</span></div>
-                <input type="range" id="angle" min="0.1" max="2.0" step="0.1" value="0.5">
-            </div>
-            <div class="control-group">
-                <div class="control-label"><span>波长 λ</span><span class="val" id="wavelengthVal">580 nm</span></div>
-                <input type="range" id="wavelength" min="380" max="780" step="10" value="580">
-                <div class="color-indicator">
-                    <span>光源颜色</span>
-                    <div class="color-swatch" id="colorSwatch"></div>
-                </div>
-            </div>
-            <div class="control-group">
-                <div class="control-label"><span>凸起幅度 h</span><span class="val" id="bumpVal">2.0 μm</span></div>
-                <input type="range" id="bump" min="-3.0" max="3.0" step="0.1" value="2.0">
-            </div>
-            <div class="control-group">
-                <div class="control-label"><span>凸起位置</span><span class="val" id="posVal">50%</span></div>
-                <input type="range" id="pos" min="0" max="100" step="5" value="50">
-            </div>
-            <div class="info-box">
-                <strong>物理原理：</strong><br>
-                光程差 δ = 2d + λ/2（含半波损失）<br>
-                亮纹：2d + λ/2 = kλ<br>
-                暗纹：2d + λ/2 = (2k+1)λ/2<br><br>
-                <strong>条纹弯曲规律：</strong><br>
-                • 凸起(h>0)：空气膜变薄 → 条纹远离接触端<br>
-                • 凹陷(h<0)：空气膜变厚 → 条纹靠近接触端
-            </div>
+        <div class="viewer">
+            <canvas id="canvas3d"></canvas>
+            <div class="viewer-label">立体视图（两平面 3D 构图）· 拖动可旋转</div>
         </div>
     </div>
 
-    <script>
-        // DOM元素
-        const canvas2d = document.getElementById('canvas2d');
-        const ctx2d = canvas2d.getContext('2d');
-        const canvas3d = document.getElementById('canvas3d');
-        const ctx3d = canvas3d.getContext('2d');
+    <div class="controls">
+        <div class="panel-title">控制参数</div>
 
-        // 参数
-        const params = {
-            angle: 0.5,
-            wavelength: 580,
-            bump: 2.0,
-            bumpPos: 0.5
-        };
+        <div class="hint">💡 点击上方条纹图 <i>设置缺陷位置</i></div>
 
-        // 波长转RGB
-        function wavelengthToRGB(wl) {
-            let r, g, b;
-            if (wl < 440) { r = -(wl - 440) / 60; g = 0; b = 1; }
-            else if (wl < 490) { r = 0; g = (wl - 440) / 50; b = 1; }
-            else if (wl < 510) { r = 0; g = 1; b = -(wl - 510) / 20; }
-            else if (wl < 580) { r = (wl - 510) / 70; g = 1; b = 0; }
-            else if (wl < 645) { r = 1; g = -(wl - 645) / 65; b = 0; }
-            else { r = 1; g = 0; b = 0; }
+        <div class="control-group">
+            <div class="control-label"><span>楔角 θ</span><span class="val" id="vTheta">0.50°</span></div>
+            <input type="range" id="sTheta" min="0.10" max="1.00" step="0.01" value="0.50">
+        </div>
 
-            let factor;
-            if (wl < 420) factor = 0.3 + 0.7 * (wl - 380) / 40;
-            else if (wl <= 700) factor = 1.0;
-            else factor = 0.3 + 0.7 * (780 - wl) / 80;
+        <div class="control-group">
+            <div class="control-label"><span>波长 λ</span><span class="val" id="vLambda">580 nm</span></div>
+            <input type="range" id="sLambda" min="380" max="780" step="1" value="580">
+            <div class="color-row"><span>单色光源</span><div class="swatch" id="swatch"></div></div>
+        </div>
 
-            return [r * factor, g * factor, b * factor];
+        <div class="control-group">
+            <div class="control-label"><span>缺陷高度 h</span><span class="val" id="vH">+0.40 μm</span></div>
+            <input type="range" id="sH" min="-3.00" max="3.00" step="0.05" value="0.40">
+        </div>
+
+        <div class="control-group">
+            <div class="control-label"><span>缺陷半宽 σ</span><span class="val" id="vSigma">0.040 mm</span></div>
+            <input type="range" id="sSigma" min="0.015" max="0.090" step="0.001" value="0.040">
+        </div>
+
+        <label class="checkbox-row"><input type="checkbox" id="cLines" checked> 叠加暗纹等值线</label>
+
+        <div class="btn-row">
+            <button class="btn" id="bConvex">设为凸起</button>
+            <button class="btn" id="bConcave">设为凹陷</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn" id="bReset">恢复默认</button>
+            <button class="btn" id="bView">重置视角</button>
+        </div>
+
+        <div class="readout">
+            <div class="readout-title">实时物理量</div>
+            <div class="readout-grid">
+                <span class="k">条纹间距 Δx</span><span class="v" id="rPitch">—</span>
+                <span class="k">视场内条纹数</span><span class="v" id="rCount">—</span>
+                <span class="k">最大膜厚 d_max</span><span class="v" id="rDmax">—</span>
+                <span class="k">弯曲条数 N=2h/λ</span><span class="v" id="rBend">—</span>
+                <span class="k">回折临界 h_c</span><span class="v" id="rHc">—</span>
+                <span class="k">条纹形态</span><span class="v" id="rShape">—</span>
+                <span class="k">接触状态</span><span class="v" id="rTouch">—</span>
+            </div>
+        </div>
+
+        <div class="formula-box">
+            <strong>光程差</strong>（含半波损失）<br>
+            <span class="eq">δ = 2d + λ/2</span><br>
+            <strong>相位差</strong><br>
+            <span class="eq">φ = 2πδ/λ = 4πd/λ + π</span><br>
+            <strong>光强</strong><br>
+            <span class="eq">I ∝ cos²(φ/2) = sin²(2πd/λ)</span><br>
+            <span class="hl">亮纹</span> <span class="eq">2d + λ/2 = kλ</span> (k=1,2,…)<br>
+            <span class="hl">暗纹</span> <span class="eq">2d + λ/2 = (2k+1)λ/2</span> (k=0,1,…)<br>
+            <span class="hl">条纹间距</span> <span class="eq">Δx = λ / (2tanθ)</span>
+        </div>
+
+        <div class="rule-box">
+            <strong>条纹弯曲规律</strong><br>
+            • <span class="warn">凸起 h&gt;0</span>：空气膜变薄 → 同级次等厚线移到更大 x → 条纹向 <span class="warn">劈尖增厚方向（远离接触端）</span> 弯曲<br>
+            • <span class="warn">凹陷 h&lt;0</span>：空气膜变厚 → 同级次等厚线移到更小 x → 条纹向 <span class="warn">劈尖变薄方向（靠近接触端）</span> 弯曲<br>
+            口诀：<strong>凸向厚，凹向薄</strong><br>
+            <span style="color:#6f8ba8">注：接触端 d=0 处 δ=λ/2 → 暗纹（半波损失）</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+//  物理模型：真实量直算，无任何缩放系数
+//  视场 0.50 mm × 0.33 mm（显微镜下观察劈尖接触端附近）
+//  单位统一：mm
+// ============================================================
+const WIDTH_MM = 0.50;
+const DEPTH_MM = 0.333;
+
+const params = {
+    theta: 0.50,   // 楔角（度）
+    lambda: 580,   // 波长（nm）
+    h: 0.40,       // 缺陷高度（μm）>0 凸起，<0 凹陷
+    sigma: 0.040,  // 缺陷半宽（mm）
+    cx: 0.50,      // 缺陷中心（归一化）
+    cz: 0.50,
+    showLines: true
+};
+
+const canvas2d = document.getElementById('canvas2d');
+const canvas3d = document.getElementById('canvas3d');
+
+// ---------- 波长 → RGB ----------
+function wavelengthToRGB(wl) {
+    let r, g, b;
+    if (wl < 440)      { r = -(wl - 440) / 60; g = 0; b = 1; }
+    else if (wl < 490) { r = 0; g = (wl - 440) / 50; b = 1; }
+    else if (wl < 510) { r = 0; g = 1; b = -(wl - 510) / 20; }
+    else if (wl < 580) { r = (wl - 510) / 70; g = 1; b = 0; }
+    else if (wl < 645) { r = 1; g = -(wl - 645) / 65; b = 0; }
+    else               { r = 1; g = 0; b = 0; }
+    let f;
+    if (wl < 420) f = 0.3 + 0.7 * (wl - 380) / 40;
+    else if (wl <= 700) f = 1.0;
+    else f = 0.3 + 0.7 * (780 - wl) / 80;
+    return [r * f, g * f, b * f];
+}
+
+// ---------- 画布适配 ----------
+function fitCanvas(cv) {
+    const rect = cv.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(1, Math.round(rect.width));
+    const h = Math.max(1, Math.round(rect.height));
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w, h, ctx };
+}
+
+// ---------- 空气膜厚度场 d(x, z)（mm）----------
+// d = x·tanθ − h·exp(−r²/2σ²)
+// 凸起 h>0 → 减号 → 空气膜变薄（正确）
+function makeThicknessField(tanT, h_mm, sigma, cx_mm, cz_mm) {
+    return function (x_mm, z_mm) {
+        const dx = (x_mm - cx_mm) / sigma;
+        const dz = (z_mm - cz_mm) / sigma;
+        const bump = h_mm * Math.exp(-(dx * dx + dz * dz) / 2);
+        // 钳制 d >= 0：缺陷顶到上平面时两板实际接触，膜厚为 0（接触暗斑）
+        return Math.max(0, x_mm * tanT - bump);
+    };
+}
+
+// ---------- 2D 干涉条纹 ----------
+function render2D() {
+    const { w, h, ctx } = fitCanvas(canvas2d);
+    const tanT = Math.tan(params.theta * Math.PI / 180);
+    const lambda_mm = params.lambda * 1e-6;
+    const h_mm = params.h * 1e-3;
+    const cx_mm = params.cx * WIDTH_MM;
+    const cz_mm = params.cz * DEPTH_MM;
+    const dField = makeThicknessField(tanT, h_mm, params.sigma, cx_mm, cz_mm);
+    const [rB, gB, bB] = wavelengthToRGB(params.lambda);
+
+    const img = ctx.createImageData(w, h);
+    const data = img.data;
+
+    // fringeVal = 2d/λ：整数→暗纹，半整数→亮纹
+    const fv = new Float32Array(w * h);
+    for (let py = 0; py < h; py++) {
+        const z_mm = (py / h) * DEPTH_MM;
+        for (let px = 0; px < w; px++) {
+            const x_mm = (px / w) * WIDTH_MM;
+            // I ∝ sin²(2πd/λ)
+            const s = Math.sin(2 * Math.PI * dField(x_mm, z_mm) / lambda_mm);
+            const I = s * s;
+            const idx = (py * w + px) * 4;
+            data[idx]     = Math.min(255, Math.round(rB * I * 255));
+            data[idx + 1] = Math.min(255, Math.round(gB * I * 255));
+            data[idx + 2] = Math.min(255, Math.round(bB * I * 255));
+            data[idx + 3] = 255;
+            fv[py * w + px] = 2 * dField(x_mm, z_mm) / lambda_mm;
         }
+    }
+    ctx.putImageData(img, 0, 0);
 
-        // 调整画布大小
-        function resizeCanvas(canvas, container) {
-            const rect = container.getBoundingClientRect();
-            const dpr = window.devicePixelRatio || 1;
-            const w = rect.width || 300;
-            const h = rect.height || 200;
-            canvas.width = w * dpr;
-            canvas.height = h * dpr;
-            canvas.style.width = w + 'px';
-            canvas.style.height = h + 'px';
-            const ctx = canvas.getContext('2d');
-            ctx.scale(dpr, dpr);
-            return { w, h, ctx };
-        }
-
-        // 渲染2D干涉条纹
-        function render2D() {
-            const { w, h, ctx } = resizeCanvas(canvas2d, document.getElementById('viewer2d'));
-
-            const imgData = ctx.createImageData(w, h);
-            const data = imgData.data;
-
-            const theta = params.angle * Math.PI / 180;
-            const lambda_eff = params.wavelength * 1e-6 * 10;
-            const amp = params.bump * 1e-3;
-            const bumpX = params.bumpPos * w;
-
-            const [rBase, gBase, bBase] = wavelengthToRGB(params.wavelength);
-
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    let d = x * Math.tan(theta) * 0.01;
-                    const dx = (x - bumpX) / 80;
-                    const bumpEffect = amp * Math.exp(-dx * dx / 2);
-                    d -= bumpEffect;
-
-                    const phase = 4 * Math.PI * d / lambda_eff;
-                    const intensity = Math.pow(Math.sin(phase / 2), 2);
-
-                    const idx = (y * w + x) * 4;
-                    data[idx] = Math.min(255, Math.round(rBase * intensity * 255));
-                    data[idx + 1] = Math.min(255, Math.round(gBase * intensity * 255));
-                    data[idx + 2] = Math.min(255, Math.round(bBase * intensity * 255));
-                    data[idx + 3] = 255;
-                }
+    // 叠加暗纹等值线（fringeVal 跨越整数处）
+    if (params.showLines) {
+        ctx.fillStyle = 'rgba(180, 240, 255, 0.85)';
+        for (let py = 0; py < h; py++) {
+            for (let px = 0; px < w - 1; px++) {
+                const a = fv[py * w + px], b = fv[py * w + px + 1];
+                if (Math.floor(a) !== Math.floor(b)) ctx.fillRect(px, py, 1, 1);
             }
-
-            ctx.putImageData(imgData, 0, 0);
-
-            // 标注
-            ctx.fillStyle = 'rgba(255,255,255,0.6)';
-            ctx.font = '11px sans-serif';
-            ctx.fillText(`θ=${params.angle.toFixed(1)}°  λ=${params.wavelength}nm`, 8, 18);
-            ctx.fillText('← 接触端          厚度增加 →', w/2 - 60, h - 8);
         }
-
-        // 渲染3D截面图
-        function render3D() {
-            const { w, h, ctx } = resizeCanvas(canvas3d, document.getElementById('viewer3d'));
-
-            ctx.fillStyle = '#0a0e1a';
-            ctx.fillRect(0, 0, w, h);
-
-            const margin = 40;
-            const plotW = w - 2 * margin;
-            const plotH = h - 2 * margin;
-            const ox = margin;
-            const oy = h - margin;
-
-            const theta = params.angle * Math.PI / 180;
-            const amp_mm = Math.abs(params.bump) * 1e-3;
-            const bumpSign = params.bump > 0 ? 1 : -1;
-            const bumpX_pos = params.bumpPos * plotW + ox;
-
-            ctx.strokeStyle = 'rgba(136,204,255,0.7)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(ox, oy);
-            ctx.lineTo(ox + plotW, oy - plotH * 0.6);
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(255,200,100,0.8)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(ox, oy);
-            for (let i = 0; i <= 100; i++) {
-                const x = ox + (i / 100) * plotW;
-                let y = oy;
-                const dist = Math.abs(x - bumpX_pos) / (plotW * 0.15);
-                const bumpY = bumpSign * amp_mm * 30 * Math.exp(-dist * dist / 2);
-                y -= bumpY;
-                ctx.lineTo(x, y);
+        for (let py = 0; py < h - 1; py++) {
+            for (let px = 0; px < w; px++) {
+                const a = fv[py * w + px], b = fv[(py + 1) * w + px];
+                if (Math.floor(a) !== Math.floor(b)) ctx.fillRect(px, py, 1, 1);
             }
-            ctx.stroke();
+        }
+    }
 
-            ctx.fillStyle = 'rgba(255,100,100,0.9)';
-            ctx.beginPath();
-            ctx.arc(bumpX_pos, oy - bumpSign * amp_mm * 30, 4, 0, Math.PI * 2);
+    // 剖切位置虚线
+    const cutY = params.cz * h;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, cutY); ctx.lineTo(w, cutY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 缺陷中心标记
+    const mx = params.cx * w, my = params.cz * h;
+    ctx.strokeStyle = params.h >= 0 ? 'rgba(255,140,140,0.9)' : 'rgba(140,200,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(mx, my, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(mx - 13, my); ctx.lineTo(mx + 13, my);
+    ctx.moveTo(mx, my - 13); ctx.lineTo(mx, my + 13);
+    ctx.stroke();
+
+    // 文字标注
+    ctx.fillStyle = 'rgba(220, 240, 255, 0.85)';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('接触端 d=0（暗纹）', 10, 20);
+    ctx.textAlign = 'right';
+    ctx.fillText('厚度增加 →', w - 10, h - 10);
+    ctx.textAlign = 'left';
+}
+
+// ---------- 3D 立体构图（纯 Canvas 2D：正交投影 + 画家算法）----------
+// 世界坐标：X 沿劈尖长度，Z 沿深度，Y 竖直（膜厚，已放大）
+// 上平面（标准平晶）Y = x·tanθ ；下平面（被测面）Y = 缺陷形貌
+// 空气膜厚度 d = 上平面 − 下平面
+const view = { yaw: -0.62, pitch: 0.46 };   // 视角（弧度）
+const NX = 40, NZ = 26;                     // 网格分辨率
+
+function render3D() {
+    const fit = fitCanvas(canvas3d);
+    const w = fit.w, h = fit.h, ctx = fit.ctx;
+    ctx.fillStyle = '#081420';
+    ctx.fillRect(0, 0, w, h);
+    if (w < 60 || h < 60) return;
+
+    const tanT  = Math.tan(params.theta * Math.PI / 180);
+    const lam   = params.lambda * 1e-6;      // mm
+    const h_mm  = params.h * 1e-3;           // mm
+    const sigma = params.sigma;
+    const cx_mm = params.cx * WIDTH_MM;
+    const cz_mm = params.cz * DEPTH_MM;
+
+    const botRaw = (x, z) => {               // 下平面形貌（凸起向上为正，未钳制）
+        const dx = (x - cx_mm) / sigma, dz = (z - cz_mm) / sigma;
+        return h_mm * Math.exp(-(dx * dx + dz * dz) / 2);
+    };
+    const topY  = (x) => x * tanT;           // 上平面（倾斜）
+    // 几何钳制：下平面不得穿过上平面，否则两板实际接触
+    const botY  = (x, z) => Math.min(botRaw(x, z), topY(x));
+    const filmD = (x, z) => topY(x) - botY(x, z);
+
+    // 垂直放大：使最大膜厚在世界坐标中占 0.5·WIDTH_MM
+    // 真实比例下厚度仅占视场 0.87%，不放大完全看不见楔形
+    const dMaxFilm = WIDTH_MM * tanT;
+    const YS = 0.5 / (tanT > 1e-9 ? tanT : 1e-9);
+
+    const S  = Math.min(w / (WIDTH_MM * 2.05), h / (DEPTH_MM * 3.1));
+    const ox = w / 2, oy = h / 2 + h * 0.12;
+    const cy = Math.cos(view.yaw),   sy = Math.sin(view.yaw);
+    const cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+
+    function proj(X, Y, Z) {
+        const x1 =  X * cy + Z * sy;
+        const z1 = -X * sy + Z * cy;
+        const y2 = Y * cp - z1 * sp;
+        const z2 = Y * sp + z1 * cp;         // 深度：越大越靠近观察者
+        return [ox + x1 * S, oy - y2 * S, z2];
+    }
+    const P = (x_mm, y_mm, z_mm) =>
+        proj(x_mm - WIDTH_MM / 2, y_mm * YS, z_mm - DEPTH_MM / 2);
+
+    const [rB, gB, bB] = wavelengthToRGB(params.lambda);
+
+    // ---- 采集四边形面片（画家算法）----
+    const quads = [];
+    for (let i = 0; i < NX; i++) {
+        for (let j = 0; j < NZ; j++) {
+            const xa = (i / NX) * WIDTH_MM,  xb = ((i + 1) / NX) * WIDTH_MM;
+            const za = (j / NZ) * DEPTH_MM,  zb = ((j + 1) / NZ) * DEPTH_MM;
+            // 下平面：按该处干涉光强着色（直接把条纹"贴"到被测面上）
+            const b1 = P(xa, botY(xa, za), za), b2 = P(xb, botY(xb, za), za);
+            const b3 = P(xb, botY(xb, zb), zb), b4 = P(xa, botY(xa, zb), zb);
+            const xc = (xa + xb) / 2, zc = (za + zb) / 2;
+            const sd = Math.sin(2 * Math.PI * filmD(xc, zc) / lam);
+            quads.push({ dep: (b1[2] + b2[2] + b3[2] + b4[2]) / 4,
+                         pts: [b1, b2, b3, b4], I: sd * sd, top: false });
+            // 上平面：半透明玻璃
+            const t1 = P(xa, topY(xa), za), t2 = P(xb, topY(xb), za);
+            const t3 = P(xb, topY(xb), zb), t4 = P(xa, topY(xa), zb);
+            quads.push({ dep: (t1[2] + t2[2] + t3[2] + t4[2]) / 4,
+                         pts: [t1, t2, t3, t4], I: 1, top: true });
+        }
+    }
+    quads.sort((a, b) => a.dep - b.dep);      // 远 → 近
+
+    let dLo = Infinity, dHi = -Infinity;
+    for (const q of quads) { if (q.dep < dLo) dLo = q.dep; if (q.dep > dHi) dHi = q.dep; }
+    const dSpan = (dHi - dLo) || 1;
+
+    // ---- 绘制面片 ----
+    for (const q of quads) {
+        const p = q.pts;
+        ctx.beginPath();
+        ctx.moveTo(p[0][0], p[0][1]); ctx.lineTo(p[1][0], p[1][1]);
+        ctx.lineTo(p[2][0], p[2][1]); ctx.lineTo(p[3][0], p[3][1]);
+        ctx.closePath();
+        if (q.top) {
+            ctx.fillStyle = 'rgba(150, 220, 255, 0.12)';
             ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,255,0.7)';
-            ctx.font = '10px sans-serif';
-            ctx.fillText(params.bump > 0 ? '凸起' : '凹陷', bumpX_pos + 8, oy - bumpSign * amp_mm * 30 - 5);
-
-            ctx.fillStyle = 'rgba(150,170,200,0.5)';
-            ctx.font = '10px sans-serif';
-            ctx.fillText('x (mm)', ox + plotW - 35, oy + 15);
-            ctx.fillText('接触点 d=0', ox - 45, oy + 15);
+            ctx.strokeStyle = 'rgba(150, 220, 255, 0.16)';
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+        } else {
+            const sh = 0.60 + 0.40 * ((q.dep - dLo) / dSpan);   // 深度明暗
+            const r = Math.min(255, rB * q.I * 255 * sh + 16);
+            const g = Math.min(255, gB * q.I * 255 * sh + 16);
+            const b = Math.min(255, bB * q.I * 255 * sh + 20);
+            ctx.fillStyle = 'rgb(' + (r | 0) + ',' + (g | 0) + ',' + (b | 0) + ')';
+            ctx.fill();
         }
+    }
 
-        // 更新所有
-        function updateAll() {
-            render2D();
-            render3D();
-
-            const [r, g, b] = wavelengthToRGB(params.wavelength);
-            document.getElementById('colorSwatch').style.background = `rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`;
+    // ---- 轮廓线：下平面四周 ----
+    function edgePath(fn, n) {
+        ctx.beginPath();
+        for (let k = 0; k <= n; k++) {
+            const t = k / n;
+            const pt = fn(t);
+            if (k === 0) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]);
         }
+        ctx.stroke();
+    }
+    ctx.strokeStyle = '#ffb567';
+    ctx.lineWidth = 2;
+    edgePath(t => P(0, botY(0, t * DEPTH_MM), t * DEPTH_MM), 30);
+    edgePath(t => P(WIDTH_MM, botY(WIDTH_MM, t * DEPTH_MM), t * DEPTH_MM), 30);
+    edgePath(t => P(t * WIDTH_MM, botY(t * WIDTH_MM, 0), 0), 40);
+    edgePath(t => P(t * WIDTH_MM, botY(t * WIDTH_MM, DEPTH_MM), DEPTH_MM), 40);
 
-        // 事件监听
-        document.getElementById('angle').addEventListener('input', (e) => {
-            params.angle = parseFloat(e.target.value);
-            document.getElementById('angleVal').textContent = params.angle.toFixed(1) + '°';
-            updateAll();
-        });
+    // ---- 轮廓线：上平面四周 ----
+    ctx.strokeStyle = '#7fd8e8';
+    ctx.lineWidth = 2;
+    edgePath(t => P(0, topY(0), t * DEPTH_MM), 30);
+    edgePath(t => P(WIDTH_MM, topY(WIDTH_MM), t * DEPTH_MM), 30);
+    edgePath(t => P(t * WIDTH_MM, topY(t * WIDTH_MM), 0), 40);
+    edgePath(t => P(t * WIDTH_MM, topY(t * WIDTH_MM), DEPTH_MM), 40);
 
-        document.getElementById('wavelength').addEventListener('input', (e) => {
-            params.wavelength = parseInt(e.target.value);
-            document.getElementById('wavelengthVal').textContent = params.wavelength + ' nm';
-            updateAll();
-        });
+    // ---- 接触端棱边（x=0，上下平面相交）高亮 ----
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 3;
+    edgePath(t => P(0, 0, t * DEPTH_MM), 30);
 
-        document.getElementById('bump').addEventListener('input', (e) => {
-            params.bump = parseFloat(e.target.value);
-            document.getElementById('bumpVal').textContent = params.bump.toFixed(1) + ' μm';
-            updateAll();
-        });
+    // ---- 膜厚标尺：竖线连接上下平面 ----
+    const zMid = DEPTH_MM / 2;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.lineWidth = 1;
+    [0.30, 0.62, 0.90].forEach((fr, idx) => {
+        const xr = fr * WIDTH_MM;
+        const pa = P(xr, botY(xr, zMid), zMid);
+        const pb = P(xr, topY(xr), zMid);
+        ctx.beginPath();
+        ctx.moveTo(pa[0], pa[1]); ctx.lineTo(pb[0], pb[1]);
+        ctx.stroke();
+        if (idx === 1) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            ctx.font = '11px sans-serif';
+            ctx.fillText('d', (pa[0] + pb[0]) / 2 + 5, (pa[1] + pb[1]) / 2);
+        }
+    });
 
-        document.getElementById('pos').addEventListener('input', (e) => {
-            params.bumpPos = parseInt(e.target.value) / 100;
-            document.getElementById('posVal').textContent = e.target.value + '%';
-            updateAll();
-        });
+    // ---- 缺陷中心：竖线 + 顶点标记 ----
+    const by = botY(cx_mm, cz_mm);
+    const pd0 = P(cx_mm, by, cz_mm);
+    const pd1 = P(cx_mm, topY(cx_mm), cz_mm);
+    ctx.strokeStyle = params.h >= 0 ? 'rgba(255, 140, 140, 0.9)' : 'rgba(140, 200, 255, 0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(pd0[0], pd0[1]); ctx.lineTo(pd1[0], pd1[1]); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = params.h >= 0 ? '#ff8c8c' : '#8cc8ff';
+    ctx.beginPath(); ctx.arc(pd0[0], pd0[1], 4, 0, Math.PI * 2); ctx.fill();
 
-        window.addEventListener('resize', updateAll);
+    // ---- 入射光示意 ----
+    const rx = WIDTH_MM * 0.72, rz = DEPTH_MM * 0.28;
+    const pr0 = P(rx, topY(rx) + dMaxFilm * 0.55, rz);
+    const pr1 = P(rx, topY(rx), rz);
+    ctx.strokeStyle = 'rgba(255, 255, 140, 0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(pr0[0], pr0[1]); ctx.lineTo(pr1[0], pr1[1]); ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 140, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(pr1[0], pr1[1]);
+    ctx.lineTo(pr1[0] - 4, pr1[1] - 7);
+    ctx.lineTo(pr1[0] + 4, pr1[1] - 7);
+    ctx.closePath(); ctx.fill();
+    ctx.font = '10px sans-serif';
+    ctx.fillText('入射光', pr0[0] + 6, pr0[1] - 2);
 
-        // 初始渲染
-        setTimeout(updateAll, 50);
-    </script>
+    // ---- 图例 ----
+    ctx.font = '11px sans-serif';
+    const lx = 12, ly = 20;
+    ctx.fillStyle = '#7fd8e8'; ctx.fillRect(lx, ly - 8, 16, 3);
+    ctx.fillStyle = '#b8d4e8'; ctx.fillText('上平面（标准平晶）', lx + 22, ly - 4);
+    ctx.fillStyle = '#ffb567'; ctx.fillRect(lx, ly + 10, 16, 3);
+    ctx.fillStyle = '#b8d4e8'; ctx.fillText('下平面（被测面·带缺陷）', lx + 22, ly + 14);
+    ctx.fillStyle = '#ff6b6b'; ctx.fillRect(lx, ly + 28, 16, 3);
+    ctx.fillStyle = '#b8d4e8'; ctx.fillText('接触端 d=0（暗纹）', lx + 22, ly + 32);
+
+    // ---- 放大说明 & 操作提示 ----
+    ctx.fillStyle = 'rgba(140, 175, 210, 0.7)';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('垂直放大 ' + Math.round(YS) + ' 倍（厚度仅占视场 0.87%）', 12, h - 22);
+    ctx.fillStyle = 'rgba(120, 155, 190, 0.6)';
+    ctx.fillText('拖动可旋转视角', 12, h - 8);
+}
+
+
+// ---------- 读数 ----------
+function updateReadout() {
+    const tanT = Math.tan(params.theta * Math.PI / 180);
+    const lambda_mm = params.lambda * 1e-6;
+    const pitch = lambda_mm / (2 * tanT);          // Δx = λ/(2tanθ)
+    const dMax = WIDTH_MM * tanT;
+    const count = dMax / (lambda_mm / 2);
+    const N = 2 * Math.abs(params.h) * 1e-3 / lambda_mm;
+
+    document.getElementById('rPitch').textContent = (pitch * 1000).toFixed(1) + ' μm';
+    document.getElementById('rCount').textContent = count.toFixed(1) + ' 条';
+    document.getElementById('rDmax').textContent = (dMax * 1000).toFixed(2) + ' μm';
+    document.getElementById('rBend').textContent = N.toFixed(2) + ' 条';
+
+    // 回折临界高度：厚度场 d'(x) 在缺陷翼部变号时出现回折（条纹闭合成环）
+    // d'(x) = tanθ + h(x-cx)/σ² · exp(-(x-cx)²/2σ²)，极值在 |x-cx|=σ 处
+    // 令 tanθ - h/σ·exp(-0.5) = 0  →  h_c = tanθ·σ·exp(0.5)
+    const hc_mm = tanT * params.sigma * Math.exp(0.5);
+    const hc = hc_mm * 1000;                       // μm
+    const absH = Math.abs(params.h);
+    document.getElementById('rHc').textContent = hc.toFixed(2) + ' μm';
+    const shapeEl = document.getElementById('rShape');
+    if (absH < hc) {
+        shapeEl.textContent = '单向弯曲';
+        shapeEl.style.color = '#7fd8e8';
+    } else {
+        shapeEl.textContent = '闭合环';
+        shapeEl.style.color = '#ffb567';
+    }
+
+    // 接触状态：凸起高度超过该处空气膜厚度时，缺陷顶到上平面（两板实际接触）
+    // 判据：max[ botRaw(x,z) - x·tanθ ] > 0 ，最不利点在缺陷中心
+    const gapAtCenter = params.cx * WIDTH_MM * tanT - params.h * 1e-3;
+    const touchEl = document.getElementById('rTouch');
+    if (params.h > 0 && gapAtCenter < 0) {
+        touchEl.textContent = '已顶到上平面';
+        touchEl.style.color = '#ff6b6b';
+    } else {
+        touchEl.textContent = '正常';
+        touchEl.style.color = '#7fd8e8';
+    }
+}
+
+function updateAll() {
+    render2D();
+    render3D();
+    updateReadout();
+    const [r, g, b] = wavelengthToRGB(params.lambda);
+    document.getElementById('swatch').style.background =
+        'rgb(' + Math.round(r * 255) + ',' + Math.round(g * 255) + ',' + Math.round(b * 255) + ')';
+}
+
+// ---------- 事件绑定 ----------
+function bind(id, key, fmt, isFloat) {
+    const el = document.getElementById(id);
+    el.addEventListener('input', e => {
+        params[key] = isFloat ? parseFloat(e.target.value) : parseInt(e.target.value);
+        document.getElementById(fmt).textContent = params[key];
+        updateAll();
+    });
+}
+
+const sTheta = document.getElementById('sTheta');
+sTheta.addEventListener('input', e => {
+    params.theta = parseFloat(e.target.value);
+    document.getElementById('vTheta').textContent = params.theta.toFixed(2) + '°';
+    updateAll();
+});
+
+const sLambda = document.getElementById('sLambda');
+sLambda.addEventListener('input', e => {
+    params.lambda = parseInt(e.target.value);
+    document.getElementById('vLambda').textContent = params.lambda + ' nm';
+    updateAll();
+});
+
+const sH = document.getElementById('sH');
+sH.addEventListener('input', e => {
+    params.h = parseFloat(e.target.value);
+    document.getElementById('vH').textContent =
+        (params.h >= 0 ? '+' : '') + params.h.toFixed(2) + ' μm';
+    updateAll();
+});
+
+const sSigma = document.getElementById('sSigma');
+sSigma.addEventListener('input', e => {
+    params.sigma = parseFloat(e.target.value);
+    document.getElementById('vSigma').textContent = params.sigma.toFixed(3) + ' mm';
+    updateAll();
+});
+
+document.getElementById('cLines').addEventListener('change', e => {
+    params.showLines = e.target.checked;
+    updateAll();
+});
+
+document.getElementById('bConvex').addEventListener('click', () => {
+    params.h = Math.abs(params.h) || 0.40;
+    sH.value = params.h;
+    document.getElementById('vH').textContent = '+' + params.h.toFixed(2) + ' μm';
+    updateAll();
+});
+
+document.getElementById('bConcave').addEventListener('click', () => {
+    params.h = -(Math.abs(params.h) || 0.40);
+    sH.value = params.h;
+    document.getElementById('vH').textContent = params.h.toFixed(2) + ' μm';
+    updateAll();
+});
+
+document.getElementById('bReset').addEventListener('click', () => {
+    params.theta = 0.50; params.lambda = 580; params.h = 0.40;
+    params.sigma = 0.040; params.cx = 0.50; params.cz = 0.50;
+    sTheta.value = 0.50; sLambda.value = 580; sH.value = 0.40; sSigma.value = 0.040;
+    document.getElementById('vTheta').textContent = '0.50°';
+    document.getElementById('vLambda').textContent = '580 nm';
+    document.getElementById('vH').textContent = '+0.40 μm';
+    document.getElementById('vSigma').textContent = '0.040 mm';
+    updateAll();
+});
+
+// 点击 2D 图设置缺陷位置
+canvas2d.addEventListener('click', e => {
+    const rect = canvas2d.getBoundingClientRect();
+    params.cx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    params.cz = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    updateAll();
+});
+
+// 拖动 3D 图旋转视角
+let dragging = false, lastX = 0, lastY = 0, rafPending = false;
+canvas3d.style.cursor = 'grab';
+canvas3d.addEventListener('mousedown', e => {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    canvas3d.style.cursor = 'grabbing';
+});
+window.addEventListener('mouseup', () => {
+    dragging = false;
+    canvas3d.style.cursor = 'grab';
+});
+window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    view.yaw   += (e.clientX - lastX) * 0.008;
+    view.pitch += (e.clientY - lastY) * 0.006;
+    view.pitch = Math.max(0.10, Math.min(1.45, view.pitch));
+    lastX = e.clientX; lastY = e.clientY;
+    if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(() => { rafPending = false; render3D(); });
+    }
+});
+
+// 重置视角
+document.getElementById('bView').addEventListener('click', () => {
+    view.yaw = -0.62; view.pitch = 0.46;
+    render3D();
+});
+
+window.addEventListener('resize', updateAll);
+setTimeout(updateAll, 60);
+</script>
+
 </body>
 </html>
