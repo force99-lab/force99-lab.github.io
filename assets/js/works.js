@@ -1887,13 +1887,6 @@ const WORKS = [
   },
 
 /* ---------------- 解题 ------------
-
-
-  {
-    type:"animation", title:"薄膜干涉·平面检测",
-    desc:"薄膜干涉原理与平面检测动画演示，展示等厚干涉条纹的形成过程。",
-    icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-interference.html", date:"2026-08-27", tag:"光学"
-  },
   /* ---------------- 解题 -----------
   
   {
@@ -3586,6 +3579,12 @@ const WORKS = [
 
 
 
+,
+    {
+      type:"animation", title:"薄膜干涉·平面检测",
+      desc:"等厚干涉条纹的形成与平面检测原理动画演示，展示干涉条纹随厚度变化的规律。",
+      icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-plane-detection.html", date:"2026-08-29", tag:"光学"
+    }
 ];
 
 
@@ -3620,8 +3619,3 @@ const TYPE_GRAD = {
 
 };
 <!-- CDN cache refresh -->
-    {
-      type:"animation", title:"薄膜干涉·平面检测",
-      desc:"等厚干涉条纹的形成与平面检测原理动画演示，展示干涉条纹随厚度变化的规律。",
-      icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-plane-detection.html", date:"2026-08-29", tag:"光学"
-    },
