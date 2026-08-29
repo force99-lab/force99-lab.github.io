@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高三物理第一轮复习的数学能力"上限"——2026 真题实证与能力重组</title>
+<style>
+  :root{
+    --bg-0:#04181a;--bg-1:#062324;--bg-2:#0a3536;
+    --teal:#14b8a6;--teal-deep:#0d6e66;--teal-glow:rgba(20,184,166,.35);
+    --ink:#e8f4f2;--ink-soft:#a9c7c3;--ink-dim:#7fa3a0;
+    --glass:rgba(255,255,255,.06);--glass-line:rgba(255,255,255,.12);
+    --prism:linear-gradient(120deg,#ff5f6d,#feb47b,#f6e27a,#48dbfb,#5b86e5,#a18cd1);
+    --prism-soft:linear-gradient(120deg,rgba(255,95,109,.25),rgba(246,226,122,.22),rgba(72,219,251,.25),rgba(161,140,209,.25));
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:"Noto Serif SC","Songti SC",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:radial-gradient(1200px 800px at 80% -10%,#0c4748 0%,transparent 55%),
+               radial-gradient(900px 700px at -10% 20%,#0a3a3b 0%,transparent 50%),
+               linear-gradient(180deg,var(--bg-0),var(--bg-1) 40%,var(--bg-2));
+    color:var(--ink);line-height:1.95;overflow-x:hidden;
+  }
+  #particles{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;}
+  .wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:0 24px 120px;}
+
+  header.hero{position:relative;z-index:1;min-height:74vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:80px 24px 40px;}
+  .prism-bar{width:240px;height:6px;border-radius:6px;background:var(--prism);box-shadow:0 0 24px rgba(72,219,251,.5);margin-bottom:34px;}
+  .hero h1{font-size:clamp(26px,4.4vw,44px);font-weight:800;letter-spacing:.5px;line-height:1.38;background:linear-gradient(180deg,#fff,#bfe9e3);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 40px var(--teal-glow);}
+  .hero .sub{margin-top:22px;font-size:clamp(15px,2.2vw,19px);color:var(--ink-soft);font-weight:400;max-width:760px;}
+  .hero .tag{margin-top:34px;display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .hero .tag span{font-family:-apple-system,"Segoe UI",sans-serif;font-size:12.5px;letter-spacing:.5px;padding:6px 14px;border:1px solid var(--glass-line);border-radius:999px;background:var(--glass);color:var(--ink-soft);backdrop-filter:blur(8px);}
+  .hero .tag b{color:var(--teal);}
+  .scroll-cue{margin-top:48px;font-size:13px;color:var(--ink-dim);letter-spacing:3px;}
+  .scroll-cue::after{content:"↓";display:block;margin-top:6px;animation:bob 1.8s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0);opacity:.4;}50%{transform:translateY(8px);opacity:1;}}
+
+  article{padding-top:30px;}
+  section{margin-top:64px;scroll-margin-top:30px;}
+  .sec-label{font-family:-apple-system,"Segoe UI",sans-serif;font-size:12.5px;letter-spacing:3px;color:var(--teal);text-transform:uppercase;margin-bottom:10px;}
+  h2{font-size:clamp(22px,3.4vw,30px);font-weight:800;line-height:1.45;margin-bottom:22px;position:relative;padding-left:18px;}
+  h2::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:5px;border-radius:5px;background:var(--prism);}
+  h3{font-size:18.5px;color:#d9f3ee;margin:34px 0 12px;font-weight:700;border-left:3px solid var(--teal-deep);padding-left:12px;}
+  h4{font-size:16px;color:#fff;margin:18px 0 8px;font-weight:700;}
+  p{margin:16px 0;color:var(--ink-soft);font-size:16.5px;}
+  strong{color:#fff;font-weight:700;}
+  em{color:var(--teal);font-style:normal;font-weight:600;}
+  .formula{font-family:"Cambria Math","Times New Roman",serif;font-style:italic;color:#cffaf3;background:rgba(20,184,166,.08);padding:1px 7px;border-radius:6px;border:1px solid rgba(20,184,166,.18);white-space:nowrap;}
+  .fblk{display:block;text-align:center;margin:20px 0;padding:14px 22px;font-family:"Cambria Math","Times New Roman",serif;font-style:italic;font-size:18.5px;color:#cffaf3;background:rgba(20,184,166,.08);border:1px solid rgba(20,184,166,.18);border-radius:12px;white-space:normal;}
+
+  blockquote{margin:30px 0;padding:22px 26px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-line);border-left:4px solid var(--teal);backdrop-filter:blur(10px);font-size:18px;color:#eafbf8;font-style:italic;line-height:1.8;box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .lead-quote{font-size:clamp(18px,2.6vw,22px);text-align:center;color:#fff;font-weight:600;background:var(--prism-soft);border:1px solid var(--glass-line);border-radius:18px;padding:30px 28px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(72,219,251,.12);}
+  .lead-quote small{display:block;margin-top:14px;font-size:14px;color:var(--ink-dim);font-weight:400;font-style:normal;}
+
+  .table-glass{width:100%;border-collapse:separate;border-spacing:0;margin:26px 0;background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;overflow:hidden;backdrop-filter:blur(10px);box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .table-glass th,.table-glass td{padding:14px 16px;text-align:left;font-size:14.5px;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top;}
+  .table-glass th{background:rgba(20,184,166,.12);color:#cffaf3;font-weight:700;font-family:-apple-system,"Segoe UI",sans-serif;letter-spacing:.5px;}
+  .table-glass td{color:var(--ink-soft);}
+  .table-glass td b{color:#fff;}
+  .table-glass tr:last-child td{border-bottom:none;}
+  .table-glass .yr{color:var(--teal);font-weight:700;font-family:-apple-system,"Segoe UI",sans-serif;white-space:nowrap;}
+
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:28px 0;}
+  .card{background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;padding:18px 20px;backdrop-filter:blur(8px);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+  .card:hover{transform:translateY(-4px);border-color:var(--teal);box-shadow:0 12px 36px rgba(20,184,166,.18);}
+  .card .no{font-family:-apple-system,"Segoe UI",sans-serif;font-size:12px;color:var(--teal);letter-spacing:1px;font-weight:700;}
+  .card h4{font-size:16.5px;color:#fff;margin:6px 0 8px;font-weight:700;}
+  .card p{font-size:14px;color:var(--ink-soft);line-height:1.75;margin:0;}
+  .card p b{color:var(--teal);font-weight:700;}
+
+  .path{display:grid;gap:14px;margin:26px 0;}
+  .path .step{display:flex;gap:18px;align-items:flex-start;background:var(--glass);border:1px solid var(--glass-line);border-radius:14px;padding:18px 20px;backdrop-filter:blur(8px);}
+  .path .step .num{flex:0 0 42px;height:42px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:18px;background:var(--prism);color:#04181a;box-shadow:0 6px 18px rgba(72,219,251,.3);font-family:-apple-system,"Segoe UI",sans-serif;}
+  .path .step h4{margin:2px 0 6px;font-size:16.5px;color:#fff;}
+  .path .step p{margin:0;font-size:14.5px;color:var(--ink-soft);}
+
+  .refs{margin-top:30px;background:var(--glass);border:1px solid var(--glass-line);border-radius:16px;padding:24px 26px;backdrop-filter:blur(10px);font-size:14px;color:var(--ink-dim);line-height:1.9;}
+  .refs h3{margin-top:0;color:#cffaf3;font-size:16px;border:none;padding:0;}
+  .refs li{margin:8px 0;padding-left:6px;}
+
+  .note{background:rgba(20,184,166,.07);border:1px solid rgba(20,184,166,.2);border-left:4px solid var(--teal);border-radius:12px;padding:16px 20px;margin:22px 0;font-size:15px;color:#cdf3ee;}
+  .note b{color:#fff;}
+  .note .src{display:inline-block;margin-top:8px;font-size:12.5px;color:var(--teal);font-family:-apple-system,"Segoe UI",sans-serif;letter-spacing:.5px;}
+  .warn{background:rgba(255,95,109,.07);border:1px solid rgba(255,95,109,.22);border-left:4px solid #ff5f6d;border-radius:12px;padding:16px 20px;margin:22px 0;font-size:15px;color:#ffd9d9;}
+  .warn b{color:#fff;}
+  .classic{background:rgba(91,134,229,.07);border:1px solid rgba(91,134,229,.22);border-left:4px solid #5b86e5;border-radius:12px;padding:16px 20px;margin:22px 0;font-size:14.5px;color:#dfe7ff;}
+  .classic b{color:#fff;}
+
+  .viz-box{margin:30px 0;padding:26px 20px 18px;background:var(--glass);border:1px solid var(--glass-line);border-radius:18px;backdrop-filter:blur(10px);text-align:center;box-shadow:0 10px 36px rgba(0,0,0,.22);}
+  .viz-box svg{width:100%;max-width:700px;height:auto;}
+  .cap{font-size:13.5px;color:var(--ink-dim);margin-top:12px;text-align:center;}
+
+  .pill{display:inline-block;font-family:-apple-system,"Segoe UI",sans-serif;font-size:11.5px;letter-spacing:.5px;padding:3px 10px;border-radius:999px;background:rgba(20,184,166,.15);color:var(--teal);border:1px solid rgba(20,184,166,.3);margin-right:6px;vertical-align:middle;}
+  .pill.r{background:rgba(91,134,229,.15);color:#9db4f0;border-color:rgba(91,134,229,.3);}
+
+  hr.div{border:none;height:1px;margin:60px 0;background:linear-gradient(90deg,transparent,var(--glass-line),transparent);}
+  footer{position:relative;z-index:1;text-align:center;padding:40px 24px;color:var(--ink-dim);font-size:13px;letter-spacing:1px;}
+  footer b{color:var(--teal);}
+
+  @media(max-width:560px){body{line-height:1.85;}.wrap{padding:0 18px 80px;}.table-glass th,.table-glass td{padding:11px 12px;font-size:13px;}.hero h1{font-size:24px;}}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<header class="hero">
+  <div class="prism-bar"></div>
+  <h1>高三物理第一轮复习的<br>数学能力"上限"</h1>
+  <div class="sub">近年各省高考物理真题揭示：学生完卷率低，常被忽视的关键短板，是<strong style="color:#fff">数学运算的速度与精度</strong>。本文以 <strong style="color:#fff">2026 年真题题源解密</strong> 为实证主轴，重组十项数学能力的"最高要求层级"，并给出可落地的训练处方。</div>
+  <div class="tag">
+    <span><b>2026 真题</b> 实证</span><span>矢量运算</span><span>2D→3D 转换</span><span>三角</span><span>数列递推</span><span>不等式极值</span><span>图像函数</span><span>微元估算</span>
+  </div>
+  <div class="scroll-cue">向下阅读</div>
+</header>
+
+<div class="wrap">
+<article>
+
+  <div class="lead-quote">
+    "物理难完卷，往往不是物理'想不通'，而是数学'算不动'。<strong>高考物理的隐性门槛，是数理转化链条的运算速度。</strong>"
+    <small>——所谓数学能力的"上限"，不是要求掌握微积分，而是要求在高中数学工具箱内，达到压轴题级的熟练度、转化力与准确率。第一轮复习，正是把这条链条焊牢的唯一窗口。本文全部实例均取自 2026 年各省高考物理真题（题源解密），并以少量 2024 前经典题作对照。</small>
+  </div>
+
+  <section id="s0">
+    <div class="sec-label">引子</div>
+    <h2>一个被长期低估的"第二战场"</h2>
+    <p>高三一轮复习中，师生把绝大部分精力投在"物理模型"上：受力分析、过程拆分、规律选用。这当然重要。但一线反复出现一个现象：<strong>许多学生"题路想对了"，却在最后十几步代数运算中卡死、算错、耗光时间</strong>，导致整道大题丢分，甚至整卷做不完。</p>
+    <p>翻看 <strong>2026 年各省真题</strong>，"数学浓度"不仅没有回落，反而在空间想象、递推、函数比较上继续加码——2026·山东卷压轴（斜面导轨双电源）难度系数仅 <strong>0.42</strong>；2026·山东卷斜面多次碰撞（碰撞时刻呈 <span class="formula">tₙ=n·t₁</span> 等差数列）要求从图像识别递推；2026·湖北卷组合场要求把坐标运动与对称性结合。这些题物理模型并不超纲，真正筛选学生的，是<strong>把物理关系翻译成数学结构、并高速精确求解的那段能力</strong>。</p>
+    <p>本文把这段能力叫做<strong>数学能力的"上限"</strong>：它不是另起炉灶学数学，而是厘清"高考物理到底要求我们数学工具箱里有什么、用到多深、多快"。下面先用 2026 真题证据，定位这条被忽视的战线。</p>
+  </section>
+
+  <hr class="div">
+
+  <section id="s1">
+    <div class="sec-label">Part 01</div>
+    <h2>问题提出：为什么"物理听明白了，卷子做不完"</h2>
+
+    <h3>一、完卷率困境的数学归因</h3>
+    <p>把"做不完/做不对"的失分拆开看，物理性失误（模型错、规律错）与数学性失误（运算慢、算错、不会化简、读不懂图像）大约各占一半，而后者在压轴题与中档题里占比更高。尤其三类典型场景：</p>
+    <div class="cards">
+      <div class="card"><div class="no">场景 A</div><h4>"想得到，算不到"</h4><p>思路正确，但联立方程含三角、含根号、含分式，手算 5 分钟仍无结果，放弃。典型如 2026·广东无人机题需在 30° 夹角下分解变力。</p></div>
+      <div class="card"><div class="no">场景 B</div><h4>"算对了，超时了"</h4><p>最终结果正确，但耗时超过该题合理配时 2–3 倍，挤占后面题目。2026·山东压轴算到一半已耗尽时间。</p></div>
+      <div class="card"><div class="no">场景 C</div><h4>"图看不懂"</h4><p>非常规图像（如 vₓ–v_y 速度图、F–x 图、Q–U 图）无法还原物理过程，直接卡死。2026·河南两点电荷 F–x 图即是此类。</p></div>
+    </div>
+
+    <h3>二、三个根深蒂固的认知误区</h3>
+    <div class="path">
+      <div class="step"><div class="num">1</div><div><h4>重物理、轻数学</h4><p>"数学是数学老师的事。"——错。高考物理的运算是<strong>物理关系的代数实现</strong>，离开它，模型只是空中楼阁。一轮复习若不单独训练"数理转化"，二轮就会暴露为系统性丢分。</p></div></div>
+      <div class="step"><div class="num">2</div><div><h4>重方法、轻运算</h4><p>"听懂老师讲一遍就行。"——听懂≠会算。2026·山东多次碰撞题的难点恰恰在"讲完思路后的递推代数"，这 20 步必须自己限时算熟，否则考试必然崩。</p></div></div>
+      <div class="step"><div class="num">3</div><div><h4>重结果、轻过程精度</h4><p>"答案对就行，中间步骤潦草。"——高考按步给分，且一步代错步步错。草稿潦草、符号混乱、正负不分，是精度失分的最大来源。</p></div></div>
+    </div>
+
+    <div class="warn"><b>关键论断：</b>高考物理对数学的考查，<strong>不在"知识深度"而在"转化速度 + 结构识别 + 运算精度"</strong>。它要求你在高中数学工具箱（向量、三角、数列、不等式、函数与图像、几何、近似）内，达到"压轴题级"的熟练。这正是第一轮复习该焊牢的底线。</div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s2">
+    <div class="sec-label">Part 02</div>
+    <h2>能力上限图谱：十项数学能力的"要求强度"</h2>
+    <p>深度梳理 <strong>2021–2026 年</strong>各省真题（全国甲/乙卷、新课标 I/II 卷、湖南、广东、湖北、山东、河南、河北、内蒙古辽宁、贵州、北京等），高考物理对学生的数学能力可凝练为以下十项。下图表征各项在压轴/中档题中的"要求强度"（非知识深度，而是熟练度与转化速度要求）。</p>
+
+    <div class="viz-box">
+      <svg viewBox="0 0 720 430" role="img" aria-label="十项数学能力要求强度">
+        <defs>
+          <linearGradient id="barG" x1="0" x2="1"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#48dbfb"/></linearGradient>
+        </defs>
+        <text x="20" y="28" fill="#cffaf3" font-size="14" font-weight="700">高考物理十项数学能力 · 要求强度（压轴题视角，含 2026）</text>
+        <g font-size="13" fill="#e8f4f2">
+          <text x="14" y="62" text-anchor="start">矢量与标量</text>
+          <rect x="120" y="50" width="430" height="18" rx="5" fill="url(#barG)"/>
+          <text x="558" y="64" fill="#a9c7c3" font-size="11">高</text>
+          <text x="14" y="92" text-anchor="start">2D→3D 转换</text>
+          <rect x="120" y="80" width="410" height="18" rx="5" fill="url(#barG)"/>
+          <text x="538" y="94" fill="#a9c7c3" font-size="11">高（2026 抬头）</text>
+          <text x="14" y="122" text-anchor="start">三角知识</text>
+          <rect x="120" y="110" width="470" height="18" rx="5" fill="url(#barG)"/>
+          <text x="598" y="124" fill="#a9c7c3" font-size="11">极高</text>
+          <text x="14" y="152" text-anchor="start">数列与递推</text>
+          <rect x="120" y="140" width="330" height="18" rx="5" fill="url(#barG)"/>
+          <text x="458" y="154" fill="#a9c7c3" font-size="11">中（2026 压轴专属）</text>
+          <text x="14" y="182" text-anchor="start">不等式与极值</text>
+          <rect x="120" y="170" width="450" height="18" rx="5" fill="url(#barG)"/>
+          <text x="578" y="184" fill="#a9c7c3" font-size="11">极高</text>
+          <text x="14" y="212" text-anchor="start">函数与图像</text>
+          <rect x="120" y="200" width="490" height="18" rx="5" fill="url(#barG)"/>
+          <text x="618" y="214" fill="#a9c7c3" font-size="11">极高（必考）</text>
+          <text x="14" y="242" text-anchor="start">平面几何</text>
+          <rect x="120" y="230" width="440" height="18" rx="5" fill="url(#barG)"/>
+          <text x="568" y="244" fill="#a9c7c3" font-size="11">高</text>
+          <text x="14" y="272" text-anchor="start">近似与微元</text>
+          <rect x="120" y="260" width="330" height="18" rx="5" fill="url(#barG)"/>
+          <text x="458" y="274" fill="#a9c7c3" font-size="11">中（进阶）</text>
+          <text x="14" y="302" text-anchor="start">指数对数</text>
+          <rect x="120" y="290" width="250" height="18" rx="5" fill="url(#barG)"/>
+          <text x="378" y="304" fill="#a9c7c3" font-size="11">低–中</text>
+          <text x="14" y="332" text-anchor="start">量纲与估算</text>
+          <rect x="120" y="320" width="380" height="18" rx="5" fill="url(#barG)"/>
+          <text x="508" y="334" fill="#a9c7c3" font-size="11">中（2026 频出）</text>
+          <text x="14" y="362" text-anchor="start">代数运算基本功</text>
+          <rect x="120" y="350" width="500" height="18" rx="5" fill="url(#barG)"/>
+          <text x="628" y="364" fill="#a9c7c3" font-size="11">基础但决定生死</text>
+        </g>
+        <text x="360" y="412" fill="#7fa3a0" font-size="11" text-anchor="middle">强度综合自 2021–2026 各省真题在压轴/中档题中的出现频度与运算密度，非课程标准层级</text>
+      </svg>
+      <p class="cap">十项能力中，<strong>三角、不等式极值、函数与图像</strong>是"极高"且几乎每年必考；<strong>矢量、2D→3D、几何</strong>是电磁学/力学压轴的常规武器；<strong>数列递推、近似微元</strong>虽频次不高，但一出就是压轴题，区分度极大。<span class="pill">2026 新信号</span>空间想象与估算频度明显上升。</p>
+    </div>
+
+    <h3>能力分级总表（2026 真题载体更新）</h3>
+    <table class="table-glass">
+      <thead><tr><th>能力项</th><th>基础要求</th><th>压轴要求（"上限"）</th><th>2026 典型真题载体</th></tr></thead>
+      <tbody>
+        <tr><td><b>矢量与标量</b></td><td>合成/分解、正交分解</td><td>变力分量合成、矢量冲量</td><td><span class="yr">2026·广东</span> 无人机变力分量</td></tr>
+        <tr><td><b>2D→3D 转换</b></td><td>平面受力/轨迹</td><td>建三维坐标系、俯视投影</td><td><span class="yr">2026·内蒙古辽宁</span> 磁场俯视轨迹；<span class="yr">2026·湖北</span> 组合场坐标</td></tr>
+        <tr><td><b>三角知识</b></td><td>正余弦定理、特殊角</td><td>a·sinθ+b·cosθ 化一、几何角关系</td><td><span class="yr">2026·广东</span> 30° 夹角；<span class="yr">2026·河北邯郸</span> 抛射最值</td></tr>
+        <tr><td><b>数列与递推</b></td><td>等差/等比求和</td><td>多次碰撞构造递推数列</td><td><span class="yr">2026·山东</span> 斜面多次碰撞 tₙ=n·t₁</td></tr>
+        <tr><td><b>不等式与极值</b></td><td>二次函数最值</td><td>函数关系比较、半开放范围</td><td><span class="yr">2026·贵州</span> 径向场两态比较；<span class="yr">2026·河北邯郸</span> 最大射程</td></tr>
+        <tr><td><b>函数与图像</b></td><td>v–t 斜率/面积</td><td>非常规图（F–x、Q–U、v–t 段）信息提取</td><td><span class="yr">2026·河南</span> F–x 图；<span class="yr">2026·湖北</span> v–t 段；<span class="yr">2026·广东</span> Q–U 图</td></tr>
+        <tr><td><b>平面几何</b></td><td>圆/弦/切线</td><td>磁场中轨迹几何、相似与对称</td><td><span class="yr">2026·河南</span> 双反向磁场相似三角</td></tr>
+        <tr><td><b>近似与微元</b></td><td>小角度近似</td><td>微分思想、暂态积分</td><td><span class="yr">2025·浙江</span> 鸡蛋估楼层（经典）；微元法方法点名（2026 电磁感应）</td></tr>
+        <tr><td><b>指数对数</b></td><td>指数衰减图像</td><td>RC/RL 暂态过程定量</td><td>含电容器电路（经典存量，见对照节）</td></tr>
+        <tr><td><b>量纲与估算</b></td><td>单位换算</td><td>数量级估算、半定量化推理</td><td><span class="yr">2026·河南</span> 土星环周期估算；多省天体估算</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr class="div">
+
+  <section id="s2b">
+    <div class="sec-label">Part 02 · 续</div>
+    <h2>2026 真题 × 数学能力 · 映射总表</h2>
+    <p>为避免"空谈能力"，先把 2026 年已解密的真题实例与十项能力一一对表。这是全文实证的"原料库"——后续每个能力项都从这里取用真实题源。</p>
+    <table class="table-glass">
+      <thead><tr><th>数学能力</th><th>2026 真题实例（题源解密）</th><th>卷别 / 题号</th><th>核心数学操作</th></tr></thead>
+      <tbody>
+        <tr><td><b>矢量与标量</b></td><td>无人机受变力 F=F₀−kt（与水平成 30°），空气作用力与重力+拉力合力等大反向</td><td><span class="yr">2026·广东</span> T10</td><td>矢量分解 + F–t 图面积求冲量</td></tr>
+        <tr><td><b>2D→3D 转换</b></td><td>带电小球在匀强磁场中摆动，判断俯视轨迹弯曲方向</td><td><span class="yr">2026·内蒙古辽宁</span></td><td>空间想象 + 左手定则 + 俯视投影</td></tr>
+        <tr><td><b>2D→3D 转换</b></td><td>xy 平面内电场加速+半圆无场区+磁场偏转，第二次出磁场坐标=第一次进磁场坐标</td><td><span class="yr">2026·湖北</span></td><td>建系 + 坐标对称 + 类竖直上抛</td></tr>
+        <tr><td><b>三角知识</b></td><td>炸弹垂直击中山坡（倾角 θ）；铅球调初速夹角取最大水平位移</td><td><span class="yr">2026·浙江绍兴</span>二模 / <span class="yr">2026·河北邯郸</span>三模</td><td>tanθ 关系；sin2θ 极值</td></tr>
+        <tr><td><b>数列与递推</b></td><td>斜面双物块多次弹性碰撞，质量相等碰后交换速度，碰撞时刻 t₁,t₂=2t₁,t₃=3t₁…</td><td><span class="yr">2026·山东</span></td><td>线性递推 tₙ=n·t₁ + v–t 图像识别</td></tr>
+        <tr><td><b>不等式与极值</b></td><td>径向非匀强电场 E=k/r 与匀强磁场复合，两次磁感应强度下比较半径/速率/电势能</td><td><span class="yr">2026·贵州</span></td><td>函数关系 + 不等式比较</td></tr>
+        <tr><td><b>函数与图像</b></td><td>两点电荷静电力 F 随 x 变化图；粒子 v–t 三段对应 a/b/c 位置；可变电容器 Q–U 图</td><td><span class="yr">2026·河南</span> T2 / <span class="yr">2026·湖北</span> / <span class="yr">2026·广东</span></td><td>图像斜率/面积/截距读取</td></tr>
+        <tr><td><b>平面几何</b></td><td>双反向匀强磁场，粒子从 P 入从 P 出（对称），已知下区半径求磁感应强度比</td><td><span class="yr">2026·河南</span></td><td>相似三角形 + 勾股定理</td></tr>
+        <tr><td><b>量纲与估算</b></td><td>"土星环"颗粒周期，由照片信息（平均密度 ρ、G）估算</td><td><span class="yr">2026·河南</span></td><td>数量级估算 + 圆周运动</td></tr>
+        <tr><td><b>代数基本功</b></td><td>斜面导轨双电源，临界"刚好要下滑"消去倾角，求电功率与加速度</td><td><span class="yr">2026·山东</span>（压轴，难度 0.42）</td><td>联立方程 + 临界条件</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr class="div">
+
+  <section id="s3">
+    <div class="sec-label">Part 03</div>
+    <h2>逐项拆解：结合 2026 真题的"上限"实证</h2>
+    <p>下面每一项都以 <strong>2026 真题</strong> 为首要实例说明"考到什么程度、学生卡在哪、一轮怎么练"；个别项再补一道 <span class="pill r">经典存量</span> 2024 前真题作对照，凸显命题走向。</p>
+
+    <h3 id="s3-1">3.1 矢量与标量运算——从"画图"到"分量合成"</h3>
+    <p><strong>基础：</strong>力的合成分解、速度正交分解、点积（功 <span class="formula">W=F·s·cosθ</span>）。<strong>上限：</strong>把"变力随分量变化"当作矢量处理，区分大小与方向、由图像面积求矢量冲量。</p>
+    <div class="note"><b>真题 1（2026·广东 T10 · 无人机）：</b>无人机受方向不变、大小随时间线性减小的拉力 <span class="formula">F=F₀−kt</span>（与水平成 30°），在拉力、空气作用力与重力下沿水平匀速飞行。要求学生：① 由"水平匀速"得空气作用力始终与重力+拉力合力等大反向；② 拉力冲量 = F–t 图与时间轴围成的面积 <span class="formula">I=½(F₀+F_T)T</span>；③ 将拉力分解为水平/竖直分量，再分别求合力冲量的分量。<br><span class="src">学生痛点：把"变力冲量"误当"恒力×时间"；或忘记 30° 夹角的分量拆分。</span></div>
+    <div class="viz-box">
+      <svg viewBox="0 0 700 300" role="img" aria-label="无人机变力分量与F-t图面积">
+        <defs><marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#a9c7c3"/></marker></defs>
+        <!-- 左：受力分解 -->
+        <text x="150" y="24" fill="#cffaf3" font-size="13" font-weight="700" text-anchor="middle">拉力分量分解（30°）</text>
+        <line x1="150" y1="90" x2="150" y2="250" stroke="rgba(255,255,255,.22)"/>
+        <line x1="50" y1="170" x2="280" y2="170" stroke="rgba(255,255,255,.22)"/>
+        <line x1="150" y1="170" x2="240" y2="120" stroke="#14b8a6" stroke-width="3" marker-end="url(#a1)"/><text x="200" y="112" fill="#14b8a6" font-size="11">F</text>
+        <line x1="150" y1="170" x2="240" y2="170" stroke="#f6e27a" stroke-width="2" stroke-dasharray="4 3"/><text x="190" y="164" fill="#f6e27a" font-size="11">Fₓ</text>
+        <line x1="240" y1="170" x2="240" y2="120" stroke="#f6e27a" stroke-width="2" stroke-dasharray="4 3"/><text x="246" y="150" fill="#f6e27a" font-size="11">F_y</text>
+        <text x="150" y="270" fill="#a9c7c3" font-size="11" text-anchor="middle">Fₓ=Fcos30°　F_y=Fsin30°</text>
+        <!-- 右：F-t 面积 -->
+        <text x="500" y="24" fill="#cffaf3" font-size="13" font-weight="700" text-anchor="middle">F–t 图面积 = 冲量</text>
+        <line x1="380" y1="250" x2="640" y2="250" stroke="rgba(255,255,255,.22)"/><line x1="380" y1="250" x2="380" y2="90" stroke="rgba(255,255,255,.22)"/>
+        <line x1="380" y1="250" x2="560" y2="120" stroke="#48dbfb" stroke-width="3"/>
+        <text x="372" y="120" fill="#48dbfb" font-size="11">F₀</text><text x="556" y="116" fill="#48dbfb" font-size="11">F_T</text>
+        <path d="M380,250 L560,120 L560,250 Z" fill="rgba(72,219,251,.18)"/>
+        <text x="470" y="200" fill="#cffaf3" font-size="12">I = ½(F₀+F_T)T</text>
+        <text x="380" y="270" fill="#a9c7c3" font-size="11" text-anchor="middle">变力冲量≠恒力×t</text>
+      </svg>
+      <p class="cap">2026·广东：矢量分解 + 图像面积，是"物理量即向量"这一上层观念的高考级落地。</p>
+    </div>
+    <div class="classic"><b>经典存量对照（2022 全国乙卷 · 磁传感器）：</b>用手机建 xOy（z 竖直向上）测地磁场四次得 Bₓ、B_y、B_z 表，推大小与方向 <span class="formula">B=√(Bₓ²+B_y²+B_z²)</span>。失分点多在不辨南北半球、分量符号与方向对应错。与 2026·广东 共同构成"矢量分量"双题链。</div>
+
+    <h3 id="s3-2">3.2 2D→3D 空间转换——建系、俯视与坐标对称</h3>
+    <p>电磁学是空间学科。2026 年命题把"空间想象"推到台前：既要求<strong>在脑中把立体场景降维到可运算的平面</strong>，也要求<strong>由坐标重建运动对称性</strong>。</p>
+    <div class="note"><b>真题 1（2026·内蒙古辽宁 · 磁场中摆动俯视轨迹）：</b>带正电小球在竖直向下匀强磁场中由静止释放，判断其运动轨迹的<strong>俯视图</strong>。需用左手定则判断洛伦兹力方向（垂直速度、指向纸里/外），进而确定轨迹在俯视图中的弯曲方向——纯<strong>空间投影能力</strong>，无数值运算，但得分率不低、区分度在"能否在脑中旋转坐标系"。</div>
+    <div class="note"><b>真题 2（2026·湖北 · 组合场坐标运动）：</b>xy 平面内电场加速→半圆无场区过渡→磁场偏转→再回电场。第三问求"第二次射出磁场的坐标"，需发现：第一次出磁场速度与 x 轴负向夹角 θ 满足 <span class="formula">cosθ=…</span>，沿 y 轴做类竖直上抛、沿 x 轴匀速，由对称性粒子两次轨迹关于某轴对称，<strong>第二次出磁场坐标恰等于第一次进磁场坐标</strong>。<br><span class="src">能力点：建立平面直角坐标系、把"对称性"翻译成"坐标相等"，难度系数 0.54。</span></div>
+    <div class="viz-box">
+      <svg viewBox="0 0 700 300" role="img" aria-label="组合场坐标对称运动">
+        <defs><marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L7,3 L0,6 Z" fill="#a9c7c3"/></marker></defs>
+        <line x1="120" y1="40" x2="120" y2="260" stroke="rgba(255,255,255,.22)"/><line x1="60" y1="150" x2="660" y2="150" stroke="rgba(255,255,255,.22)"/>
+        <text x="100" y="34" fill="#a9c7c3" font-size="11">y</text><text x="640" y="146" fill="#a9c7c3" font-size="11">x</text>
+        <!-- 半圆无场区 -->
+        <path d="M360,150 A90,90 0 0 1 360,240" fill="rgba(246,226,122,.12)" stroke="#f6e27a" stroke-width="1.5"/>
+        <text x="300" y="110" fill="#f6e27a" font-size="11">半圆无场区</text>
+        <!-- 电场段 -->
+        <line x1="180" y1="150" x2="270" y2="150" stroke="#48dbfb" stroke-width="2.5"/><text x="200" y="142" fill="#48dbfb" font-size="10">电场加速</text>
+        <!-- 磁场圆弧 -->
+        <path d="M270,150 A90,90 0 0 0 360,240" fill="none" stroke="#14b8a6" stroke-width="2.5"/><text x="285" y="210" fill="#14b8a6" font-size="10">磁场偏转</text>
+        <circle cx="180" cy="150" r="5" fill="#48dbfb"/><text x="160" y="142" fill="#48dbfb" font-size="11">进 P₁</text>
+        <circle cx="360" cy="240" r="5" fill="#f6e27a"/><text x="366" y="258" fill="#f6e27a" font-size="11">出 Q</text>
+        <!-- 对称返回 -->
+        <path d="M360,240 A90,90 0 0 0 270,150" fill="none" stroke="#feb47b" stroke-width="2" stroke-dasharray="5 4"/>
+        <circle cx="180" cy="150" r="5" fill="#feb47b"/><text x="160" y="166" fill="#feb47b" font-size="11">二次出=进 P₁</text>
+        <text x="540" y="150" fill="#fff" font-size="13" font-weight="700">坐标对称</text>
+        <text x="540" y="175" fill="#a9c7c3" font-size="11">第二次出磁场坐标</text>
+        <text x="540" y="195" fill="#a9c7c3" font-size="11">= 第一次进磁场坐标</text>
+      </svg>
+      <p class="cap">2026·湖北：把"对称性"翻译成"坐标相等"，是 2D→3D 转换在解析几何层面的典型要求。</p>
+    </div>
+    <div class="classic"><b>经典存量对照（2023 北京卷 · 霍尔效应测地磁场）：</b>建立三维直角坐标系 Oxyz，将薄片分别置于 xOy/xOz/yOz 平面，测出 B_z、B_y、Bₓ 三分量再合成。与 2026·内蒙古辽宁 共构"空间→分量"能力链，但北京卷考"重建三维场"，辽宁卷考"俯视投影"，方向相反、互补。</div>
+
+    <h3 id="s3-3">3.3 三角知识——物理运算的"通用货币"</h3>
+    <p>三角在物理中无处不在：力的分解、磁场轨迹圆心角、连接体临界角、抛射最值。2026 年它在"分解"与"极值"两处集中爆发。</p>
+    <div class="fblk">a·sinθ + b·cosθ = √(a²+b²)·sin(θ+φ)，当 θ+φ = 90° 时取最大值 √(a²+b²)</div>
+    <div class="fblk">余弦定理（磁场几何）：弦长 L = 2R·sin(α/2)，圆心角 α 由几何关系确定</div>
+    <div class="note"><b>真题（2026·广东 无人机 & 2026·河北邯郸 铅球）：</b>前者拉力与水平成 <strong>30°</strong>，必须正确拆分水平/竖直分量参与矢量合成；后者要求"调整铅球初速与水平方向的夹角，使水平位移最大"——本质是 <span class="formula">x=v²sin2θ/g</span> 在 <span class="formula">θ=45°</span> 取极大的三角极值。<br><span class="src">训练要点：把"文字条件"即时翻译成"三角结构"，是压轴提速的关键习惯。</span></div>
+    <div class="warn"><b>失分高发：</b>① 混淆"力与速度夹角"和"轨迹圆心角"；② 不会把 <span class="formula">a·sinθ+b·cosθ</span> 化一求极值；③ 几何中找不到隐含的直角/等腰/相似关系，导致 α 算错，时间全错。</div>
+
+    <h3 id="s3-4">3.4 数列与递推——压轴题的"隐藏 boss"</h3>
+    <p>多次碰撞、多次反弹的"无穷重复"，本质是用<strong>递推关系构造数列</strong>再求和。2026·山东 把这道题做成了"递推 + 图像"的复合载体。</p>
+    <div class="note"><b>真题（2026·山东 · 斜面双物块多次弹性碰撞）：</b>质量相等的 M、N 在斜面上运动，M 与斜面有摩擦（μ 恰使重力分量=最大静摩擦，故 M 碰后匀速），N 无摩擦匀加速。因质量相等，每次弹性碰撞<strong>交换速度</strong>。第一次碰后到第二次碰前位移相等，解得 <span class="formula">t₁=v/(g sinθ)</span>；第二次间隔 <span class="formula">t₂=2t₁</span>，第三次 <span class="formula">t₃=3t₁</span>……即碰撞时刻构成<strong>等差数列 tₙ=n·t₁</strong>，第 n 次碰前 N 的速度 <span class="formula">vₙ=(n−1)v</span>。<br><span class="src">题目以 v–t 图像选择题呈现（难度 0.65），要求学生从递推规律反推图像——数列与图像在同一题内闭环。</span></div>
+    <div class="viz-box">
+      <svg viewBox="0 0 700 300" role="img" aria-label="斜面多次碰撞递推与v-t图">
+        <text x="180" y="22" fill="#cffaf3" font-size="13" font-weight="700" text-anchor="middle">碰撞时刻：等差数列</text>
+        <line x1="80" y1="70" x2="500" y2="70" stroke="rgba(255,255,255,.22)"/>
+        <text x="80" y="64" fill="#a9c7c3" font-size="11" text-anchor="end">t</text>
+        <circle cx="120" cy="70" r="5" fill="#48dbfb"/><text x="116" y="90" fill="#48dbfb" font-size="11">t₁</text>
+        <circle cx="200" cy="70" r="5" fill="#14b8a6"/><text x="196" y="90" fill="#14b8a6" font-size="11">t₂=2t₁</text>
+        <circle cx="280" cy="70" r="5" fill="#f6e27a"/><text x="276" y="90" fill="#f6e27a" font-size="11">t₃=3t₁</text>
+        <circle cx="360" cy="70" r="5" fill="#feb47b"/><text x="356" y="90" fill="#feb47b" font-size="11">t₄</text>
+        <text x="120" y="116" fill="#fff" font-size="12">tₙ = n·t₁　（线性递推）</text>
+        <!-- 右：v-t 阶梯 -->
+        <text x="540" y="22" fill="#cffaf3" font-size="13" font-weight="700" text-anchor="middle">M 的速度 v–t（交换速度）</text>
+        <line x1="420" y1="70" x2="660" y2="70" stroke="rgba(255,255,255,.22)"/>
+        <line x1="420" y1="250" x2="420" y2="60" stroke="rgba(255,255,255,.22)"/>
+        <polyline points="420,160 460,160 460,120 500,120 500,90 540,90 540,70 580,70" fill="none" stroke="#48dbfb" stroke-width="2.5"/>
+        <text x="416" y="166" fill="#a9c7c3" font-size="11" text-anchor="end">v</text>
+        <text x="430" y="245" fill="#a9c7c3" font-size="11">每次碰后 M 取 N 碰前速 → 阶梯上升</text>
+      </svg>
+      <p class="cap">2026·山东：把"多次碰撞"翻译成"等差数列 + v–t 图像"，是数列能力在物理压轴中的典型落地，且比 2024 湖南的等比递推更"轻量"、更频出。</p>
+    </div>
+    <div class="classic"><b>经典存量对照（2024 湖南卷 15 · 圆环多次碰撞，压轴）：</b>非弹性、恢复系数 e，相邻两次碰撞相对速度成<strong>等比数列（公比 e）</strong>，路程求和收敛。与 2026·山东 形成"等比递推 vs 等差递推"双样本——一轮复习应两者都练，避免只见过一种。</div>
+
+    <h3 id="s3-5">3.5 不等式与极值——临界问题的数学内核</h3>
+    <p>物理中的"刚好不滑""刚好不出磁场""最大角速度""最小长度"，本质是<strong>在约束下求函数的极值或范围</strong>。2026·贵州 把这层推到了"函数关系比较"。</p>
+    <div class="cards">
+      <div class="card"><div class="no">工具 1</div><h4>二次函数</h4><p><span class="formula">y=ax²+bx+c</span>，a&gt;0 有极小值。连接体、抛体最值常化此形。</p></div>
+      <div class="card"><div class="no">工具 2</div><h4>均值不等式</h4><p><span class="formula">a+b≥2√(ab)</span>（a,b&gt;0），当 a=b 取等。功率/电阻匹配最值。</p></div>
+      <div class="card"><div class="no">工具 3</div><h4>三角化一</h4><p><span class="formula">a·sinθ+b·cosθ</span> 求极值，见 3.3。</p></div>
+      <div class="card"><div class="no">工具 4</div><h4>分类讨论</h4><p>半开放情境按力/速度大小关系分情况，逻辑严密。</p></div>
+    </div>
+    <div class="note"><b>真题（2026·贵州 · 径向电场+磁场复合）：</b>径向非匀强电场 <span class="formula">E=k/r</span> 与匀强磁场复合，带负电粒子沿逆时针匀速圆周。当磁感应强度由 B₁ 变为 B₂(&gt;B₁) 时，比较运动半径、速率、电势能。需由"洛伦兹力背离圆心、电场力指向圆心"列向心力方程，得到 <span class="formula">r∝1/B</span>、<span class="formula">v 不变</span>，再结合"沿电场方向电势降低、电子在低电势处电势能大"做<strong>不等式判断</strong>。<br><span class="src">能力点：把物理状态翻译成函数关系，再用单调性与不等式定序——这正是"上限"所在。</span></div>
+
+    <h3 id="s3-6">3.6 函数与图像——信息提取的"第一关"</h3>
+    <p>高考物理<strong>几乎每卷必考图像</strong>。2026 年图像题不仅多，且横纵轴组合翻新。能力分两层：读懂常规图，再攻克<strong>非常规图</strong>。</p>
+    <table class="table-glass">
+      <thead><tr><th>图像</th><th>斜率</th><th>面积</th><th>2026 真题出场</th></tr></thead>
+      <tbody>
+        <tr><td><b>v–t</b></td><td>加速度 a</td><td>位移 x</td><td><span class="yr">2026·湖北</span> 三段折线对应 a/b/c 位置</td></tr>
+        <tr><td><b>F–t</b></td><td>—</td><td>冲量 I</td><td><span class="yr">2026·广东</span> 无人机变力面积；<span class="yr">2025·甘肃</span> 穿杆 F–t 图</td></tr>
+        <tr><td><b>F–x（场力）</b></td><td>—</td><td>—（读力随位）</td><td><span class="yr">2026·河南</span> 两点电荷静电力图读取</td></tr>
+        <tr><td><b>Q–U / C–U</b></td><td>—</td><td>—</td><td><span class="yr">2026·广东</span> 可变电容器充放电图像判断</td></tr>
+        <tr><td><b>φ–x（电势）</b></td><td>−E（场强）</td><td>—</td><td>图像法专题延续（见对照节）</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>真题（2026·河南 T2 · 两点电荷 F–x 图）：</b>在 x 轴放置电荷量 q、−q 两点电荷，试探电荷沿 x 轴移动，所受静电力 F 随 x 变化的图像。要求学生由"图像零点、正负号、两侧渐近"反推电荷位置与电性——纯粹<strong>图像信息提取</strong>。<br><b>真题（2026·广东 · 可变电容器）：</b>梳齿电容器动极板上下运动，判断 Q–U、C–U 等图像可能正确者，考查"电容定义 + 几何变化→图像形状"的映射。</div>
+
+    <h3 id="s3-7">3.7 平面几何——轨迹问题的"地基"</h3>
+    <p>带电粒子在磁场中运动、光学反射、绳杆约束，最终都落到平面几何：圆、弦、切线、圆心角、相似三角形、镜像对称。2026·河南 把它考到了"相似+勾股"层级。</p>
+    <div class="fblk">由速度方向作垂线交于圆心 O；弦长 L=2R·sin(α/2)；相切时半径⊥边界；对称入射→对称出射</div>
+    <div class="note"><b>真题（2026·河南 · 双反向磁场）：</b>两反向匀强磁场区域（虚线下方向外、上方向里），粒子从 P 垂直虚线射入、又从 P 射出。已知下方轨迹半径 R，要求上、下磁感应强度之比。关键：由"<strong>从 P 入、从 P 出</strong>"得轨迹关于 P 对称；由<strong>相似三角形 + 勾股定理</strong>推上方半径 <span class="formula">R上=√3 R</span>（或依图而定），再由 <span class="formula">B=mv/(qR)</span> 得磁感应强度比。<br><span class="src">能力点：几何推理（相似、勾股）+ 物理对称条件，属中档偏难。</span></div>
+    <div class="viz-box">
+      <svg viewBox="0 0 700 280" role="img" aria-label="双反向磁场几何">
+        <line x1="60" y1="140" x2="640" y2="140" stroke="#feb47b" stroke-width="2" stroke-dasharray="6 4"/><text x="610" y="134" fill="#feb47b" font-size="11">分界面</text>
+        <!-- 下区圆弧（向外） -->
+        <path d="M180,140 A90,90 0 0 1 360,140" fill="none" stroke="#14b8a6" stroke-width="2.5"/>
+        <text x="250" y="200" fill="#14b8a6" font-size="11">下区 R（已知）</text>
+        <!-- 上区圆弧（向里） -->
+        <path d="M360,140 A150,150 0 0 0 180,140" fill="none" stroke="#48dbfb" stroke-width="2.5"/>
+        <text x="250" y="100" fill="#48dbfb" font-size="11">上区 R上（勾股求）</text>
+        <circle cx="180" cy="140" r="5" fill="#fff"/><text x="165" y="160" fill="#fff" font-size="11">P 入/出</text>
+        <circle cx="360" cy="140" r="5" fill="#f6e27a"/>
+        <!-- 圆心与垂线 -->
+        <line x1="270" y1="140" x2="270" y2="230" stroke="rgba(255,255,255,.3)" stroke-dasharray="3 3"/><circle cx="270" cy="230" r="3" fill="#a9c7c3"/>
+        <text x="430" y="220" fill="#cffaf3" font-size="12" font-weight="700">几何关系</text>
+        <text x="430" y="244" fill="#a9c7c3" font-size="11">△相似 → 勾股 → R上=√3 R</text>
+      </svg>
+      <p class="cap">2026·河南：把"从同一点出入"翻译成"对称性 + 相似三角形"，是平面几何能力的高考级样板。</p>
+    </div>
+    <p><strong>训练要诀：</strong>一律先按比例草图、标圆心、标半径、标入射/出射速度垂线，再代数化。几何关系错，后面全废。</p>
+
+    <h3 id="s3-8">3.8 近似与微元——"微积分思想"的高中落地</h3>
+    <p>高考不考微积分计算，但考<strong>微元思想与微分表达</strong>。2026 年电磁感应专题已把"微元法"列为必备数学方法（图像法、等效法、对称法、微元法并列点名）。</p>
+    <div class="note"><b>经典存量真题（2025·浙江 T9 · 高空抛物鸡蛋，估楼层）：</b>鸡蛋从高楼坠落，以"上下沿接触地面时间差"为撞击时间、上下沿距离 5 cm，要产生约 1500 N 冲击力，估算坠落楼层。由动量定理 <span class="formula">FΔt=mΔv</span>、匀减速平均速度求 Δt，再由自由落体求高度 h≈51 m，每层约 3 m → <strong>约 17 层</strong>。<br><span class="src">这是"近似+估算"的标杆：把生活情境拆成标准物理过程，再用常识量级定结果。</span></div>
+    <div class="classic"><b>经典存量对照（2024 全国甲卷 25 · 含电容器导体棒）：</b>导体棒在磁场中运动，开关切换使电路在"稳态"与"电容器充电暂态"间转换。第(2)问结合动量定理与<strong>微分思想</strong>求位移，电容器储能需构建积分表达式 <span class="formula">W_C=∫q²/2C</span>。区分的正是"能否把物理过程写成微分/积分语言"。</div>
+
+    <h3 id="s3-9">3.9 指数对数——暂态过程的定量语言</h3>
+    <p>RC/RL 充放电、放射性衰减，规律为指数。2026 命题中"暂态+图像"思想在电容器实验里延续（见 2026·广东 可变电容器 Q–U 图）。一轮应建立"暂态=指数"的直觉：</p>
+    <div class="fblk">q=q₀(1−e^{−t/RC})，I=I₀e^{−t/τ}（τ=RC 或 L/R）</div>
+    <p>要求：识图（指数增减）、定性判断时间常数、在中档计算里套用上述式。虽频次低，但一轮建立直觉，考到不慌。</p>
+
+    <h3 id="s3-10">3.10 量纲与估算——物理直觉的"体检仪"</h3>
+    <p>估算能力对物理研究极重要。2026 年"估算"题频出，且常以"由照片/少量信息推未知量级"形式出现。</p>
+    <div class="note"><b>真题（2026·河南 ·"土星环"周期估算）：</b>给出土星平均密度 ρ、引力常量 G 与环带照片信息，估算位于土星环上的中间颗粒绕土星做圆周运动的周期。本质：由 <span class="formula">GMm/r²=m(2π/T)²r</span> 与 <span class="formula">M=ρ·(4/3)πR³</span> 推 <span class="formula">T∝√(r³/(ρR³))</span>，再用照片中环半径与土星半径的比例定 r/R，代入得数量级。<br><b>真题（2026 多省 · 天体估算）：</b>云南 T4、广东 T6、湖南 T3、陕晋青宁 T5 等均考查"会估算天体质量和密度"，是当年高频考点。</div>
+    <div class="classic"><b>经典存量对照（2024 新课标 16 · 红矮星行星）：</b>以太阳系外红矮星行星观测参数为背景，用已知量级组合推未知量级。量纲意识是快速排除错误选项、校验运算的利器，与 2026·河南 土星环同属"数量级体检"。</div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s3x">
+    <div class="sec-label">Part 03 · 重组</div>
+    <h2>双线对照：2024 前"经典存量" vs 2026"新真题"</h2>
+    <p>把同一能力项下"旧经典"与"新真题"并排放，能直观看出命题走向——<strong>同一能力，2026 年考得更活、更综合、更贴近真实情境</strong>。这正是第一轮复习该前瞻布局的方向。</p>
+    <table class="table-glass">
+      <thead><tr><th>能力项</th><th><span class="pill r">经典存量（2024 前）</span></th><th><span class="pill">2026 新真题</span></th><th>走向判读</th></tr></thead>
+      <tbody>
+        <tr><td><b>表征转换</b></td><td>2024 新课标26：vₓ–v_y 速度坐标系，把速度图误当轨迹</td><td>2026·湖北：组合场 xy 坐标运动，第二次出磁场坐标=第一次进磁场坐标</td><td>从"识别陷阱"升级为"主动用坐标+对称求解"</td></tr>
+        <tr><td><b>多次碰撞数列</b></td><td>2024 湖南15：圆环多次碰撞，相对速度成<strong>等比</strong>（公比 e）</td><td>2026·山东：斜面多次碰撞，碰时刻成<strong>等差</strong> tₙ=n·t₁ + v–t 图</td><td>等比、等差两种递推都要会，且更频出图像识别</td></tr>
+        <tr><td><b>半开放/函数比较</b></td><td>2024 甲卷21：线框不同速度进磁场，分类讨论运动情形</td><td>2026·贵州：径向场两次 B 下比较半径/速率/电势能</td><td>从"分类讨论"升级为"函数关系+不等式定序"</td></tr>
+        <tr><td><b>空间想象</b></td><td>2023 北京：霍尔效应三维分量测量（重建三维场）</td><td>2026·内蒙古辽宁：磁场中摆动俯视轨迹（投影到平面）</td><td>方向相反、互补：一个建系、一个投影</td></tr>
+        <tr><td><b>估算</b></td><td>2024 新课标16：红矮星行星数量级估算</td><td>2026·河南：土星环周期由照片信息估算</td><td>"由图估量"成为稳定题型，须练"读图定比例"</td></tr>
+        <tr><td><b>矢量分量</b></td><td>2022 全国乙卷：磁传感器测 Bₓ/B_y/B_z 合成</td><td>2026·广东：无人机变力 30° 分解 + F–t 面积冲量</td><td>从"静态合成"升级为"动态变力+图像面积"</td></tr>
+      </tbody>
+    </table>
+    <blockquote>"未来物理压轴题，考的不是'你记了多少模型'，而是'你能否把陌生情境翻译成可解的数学结构，并在限定时间内精确求解'。2026 真题进一步证明：<strong>数学转化力，就是新高考的物理核心素养之一</strong>。"</blockquote>
+  </section>
+
+  <hr class="div">
+
+  <section id="s4">
+    <div class="sec-label">Part 04</div>
+    <h2>训练处方：把"运算速度精度"焊进一轮复习</h2>
+    <p>明确了"上限"在哪，关键是第一轮复习如何落地。四条可操作处方（每条均对接 2026 题型）：</p>
+
+    <div class="path">
+      <div class="step"><div class="num">01</div><div><h4>限时"纯运算"专项</h4><p>把物理大题拆出"代数段"单独计时练：联立方程、三角化简、分式/根号运算。目标不是会，而是<strong>在配时内算对</strong>。建议每道压轴题留 8–10 分钟给运算段，超时就标红复盘。2026·山东压轴（难度 0.42）正是"算不完"的典型样本。</p></div></div>
+      <div class="step"><div class="num">02</div><div><h4>错题"双因归因"</h4><p>每道错题标注是<strong>物理错</strong>（模型/规律）还是<strong>数学错</strong>（算错/不会化/读不懂图）。数学错单独建本，归类到十项能力之一，针对性补弱——如 2026·河南 F–x 图读不懂，归"函数与图像"。</p></div></div>
+      <div class="step"><div class="num">03</div><div><h4>草稿纸分区 + 书写规范</h4><p>草稿按题号分块、符号统一（如下标清楚 m_A/m_B）、正负明示。精度失分多源于"潦草导致代错"。规范书写是最便宜的提分。2026·贵州 径向场"正负号定电势能大小"，一步代错满盘皆输。</p></div></div>
+      <div class="step"><div class="num">04</div><div><h4>数学结论"速记卡"</h4><p>一轮通关随身卡：a·sinθ+b·cosθ 化一、均值不等式取等条件、等差/等比求和、正弦定理、弦长公式、小角度近似、指数暂态式、F–t/v–t 图面积含义。做到"看见结构立刻反应"。</p></div></div>
+    </div>
+
+    <div class="note"><b>计算器禁令下的手算提速：</b>高考禁用计算器，手算必须熟练。重点练：根式化简、分式通分、三角特殊值（30°/45°/60°/37°）、两位数平方、科学计数法运算。这些"肌肉记忆"省下的每一秒，都是压轴题的活路。2026·广东 30° 分解、2026·河北邯郸 sin2θ 极值，都是"秒反应"题。</div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s5">
+    <div class="sec-label">Part 05</div>
+    <h2>前瞻：2026 命题对数学能力的新要求</h2>
+    <p>从 2026 题源解密看，数学能力的考查在四个方向继续升级，一轮复习须前瞻布局：</p>
+    <div class="cards">
+      <div class="card"><div class="no">趋势 1</div><h4>表征转换常态化</h4><p>速度坐标系、组合场坐标对称、非常规图像——要求学生<strong>在不同数学表征间自由切换</strong>（2026·湖北、2024 新课标26）。死记轨迹套路将失效。</p></div>
+      <div class="card"><div class="no">趋势 2</div><h4>函数关系比较</h4><p>从"分类讨论"升级为"用函数与不等式定序"（2026·贵州 径向场两态比较），考查<strong>把物理状态翻译成解析式</strong>的严谨性。</p></div>
+      <div class="card"><div class="no">趋势 3</div><h4>递推思维下沉</h4><p>多次碰撞从"超纲"变"压轴常客"，且等差、等比两种递推都要会（2026·山东、2024 湖南15）。一轮需补递推思维。</p></div>
+      <div class="card"><div class="no">趋势 4</div><h4>空间+估算频出</h4><p>俯视轨迹、三维投影（2026·内蒙古辽宁）、由图估算（2026·河南 土星环）频度上升，把<strong>工程数学（建系、分量、量级）</strong>作为物理建模的前置步骤。</p></div>
+    </div>
+  </section>
+
+  <hr class="div">
+
+  <section id="s6">
+    <div class="sec-label">结语</div>
+    <h2>第一轮复习，就是焊牢"数理转化链"</h2>
+    <p>回到开头：学生完卷率低，常被归咎于"物理难"。但 2026 真题证据显示，<strong>压垮完卷率的最后一根稻草，往往是数学运算的速度与精度</strong>。物理提供"想通"的方向，数学决定"算完"的能力——二者之间，横亘着一条必须亲手焊牢的转化链。</p>
+    <p>本文以 2026 年真题为实证主轴，重组了十项能力的"上限要求"与"双线对照"。意图不是让学生去学更多数学，而是<strong>看清高考物理对数学工具箱的"上限要求"，在一轮复习中有意识地把运算练到压轴题级的熟练与准确</strong>。当向量、三角、数列、不等式、图像、几何、微元都成为下意识的工具，物理才真正从"听明白"走向"做完整"。</p>
+    <p>这，正是第一轮复习最该补的"第二战场"。</p>
+  </section>
+
+  <div class="refs">
+    <h3>附录：2026 真题索引与参考（题源解密）</h3>
+    <ol>
+      <li><span class="yr">2026·广东</span> T10：无人机变力 F=F₀−kt（30° 夹角），矢量分解 + F–t 图面积求冲量</li>
+      <li><span class="yr">2026·内蒙古辽宁</span>：带电小球磁场中摆动，俯视轨迹判断（空间想象）</li>
+      <li><span class="yr">2026·湖北</span>：组合场（电场+半圆无场区+磁场）坐标运动，对称回原点（难度 0.54）</li>
+      <li><span class="yr">2026·山东</span>：斜面双物块多次弹性碰撞，tₙ=n·t₁ 递推 + v–t 图像（难度 0.65）</li>
+      <li><span class="yr">2026·山东</span>：斜面导轨双电源压轴，临界"刚好要下滑"消去倾角（难度 0.42）</li>
+      <li><span class="yr">2026·贵州</span>：径向电场 E=k/r + 匀强磁场复合，两态半径/速率/电势能比较（不等式）</li>
+      <li><span class="yr">2026·河南</span> T2：两点电荷静电力 F–x 图读取；双反向磁场相似三角+勾股求半径比</li>
+      <li><span class="yr">2026·河南</span>："土星环"颗粒周期由照片信息估算（数量级）</li>
+      <li><span class="yr">2026·广东</span>：梳齿可变电容器 Q–U/C–U 图像判断</li>
+      <li><span class="yr">2026·河北邯郸</span>三模 / <span class="yr">2026·浙江绍兴</span>二模：抛射最值（sin2θ）、炸弹垂直击山坡 tanθ</li>
+      <li><span class="yr">2026 多省</span>：云南 T4 / 广东 T6 / 湖南 T3 / 陕晋青宁 T5 天体质量密度估算</li>
+      <li>经典存量：2024 新课标26（速度坐标系）、2024 湖南15（圆环等比递推）、2024 甲卷21（半开放）、2024 甲卷25（含电容器微分）、2024 新课标16（红矮星估算）、2023 北京（霍尔三维）、2022 全国乙卷（磁传感器）、2025 浙江 T9（鸡蛋估楼层）、2025 湖北（推拉门极值）、2025 甘肃（穿杆 F–t 图）</li>
+      <li>素材来源：《2026 年高考物理真题题源解密》（学科网 · 专项训练全国通用 · 专题 02/03/04/05/07/09/11/12 等）</li>
+    </ol>
+  </div>
+
+</article>
+</div>
+
+<footer>
+  系列文章 · <b>物理教学理论与实践</b> · 高三物理复习的数学能力"上限"（2026 真题实证版）
+</footer>
+
+<script>
+  const c=document.getElementById('particles'),x=c.getContext('2d');
+  let w,h,ps=[];
+  function rs(){w=c.width=innerWidth;h=c.height=innerHeight;ps=[];const n=Math.min(90,Math.floor(w*h/16000));for(let i=0;i<n;i++){ps.push({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.8+.4,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,a:Math.random()*.5+.2});}}
+  function dr(){x.clearRect(0,0,w,h);for(const p of ps){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fillStyle='rgba(120,230,220,'+p.a+')';x.fill();}x.strokeStyle='rgba(120,230,220,.05)';for(let i=0;i<ps.length;i++){for(let j=i+1;j<ps.length;j++){const dx=ps[i].x-ps[j].x,dy=ps[i].y-ps[j].y;const d=dx*dx+dy*dy;if(d<12000){x.beginPath();x.moveTo(ps[i].x,ps[i].y);x.lineTo(ps[j].x,ps[j].y);x.stroke();}}}requestAnimationFrame(dr);}
+  rs();dr();addEventListener('resize',rs);
+</script>
+</body>
+</html>
