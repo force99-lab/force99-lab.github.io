@@ -3585,6 +3585,12 @@ const WORKS = [
       desc:"等厚干涉条纹的形成与平面检测原理动画演示，展示干涉条纹随厚度变化的规律。",
       icon:"🔬", cover:"assets/img/thin-film-cover.png", link:"animations/thin-film-plane-detection.html", date:"2026-08-29", tag:"光学"
     }
+,
+      {
+      type:"animation", title:"电学实验教学平台",
+      desc:"交互式电学实验教学平台：电路搭建、电表读数、传感器与示波器联用，支持信号采集与实时波形显示。",
+      icon:"🔌", cover:"assets/img/electrical-lab-cover.png", link:"animations/electrical-lab-platform.html", date:"2026-08-29", tag:"电学"
+    }
 ];
 
 
