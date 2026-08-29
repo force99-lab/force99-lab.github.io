@@ -3591,6 +3591,12 @@ const WORKS = [
       desc:"交互式电学实验教学平台：电路搭建、电表读数、传感器与示波器联用，支持信号采集与实时波形显示。",
       icon:"🔌", cover:"assets/img/electrical-lab-cover.png", link:"animations/electrical-lab-platform.html", date:"2026-08-29", tag:"电学"
     }
+,
+      {
+      type:"animation", title:"天体运动大模型 · 高中物理交互教学系统",
+      desc:"用交互大屏讲透天体运动——开普勒三定律、万有引力定律与轨道演化，高中物理可视化教学。",
+      icon:"🎬", cover:"assets/img/celestial-mechanics-cover.png", link:"animations/celestial_mechanics.html", date:"2026-08-29", tag:"天体运动"
+    }
 ];
 
 
