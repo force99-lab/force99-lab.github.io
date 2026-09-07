@@ -3597,6 +3597,12 @@ const WORKS = [
       desc:"用交互大屏讲透天体运动——开普勒三定律、万有引力定律与轨道演化，高中物理可视化教学。",
       icon:"🎬", cover:"assets/img/celestial-mechanics-cover.png", link:"animations/celestial_mechanics.html", date:"2026-08-29", tag:"天体运动"
     }
+,
+      {
+      type:"solve", title:"第43届预赛第15题精讲",
+      desc:"斜面—挡板往复运动，级数求时间，双滑块速度交换接力，计算题40分，官方评分标准一致。",
+      icon:"📐", cover:"", link:"solutions/contest43-q15.html", date:"2026-09-07", tag:"物理竞赛"
+    }
 ];
 
 
