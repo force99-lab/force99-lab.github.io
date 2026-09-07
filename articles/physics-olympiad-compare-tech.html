@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>第42届与第43届物理竞赛初赛对比分析 · 科技版</title>
+<script>
+MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]},svg:{fontCache:'global'}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+:root{
+  --teal-deep:#0c2622; --teal:#163f37; --teal-line:#1f5048;
+  --ink:#152b27; --blue:#0b3d91; --red:#c62828; --paper:#f3fbf8;
+  --prism:linear-gradient(90deg,#e63946,#f4a261,#2a9d8f,#3a86ff,#7b2ff7,#ef476f);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  min-height:100vh;
+  font-family:"Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+  color:var(--ink); line-height:1.9; font-size:17px;
+  background:
+    radial-gradient(1200px 600px at 12% -8%, rgba(42,157,143,.30), transparent 60%),
+    radial-gradient(1000px 520px at 92% 4%, rgba(58,134,255,.22), transparent 60%),
+    radial-gradient(900px 700px at 80% 100%, rgba(123,47,247,.16), transparent 60%),
+    linear-gradient(135deg,#06140f 0%,#0a2622 38%,#06191f 100%);
+  background-attachment:fixed;
+}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+.grid{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.18;
+  background-image:linear-gradient(rgba(120,220,200,.10) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(120,220,200,.10) 1px,transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(circle at 50% 28%,#000,transparent 78%);
+          mask-image:radial-gradient(circle at 50% 28%,#000,transparent 78%);
+}
+.hero{position:relative;z-index:2;max-width:960px;margin:0 auto;padding:74px 26px 8px;text-align:center;}
+.hero .kicker{display:inline-block;letter-spacing:.32em;font-size:12px;color:#9fe3d2;
+  border:1px solid rgba(159,227,210,.4);border-radius:999px;padding:6px 16px;margin-bottom:18px;
+  background:rgba(10,40,36,.4);backdrop-filter:blur(4px);}
+.hero h1{font-size:34px;line-height:1.4;font-weight:800;margin:0 0 14px;
+  background:var(--prism);-webkit-background-clip:text;background-clip:text;color:transparent;
+  background-size:200% auto;animation:flow 9s linear infinite;}
+@keyframes flow{to{background-position:200% center;}}
+.hero .sub{color:#cfe9e2;font-size:16px;font-style:italic;opacity:.92;}
+.hero .chips{margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.hero .chip{font-size:12.5px;color:#bfe6dc;background:rgba(10,40,36,.5);
+  border:1px solid rgba(120,220,200,.28);border-radius:8px;padding:5px 12px;backdrop-filter:blur(4px);}
+.wrap{position:relative;z-index:2;max-width:920px;margin:26px auto 70px;padding:40px 40px 54px;
+  background:rgba(243,251,248,.95);backdrop-filter:blur(10px) saturate(1.05);
+  border:1px solid rgba(255,255,255,.55);border-radius:20px;
+  box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 0 1px rgba(42,157,143,.18) inset,
+             0 0 40px rgba(42,157,143,.12);}
+h1.art{font-size:28px;font-weight:800;color:var(--blue);
+  border-bottom:3px solid var(--teal-line);padding-bottom:12px;margin:0 0 6px;}
+h2{font-size:23px;font-weight:800;color:var(--blue);margin:42px 0 12px;padding:6px 0 6px 14px;
+  border-left:6px solid transparent;border-image:var(--prism) 1;letter-spacing:.4px;}
+h3{font-size:19px;font-weight:700;color:#13433b;margin-top:26px;}
+h4{font-size:17px;font-weight:700;color:#245;margin-top:18px;}
+blockquote{background:rgba(22,63,55,.06);border-left:5px solid var(--teal-line);
+  margin:18px 0;padding:12px 18px;color:#285;font-style:italic;border-radius:0 8px 8px 0;}
+hr{border:none;height:1px;margin:30px 0;
+  background:linear-gradient(90deg,transparent,var(--teal-line),transparent);}
+table{width:100%;border-collapse:collapse;margin:18px 0;font-size:15px;
+  background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 6px 18px rgba(12,38,34,.10);}
+th,td{border:1px solid #dfeee9;padding:9px 11px;text-align:left;}
+th{background:linear-gradient(180deg,var(--teal),var(--teal-deep));color:#eafff8;font-weight:700;}
+tbody tr:nth-child(even){background:#eef7f3;}
+p{margin:14px 0;}
+ul,ol{margin:14px 0;padding-left:26px;}
+li{margin:7px 0;}
+b{color:var(--red);}
+.foot{position:relative;z-index:2;max-width:920px;margin:0 auto 60px; text-align:center;
+  color:#9fe3d2;font-size:13px;opacity:.8;}
+@media(max-width:640px){.wrap{padding:26px 18px 36px;}.hero h1{font-size:25px;}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div class="grid"></div>
+
+<header class="hero">
+  <span class="kicker">PHYSICS · 竞赛命题研究</span>
+  <h1>骨架未动，血肉已换</h1>
+  <div class="sub">第42届与第43届全国中学生物理竞赛初赛 · 专业化对比与备考重构</div>
+  <div class="chips">
+    <span class="chip">数据基准：第42届 2025-09-06</span>
+    <span class="chip">第43届 2026-09-05</span>
+    <span class="chip">满分400 · 时长3h · 16题</span>
+  </div>
+</header>
+
+<main class="wrap">
+<h1 class="art">骨架未动，血肉已换——第42届与第43届全国中学生物理竞赛初赛的专业化对比与备考重构</h1>
+<blockquote>副题：从"考你会不会算"到"考你有没有物理直觉"　数据基准：第42届（2025-09-06，9:00–12:00）、第43届（2026-09-05，9:00–12:00），均全国统一命题、满分400、时长3小时。</blockquote>
+
+<h2>引言</h2>
+<p>第42届（2025年9月6日）与第43届（2026年9月5日）全国中学生物理竞赛预赛，均由全国竞赛委员会统一命题，满分400、时长3小时、16题（选择5+填空5+计算6）的拓扑结构<b>完全一致</b>。命题框架的稳定，恰好给"对比"提供了一组干净的对照组：在卷面不变的前提下，两届试题在能力导向上的差异，暴露了命题理念的迁移。</p>
+<p><b>结论先行</b>：两届初赛"骨架"纹丝不动——结构、题型、分值、核心数学工具、守恒律思维全部守恒；但"血肉"正在发生范式转移：从"精确建模+硬计算"走向"数量级直觉+前沿情境剥离+小量近似主导"。命题正从"考你会不会算"转向"考你有没有物理直觉与建模勇气"。<b>不变的是第一性原理能力，变的是能力的外显形态。</b></p>
+<hr>
+
+<h2>一、恒定之锚：哪些能力要求没有变</h2>
+<h3>1.1 试卷拓扑结构恒定（对照表）</h3>
+<table><thead><tr><th>维度</th><th>第42届(2025)</th><th>第43届(2026)</th></tr></thead><tbody><tr><td>满分 / 时长</td><td>400分 / 3h</td><td>400分 / 3h</td></tr><tr><td>题型与题量</td><td>选择5·填空5·计算6（共16）</td><td>选择5·填空5·计算6（共16）</td></tr><tr><td>分值结构</td><td>60 + 100 + 240</td><td>60 + 100 + 240</td></tr><tr><td>选择题形式</td><td>不定项（全对12 / 半对6 / 错0）</td><td>不定项（全对12 / 半对6 / 错0）</td></tr><tr><td>计算题要求</td><td>文字说明+方程+演算步骤</td><td>文字说明+方程+演算步骤</td></tr></tbody></table>
+<p>结构零变化，意味着"答题节奏管理""填空速算保分""计算题分步拿分"的策略两届通用，无需重学。</p>
+<h3>1.2 核心数学武器恒定</h3>
+<p>两届都依赖同一组数学工具：</p>
+<ul><li><b>量纲分析</b>：42届选1（小孔流水 $t\propto\sqrt{H}$）即用；43届选5（引力波功率指数）更把它升格为独立得分点。工具本身未变。</li><li><b>矢量几何与坐标系变换</b>：42届算12要求"旋转坐标系45°使 $\mathbf B$ 沿新基矢，证沿磁/垂直磁运动独立"；43届算12（磁镜）、算16（光学曲率）同样依赖矢量分解。</li><li><b>守恒律（能量/动量/角动量）</b>：42届算13（滑块-斜面）、算16（卫星分裂定轨）；43届算11（攀岩绳）、算13（月球宇宙速度）均为守恒律主场。</li><li><b>近似展开（小量/泰勒）</b>：两届都大量出现，43届更显式（见第二节）。</li></ul>
+<h3>1.3 "模型拼贴"范式恒定</h3>
+<p>两届都擅长把多个标准模型揉进一题：</p>
+<ul><li>42届算14 = 弹簧简谐振动 + 电场匀加速 + 完全非弹性碰撞 + 新平衡位置简谐（四件套）；</li><li>43届算11 = 自由落体 + 弹性势能 + 简谐振动 + 冲坠系数工程定义（四件套）。</li></ul>
+<p>命题都要求"识别子模型→建立耦合方程"，这一底层能力要求未变。</p>
+<h3>1.4 实验思想与定量估算席位恒定</h3>
+<p>42届填9（泡沫箱热传导，Fourier定律直接套用）、43届算16（玻璃块测曲率，从装置抽象光学模型）都占填空/计算席位，说明"实验素养"始终是初赛的硬指标，只是呈现方式升级（见 2.6）。</p>
+<hr>
+
+<h2>二、变动之浪：创新与升级</h2>
+<h3>2.1 量纲分析 + 数量级估算：从配角升为主角</h3>
+<p>42届选1用数量级选出 B（高度×4→时间×2），但仅是单点；43届将此能力<b>系统化、高频化</b>：</p>
+<ul><li><b>选1（树叶影子池底移动速度）</b>：答案落在 $\mu\mathrm{m/s}$ 量级，需结合视深 $h'=h/n$ 与太阳角速度估算，四个选项横跨 $\mu\mathrm{m/s}$ 到 $\mathrm{mm/s}$ 两个数量级（官方答案 <b>A</b>）；</li><li><b>选5（双黑洞引力波辐射功率）</b>：给出 $P=k\,G^{a}c^{\beta}(Mm)^{2}/(M+m)^{\gamma}$，直接要求由量纲确定指数关系，官方答案为 <b>ABD</b>（即 $2a+\beta-\gamma=3$、$3a-\gamma=2$、$a=-\gamma/3$）。量纲分析首次成为"多选全对才满分"的独立考点；</li><li><b>填7（大气绝热递减率）</b>：由静力平衡+理想气体+绝热关系，得每上升 1 km 降温约 <b>9.8 K</b>（干绝热递减率），是"估算+物理常数"的组合；</li><li><b>填6（水波波前公切线）</b>：$\cos\theta$ 由 $\Delta t,d,\lambda,g$ 组合，典型"几何+量纲"估算。</li></ul>
+<p><b>判据</b>：43届选择/填空里"最接近""估算""量级"类题显著多于42届，且不再给足精确数值让你"算"，而是逼你"估"。</p>
+<h3>2.2 前沿科研情境密度剧增</h3>
+<table><thead><tr><th>情境</th><th>届</th><th>物理内核</th></tr></thead><tbody><tr><td>相衬显微 / 泽尔尼克</td><td>42</td><td>光程差 / 干涉</td></tr><tr><td>卫星入轨偏角</td><td>42</td><td>定轨 / 椭圆</td></tr><tr><td>硼中子俘获疗法(BNCT)</td><td>43</td><td>质量亏损 + 动量守恒</td></tr><tr><td>双黑洞引力波</td><td>43</td><td>量纲分析</td></tr><tr><td>磁镜约束(核聚变)</td><td>43</td><td>绝热不变量</td></tr><tr><td>月球三宇宙速度</td><td>43</td><td>引力 / 参考系拼接</td></tr><tr><td>攀岩冲坠系数</td><td>43</td><td>弹性绳 + 简谐 + 安全工程</td></tr></tbody></table>
+<p>43届把"核医学、引力波、聚变约束、深空探测、登山安全"一次性塞进一张卷，情境新颖度与42届（偏经典）形成对比。但注意：<b>内核全是竞赛大纲内的标准物理</b>，变的只是"包装纸"。</p>
+<h3>2.3 小量近似 / 绝热不变量成为区分度核心</h3>
+<p>43届多处显式标注"很小""近似"：</p>
+<ul><li>填6 "满足 $\Delta t\ll d$"、波前公切线小角；</li><li>填7 绝热近似（不同高度空气无热传递）；</li><li><b>算12 磁镜</b>：明确"磁场沿 $z$ 缓慢增强""回旋周期 $\ll$ 漂移周期""粒子可视为近似闭合回旋"，要求学生识别<b>磁矩 $\mu=mv_\perp^{2}/(2B)$ 守恒</b>这一绝热不变量，推出反射条件 $\sin\theta_0=\sqrt{B_0/B_{\max}}$；</li><li>算16 小角近似曲率半径。</li></ul>
+<p>这要求"敢近似、会近似"，与42届"算12 旋转分解后精确积分"形成方法论差异：42届重解析、43届重近似。</p>
+<h3>2.4 电磁学概念深度上探</h3>
+<p>42届电磁计算题（算12电磁场粒子、算15电磁感应梯形回路）是"标准进阶"；43届电磁（算12磁矩守恒、算14电场随 $z$ 变+磁场耦合漂移、填9电容器+线圈+二极管综合）进入<b>等离子体物理 / 回旋加速器物理</b>层面，概念更深、更"现代"。</p>
+<h3>2.5 天体 / 航天权重上升，力学主场被稀释</h3>
+<p>42届天体仅出现在选8（近地卫星偏角）、算16（卫星分裂）；43届算13直接考<b>月球三种宇宙速度</b>（含地月系统逃逸的第三宇宙速度拼接），引力 / 航天占比明显增大，传统"滑块斜面"类纯力学计算题减少。</p>
+<h3>2.6 实验：从"套公式"到"建模型"</h3>
+<ul><li>42届填9：给 Fourier 定律 $H=kS\Delta T/d$，直接代入数字；</li><li>43届算16：给"激光器 + 玻璃块 + 拱柱弧 AB"，要你自己抽象出折射偏角、入射角、小角近似，最后求曲率半径。</li></ul>
+<p>前者考"会不会代公式"，后者考"能不能从装置写出方程"——实验建模能力要求实质性升级。</p>
+<hr>
+
+<h2>三、精准对照：三组题看不变与变动</h2>
+<p><b>对照① 量纲的"守"与"升"</b></p>
+<ul><li>42届选1：小孔流水，$t\propto\sqrt{H}$，$H\times 4\to t\times 2$（选 B）。内核 = Torricelli + 量纲。</li><li>43届选5：引力波功率指数，由 $[P]=[G]^{a}[c]^{\beta}[M]^{4-\gamma}$ 解出 $a=1/3,\ \beta=4/3,\ \gamma=-1$，关系 ABD 成立。</li></ul>
+<p>→ 量纲工具守恒，但其"独立计分权重"在43届飙升。</p>
+<p><b>对照② 守恒 / 近似的"解析"与"绝热"</b></p>
+<ul><li>42届算12：旋转坐标系，证明沿磁 / 垂直磁独立，精确解滚轮线。</li><li>43届算12：磁镜，用"回旋 $\ll$ 漂移"近似，导出 $\mu$ 守恒 $\to$ 反射。</li></ul>
+<p>→ 同是电磁+坐标系，42届考分解技巧，43届考"识别不变量"的物理直觉。</p>
+<p><b>对照③ 实验的"代"与"建"</b></p>
+<ul><li>42届填9 vs 43届算16（见 2.6）。</li></ul>
+<p>→ 实验从操作题升为建模题。</p>
+<p><b>精准算例（说明"内核不变、包装在变"）</b>：43届选2（BNCT）给出核反应 $^{10}\mathrm{B}+{}^{1}\mathrm{n}\to{}^{7}\mathrm{Li}+{}^{4}\mathrm{He}$，质量亏损</p>
+<p>$$\Delta m=(10.0129+1.0087)-(7.0160+4.0026)=0.0030\ \mathrm{u}$$</p>
+<p>释放能 $Q=0.0030\times931.5=2.79\ \mathrm{MeV}$。反应前中子动能可忽略，由动量守恒两产物动量等大反向，故 $E_{\mathrm{He}}/E_{\mathrm{Li}}=m_{\mathrm{Li}}/m_{\mathrm{He}}$，得</p>
+<p>$$E_{\mathrm{He}}=Q\cdot\frac{m_{\mathrm{Li}}}{m_{\mathrm{Li}}+m_{\mathrm{He}}}=2.79\times\frac{7.0160}{11.0186}\approx1.78\ \mathrm{MeV}$$</p>
+<p>选 <b>C</b>。这道题的"包装"是核医学，内核却是高一就学的"质量亏损+动量守恒"——正是两届共通的守恒律能力，被43届用前沿情境重新包装。</p>
+<hr>
+
+<h2>四、专业化备考重构（可操作）</h2>
+<p>基于以上对比，给出八条可执行的训练路径：</p>
+<ol><li><b>第一性原理反应</b>：见题先问"守恒量？对称性？不变量？"，而非"这是哪类题型"。43届选5、算12都惩罚"套题型"思维。</li><li><b>量纲 + 数量级刻意训练</b>：每日3道估算（如"太阳光压数量级""人体热功率"），训练到选项能秒排。这是43届最大增量。</li><li><b>小量展开规范化</b>：熟记泰勒、小角、$(1+x)^{-1}\approx1-x$、绝热近似；主动标记题干"很小""近似"信号。</li><li><b>坐标系变换与矢量几何</b>：复练42届算12、43届算12/16的分解套路。</li><li><b>模型拼贴拆解</b>：把复合题拆子模型（43届11 = 自由落体 + 弹性势能 + 简谐 + 冲坠定义），先列子模型再耦方程。</li><li><b>前沿情境剥离</b>：读科研新闻，练习"剥包装找核心方程"。BNCT 内核 = 质量亏损；引力波内核 = 量纲；磁镜内核 = $\mu$ 守恒。</li><li><b>计算耐力模拟</b>：6道40分计算连做，限时3小时，训练分步拿分与草稿管理。</li><li><b>实验建模转型</b>：从"代公式"转"给装置写方程"，常练"由图建模"。</li></ol>
+<p><b>四大误区</b>：</p>
+<ul><li>只刷题型不练直觉 → 43届选1/选5栽；</li><li>怕近似、追精确 → 43届填6/算12要求敢近似；</li><li>电磁记结论不究不变量 → 43届算12磁矩守恒；</li><li>忽视数量级 → 选1 $\mu\mathrm{m/s}$ 与 $\mathrm{mm/s}$ 差50倍，估算错全错。</li></ul>
+<hr>
+
+<h2>结语</h2>
+<p>两届初赛的对照揭示了一条清晰的主线：<b>物理竞赛初赛正在从"解题术"走向"物理直觉"</b>。卷面的恒定，保证了扎实基本功永不过时；血肉的更换，提醒我们——未来的优胜者，不是算得最快的人，而是最先看清"这道题的物理本质是什么"的人。对备考者而言，真正的专业化训练，是把第一性原理、数量级直觉、近似勇气，练成不需要思考的肌肉反应。</p>
+<p><i>（本文试题与答案数据来自第42届、第43届全国中学生物理竞赛预赛官方试题及评分标准公开版本，对比分析为作者专业化解读。）</i></p>
+</main>
+
+<div class="foot">force99 · 高中物理教学研究 · 科技风</div>
+
+<script>
+(function(){
+  const c=document.getElementById('bg'),x=c.getContext('2d');
+  let w,h,ps=[];const N=70;
+  function rs(){w=c.width=innerWidth;h=c.height=innerHeight;
+    ps=Array.from({length:N},()=>({x:Math.random()*w,y:Math.random()*h,
+      vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.8+0.6}));}
+  rs();addEventListener('resize',rs);
+  function tick(){
+    x.clearRect(0,0,w,h);
+    for(const p of ps){p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1;
+      x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fillStyle='rgba(150,230,210,.55)';x.fill();}
+    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+      const a=ps[i],b=ps[j],dx=a.x-b.x,dy=a.y-b.y,d=Math.hypot(dx,dy);
+      if(d<128){x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);
+        x.strokeStyle='rgba(110,200,185,'+(0.18*(1-d/128))+')';x.lineWidth=1;x.stroke();}}
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+</script>
+</body>
+</html>
