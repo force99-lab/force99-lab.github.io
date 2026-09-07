@@ -3612,6 +3612,10 @@ const WORKS = [
   {
     type:"animation", title:"椭圆光路 Ellipse Optical Path",
     icon:"🔆", cover:"assets/img/ellipse-optical-path-cover.png", link:"animations/ellipse-optical-path-2.html", date:"2026-09-07", tag:"光学"
+  },
+  {
+    type:"solve", title:"第43届预赛第14题精讲",
+    icon:"📝", cover:"assets/img/contest43-q14-cover.png", link:"solutions/contest43-q14.html", date:"2026-09-07", tag:"竞赛"
   }
 ];
 
