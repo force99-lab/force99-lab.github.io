@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Light & Line</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { overflow:hidden; background:#0b0b16; }
+        canvas { display:block; }
+        /* hidden color picker – no text, no label */
+        #colorPicker {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            padding: 0;
+            background: transparent;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 0 20px rgba(200,200,255,0.2);
+            transition: border-color 0.3s;
+        }
+        #colorPicker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        #colorPicker::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        #colorPicker:hover {
+            border-color: rgba(255,255,255,0.8);
+        }
+        /* no text anywhere */
+    </style>
+</head>
+<body>
+    <!-- color picker without any label -->
+    <input type="color" id="colorPicker" value="#ccccdd" />
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Color control – initial values (silver-white)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let currentColor = new THREE.Color('#ccccdd');
+        let currentEmissive = new THREE.Color('#aaaacc');
+        let currentJointColor = new THREE.Color('#eeeeff');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Scene / Camera / Renderer
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0b0b16);
+        scene.fog = new THREE.Fog(0x0b0b16, 28, 50);
+
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(10, 7, 18);
+        camera.lookAt(0, 4.5, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.autoRotate = false;
+        controls.target.set(0, 4.5, 0);
+        controls.maxPolarAngle = Math.PI / 2.1;
+        controls.minDistance = 6;
+        controls.maxDistance = 40;
+        controls.update();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Lights
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const ambient = new THREE.AmbientLight(0x404060, 0.6);
+        scene.add(ambient);
+
+        const mainLight = new THREE.DirectionalLight(0xffeedd, 3.5);
+        mainLight.position.set(8, 18, 6);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 1024;
+        mainLight.shadow.mapSize.height = 1024;
+        scene.add(mainLight);
+
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 1.2);
+        fillLight.position.set(-6, 4, -10);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xffcc88, 1.0);
+        rimLight.position.set(-2, 10, -8);
+        scene.add(rimLight);
+
+        const pointLight = new THREE.PointLight(0xff8844, 0.8, 20);
+        pointLight.position.set(0, 7.5, 0);
+        scene.add(pointLight);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Environment Map
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const envScene = new THREE.Scene();
+        envScene.background = new THREE.Color(0x111122);
+
+        const envGeo = new THREE.SphereGeometry(10, 32, 32);
+        const envMat = new THREE.MeshBasicMaterial({
+            color: 0x223355,
+            side: THREE.BackSide,
+        });
+        const envMesh = new THREE.Mesh(envGeo, envMat);
+        envScene.add(envMesh);
+
+        const colors = [0xff8844, 0x44aaff, 0xff66aa, 0x88ff66];
+        for (let i = 0; i < 30; i++) {
+            const c = new THREE.Mesh(
+                new THREE.SphereGeometry(0.15 + Math.random() * 0.3, 8, 8),
+                new THREE.MeshBasicMaterial({
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    transparent: true,
+                    opacity: 0.5 + Math.random() * 0.5,
+                })
+            );
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const r = 8 + Math.random() * 2;
+            c.position.set(
+                r * Math.sin(phi) * Math.cos(theta),
+                r * Math.cos(phi),
+                r * Math.sin(phi) * Math.sin(theta)
+            );
+            envScene.add(c);
+        }
+
+        const envTexture = pmremGenerator.fromScene(envScene).texture;
+        scene.environment = envTexture;
+        pmremGenerator.dispose();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Ground
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const groundGeo = new THREE.PlaneGeometry(40, 30);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0x141425,
+            roughness: 0.7,
+            metalness: 0.3,
+            transparent: true,
+            opacity: 0.9,
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.set(0, -0.1, 0);
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const gridHelper = new THREE.GridHelper(36, 24, 0x8888cc, 0x444488);
+        gridHelper.position.y = 0.01;
+        gridHelper.material.transparent = true;
+        gridHelper.material.opacity = 0.2;
+        scene.add(gridHelper);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Parabola parameters
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const a = 1 / 9;
+        const vertexY = 9;
+        const focusY = vertexY - 1 / (4 * a); // 6.75
+        const focusPos = new THREE.Vector3(0, focusY, 0);
+        const cannonPos = new THREE.Vector3(-9, 0.3, 0);
+
+        const NUM_SEGMENTS = 140;
+        const xMin = -9.2;
+        const xMax = 9.2;
+        const pts = [];
+        for (let i = 0; i <= NUM_SEGMENTS; i++) {
+            const t = i / NUM_SEGMENTS;
+            const x = xMin + t * (xMax - xMin);
+            const y = -a * x * x + vertexY;
+            pts.push(new THREE.Vector3(x, y, 0));
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Cannon – with increased elevation angle
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const cannonGroup = new THREE.Group();
+
+        const barrelMat = new THREE.MeshPhysicalMaterial({
+            color: 0xcd7f32,
+            metalness: 0.8,
+            roughness: 0.35,
+            envMapIntensity: 1.4,
+            emissive: 0x331100,
+            emissiveIntensity: 0.1,
+            clearcoat: 0.3,
+        });
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 2.2, 16), barrelMat);
+        barrel.rotation.z = Math.PI / 2;
+        barrel.position.set(0.6, 0.2, 0);
+        barrel.castShadow = true;
+        cannonGroup.add(barrel);
+
+        const muzzleMat = new THREE.MeshPhysicalMaterial({
+            color: 0x8b6b3d,
+            metalness: 0.75,
+            roughness: 0.4,
+            envMapIntensity: 1.2,
+        });
+        const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.3, 16), muzzleMat);
+        muzzle.rotation.z = Math.PI / 2;
+        muzzle.position.set(1.6, 0.2, 0);
+        cannonGroup.add(muzzle);
+
+        const breechMat = new THREE.MeshPhysicalMaterial({
+            color: 0x6b4f2e,
+            metalness: 0.7,
+            roughness: 0.5,
+        });
+        const breech = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), breechMat);
+        breech.scale.set(0.7, 0.9, 0.9);
+        breech.position.set(-0.7, 0.2, 0);
+        cannonGroup.add(breech);
+
+        const baseMat = new THREE.MeshPhysicalMaterial({
+            color: 0x5a4a3a,
+            metalness: 0.6,
+            roughness: 0.6,
+            envMapIntensity: 0.8,
+        });
+        const base = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.3, 1.0), baseMat);
+        base.position.set(0, -0.1, 0);
+        base.castShadow = true;
+        base.receiveShadow = true;
+        cannonGroup.add(base);
+
+        const wheelMat = new THREE.MeshPhysicalMaterial({
+            color: 0x3d2b1f,
+            metalness: 0.5,
+            roughness: 0.7,
+            envMapIntensity: 0.6,
+        });
+        for (let side = -1; side <= 1; side += 2) {
+            const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.15, 12), wheelMat);
+            wheel.rotation.x = Math.PI / 2;
+            wheel.position.set(-0.2, -0.15, side * 0.6);
+            wheel.castShadow = true;
+            cannonGroup.add(wheel);
+            const hub = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.12, 0.12, 0.18, 8),
+                new THREE.MeshPhysicalMaterial({ color: 0x8a7a5a, metalness: 0.7, roughness: 0.4 })
+            );
+            hub.rotation.x = Math.PI / 2;
+            hub.position.set(-0.2, -0.15, side * 0.6);
+            cannonGroup.add(hub);
+        }
+
+        cannonGroup.position.copy(cannonPos);
+        // New angle: tangent slope at x = -9 is 2, angle = atan(2) ≈ 63.4°
+        const cannonAngle = Math.atan(2);
+        cannonGroup.rotation.z = cannonAngle;
+        scene.add(cannonGroup);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Cannonball
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const ballMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffd700,
+            metalness: 0.95,
+            roughness: 0.15,
+            envMapIntensity: 2.0,
+            emissive: 0xff8800,
+            emissiveIntensity: 0.2,
+            clearcoat: 0.6,
+            clearcoatRoughness: 0.2,
+        });
+        const ball = new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 24), ballMat);
+        ball.castShadow = true;
+        scene.add(ball);
+
+        const glowBallMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa44,
+            transparent: true,
+            opacity: 0.15,
+        });
+        const glowBall = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 16), glowBallMat);
+        scene.add(glowBall);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Focus (hidden until light arrives)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const focusMat = new THREE.MeshPhysicalMaterial({
+            color: 0xff6633,
+            metalness: 0.4,
+            roughness: 0.2,
+            emissive: 0xff4400,
+            emissiveIntensity: 2.0,
+            envMapIntensity: 1.0,
+            transparent: true,
+            opacity: 0.0,
+        });
+        const focusMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.25, 2), focusMat);
+        focusMesh.position.copy(focusPos);
+        focusMesh.castShadow = true;
+        focusMesh.visible = false;
+        scene.add(focusMesh);
+
+        const glowLayers = [];
+        for (let i = 0; i < 3; i++) {
+            const size = 0.3 + i * 0.25;
+            const mat = new THREE.MeshBasicMaterial({
+                color: i === 0 ? 0xff8844 : i === 1 ? 0xff5500 : 0xff2200,
+                transparent: true,
+                opacity: 0.0,
+                depthWrite: false,
+            });
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 16, 16), mat);
+            mesh.position.copy(focusPos);
+            mesh.visible = false;
+            scene.add(mesh);
+            glowLayers.push(mesh);
+        }
+
+        const crossMeshes = [];
+        const crossMat = new THREE.MeshBasicMaterial({
+            color: 0xff8844,
+            transparent: true,
+            opacity: 0.0,
+            depthWrite: false,
+        });
+        for (let i = 0; i < 4; i++) {
+            const angle = (i / 4) * Math.PI + Math.PI / 8;
+            const cross = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.04, 0.8),
+                crossMat.clone()
+            );
+            cross.position.copy(focusPos);
+            cross.rotation.z = angle;
+            cross.visible = false;
+            scene.add(cross);
+            crossMeshes.push(cross);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Track (parabola tube)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const trackMat = new THREE.MeshPhysicalMaterial({
+            color: 0xd4a843,
+            metalness: 0.85,
+            roughness: 0.25,
+            envMapIntensity: 1.6,
+            emissive: 0x553310,
+            emissiveIntensity: 0.15,
+            clearcoat: 0.4,
+            clearcoatRoughness: 0.3,
+        });
+        const trackMesh = new THREE.Mesh(new THREE.BufferGeometry(), trackMat);
+        trackMesh.castShadow = true;
+        trackMesh.receiveShadow = true;
+        trackMesh.visible = false;
+        scene.add(trackMesh);
+
+        const trackGlowMat = new THREE.MeshBasicMaterial({
+            color: 0xffaa44,
+            transparent: true,
+            opacity: 0.3,
+        });
+        const trackGlowMesh = new THREE.Mesh(new THREE.BufferGeometry(), trackGlowMat);
+        trackGlowMesh.visible = false;
+        scene.add(trackGlowMesh);
+
+        const frontParticleMat = new THREE.MeshBasicMaterial({
+            color: 0xffdd77,
+            transparent: true,
+            opacity: 0.9,
+        });
+        const frontParticle = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), frontParticleMat);
+        frontParticle.visible = false;
+        scene.add(frontParticle);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Ray system – with shared materials for easy color update
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const SPEED = 1.8;
+
+        const rayGroup = new THREE.Group();
+        scene.add(rayGroup);
+
+        // Shared materials (so we can update color globally)
+        const inMat = new THREE.MeshPhysicalMaterial({
+            color: currentColor,
+            emissive: currentEmissive,
+            emissiveIntensity: 0.6,
+            transparent: true,
+            opacity: 0.0,
+            metalness: 0.3,
+            roughness: 0.2,
+            envMapIntensity: 0.6,
+            side: THREE.DoubleSide,
+        });
+        const refMat = new THREE.MeshPhysicalMaterial({
+            color: currentColor,
+            emissive: currentEmissive,
+            emissiveIntensity: 0.8,
+            transparent: true,
+            opacity: 0.0,
+            metalness: 0.3,
+            roughness: 0.2,
+            envMapIntensity: 0.6,
+            side: THREE.DoubleSide,
+        });
+
+        function createRayCylinder(mat) {
+            const geo = new THREE.CylinderGeometry(0.028, 0.028, 1, 6);
+            const mesh = new THREE.Mesh(geo, mat); // share material
+            mesh.visible = false;
+            mesh.castShadow = false;
+            return mesh;
+        }
+
+        const NUM_RAYS = 36;
+        let maxTotalTime = 0;
+        let minArrivalTime = Infinity;
+
+        const rays = [];
+
+        const jointMat = new THREE.MeshBasicMaterial({
+            color: currentJointColor,
+            transparent: true,
+            opacity: 0.9,
+        });
+        const JOINT_RADIUS = 0.12;
+
+        for (let i = 0; i < NUM_RAYS; i++) {
+            const t = (i + 0.5) / NUM_RAYS;
+            const x = xMin + t * (xMax - xMin);
+            const y = -a * x * x + vertexY;
+            if (y < 0.3) continue;
+
+            const pt = new THREE.Vector3(x, y, 0);
+            const bottom = new THREE.Vector3(x, -0.2, 0);
+
+            const inLen = y + 0.2;
+            const inDir = new THREE.Vector3(0, 1, 0);
+            const refDir = focusPos.clone().sub(pt).normalize();
+            const refLen = pt.distanceTo(focusPos);
+
+            const tIn = inLen / SPEED;
+            const tRef = refLen / SPEED;
+            const total = tIn + tRef;
+            if (total > maxTotalTime) maxTotalTime = total;
+            if (total < minArrivalTime) minArrivalTime = total;
+
+            const inMesh = createRayCylinder(inMat);
+            rayGroup.add(inMesh);
+            const refMesh = createRayCylinder(refMat);
+            rayGroup.add(refMesh);
+
+            const joint = new THREE.Mesh(new THREE.SphereGeometry(JOINT_RADIUS, 8, 8), jointMat);
+            joint.position.copy(pt);
+            joint.visible = false;
+            rayGroup.add(joint);
+
+            rays.push({
+                pt,
+                bottom,
+                inDir,
+                refDir,
+                inLen,
+                refLen,
+                tIn,
+                tRef,
+                total,
+                inMesh,
+                refMesh,
+                joint,
+                inProgress: 0,
+                refProgress: 0,
+            });
+        }
+
+        const FOCUS_FADE_START = minArrivalTime;
+        const FOCUS_FADE_DURATION = 1.0;
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Color picker logic (no text)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const colorPicker = document.getElementById('colorPicker');
+        colorPicker.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const col = new THREE.Color(val);
+            // Update current color
+            currentColor.copy(col);
+            // Update emissive to a lighter version (or keep same)
+            // We'll keep emissive as a slightly lighter version: we can set it to same or adjust.
+            // For simplicity, we set emissive to same color but with higher brightness? We'll just use the same color for emissive.
+            currentEmissive.copy(col);
+            // Joint color: we can use same or slightly different. We'll use same with higher brightness.
+            currentJointColor.copy(col);
+            // Update materials
+            inMat.color.copy(currentColor);
+            inMat.emissive.copy(currentEmissive);
+            refMat.color.copy(currentColor);
+            refMat.emissive.copy(currentEmissive);
+            jointMat.color.copy(currentJointColor);
+            // Also update the joint spheres which share jointMat
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Stars background
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const starsGeo = new THREE.BufferGeometry();
+        const starCount = 1200;
+        const positions = new Float32Array(starCount * 3);
+        for (let i = 0; i < starCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 100;
+        }
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const starMat = new THREE.PointsMaterial({
+            color: 0x8888cc,
+            size: 0.08,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            sizeAttenuation: true,
+        });
+        const stars = new THREE.Points(starsGeo, starMat);
+        stars.position.y = 10;
+        scene.add(stars);
+
+        const brightStarMat = new THREE.PointsMaterial({
+            color: 0xffdd88,
+            size: 0.15,
+            transparent: true,
+            opacity: 0.4,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            sizeAttenuation: true,
+        });
+        const brightStars = new THREE.Points(starsGeo.clone(), brightStarMat);
+        brightStars.position.y = 10;
+        scene.add(brightStars);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Animation state
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const CANNON_DURATION = 4.0;
+        let globalTime = 0;
+
+        function updateTrack(progress) {
+            if (progress < 0.005) {
+                trackMesh.visible = false;
+                trackGlowMesh.visible = false;
+                frontParticle.visible = false;
+                return;
+            }
+            const count = Math.max(2, Math.floor(progress * NUM_SEGMENTS) + 1);
+            const subPts = pts.slice(0, count);
+            while (subPts.length < 2) subPts.push(pts[0]);
+
+            const subCurve = new THREE.CatmullRomCurve3(subPts);
+            const tubeSegments = Math.max(4, count * 2);
+            const newGeo = new THREE.TubeGeometry(subCurve, tubeSegments, 0.12, 8, false);
+            trackMesh.geometry.dispose();
+            trackMesh.geometry = newGeo;
+            trackMesh.visible = true;
+
+            const glowSegments = Math.max(4, count * 2);
+            const glowGeo = new THREE.TubeGeometry(subCurve, glowSegments, 0.035, 6, false);
+            trackGlowMesh.geometry.dispose();
+            trackGlowMesh.geometry = glowGeo;
+            trackGlowMesh.visible = true;
+
+            const lastPt = subPts[subPts.length - 1];
+            frontParticle.position.copy(lastPt);
+            frontParticle.visible = true;
+            const pulse = 1 + 0.15 * Math.sin(globalTime * 8);
+            frontParticle.scale.set(pulse, pulse, pulse);
+        }
+
+        function updateRay(ray, time) {
+            const { inMesh, refMesh, joint, inLen, refLen, tIn, tRef, inDir, refDir, bottom, pt } = ray;
+
+            let inProgress = 0;
+            let refProgress = 0;
+            let showJoint = false;
+
+            if (time < tIn) {
+                inProgress = Math.min(1, time / tIn);
+                const currentLen = inProgress * inLen;
+                if (currentLen > 0.01) {
+                    inMesh.visible = true;
+                    inMesh.scale.y = currentLen;
+                    const half = currentLen / 2;
+                    const pos = bottom.clone().add(inDir.clone().multiplyScalar(half));
+                    inMesh.position.copy(pos);
+                    inMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), inDir);
+                    const fade = Math.min(1, inProgress * 4);
+                    inMesh.material.opacity = 0.55 * fade;
+                    showJoint = true;
+                } else {
+                    inMesh.visible = false;
+                }
+                refMesh.visible = false;
+            } else if (time < tIn + tRef) {
+                inProgress = 1;
+                const currentInLen = inLen;
+                inMesh.visible = true;
+                inMesh.scale.y = currentInLen;
+                const half = currentInLen / 2;
+                const pos = bottom.clone().add(inDir.clone().multiplyScalar(half));
+                inMesh.position.copy(pos);
+                inMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), inDir);
+                inMesh.material.opacity = 0.55;
+                showJoint = true;
+
+                const elapsedRef = time - tIn;
+                refProgress = Math.min(1, elapsedRef / tRef);
+                const currentRefLen = refProgress * refLen;
+                if (currentRefLen > 0.01) {
+                    refMesh.visible = true;
+                    refMesh.scale.y = currentRefLen;
+                    const halfRef = currentRefLen / 2;
+                    const refPos = pt.clone().add(refDir.clone().multiplyScalar(halfRef));
+                    refMesh.position.copy(refPos);
+                    refMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), refDir);
+                    const fadeRef = Math.min(1, refProgress * 4);
+                    refMesh.material.opacity = 0.55 * fadeRef;
+                } else {
+                    refMesh.visible = false;
+                }
+            } else {
+                inProgress = 1;
+                refProgress = 1;
+                inMesh.visible = true;
+                inMesh.scale.y = inLen;
+                const half = inLen / 2;
+                const pos = bottom.clone().add(inDir.clone().multiplyScalar(half));
+                inMesh.position.copy(pos);
+                inMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), inDir);
+                inMesh.material.opacity = 0.55;
+
+                refMesh.visible = true;
+                refMesh.scale.y = refLen;
+                const halfRef = refLen / 2;
+                const refPos = pt.clone().add(refDir.clone().multiplyScalar(halfRef));
+                refMesh.position.copy(refPos);
+                refMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), refDir);
+                refMesh.material.opacity = 0.55;
+                showJoint = true;
+            }
+
+            if (showJoint && (inProgress > 0.01 || refProgress > 0.01)) {
+                joint.visible = true;
+                joint.material.opacity = 0.9;
+                const s = 1 + 0.12 * Math.sin(globalTime * 5 + (ray.pt.x + 10) * 3);
+                joint.scale.set(s, s, s);
+            } else {
+                joint.visible = false;
+            }
+
+            ray.inProgress = inProgress;
+            ray.refProgress = refProgress;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Reset
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function resetSequence() {
+            globalTime = 0;
+            trackMesh.visible = false;
+            trackGlowMesh.visible = false;
+            frontParticle.visible = false;
+
+            rays.forEach(r => {
+                r.inMesh.visible = false;
+                r.refMesh.visible = false;
+                r.inMesh.material.opacity = 0;
+                r.refMesh.material.opacity = 0;
+                r.joint.visible = false;
+            });
+
+            focusMesh.visible = false;
+            focusMesh.material.opacity = 0;
+            glowLayers.forEach(layer => { layer.visible = false;
+                layer.material.opacity = 0; });
+            crossMeshes.forEach(cross => { cross.visible = false;
+                cross.material.opacity = 0; });
+
+            ball.position.copy(pts[0]);
+            glowBall.position.copy(pts[0]);
+            cannonGroup.rotation.z = cannonAngle; // keep angle
+        }
+
+        ball.position.copy(pts[0]);
+        glowBall.position.copy(pts[0]);
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Window resize
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // Main loop
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const delta = Math.min(clock.getDelta(), 0.05);
+            globalTime += delta;
+
+            const totalCycle = CANNON_DURATION + maxTotalTime + 1.0;
+
+            if (globalTime > totalCycle) {
+                resetSequence();
+                globalTime = 0;
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+                return;
+            }
+
+            let phase = 'cannon';
+            let t = globalTime;
+            if (t < CANNON_DURATION) {
+                phase = 'cannon';
+            } else {
+                phase = 'light';
+                const lightTime = t - CANNON_DURATION;
+                rays.forEach(ray => {
+                    updateRay(ray, lightTime);
+                });
+            }
+
+            // ── Cannonball and track ──
+            if (phase === 'cannon') {
+                const progress = Math.min(1, t / CANNON_DURATION);
+                const idx = Math.floor(progress * NUM_SEGMENTS);
+                const idxNext = Math.min(idx + 1, NUM_SEGMENTS);
+                const frac = (progress * NUM_SEGMENTS) % 1;
+                const p1 = pts[idx] || pts[0];
+                const p2 = pts[idxNext] || pts[NUM_SEGMENTS];
+                const pos = new THREE.Vector3().lerpVectors(p1, p2, frac);
+                ball.position.copy(pos);
+                glowBall.position.copy(pos);
+                ball.rotation.x += delta * 2.5;
+                ball.rotation.z += delta * 1.8;
+                const pulse = 1 + 0.08 * Math.sin(globalTime * 2.5);
+                glowBall.scale.set(pulse, pulse, pulse);
+                glowBall.material.opacity = 0.12 + 0.06 * Math.sin(globalTime * 2.5 + 1);
+                updateTrack(progress);
+            } else {
+                const endPos = pts[NUM_SEGMENTS];
+                ball.position.copy(endPos);
+                glowBall.position.copy(endPos);
+                ball.rotation.x += delta * 1.5;
+                ball.rotation.z += delta * 1.0;
+                glowBall.scale.set(1, 1, 1);
+                glowBall.material.opacity = 0.15;
+                updateTrack(1.0);
+            }
+
+            // ── Focus control ──
+            if (phase === 'light') {
+                const lightTime = globalTime - CANNON_DURATION;
+                let arrived = 0;
+                rays.forEach(ray => {
+                    if (ray.total <= lightTime) arrived++;
+                });
+                const totalRays = rays.length;
+                let focusAlpha = 0;
+                if (arrived > 0) {
+                    const timeSinceFirst = lightTime - minArrivalTime;
+                    focusAlpha = Math.min(1, timeSinceFirst / FOCUS_FADE_DURATION);
+                }
+                if (arrived === totalRays) focusAlpha = 1;
+
+                const visible = focusAlpha > 0.01;
+                focusMesh.visible = visible;
+                focusMesh.material.opacity = 0.95 * focusAlpha;
+                glowLayers.forEach((layer, i) => {
+                    layer.visible = visible;
+                    layer.material.opacity = (0.10 - i * 0.025) * focusAlpha;
+                });
+                crossMeshes.forEach((cross, i) => {
+                    cross.visible = visible;
+                    cross.material.opacity = 0.2 * focusAlpha;
+                });
+
+                if (visible) {
+                    const fp = 1 + 0.1 * Math.sin(globalTime * 1.8);
+                    focusMesh.scale.set(fp, fp, fp);
+                    focusMesh.rotation.x += delta * 0.6;
+                    focusMesh.rotation.y += delta * 0.8;
+                    glowLayers.forEach((layer, i) => {
+                        const s = 1 + 0.15 * Math.sin(globalTime * (1.2 + i * 0.3) + i * 1.5);
+                        layer.scale.set(s, s, s);
+                    });
+                }
+            } else {
+                focusMesh.visible = false;
+                focusMesh.material.opacity = 0;
+                glowLayers.forEach(layer => { layer.visible = false;
+                    layer.material.opacity = 0; });
+                crossMeshes.forEach(cross => { cross.visible = false;
+                    cross.material.opacity = 0; });
+            }
+
+            // ── Cannon wobble (small) ──
+            cannonGroup.rotation.z = cannonAngle + 0.004 * Math.sin(globalTime * 0.6);
+
+            // ── Point light follows focus ──
+            pointLight.position.copy(focusPos);
+            pointLight.position.y += 0.5;
+
+            // ── Stars rotation ──
+            stars.rotation.y += delta * 0.008;
+            brightStars.rotation.y += delta * 0.012;
+
+            controls.update();
+            renderer.render(scene, camera);
+
+            requestAnimationFrame(animate);
+        }
+
+        resetSequence();
+        animate();
+
+        // No UI text, no labels.
+        console.log('Light & Line — pure visual with color picker');
+    </script>
+</body>
+</html>
