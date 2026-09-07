@@ -3603,6 +3603,12 @@ const WORKS = [
       desc:"斜面—挡板往复运动，级数求时间，双滑块速度交换接力，计算题40分，官方评分标准一致。",
       icon:"📐", cover:"assets/img/contest43-q15-cover.png", link:"solutions/contest43-q15.html", date:"2026-09-07", tag:"物理竞赛"
     }
+,
+      {
+      type:"animation", title:"光与线 Light & Line",
+      desc:"Three.js 三维光线与线条交互演示，可切换光色，科技风视觉动画。",
+      icon:"🎬", cover:"", link:"animations/light-line.html", date:"2026-09-07", tag:"光学"
+    }
 ];
 
 
