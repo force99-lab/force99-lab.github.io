@@ -3609,8 +3609,10 @@ const WORKS = [
       desc:"Three.js 三维光线与线条交互演示，可切换光色，科技风视觉动画。",
       icon:"🎬", cover:"", link:"animations/light-line.html", date:"2026-09-07", tag:"光学"
     },
-  type:"animation", title:"椭圆光路 Ellipse Optical Path",
-  icon:"🔆", cover:"assets/img/ellipse-optical-path-cover.png", link:"animations/ellipse-optical-path-2.html", date:"2026-09-07", tag:"光学"
+  {
+    type:"animation", title:"椭圆光路 Ellipse Optical Path",
+    icon:"🔆", cover:"assets/img/ellipse-optical-path-cover.png", link:"animations/ellipse-optical-path-2.html", date:"2026-09-07", tag:"光学"
+  }
 ];
 
 
