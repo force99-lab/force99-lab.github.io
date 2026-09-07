@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ellipse · Optical Path · Metal</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0b10; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; font-family:'Georgia',serif; user-select:none; }
+        canvas { display:block; width:100vw; height:100vh; cursor:default; background:radial-gradient(ellipse at 50% 50%, #11131f 0%, #07080c 100%); box-shadow:inset 0 0 120px rgba(20,15,5,0.3); }
+        .controls { position:fixed; top:28px; right:36px; display:flex; flex-direction:column; align-items:flex-end; gap:12px; z-index:10; pointer-events:none; }
+        .controls>* { pointer-events:auto; }
+        .color-picker { display:flex; align-items:center; gap:10px; background:rgba(10,8,12,0.6); backdrop-filter:blur(8px); padding:8px 16px 8px 12px; border-radius:30px; border:1px solid rgba(255,215,120,0.15); box-shadow:0 0 30px rgba(0,0,0,0.5); }
+        .color-picker label { color:rgba(255,215,120,0.6); font-size:12px; letter-spacing:1px; text-transform:uppercase; font-family:'Georgia',serif; }
+        .color-picker input[type="color"] { width:32px; height:32px; border:none; border-radius:50%; cursor:pointer; background:none; padding:0; outline:none; }
+        .color-picker input[type="color"]::-webkit-color-swatch-wrapper { padding:0; }
+        .color-picker input[type="color"]::-webkit-color-swatch { border:2px solid rgba(255,215,120,0.3); border-radius:50%; }
+        .badge { color:rgba(255,215,120,0.2); font-size:12px; letter-spacing:2px; border:1px solid rgba(255,215,120,0.08); padding:6px 18px; border-radius:30px; backdrop-filter:blur(8px); background:rgba(10,8,12,0.3); pointer-events:none; font-family:'Georgia',serif; text-transform:uppercase; }
+        .badge span { color:rgba(255,215,120,0.4); }
+        .info { position:fixed; bottom:32px; left:0; right:0; text-align:center; color:rgba(255,215,120,0.35); font-size:14px; letter-spacing:3px; font-weight:300; pointer-events:none; text-shadow:0 0 20px rgba(255,180,50,0.1); background:linear-gradient(90deg, transparent, rgba(255,200,100,0.04), transparent); padding:16px 0; backdrop-filter:blur(2px); font-family:'Georgia',serif; }
+        .info strong { color:rgba(255,215,120,0.6); font-weight:500; letter-spacing:2px; }
+        @media (max-width:640px) { .controls { top:16px; right:16px; gap:8px; } .color-picker { padding:6px 12px; } .color-picker label { font-size:10px; } .color-picker input[type="color"] { width:26px; height:26px; } .badge { font-size:9px; padding:4px 12px; } .info { font-size:10px; bottom:18px; padding:10px 0; } }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <div class="color-picker">
+            <label for="rayColor">Light</label>
+            <input type="color" id="rayColor" value="#ffaa44" />
+        </div>
+        <div class="badge"><span>⚡</span> Equal path · 2a</div>
+    </div>
+    <div class="info"><strong>✦</strong> Different paths · same focus &nbsp; <strong>✦</strong></div>
+
+    <script>
+        // ============================================================
+        //  Pencil with red-green bold stripes, ice-blue rope
+        //  Drawing speed = 1/3 (15s), ellipse closes, color controllable
+        // ============================================================
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const colorInput = document.getElementById('rayColor');
+        let rayColor = colorInput.value;
+        colorInput.addEventListener('input', (e) => { rayColor = e.target.value; });
+
+        // ---- sizing ----
+        let W, H, cx, cy, scale;
+        let a, b, c;
+        let F1, F2;
+        let NUM_RAYS = 36;
+        let ellipsePoints = [];
+        let rays = [];
+        let trailPoints = [];
+
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            cx = W / 2;
+            cy = H / 2;
+            const base = Math.min(W, H) * 0.38;
+            scale = Math.min(1, Math.max(0.6, base / 320));
+            a = 280 * scale;
+            b = 175 * scale;
+            c = Math.sqrt(a * a - b * b);
+            F1 = { x: cx - c, y: cy };
+            F2 = { x: cx + c, y: cy };
+            computeEllipsePoints();
+            computeRays();
+            trailPoints = [];
+        }
+
+        function computeEllipsePoints() {
+            ellipsePoints = [];
+            for (let i = 0; i < NUM_RAYS; i++) {
+                const theta = (i / NUM_RAYS) * 2 * Math.PI;
+                ellipsePoints.push({ x: cx + a * Math.cos(theta), y: cy + b * Math.sin(theta), theta });
+            }
+        }
+
+        function computeRays() {
+            rays = [];
+            for (let i = 0; i < NUM_RAYS; i++) {
+                const P = ellipsePoints[i];
+                const d1 = dist(F1, P);
+                const d2 = dist(P, F2);
+                rays.push({ P, d1, d2, total: d1 + d2 });
+            }
+        }
+
+        function dist(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+
+        function lerpPoint(p1, p2, t) {
+            return { x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t };
+        }
+
+        function getRaySegment(ray, t) {
+            const { P, d1, total } = ray;
+            const d = t * total;
+            if (d <= d1) {
+                const frac = d / d1;
+                return { phase: 'outgoing', pos: lerpPoint(F1, P, frac), frac };
+            } else {
+                const frac = (d - d1) / (total - d1);
+                return { phase: 'incoming', pos: lerpPoint(P, F2, frac), frac };
+            }
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1],16), g: parseInt(result[2],16), b: parseInt(result[3],16) } 
+                         : { r:255, g:170, b:68 };
+        }
+        function rgbToStr(r,g,b,a=1) { return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`; }
+
+        // ---- drawing ellipse ----
+        function drawEllipse(progress, time, pencilPos, showRope) {
+            ctx.save();
+            // outer glow
+            const gradGlow = ctx.createRadialGradient(cx, cy, a*0.9, cx, cy, a*1.15);
+            gradGlow.addColorStop(0,'rgba(255,200,100,0)');
+            gradGlow.addColorStop(0.7,'rgba(255,200,100,0)');
+            gradGlow.addColorStop(0.9,'rgba(255,180,80,0.04)');
+            gradGlow.addColorStop(1,'rgba(255,150,50,0)');
+            ctx.fillStyle = gradGlow;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, a*1.2, b*1.2, 0, 0, 2*Math.PI);
+            ctx.fill();
+
+            // ---- ellipse border with progress (closes completely at progress=1) ----
+            ctx.save();
+            let borderProgress = progress;
+            if (progress < 1) {
+                borderProgress = Math.min(progress * 0.98, 0.999);
+            } else {
+                borderProgress = 1;
+            }
+            const totalLen = 2 * Math.PI * Math.sqrt((a*a + b*b)/2);
+            if (borderProgress < 1) {
+                ctx.setLineDash([totalLen * borderProgress, totalLen * (1 - borderProgress)]);
+                ctx.lineDashOffset = 0;
+            } else {
+                ctx.setLineDash([]);
+            }
+            const gradStroke = ctx.createLinearGradient(cx-a, cy-b, cx+a, cy+b);
+            gradStroke.addColorStop(0, 'rgba(255,215,100,0.95)');
+            gradStroke.addColorStop(0.2, 'rgba(255,190,80,0.85)');
+            gradStroke.addColorStop(0.5, 'rgba(200,140,50,0.7)');
+            gradStroke.addColorStop(0.8, 'rgba(255,190,80,0.85)');
+            gradStroke.addColorStop(1, 'rgba(255,215,100,0.95)');
+            ctx.strokeStyle = gradStroke;
+            ctx.lineWidth = 2.5 * scale;
+            ctx.shadowColor = 'rgba(255,200,100,0.5)';
+            ctx.shadowBlur = 25 * scale;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, a, b, 0, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(255,220,140,0.2)';
+            ctx.lineWidth = 0.8 * scale;
+            ctx.stroke();
+            ctx.restore();
+
+            // grid
+            ctx.save();
+            ctx.globalAlpha = 0.04;
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 0.5;
+            for (let i=0; i<12; i++) {
+                const theta = (i/12)*2*Math.PI;
+                const r = a*0.85;
+                const x1 = cx + r*Math.cos(theta);
+                const y1 = cy + (b/a)*r*Math.sin(theta);
+                const x2 = cx - r*Math.cos(theta);
+                const y2 = cy - (b/a)*r*Math.sin(theta);
+                ctx.beginPath();
+                ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // trail particles
+            if (trailPoints.length > 1) {
+                ctx.save();
+                for (let i=0; i<trailPoints.length-1; i++) {
+                    const p = trailPoints[i];
+                    const alpha = 0.3 + 0.7 * (i/trailPoints.length);
+                    const radius = 1.5*scale + 2*scale*(i/trailPoints.length);
+                    const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,radius*2);
+                    grad.addColorStop(0, `rgba(255,215,100,${0.6*alpha})`);
+                    grad.addColorStop(1, 'rgba(255,200,100,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(p.x,p.y,radius*2,0,2*Math.PI);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // ---- rope (ice-blue) ----
+            if (showRope && pencilPos) {
+                const p = pencilPos;
+                ctx.save();
+                // Ice-blue gradient
+                const gradRope1 = ctx.createLinearGradient(F1.x,F1.y,p.x,p.y);
+                gradRope1.addColorStop(0, '#00ccff');
+                gradRope1.addColorStop(0.5, '#66eeff');
+                gradRope1.addColorStop(1, '#99f5ff');
+                ctx.shadowColor = '#00ccff';
+                ctx.shadowBlur = 30*scale;
+                ctx.strokeStyle = gradRope1;
+                ctx.lineWidth = 4*scale;
+                ctx.beginPath();
+                ctx.moveTo(F1.x,F1.y); ctx.lineTo(p.x,p.y);
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.save();
+                const gradRope2 = ctx.createLinearGradient(p.x,p.y,F2.x,F2.y);
+                gradRope2.addColorStop(0, '#99f5ff');
+                gradRope2.addColorStop(0.5, '#66eeff');
+                gradRope2.addColorStop(1, '#00ccff');
+                ctx.shadowColor = '#00ccff';
+                ctx.shadowBlur = 30*scale;
+                ctx.strokeStyle = gradRope2;
+                ctx.lineWidth = 4*scale;
+                ctx.beginPath();
+                ctx.moveTo(p.x,p.y); ctx.lineTo(F2.x,F2.y);
+                ctx.stroke();
+                ctx.restore();
+
+                drawAnchor(F1,'F₁');
+                drawAnchor(F2,'F₂');
+            }
+            ctx.restore();
+        }
+
+        function drawAnchor(pos, label) {
+            ctx.save();
+            ctx.shadowColor = 'rgba(255,200,100,0.8)';
+            ctx.shadowBlur = 20*scale;
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(pos.x,pos.y,7*scale,0,2*Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,215,140,0.8)';
+            ctx.font = `bold ${14*scale}px 'Georgia', serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(label, pos.x, pos.y - 14*scale);
+            ctx.restore();
+        }
+
+        // ---- Pencil: red-green bold stripes ----
+        function drawPencil(pos) {
+            if (!pos) return;
+            ctx.save();
+            ctx.translate(pos.x, pos.y); // tip at origin
+
+            const s = scale;
+            const L = 3.0;
+            const R = 1.5;
+
+            const tipLen = 2.5 * s * L;
+            const woodLen = 12.0 * s * L;
+            const ferruleLen = 3.5 * s * L;
+            const bodyLen = 16.0 * s * L;
+            const eraserLen = 3.5 * s * L;
+            const bodyR = 3.5 * s * R;
+            const ferruleR = 3.8 * s * R;
+            const tipBaseR = 0.6 * s * R;
+
+            // ---- 1. Graphite tip ----
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-tipBaseR, -tipLen);
+            ctx.lineTo(tipBaseR, -tipLen);
+            ctx.closePath();
+            const tipGrad = ctx.createLinearGradient(0,0,0,-tipLen);
+            tipGrad.addColorStop(0,'#111');
+            tipGrad.addColorStop(0.5,'#333');
+            tipGrad.addColorStop(1,'#555');
+            ctx.fillStyle = tipGrad;
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = 6*s;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // ---- 2. Wood cone (red-green bold stripes) ----
+            const woodTopY = -(tipLen + woodLen);
+            // base white
+            ctx.beginPath();
+            ctx.moveTo(-tipBaseR, -tipLen);
+            ctx.lineTo(-bodyR, woodTopY);
+            ctx.lineTo(bodyR, woodTopY);
+            ctx.lineTo(tipBaseR, -tipLen);
+            ctx.closePath();
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 8*s;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Bold stripes: red and green, thick
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(-tipBaseR, -tipLen);
+            ctx.lineTo(-bodyR, woodTopY);
+            ctx.lineTo(bodyR, woodTopY);
+            ctx.lineTo(tipBaseR, -tipLen);
+            ctx.closePath();
+            ctx.clip();
+
+            const numStripes = 8;  // fewer for bold stripes
+            const colors = ['#ff0000', '#00cc00']; // red, green
+            for (let i=0; i<numStripes; i++) {
+                const t = (i + 0.5) / numStripes;
+                const yPos = -tipLen - t * woodLen;
+                const stripeWidth = woodLen / numStripes * 0.8; // wider stripes
+                const y0 = yPos - stripeWidth/2;
+                const y1 = yPos + stripeWidth/2;
+                const t0 = (yPos + tipLen) / woodLen;
+                const rAtY = tipBaseR + (bodyR - tipBaseR) * t0;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fillRect(-rAtY, y0, 2*rAtY, y1 - y0);
+            }
+            ctx.restore();
+
+            // ---- 3. Ferrule (metal) ----
+            const ferruleTopY = woodTopY - ferruleLen;
+            ctx.shadowBlur = 10*s;
+            const ferruleGrad = ctx.createLinearGradient(0, woodTopY, 0, ferruleTopY);
+            ferruleGrad.addColorStop(0,'#e0e0e0');
+            ferruleGrad.addColorStop(0.2,'#ffd700');
+            ferruleGrad.addColorStop(0.4,'#fff8dc');
+            ferruleGrad.addColorStop(0.6,'#ffd700');
+            ferruleGrad.addColorStop(0.8,'#d4af37');
+            ferruleGrad.addColorStop(1,'#b8860b');
+            ctx.fillStyle = ferruleGrad;
+            ctx.fillRect(-ferruleR, woodTopY, ferruleR*2, ferruleLen);
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+            ctx.lineWidth = 0.8*s*L;
+            for (let i=0; i<3; i++) {
+                let y = woodTopY + ferruleLen*(0.2 + i*0.3);
+                ctx.beginPath();
+                ctx.moveTo(-ferruleR+0.5*s*L, y);
+                ctx.lineTo(ferruleR-0.5*s*L, y);
+                ctx.stroke();
+            }
+
+            // ---- 4. Body (red-green bold stripes) ----
+            const bodyTopY = ferruleTopY - bodyLen;
+            // base white
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 12*s;
+            ctx.fillRect(-bodyR, ferruleTopY, bodyR*2, bodyLen);
+            ctx.shadowBlur = 0;
+            // stripes
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(-bodyR, ferruleTopY, bodyR*2, bodyLen);
+            ctx.clip();
+            const numBodyStripes = 10;
+            for (let i=0; i<numBodyStripes; i++) {
+                const t = (i + 0.5) / numBodyStripes;
+                const yPos = ferruleTopY + t * bodyLen;
+                const stripeWidth = bodyLen / numBodyStripes * 0.8;
+                const y0 = yPos - stripeWidth/2;
+                const y1 = yPos + stripeWidth/2;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fillRect(-bodyR, y0, bodyR*2, y1 - y0);
+            }
+            ctx.restore();
+            // highlight (semi-transparent)
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.fillRect(-bodyR+0.5*s*L, ferruleTopY+0.6*s*L, bodyR*1.2, bodyLen-1.2*s*L);
+
+            // ---- 5. Eraser (pink) ----
+            const eraserTopY = bodyTopY - eraserLen;
+            const eraserR = bodyR * 0.85;
+            const eraserGrad = ctx.createLinearGradient(0, bodyTopY, 0, eraserTopY);
+            eraserGrad.addColorStop(0,'#f9a8d4');
+            eraserGrad.addColorStop(0.3,'#f472b6');
+            eraserGrad.addColorStop(0.7,'#ec4899');
+            eraserGrad.addColorStop(1,'#db2777');
+            ctx.fillStyle = eraserGrad;
+            ctx.shadowBlur = 8*s;
+            ctx.fillRect(-eraserR, bodyTopY, eraserR*2, eraserLen);
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fillRect(-eraserR+0.3*s*L, bodyTopY+0.3*s*L, eraserR*1.2, eraserLen*0.5);
+
+            ctx.restore();
+        }
+
+        // ---- foci ----
+        function drawFoci(time, showLabels=true) {
+            drawGlowPoint(F1.x,F1.y,14*scale,28*scale,'#ff9933','#ff5500',0.9);
+            drawGlowPoint(F2.x,F2.y,18*scale,40*scale,'#ffcc44','#ff8800',1.0);
+            ctx.save();
+            ctx.globalAlpha = 0.06;
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([4,8]);
+            ctx.beginPath();
+            ctx.moveTo(F1.x,F1.y); ctx.lineTo(F2.x,F2.y);
+            ctx.stroke();
+            ctx.restore();
+            if (showLabels) {
+                ctx.save();
+                ctx.font = `${13*scale}px 'Georgia', serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillStyle = 'rgba(255,200,120,0.35)';
+                ctx.fillText('F₁', F1.x, F1.y-22*scale);
+                ctx.fillStyle = 'rgba(255,200,120,0.45)';
+                ctx.fillText('F₂', F2.x, F2.y-26*scale);
+                ctx.restore();
+            }
+        }
+
+        function drawGlowPoint(x,y,radius,glowRadius,color1,color2,alpha) {
+            ctx.save();
+            const gradOuter = ctx.createRadialGradient(x,y,0,x,y,glowRadius);
+            gradOuter.addColorStop(0, `rgba(255,220,150,${0.15*alpha})`);
+            gradOuter.addColorStop(0.4, `rgba(255,180,80,${0.08*alpha})`);
+            gradOuter.addColorStop(1, 'rgba(255,150,50,0)');
+            ctx.fillStyle = gradOuter;
+            ctx.beginPath();
+            ctx.arc(x,y,glowRadius,0,2*Math.PI);
+            ctx.fill();
+            const gradMid = ctx.createRadialGradient(x,y,0,x,y,radius*2.2);
+            gradMid.addColorStop(0, `rgba(255,240,200,${0.5*alpha})`);
+            gradMid.addColorStop(0.3, `rgba(255,200,120,${0.3*alpha})`);
+            gradMid.addColorStop(0.7, `rgba(255,160,60,${0.1*alpha})`);
+            gradMid.addColorStop(1, 'rgba(255,120,30,0)');
+            ctx.fillStyle = gradMid;
+            ctx.beginPath();
+            ctx.arc(x,y,radius*2.2,0,2*Math.PI);
+            ctx.fill();
+            const gradCore = ctx.createRadialGradient(x,y,0,x,y,radius);
+            gradCore.addColorStop(0,'#fffef0');
+            gradCore.addColorStop(0.2,color1);
+            gradCore.addColorStop(0.7,color2);
+            gradCore.addColorStop(1,'rgba(180,80,20,0.6)');
+            ctx.shadowColor = color1;
+            ctx.shadowBlur = 30*scale;
+            ctx.fillStyle = gradCore;
+            ctx.beginPath();
+            ctx.arc(x,y,radius,0,2*Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            const gradHighlight = ctx.createRadialGradient(x-radius*0.25, y-radius*0.3, 0, x,y,radius);
+            gradHighlight.addColorStop(0,'rgba(255,255,255,0.7)');
+            gradHighlight.addColorStop(0.3,'rgba(255,255,230,0.3)');
+            gradHighlight.addColorStop(1,'rgba(255,255,200,0)');
+            ctx.fillStyle = gradHighlight;
+            ctx.beginPath();
+            ctx.arc(x,y,radius,0,2*Math.PI);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ---- RAYS ----
+        function drawRays(progress, time) {
+            if (progress <= 0) return;
+            const rgb = hexToRgb(rayColor);
+            // faint background
+            ctx.save();
+            for (let i=0; i<NUM_RAYS; i++) {
+                const ray = rays[i];
+                const P = ray.P;
+                ctx.globalAlpha = 0.06;
+                ctx.strokeStyle = rayColor;
+                ctx.lineWidth = 0.5;
+                ctx.beginPath();
+                ctx.moveTo(F1.x,F1.y); ctx.lineTo(P.x,P.y); ctx.lineTo(F2.x,F2.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            for (let i=0; i<NUM_RAYS; i++) {
+                const ray = rays[i];
+                const seg = getRaySegment(ray, progress);
+                const P = ray.P;
+                ctx.save();
+
+                if (seg.phase === 'outgoing') {
+                    const grad = ctx.createLinearGradient(F1.x,F1.y, seg.pos.x,seg.pos.y);
+                    const a1=0.1, a2=0.8+0.2*seg.frac;
+                    grad.addColorStop(0, rgbToStr(rgb.r,rgb.g,rgb.b,0.1*a1));
+                    grad.addColorStop(0.3, rgbToStr(rgb.r,rgb.g,rgb.b,(0.4+0.3)*a1));
+                    grad.addColorStop(0.7, rgbToStr(rgb.r,rgb.g,rgb.b,(0.6+0.3)*a1));
+                    grad.addColorStop(1, rgbToStr(rgb.r,rgb.g,rgb.b,a2));
+                    ctx.shadowColor = rayColor;
+                    ctx.shadowBlur = 18*scale;
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = (2.0+1.5*(1-seg.frac))*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(F1.x,F1.y); ctx.lineTo(seg.pos.x,seg.pos.y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 8*scale;
+                    ctx.globalAlpha = 0.5;
+                    ctx.strokeStyle = 'rgba(255,255,220,0.25)';
+                    ctx.lineWidth = (0.8+0.5*(1-seg.frac))*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(F1.x,F1.y); ctx.lineTo(seg.pos.x,seg.pos.y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 0.08;
+                    ctx.strokeStyle = rayColor;
+                    ctx.lineWidth = 0.6*scale;
+                    ctx.setLineDash([3,6]);
+                    ctx.beginPath();
+                    ctx.moveTo(seg.pos.x,seg.pos.y); ctx.lineTo(P.x,P.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    const grad1 = ctx.createLinearGradient(F1.x,F1.y,P.x,P.y);
+                    grad1.addColorStop(0, rgbToStr(rgb.r,rgb.g,rgb.b,0.1));
+                    grad1.addColorStop(0.3, rgbToStr(rgb.r,rgb.g,rgb.b,0.5));
+                    grad1.addColorStop(0.7, rgbToStr(rgb.r,rgb.g,rgb.b,0.7));
+                    grad1.addColorStop(1, rgbToStr(rgb.r,rgb.g,rgb.b,0.9));
+                    ctx.shadowColor = rayColor;
+                    ctx.shadowBlur = 12*scale;
+                    ctx.strokeStyle = grad1;
+                    ctx.lineWidth = 2.2*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(F1.x,F1.y); ctx.lineTo(P.x,P.y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 6*scale;
+                    ctx.globalAlpha = 0.3;
+                    ctx.strokeStyle = 'rgba(255,255,220,0.15)';
+                    ctx.lineWidth = 0.8*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(F1.x,F1.y); ctx.lineTo(P.x,P.y);
+                    ctx.stroke();
+                    const grad2 = ctx.createLinearGradient(P.x,P.y, seg.pos.x,seg.pos.y);
+                    const a1=0.6+0.3*seg.frac, a2=0.8+0.2*seg.frac;
+                    grad2.addColorStop(0, rgbToStr(rgb.r,rgb.g,rgb.b,a1));
+                    grad2.addColorStop(0.5, rgbToStr(rgb.r,rgb.g,rgb.b,0.7+0.2*seg.frac));
+                    grad2.addColorStop(1, rgbToStr(rgb.r,rgb.g,rgb.b,a2));
+                    ctx.shadowColor = rayColor;
+                    ctx.shadowBlur = 20*scale;
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = grad2;
+                    ctx.lineWidth = (2.5+1.0*(1-seg.frac))*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(P.x,P.y); ctx.lineTo(seg.pos.x,seg.pos.y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 10*scale;
+                    ctx.globalAlpha = 0.4;
+                    ctx.strokeStyle = 'rgba(255,255,230,0.2)';
+                    ctx.lineWidth = (0.8+0.4*(1-seg.frac))*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(P.x,P.y); ctx.lineTo(seg.pos.x,seg.pos.y);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.globalAlpha = 0.06;
+                    ctx.strokeStyle = rayColor;
+                    ctx.lineWidth = 0.5*scale;
+                    ctx.setLineDash([3,6]);
+                    ctx.beginPath();
+                    ctx.moveTo(seg.pos.x,seg.pos.y); ctx.lineTo(F2.x,F2.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                ctx.restore();
+
+                // light dot
+                const pos = seg.pos;
+                const size = (seg.phase==='outgoing') ? 4+3*(1-seg.frac) : 5+3*(1-seg.frac);
+                const bright = (seg.phase==='outgoing') ? 0.6+0.4*seg.frac : 0.7+0.3*seg.frac;
+                ctx.save();
+                const gradDot = ctx.createRadialGradient(pos.x,pos.y,0,pos.x,pos.y,size*3*scale);
+                gradDot.addColorStop(0, `rgba(255,255,240,${0.9*bright})`);
+                gradDot.addColorStop(0.2, `rgba(255,230,180,${0.6*bright})`);
+                gradDot.addColorStop(0.5, `rgba(255,200,120,${0.3*bright})`);
+                gradDot.addColorStop(1, 'rgba(255,180,80,0)');
+                ctx.fillStyle = gradDot;
+                ctx.beginPath();
+                ctx.arc(pos.x,pos.y,size*3*scale,0,2*Math.PI);
+                ctx.fill();
+                ctx.shadowColor = 'rgba(255,220,150,0.8)';
+                ctx.shadowBlur = 20*scale;
+                ctx.fillStyle = `rgba(255,255,240,${0.95*bright})`;
+                ctx.beginPath();
+                ctx.arc(pos.x,pos.y,size*0.6*scale,0,2*Math.PI);
+                ctx.fill();
+                ctx.restore();
+
+                if (seg.phase==='incoming' && seg.frac<0.05) {
+                    const flash = 1 - seg.frac/0.05;
+                    ctx.save();
+                    const gradFlash = ctx.createRadialGradient(P.x,P.y,0,P.x,P.y,20*scale*flash);
+                    gradFlash.addColorStop(0, `rgba(255,255,200,${0.3*flash})`);
+                    gradFlash.addColorStop(0.3, `rgba(255,220,150,${0.15*flash})`);
+                    gradFlash.addColorStop(1, 'rgba(255,200,100,0)');
+                    ctx.fillStyle = gradFlash;
+                    ctx.beginPath();
+                    ctx.arc(P.x,P.y,20*scale*flash,0,2*Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            if (progress > 0.96) {
+                const intensity = (progress-0.96)/0.04;
+                ctx.save();
+                const gradBurst = ctx.createRadialGradient(F2.x,F2.y,0,F2.x,F2.y,80*scale*intensity);
+                gradBurst.addColorStop(0, `rgba(255,255,220,${0.6*intensity})`);
+                gradBurst.addColorStop(0.1, `rgba(255,240,180,${0.3*intensity})`);
+                gradBurst.addColorStop(0.4, `rgba(255,200,120,${0.1*intensity})`);
+                gradBurst.addColorStop(1, 'rgba(255,180,80,0)');
+                ctx.fillStyle = gradBurst;
+                ctx.beginPath();
+                ctx.arc(F2.x,F2.y,80*scale*intensity,0,2*Math.PI);
+                ctx.fill();
+                ctx.restore();
+                ctx.save();
+                ctx.globalAlpha = 0.2*intensity;
+                for (let i=0; i<24; i++) {
+                    const theta = (i/24)*2*Math.PI + time*0.5;
+                    const len = 20*scale + 30*scale*intensity*(0.5+0.5*Math.sin(time*3+i));
+                    ctx.strokeStyle = `rgba(255,220,150,${0.4*intensity})`;
+                    ctx.lineWidth = 1*scale;
+                    ctx.shadowColor = 'rgba(255,200,100,0.3)';
+                    ctx.shadowBlur = 10*scale;
+                    ctx.beginPath();
+                    ctx.moveTo(F2.x+6*scale*Math.cos(theta), F2.y+6*scale*Math.sin(theta));
+                    ctx.lineTo(F2.x+len*Math.cos(theta), F2.y+len*Math.sin(theta));
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // ---- info ----
+        function drawInfo(progress, state) {
+            ctx.save();
+            const px=36, py=40;
+            ctx.textAlign='left';
+            ctx.textBaseline='top';
+            ctx.fillStyle='rgba(255,215,140,0.15)';
+            ctx.font=`${12*scale}px 'Georgia', serif`;
+            ctx.fillText('Optical Path Principle', px, py);
+            ctx.fillStyle='rgba(255,215,140,0.25)';
+            ctx.font=`${16*scale}px 'Georgia', serif`;
+            ctx.fillText('PF₁ + PF₂ = 2a', px, py+22*scale);
+            if (rays.length>0) {
+                ctx.fillStyle='rgba(255,215,140,0.12)';
+                ctx.font=`${11*scale}px 'Georgia', serif`;
+                ctx.fillText(`2a = ${rays[0].total.toFixed(1)}`, px, py+44*scale);
+            }
+            const barX=px, barY=py+70*scale, barW=120*scale, barH=2*scale;
+            ctx.fillStyle='rgba(255,215,140,0.06)';
+            ctx.fillRect(barX,barY,barW,barH);
+            let progVal = (state==='drawing') ? progress : (state==='lighting' ? progress : 0);
+            ctx.fillStyle='rgba(255,215,140,0.2)';
+            ctx.fillRect(barX,barY,barW*progVal,barH);
+            ctx.fillStyle='rgba(255,215,140,0.2)';
+            ctx.beginPath();
+            ctx.arc(barX+barW*progVal, barY+barH/2, 3*scale, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.fillStyle='rgba(255,215,140,0.12)';
+            ctx.font=`${10*scale}px 'Georgia', serif`;
+            ctx.fillText(state==='drawing' ? 'Drawing with rope...' : 'Light propagation', px, barY+18*scale);
+            ctx.restore();
+            ctx.save();
+            ctx.textAlign='right';
+            ctx.textBaseline='bottom';
+            ctx.font=`${10*scale}px 'Georgia', serif`;
+            ctx.fillStyle='rgba(255,215,140,0.08)';
+            ctx.fillText(`${NUM_RAYS} rays · converge at F₂`, W-30, H-30);
+            ctx.restore();
+        }
+
+        // ---- stars ----
+        let stars = [];
+        function initStars() {
+            stars = [];
+            for (let i=0; i<160; i++) {
+                stars.push({
+                    x: Math.random(),
+                    y: Math.random(),
+                    r: 0.2+0.8*Math.random(),
+                    speed: 0.3+0.7*Math.random(),
+                    phase: Math.random()*2*Math.PI,
+                    alpha: 0.2+0.6*Math.random()
+                });
+            }
+        }
+        function drawStars(time) {
+            ctx.save();
+            for (const star of stars) {
+                const x = star.x*W, y = star.y*H;
+                const alpha = star.alpha * (0.6+0.4*Math.sin(time*star.speed+star.phase));
+                const r = (0.3+0.7*star.r)*0.8*scale;
+                ctx.globalAlpha = alpha*0.5;
+                ctx.fillStyle = '#fff8e8';
+                ctx.shadowColor = 'rgba(255,220,180,0.2)';
+                ctx.shadowBlur = 3*scale;
+                ctx.beginPath();
+                ctx.arc(x,y,r,0,2*Math.PI);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // ---- main loop ----
+        let animTime = 0;
+        let state = 'drawing';
+        let ellipseProgress = 0;
+        let lightProgress = 0;
+        const DRAW_DURATION = 15.0;  // 1/3 speed
+        const LIGHT_CYCLE = 4.0;
+
+        function animate(timestamp) {
+            const dt = 1/60;
+            animTime += dt;
+
+            if (state === 'drawing') {
+                ellipseProgress += dt / DRAW_DURATION;
+                if (ellipseProgress >= 1) {
+                    ellipseProgress = 1;
+                    state = 'lighting';
+                    lightProgress = 0;
+                    trailPoints = [];
+                } else {
+                    const angle = ellipseProgress * 2 * Math.PI;
+                    const px = cx + a*Math.cos(angle);
+                    const py = cy + b*Math.sin(angle);
+                    trailPoints.push({x:px, y:py});
+                    if (trailPoints.length > 200) trailPoints.shift();
+                }
+            } else {
+                lightProgress += dt / LIGHT_CYCLE;
+                if (lightProgress > 1) lightProgress -= 1;
+            }
+
+            ctx.clearRect(0,0,W,H);
+            drawStars(animTime);
+
+            let pencilPos = null;
+            let showRope = false;
+            if (state === 'drawing') {
+                const angle = ellipseProgress * 2 * Math.PI;
+                pencilPos = { x: cx + a*Math.cos(angle), y: cy + b*Math.sin(angle) };
+                showRope = true;
+            }
+
+            drawEllipse(ellipseProgress, animTime, pencilPos, showRope);
+
+            if (state === 'drawing' && pencilPos) {
+                drawPencil(pencilPos);
+            }
+
+            drawFoci(animTime, true);
+
+            if (state === 'lighting' && lightProgress > 0) {
+                drawRays(lightProgress, animTime);
+            }
+
+            const progDisplay = (state === 'drawing') ? ellipseProgress : lightProgress;
+            drawInfo(progDisplay, state);
+
+            requestAnimationFrame(animate);
+        }
+
+        // ---- resize ----
+        window.addEventListener('resize', () => {
+            resize();
+            initStars();
+            trailPoints = [];
+        });
+
+        // ---- init ----
+        resize();
+        initStars();
+        animate(0);
+
+        // ---- click reset ----
+        canvas.addEventListener('click', () => {
+            animTime = 0;
+            state = 'drawing';
+            ellipseProgress = 0;
+            lightProgress = 0;
+            trailPoints = [];
+        });
+
+        console.log('✦ Red-green bold stripes, ice-blue rope, speed 1/3.');
+    </script>
+</body>
+</html>
