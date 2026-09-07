@@ -3610,7 +3610,7 @@ const WORKS = [
       icon:"🎬", cover:"", link:"animations/light-line.html", date:"2026-09-07", tag:"光学"
     },
   type:"animation", title:"椭圆光路 Ellipse Optical Path",
-  icon:"🔆", cover:"", link:"animations/ellipse-optical-path-2.html", date:"2026-09-07", tag:"光学"
+  icon:"🔆", cover:"assets/img/ellipse-optical-path-cover.png", link:"animations/ellipse-optical-path-2.html", date:"2026-09-07", tag:"光学"
 ];
 
 
