@@ -3620,7 +3620,7 @@ const WORKS = [
   {
     type:"article", title:"第42届与第43届物理竞赛初赛对比分析 · 科技版",
     desc:"横向对比第42届与第43届全国中学生物理竞赛初赛的命题风格、知识点分布与难度走向，附科技版可视化解读。",
-    icon:"🏆", link:"articles/physics-olympiad-compare-tech.html", date:"2026-09-07", tag:"竞赛研究"
+    icon:"🏆", cover:"assets/img/physics-olympiad-compare-cover.png", link:"articles/physics-olympiad-compare-tech.html", date:"2026-09-07", tag:"竞赛研究"
   }
 ];
 
