@@ -3629,7 +3629,12 @@ const WORKS = [
   {
     type:"solve", title:"第43届预赛第12题精讲",
     icon:"📝", cover:"assets/img/contest43-q12-cover.png", link:"solutions/contest43-q12.html", date:"2026-09-08", tag:"竞赛"
-  }
+  },
+  {
+    type:"animation", title:"频闪照相 · 自由落体 3D 模拟",
+    icon:"\U0001F4F8", cover:"assets/img/strobe-3d-cover.png",
+    link:"animations/strobe-3d-animation.html", date:"2026-09-08", tag:"力学"
+  },
 ];
 
 
