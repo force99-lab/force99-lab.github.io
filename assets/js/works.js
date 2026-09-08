@@ -3625,6 +3625,10 @@ const WORKS = [
   {
     type:"solve", title:"第43届预赛第11题精讲",
     icon:"📝", cover:"assets/img/contest43-q11-cover.png", link:"solutions/contest43-q11.html", date:"2026-09-08", tag:"竞赛"
+  },
+  {
+    type:"solve", title:"第43届预赛第12题精讲",
+    icon:"📝", cover:"assets/img/contest43-q12-cover.png", link:"solutions/contest43-q12.html", date:"2026-09-08", tag:"竞赛"
   }
 ];
 
