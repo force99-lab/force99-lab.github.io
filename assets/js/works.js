@@ -3647,6 +3647,12 @@ const WORKS = [
       desc:"从5292小时时间账、约5000亿社会内耗、现代战争与科技立国三维度，论证削减高考英语配分的必要性，并给出改考试内容、降应试内耗、大学达标线衔接三位一体的可落地复方。",
       icon:"📄", cover:"assets/img/gaokao-english-cover.png", link:"articles/gaokao-english-weight.html", date:"2026-09-10", tag:"教育观察"
     }
+,
+      {
+      type:"article", title:"把时间还给数理化——关于高考英语配分的冷思考",
+      desc:"从5292小时时间账、约5000亿社会内耗、现代战争与科技立国三维度，论证削减高考英语配分的必要性，并给出改考试内容、降应试内耗、大学达标线衔接三位一体的可落地复方。",
+      icon:"📄", cover:"assets/img/gaokao-english-cover.png", link:"articles/gaokao-english-weight.html", date:"2026-09-10", tag:"教育观察"
+    }
 ];
 
 
