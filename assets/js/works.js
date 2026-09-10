@@ -3663,6 +3663,11 @@ const WORKS = [
     icon:"\U0001F3C0", cover:"assets/img/double-ball-cover.png",
     link:"solutions/double-ball-projectile.html", date:"2026-09-10", tag:"力学"
   },
+  {
+    type:"solve", title:"激光玻璃块折射测屏幕曲率半径",
+    icon:"\U0001F4DD", cover:"assets/img/glass-curvature-cover.png",
+    link:"solutions/laser-glass-curvature.html", date:"2026-09-10", tag:"光学"
+  },
 ];
 
 
