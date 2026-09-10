@@ -3658,6 +3658,11 @@ const WORKS = [
     icon:"\U0001F4DD", cover:"assets/img/ion-analyzer-cover.png",
     link:"solutions/ion-analyzer.html", date:"2026-09-10", tag:"电磁学"
   },
+  {
+    type:"solve", title:"双球平抛反弹 · 轨迹交点与相遇",
+    icon:"\U0001F3C0", cover:"assets/img/double-ball-cover.png",
+    link:"solutions/double-ball-projectile.html", date:"2026-09-10", tag:"力学"
+  },
 ];
 
 
