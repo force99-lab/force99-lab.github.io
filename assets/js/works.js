@@ -3668,6 +3668,11 @@ const WORKS = [
     icon:"\U0001F4DD", cover:"assets/img/glass-curvature-cover.png",
     link:"solutions/laser-glass-curvature.html", date:"2026-09-10", tag:"光学"
   },
+  {
+    type:"animation", title:"螺旋测微器 3D 交互演示",
+    icon:"\U0001F4CF", cover:"assets/img/micrometer-3d-cover.png",
+    link:"animations/micrometer-3d.html", date:"2026-09-10", tag:"力学实验"
+  },
 ];
 
 
