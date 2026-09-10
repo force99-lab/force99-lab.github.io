@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>螺旋测微器 3D 交互演示 · 高中物理 · force99</title>
+<style>
+:root{
+  --bg:#0b1a17; --bg2:#0f211d; --panel:#132a24; --line:#2a5a4a;
+  --acc:#5ee0a0; --acc2:#7fd8c4; --warn:#ffd479; --bad:#ff7a7a;
+  --txt:#d6f2e8; --mut:#87aca6;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:linear-gradient(160deg,#0b1a17 0%,#0f211d 60%,#0a1613 100%);
+  color:var(--txt);font:13px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+/* ===== 顶栏 ===== */
+header{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:8px 14px;
+  border-bottom:1px solid var(--line);background:rgba(10,26,22,.85)}
+header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+header h1 span{color:var(--acc)}
+header .sub{font-size:11px;color:var(--mut)}
+.sp{flex:1}
+.wm{font:600 12px/1 "Segoe UI",system-ui;color:#2f6b5b;letter-spacing:1px}
+.tag{font-size:11px;padding:2px 7px;border:1px solid var(--line);border-radius:20px;color:var(--acc2)}
+
+/* ===== 主体 ===== */
+#app{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;min-width:0;background:
+  radial-gradient(ellipse at 50% 40%,#16332c 0%,#0b1a17 70%)}
+#cv3d{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#cv3d.drag{cursor:grabbing}
+#hint{position:absolute;left:12px;bottom:10px;font-size:11px;color:#6d9c92;
+  background:rgba(8,20,18,.55);padding:4px 8px;border-radius:6px;pointer-events:none}
+#viewbar{position:absolute;right:12px;top:10px;display:flex;flex-direction:column;gap:6px}
+#viewbar button{background:rgba(19,42,36,.92);color:var(--txt);border:1px solid var(--line);
+  border-radius:6px;padding:5px 9px;font-size:11.5px;cursor:pointer;text-align:left}
+#viewbar button:hover{border-color:var(--acc);color:var(--acc)}
+#viewbar button.on{background:#1d4739;border-color:var(--acc);color:var(--acc)}
+
+/* ===== 右栏 ===== */
+#panel{flex:0 0 372px;border-left:1px solid var(--line);background:var(--panel);
+  overflow-y:auto;padding:10px}
+.card{border:1px solid var(--line);border-radius:9px;margin-bottom:10px;overflow:hidden;
+  background:rgba(11,26,22,.5)}
+.cardhd{padding:6px 10px;font-size:12px;font-weight:700;color:var(--acc);
+  border-bottom:1px solid var(--line);background:rgba(19,42,36,.7);
+  display:flex;align-items:center;gap:6px}
+.cardhd .tip{font-size:10px;color:var(--mut);font-weight:400}
+.cardbd{padding:9px 10px}
+#cvRead{width:100%;height:230px;display:block;background:#f2f4f0;border-radius:4px}
+
+/* 读数结果 */
+#readout{font-size:12.5px}
+.ro{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;
+  border-bottom:1px dashed rgba(90,160,140,.18)}
+.ro:last-child{border-bottom:none}
+.ro .k{color:var(--mut)}
+.ro .v{font-weight:700;font-variant-numeric:tabular-nums}
+.big{font-size:20px;color:var(--warn);font-weight:800;letter-spacing:.5px}
+.res{background:rgba(94,224,160,.08);border:1px solid rgba(94,224,160,.25);
+  border-radius:7px;padding:6px 9px;margin-top:6px;font-size:12.5px}
+.res .n{font-size:19px;font-weight:800;color:var(--warn);font-variant-numeric:tabular-nums}
+.fml{font-size:11px;color:var(--mut);margin-top:3px}
+
+/* 控件 */
+.ctl{margin-bottom:9px}
+.ctl label{display:block;font-size:11.5px;color:var(--mut);margin-bottom:3px}
+.ctl .val{color:var(--acc2);font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:20px;-webkit-appearance:none;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:#20493c}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
+  border-radius:50%;background:var(--acc);margin-top:-5px;border:2px solid #0b1a17;cursor:pointer}
+select,input[type=text]{width:100%;background:#0e241f;color:var(--txt);border:1px solid var(--line);
+  border-radius:6px;padding:5px 7px;font-size:12.5px}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btns button{flex:1 1 auto;background:#1a3c33;color:var(--txt);border:1px solid var(--line);
+  border-radius:6px;padding:6px 8px;font-size:12px;cursor:pointer}
+.btns button:hover{border-color:var(--acc);color:var(--acc)}
+.btns button.acc{background:#1d5c46;border-color:var(--acc);color:#eafff6;font-weight:700}
+.btns button.warn{background:#4a3a12;border-color:#a8873a;color:var(--warn)}
+
+/* 练习 */
+.ex{background:rgba(255,212,121,.08);border:1px solid rgba(255,212,121,.3);
+  border-radius:7px;padding:7px 9px;margin-top:6px;font-size:12.5px}
+.ex .q{font-weight:700;color:var(--warn)}
+#exAns{width:120px;display:inline-block}
+.judge{margin-top:5px;font-size:12px;font-weight:700}
+.ok{color:var(--acc)} .no{color:var(--bad)}
+
+/* 折叠 */
+details{border-top:1px solid rgba(90,160,140,.15);padding-top:5px;margin-top:5px}
+details:first-child{border-top:none;margin-top:0}
+summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--acc2);padding:3px 0;outline:none}
+.dbody{font-size:12px;color:#bfe3d8;padding:2px 0 6px 2px}
+.dbody ul{margin:4px 0;padding-left:18px}
+.dbody li{margin:3px 0}
+.key{color:var(--warn);font-weight:700}
+.hl{color:var(--acc);font-weight:700}
+.f{display:block;background:rgba(8,20,18,.6);border-left:3px solid var(--acc);
+  padding:4px 8px;margin:4px 0;font-family:"Cambria Math",Georgia,serif;font-size:13px;color:#e8fff6}
+code{background:#0e241f;padding:1px 5px;border-radius:4px;color:var(--warn);font-size:12px}
+.note{font-size:11px;color:var(--mut)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>螺旋测微器 <span>3D 交互演示</span></h1>
+  <span class="tag">螺距 0.5 mm · 50 分度 · 精度 0.01 mm</span>
+  <span class="sub">读数保留到 0.001 mm（必须估读一位）</span>
+  <span class="sp"></span>
+  <span class="wm">force99</span>
+</header>
+
+<div id="app">
+  <section id="stage">
+    <canvas id="cv3d"></canvas>
+    <div id="viewbar">
+      <button id="bReset">⟲ 复位视角</button>
+      <button id="bLabel" class="on">🏷 部件标注</button>
+      <button id="bThread" class="on">🧵 螺纹示意</button>
+      <button id="bScale" class="on">📏 主尺刻度</button>
+      <button id="bSpin">▶ 自动转动</button>
+    </div>
+    <div id="hint">拖动空白处旋转视角 · 拖动<b>微分筒</b>（或右侧滑块）<b>连续</b>转动测量（可停在任意非整格位置；按住 <b>Shift</b> 精细微调）· 滚轮缩放</div>
+  </section>
+
+  <aside id="panel">
+
+    <div class="card">
+      <div class="cardhd">🔍 读数放大窗 <span class="tip">左：固定刻度（主尺）　右：微分筒 50 分度（圆周旋转）</span></div>
+      <div class="cardbd" style="padding:7px"><canvas id="cvRead"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="cardhd">📐 读数结果</div>
+      <div class="cardbd" id="readout"></div>
+    </div>
+
+    <div class="card">
+      <div class="cardhd">🎛 操作控制</div>
+      <div class="cardbd">
+        <div class="ctl">
+          <label>微分筒转动（读数 R）：<span class="val" id="vTurn">0.000</span> mm
+            <span class="note">= <span id="vTurnDeg">0</span>°</span></label>
+          <input type="range" id="rTurn" min="-0.05" max="25" step="0.0001" value="0">
+        </div>
+        <div class="ctl">
+          <label>被测物体：</label>
+          <select id="selObj">
+            <option value="none">— 空夹（两测量面接触）—</option>
+            <option value="0.500">漆包线 d = 0.500 mm</option>
+            <option value="1.850">薄片 d = 1.850 mm</option>
+            <option value="2.350">钢丝 d = 2.350 mm</option>
+            <option value="6.725">螺栓 d = 6.725 mm</option>
+            <option value="12.480">圆柱 d = 12.480 mm</option>
+            <option value="24.760">量块 d = 24.760 mm</option>
+            <option value="rand">🎲 随机物体</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label><b style="color:var(--warn)">零误差</b>（初读数）：<span class="val" id="vZero">0.000</span> mm</label>
+          <input type="range" id="rZero" min="-0.05" max="0.05" step="0.0001" value="0">
+        </div>
+        <div class="btns">
+          <button id="bClamp" class="acc">🔒 棘轮夹紧</button>
+          <button id="bZero">⟲ 归零</button>
+          <button id="bRandZero">🎲 随机零误差</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cardhd">🎓 课堂读数练习</div>
+      <div class="cardbd">
+        <div class="ex">
+          <div id="exQ">点击「出题」开始：读出图示的<b>读数值</b>（含估读，单位 mm）。</div>
+          <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+            <input type="text" id="exAns" placeholder="如 6.725">
+            <button id="exOk" class="acc" style="padding:5px 10px">判定</button>
+            <button id="exNew" style="padding:5px 10px">出题</button>
+            <button id="exShow" style="padding:5px 10px">👁 答案</button>
+          </div>
+          <div class="judge" id="exJ"></div>
+        </div>
+        <div class="note" style="margin-top:6px">
+          判分标准：与正确读数相差 ≤ 0.002 mm 视为正确（估读位允许 1~2 个最小分度误差）。
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cardhd">📖 原理 · 读数 · 高考要点</div>
+      <div class="cardbd">
+        <details open><summary>① 构造与原理</summary><div class="dbody">
+          测微螺杆的<b>螺距为 0.5 mm</b>，微分筒圆周上均匀刻有 <b>50 个分度</b>。
+          <span class="f">微分筒转 1 周 → 螺杆前进（后退）0.5 mm</span>
+          <span class="f">微分筒转 1 格 → 螺杆移动 0.5 / 50 = 0.01 mm</span>
+          这就是螺旋测微器<b class="hl">分度值 0.01 mm</b> 的来历——它把 0.5 mm 的微小位移"放大"为圆周上可分辨的 50 格。
+        </div></details>
+        <details open><summary>② 读数方法（三步）</summary><div class="dbody">
+          <ul>
+            <li><b>第 1 步</b> 读<b>固定刻度</b>：看微分筒左边缘以左<b>露出的最后一条刻线</b>，整毫米线在基准线上方、半毫米线在下方，读到 <b>0.5 mm</b>。</li>
+            <li><b>第 2 步</b> 读<b>可动刻度</b>：找出微分筒上与基准线对齐的刻线，格数 × 0.01 mm，<b class="key">必须估读一位</b>（读到 0.1 格 = 0.001 mm）。</li>
+            <li><b>第 3 步</b> 相加：<span class="f">读数 = 固定刻度读数 + 可动刻度读数</span></li>
+          </ul>
+          <div class="note">例：固定刻度 6.5 mm，可动刻度 22.5 格 → 读数 = 6.5 + 22.5×0.01 = <b>6.725 mm</b>。</div>
+        </div></details>
+        <details><summary>③ 零误差及其修正</summary><div class="dbody">
+          测量面<b>直接接触</b>时读数应为 0；若不为 0，该读数即为<b>零误差 e</b>（带正负号）。
+          <span class="f">真实值 = 读数值 − 零误差 e</span>
+          <ul>
+            <li><b>e &gt; 0</b>（微分筒 0 线在基准线<b>下方</b>）：读数偏大 → 减去。</li>
+            <li><b>e &lt; 0</b>（微分筒 0 线在基准线<b>上方</b>）：读数偏小 → 减去负数（即加上）。</li>
+          </ul>
+          <div class="note">本演示：拖动「零误差」滑块，可见 s = 0（接触）时读数不为 0，正是零误差。</div>
+        </div></details>
+        <details><summary>④ 高考易错点</summary><div class="dbody">
+          <ul>
+            <li><b class="key">必须估读</b>：螺旋测微器读到 0.001 mm（游标卡尺<b>不估读</b>）—— 最高频失分点。</li>
+            <li><b class="key">半毫米线是否露出</b>：微分筒边缘刚过半毫米线时，可动刻度接近 50（或 0），要防止多读或少读 0.5 mm。</li>
+            <li><b class="key">单位与位数</b>：结果以 mm 为单位，小数点后<b>必须三位</b>（如 6.720 mm，末尾 0 不能省）。</li>
+            <li><b class="key">零误差带符号</b>：修正时代入正负号，不能只减绝对值。</li>
+            <li>测量时须旋<b>棘轮</b>至"咔咔"响，不可直接猛拧微分筒（防止形变与磨损）。</li>
+          </ul>
+        </div></details>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<script>
+/* =========================================================
+   螺旋测微器 3D 交互演示  —— 零依赖单文件
+   ========================================================= */
+const PITCH = 0.5;        // 螺距 mm
+const DIV   = 50;         // 微分筒分度数
+const LEAST = PITCH/DIV;  // 0.01 mm 分度值
+const RANGE = 25;         // 量程 mm
+const RMIN  = -0.05;      // 读数允许出现微小负值（负零误差且两测量面接触时）
+
+/* 模型几何常量（单位 mm，X 轴：测砧在左，螺杆在右）
+   比例按 0–25 mm 外径千分尺实物：套管外径 ≈10.4，微分筒外径 ≈14.4，测砧 ≈5.2 */
+const G = {
+  anvilX0:-15, anvilX1:0,  anvilR:2.6,      // 测砧（左端埋入 U 形架左臂上部）
+  spinR:2.4,                                 // 测微螺杆
+  slvX0:27, slvX1:69, slvR:5.2,             // 固定套管（左端须 ≥ 量程，最大开口时物体才不会钻进套管）
+  scaleX0:42,                                // 主尺 0 刻线位置（= 微分筒左边缘在 R=0 处）
+  thX0:42, thLen:28, thR:7.2,               // 微分筒（随 R 平移；筒长须 ≥ 量程 + 余量）
+  ratLen:7, ratR:4.2,                       // 棘轮
+  objY:5, objZ:5,                           // 被测物体截面尺寸（略小于测砧直径 5.2 mm）
+  CY:0, CZ:0                                // 轴心
+};
+/* 尺架：真正光滑的 U 形弓架中心线。
+   两臂为直段，顶部为半圆弧，h = 该处半厚。
+   开口向下：两臂在下部托住测砧与套管，圆弧顶部在上方。 */
+const FRAME_PATH=(()=>{
+  const pts=[], add=(x,y,h)=>pts.push({x,y,h});
+  // 左臂（直段，从下到上）
+  add(-16.5, -7.0, 4.5);     // 臂尖底面 y=-7，测砧从此穿出
+  add(-17.0, -5.0, 4.6);
+  add(-17.2, -3.0, 4.7);     // 隔热护板 + 螺钉区域
+  add(-17.5, -1.0, 4.7);
+  add(-17.5, -0.2, 4.6);
+  // U 顶：半圆弧，圆心(6,0)，半径 23.5
+  const cx=6.0, r=23.5;
+  for(let i=0;i<=60;i++){
+    const t=i/60, a=Math.PI + t*Math.PI;          // π → 2π，经过 π/2 为顶部
+    const x=cx+r*Math.cos(a), y=r*Math.sin(a);
+    const h=4.0 + 0.35*Math.abs(Math.sin(a));      // 顶部稍薄
+    add(x,y,h);
+  }
+  // 右臂（直段，从上到下）
+  add(29.5, -0.2, 4.6);
+  add(29.5, -1.0, 4.7);
+  add(29.7, -3.0, 4.7);      // 隔热护板 + 螺钉区域
+  add(30.0, -5.0, 4.6);
+  add(30.5, -7.0, 4.5);      // 臂尖底面 y=-7，套管从此穿过
+  return pts;
+})();
+const FRAME_HZ=6.0;          // 尺架 z 向半厚（> 套管半径 5.2，视觉上"抱住"套管）
+
+/* ---------- 状态 ---------- */
+let S = {
+  s:0,            // 真实开口（被测物体尺寸）mm —— 决定微分筒的【轴向位置】
+  zero:0,         // 零误差 mm
+  R:0,            // 读数值 = s + zero —— 决定微分筒的【转角】与主尺露出
+  yaw:-26, pitch:-15, zoom:1,
+  labels:true, thread:true, scale:true, spin:false,
+  objKey:'none', objSize:0,
+  drag:null
+};
+let EX = null;    // 当前练习题
+
+const cv=document.getElementById('cv3d'), ctx=cv.getContext('2d');
+const rc=document.getElementById('cvRead'), rctx=rc.getContext('2d');
+const $ = id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const r3 = v=>Math.round(v*1000)/1000;      // 保留 3 位（0.001 mm，用于显示）
+/* 微分筒转动是【连续】的：内部状态量化到 0.0001 mm = 0.01 格，
+   而不是 0.01 mm（整数一格）。这样筒可以停在任意角度，读数才带估读位。 */
+const r4 = v=>Math.round(v*10000)/10000;    // 保留 4 位（0.0001 mm = 0.01 格）
+
+/* =========================================================
+   1. 3D 引擎：旋转 + 透视投影 + 深度排序 + 平面光照
+   ========================================================= */
+const CAM = {dist:200, focal:900, ox:34, oy:8};   // ox/oy：模型中心平移
+let AUTO = 1;                                     // 自适应缩放：让模型填满画布
+let PANX = 0, PANY = 0;                           // 自适应取景：把模型包围盒移到画布中心
+let FITKEY = '';                                  // 取景缓存键（画布尺寸 + 被测物体）
+
+function rot(p){
+  const yr=S.yaw*Math.PI/180, pr=S.pitch*Math.PI/180;
+  const x=p.x-CAM.ox, y=p.y+CAM.oy, z=p.z;
+  // 绕 X 轴（俯仰）
+  const y1=y*Math.cos(pr)-z*Math.sin(pr);
+  const z1=y*Math.sin(pr)+z*Math.cos(pr);
+  // 绕 Y 轴（偏航）
+  const x2=x*Math.cos(yr)+z1*Math.sin(yr);
+  const z2=-x*Math.sin(yr)+z1*Math.cos(yr);
+  return {x:x2,y:y1,z:z2};
+}
+function proj(p){
+  const t=rot(p), d=t.z+CAM.dist;
+  const f=CAM.focal/Math.max(20,d);
+  return {x:cv.clientWidth/2  + ( t.x*f-PANX)*S.zoom*AUTO,
+          y:cv.clientHeight/2 + (-t.y*f-PANY)*S.zoom*AUTO,
+          z:t.z, d:d};
+}
+/* ---------------- 自适应取景 ----------------
+   模型外包点集：与 buildScene() 实际绘制的几何一一对应（尺架 / 测砧 / 螺杆 /
+   固定套管 / 微分筒 / 棘轮 / 被测物体），并覆盖开口 s=0 与 s=量程 两个极限。   */
+function modelExtremes(){
+  const pts=[], CY=G.CY, CZ=G.CZ;
+  const ring=(x,r,n)=>{for(let i=0;i<n;i++){const a=i/n*2*Math.PI;
+    pts.push({x:x,y:CY+r*Math.cos(a),z:CZ+r*Math.sin(a)});}};
+  // 尺架（U 形弓架 + 隔热护板 + 螺钉）的外包：x[-22.5,36] y[-13.0,+29.5] z[-6.2,6.2]
+  for(const x of [-22.5,36]) for(const y of [-13.0,29.5]) for(const z of [-6.2,6.2]) pts.push({x,y,z});
+  ring(G.anvilX0,G.anvilR,12);  ring(G.anvilX1,G.anvilR,12);   // 测砧
+  ring(G.slvX0,G.slvR,12);      ring(G.slvX1,G.slvR,12);       // 固定套管
+  for(const s of [0,RANGE]){                                    // 两个极限开口
+    const thX=G.thX0+s;
+    ring(s,G.spinR,8);                                          // 螺杆测量端
+    ring(thX,G.thR,12);                                         // 微分筒左端（最粗）
+    ring(thX+G.thLen,G.thR-1.6,12);                             // 微分筒右端
+    ring(thX+G.thLen+G.ratLen,G.ratR,12);                       // 棘轮右端
+  }
+  if(S.objSize>0.02) for(const x of [0,S.objSize])              // 被测物体
+    for(const y of [-G.objY/2,G.objY/2]) for(const z of [-G.objZ/2,G.objZ/2]) pts.push({x,y,z});
+  return pts;
+}
+/* 取景：对【全部视角】采样求包围盒，使任何旋转角都不出画；结果与视角无关，
+   仅在画布尺寸或被测物体变化时重算（避免拖拽时模型忽大忽小）。            */
+function computeAuto(){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  if(!W||!H) return;
+  const key=W+'x'+H+'|'+S.objSize.toFixed(2);
+  if(key===FITKEY) return;
+  FITKEY=key;
+  const sy=S.yaw, sp=S.pitch, sz=S.zoom, ss=S.s;
+  let minU=1e9,maxU=-1e9,minV=1e9,maxV=-1e9;
+  const pts=modelExtremes();
+  for(let yv=-180;yv<180;yv+=10){
+    for(let pv=-80;pv<=80;pv+=20){
+      S.yaw=yv; S.pitch=pv;
+      for(const p of pts){
+        const t=rot(p), f=CAM.focal/Math.max(20,t.z+CAM.dist);
+        const u=t.x*f, v=-t.y*f;
+        if(u<minU)minU=u; if(u>maxU)maxU=u;
+        if(v<minV)minV=v; if(v>maxV)maxV=v;
+      }
+    }
+  }
+  S.yaw=sy; S.pitch=sp; S.zoom=sz; S.s=ss;
+  PANX=(minU+maxU)/2; PANY=(minV+maxV)/2;
+  const hu=Math.max(1,(maxU-minU)/2), hv=Math.max(1,(maxV-minV)/2);
+  const mx=Math.max(16,W*0.05), my=Math.max(16,H*0.07);
+  AUTO=clamp(Math.min((W/2-mx)/hu,(H/2-my)/hv),0.15,8);
+}
+function rotV(n){   // 只旋转方向向量（法线）
+  const yr=S.yaw*Math.PI/180, pr=S.pitch*Math.PI/180;
+  const y1=n.y*Math.cos(pr)-n.z*Math.sin(pr);
+  const z1=n.y*Math.sin(pr)+n.z*Math.cos(pr);
+  const x2=n.x*Math.cos(yr)+z1*Math.sin(yr);
+  const z2=-n.x*Math.sin(yr)+z1*Math.cos(yr);
+  return {x:x2,y:y1,z:z2};
+}
+
+/* ---------- 几何生成 ---------- */
+const FACES=[];   // {v:[p...], c:[r,g,b], n:{x,y,z}, kind}
+function face(v,c,n,kind){ FACES.push({v,c,n,kind:kind||''}); }
+function normOf(v){        // 由前 3 点求法线
+  const a=v[0],b=v[1],c=v[2];
+  const ux=b.x-a.x, uy=b.y-a.y, uz=b.z-a.z;
+  const vx=c.x-a.x, vy=c.y-a.y, vz=c.z-a.z;
+  let nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+  const L=Math.hypot(nx,ny,nz)||1;
+  return {x:nx/L,y:ny/L,z:nz/L};
+}
+/* 沿 X 轴的圆柱 */
+/* 沿轴向细分数：面片越短，画家算法按面心排序越准。
+   否则斜视角下 x 分量会折算进深度，导致"更粗、更靠前"的零件被判成更远而被别的零件覆盖。 */
+function axSegsOf(x0,x1){
+  return Math.max(1, Math.min(12, Math.round(Math.abs(x1-x0)/6)));
+}
+function cylX(x0,x1,cy,cz,r,col,segs,capL,capR,kind){
+  segs=segs||26;
+  const na=axSegsOf(x0,x1);
+  for(let k=0;k<na;k++){
+    const xa=x0+(x1-x0)*k/na, xb=x0+(x1-x0)*(k+1)/na;
+    for(let i=0;i<segs;i++){
+      const a0=i/segs*2*Math.PI, a1=(i+1)/segs*2*Math.PI;
+      const v=[{x:xa,y:cy+r*Math.cos(a0),z:cz+r*Math.sin(a0)},
+               {x:xb,y:cy+r*Math.cos(a0),z:cz+r*Math.sin(a0)},
+               {x:xb,y:cy+r*Math.cos(a1),z:cz+r*Math.sin(a1)},
+               {x:xa,y:cy+r*Math.cos(a1),z:cz+r*Math.sin(a1)}];
+      const am=(a0+a1)/2;
+      face(v,col,{x:0,y:Math.cos(am),z:Math.sin(am)},kind);
+    }
+  }
+  const poly=(x,sg)=>{const a=[];for(let i=0;i<segs;i++){const t=i/segs*2*Math.PI;
+    a.push({x:x,y:cy+r*Math.cos(t),z:cz+r*Math.sin(t)});} return a;};
+  if(capL!==false) face(poly(x0).reverse(),col,{x:-1,y:0,z:0},kind);
+  if(capR!==false) face(poly(x1),col,{x:1,y:0,z:0},kind);
+}
+/* 长方体 —— 顶点必须写成 {x,y,z}，与 proj/visible/深度排序的数据结构一致 */
+function box(x0,y0,z0,x1,y1,z1,col,kind){
+  const V=(x,y,z)=>({x,y,z});
+  const P=[V(x0,y0,z0),V(x1,y0,z0),V(x1,y1,z0),V(x0,y1,z0),
+           V(x0,y0,z1),V(x1,y0,z1),V(x1,y1,z1),V(x0,y1,z1)];
+  const q=(a,b,c,d,n)=>face([P[a],P[b],P[c],P[d]],col,n,kind);
+  q(0,1,2,3,{x:0,y:0,z:-1}); q(5,4,7,6,{x:0,y:0,z:1});
+  q(4,0,3,7,{x:-1,y:0,z:0});  q(1,5,6,2,{x:1,y:0,z:0});
+  q(3,2,6,7,{x:0,y:1,z:0});   q(4,5,1,0,{x:0,y:-1,z:0});
+}
+/* 对中心线折线做 n 次中点细分，让挤出后的曲面更圆润 */
+function subdividePath(pts,n){
+  let cur=pts.slice();
+  for(let k=0;k<n;k++){
+    const out=[cur[0]];
+    for(let i=0;i<cur.length-1;i++){
+      const a=cur[i], b=cur[i+1];
+      out.push({x:(a.x+b.x)/2, y:(a.y+b.y)/2, h:(a.h+b.h)/2}, b);
+    }
+    cur=out;
+  }
+  return cur;
+}
+/* 把 XY 平面上的"粗折线"沿 Z 挤出成实体带 —— 用于 C 形弓架本体与隔热护板。
+   pts : 中心线 {x,y,h}（h = 半厚）；hz : z 向半厚
+   i0,i1 : 只挤出该段（护板用）；outShrink/inShrink : 两侧相对半厚的内缩量
+   openEnd : true 时两端不封口（护板贴在本体上，无需封口）                */
+function extrudeBand(pts,hz,colFace,colWall,colCap,kind,i0,i1,outShrink,inShrink,openEnd){
+  const n=pts.length;
+  i0=(i0===undefined)?0:i0;  i1=(i1===undefined)?n-1:i1;
+  outShrink=outShrink||0;    inShrink=inShrink||0;
+  const N=[];
+  for(let i=0;i<n;i++){                       // 各点的外法线（切线右转 90°）
+    const a=pts[Math.max(0,i-1)], b=pts[Math.min(n-1,i+1)];
+    let tx=b.x-a.x, ty=b.y-a.y; const L=Math.hypot(tx,ty)||1;
+    N.push({x:ty/L, y:-tx/L});                // 指向弓形外侧
+  }
+  const O=[],I2=[];
+  for(let i=0;i<n;i++){
+    const p=pts[i],nn=N[i];
+    O.push ({x:p.x+nn.x*(p.h-outShrink), y:p.y+nn.y*(p.h-outShrink)});
+    I2.push({x:p.x-nn.x*(p.h-inShrink),  y:p.y-nn.y*(p.h-inShrink)});
+  }
+  const z0=-hz, z1=hz, P3=(q,z)=>({x:q.x,y:q.y,z:z});
+  for(let i=i0;i<i1;i++){
+    const o0=O[i],o1=O[i+1],j0=I2[i],j1=I2[i+1];
+    face([P3(o0,z0),P3(o1,z0),P3(j1,z0),P3(j0,z0)],colFace,{x:0,y:0,z:-1},kind); // 前
+    face([P3(o0,z1),P3(j0,z1),P3(j1,z1),P3(o1,z1)],colFace,{x:0,y:0,z: 1},kind); // 后
+    const wx=(N[i].x+N[i+1].x)/2, wy=(N[i].y+N[i+1].y)/2, wl=Math.hypot(wx,wy)||1;
+    face([P3(o0,z0),P3(o0,z1),P3(o1,z1),P3(o1,z0)],colWall,{x: wx/wl,y: wy/wl,z:0},kind); // 外壁
+    face([P3(j0,z0),P3(j1,z0),P3(j1,z1),P3(j0,z1)],colWall,{x:-wx/wl,y:-wy/wl,z:0},kind); // 内壁
+  }
+  if(openEnd) return;
+  const t0={x:pts[i0+1].x-pts[i0].x, y:pts[i0+1].y-pts[i0].y};
+  const L0=Math.hypot(t0.x,t0.y)||1;
+  face([P3(O[i0],z0),P3(I2[i0],z0),P3(I2[i0],z1),P3(O[i0],z1)],colCap,{x:-t0.x/L0,y:-t0.y/L0,z:0},kind);
+  const te={x:pts[i1].x-pts[i1-1].x, y:pts[i1].y-pts[i1-1].y};
+  const Le=Math.hypot(te.x,te.y)||1;
+  face([P3(O[i1],z0),P3(O[i1],z1),P3(I2[i1],z1),P3(I2[i1],z0)],colCap,{x: te.x/Le,y: te.y/Le,z:0},kind);
+}
+/* 垂直 Z 轴的小圆盘（紧固螺钉头） */
+function discZ(x,y,z,r,col,kind,nsign){
+  const a=[], N=nsign||(z<0?-1:1);
+  for(let i=0;i<18;i++){const t=i/18*2*Math.PI; a.push({x:x+r*Math.cos(t),y:y+r*Math.sin(t),z:z});}
+  if(N<0) a.reverse();
+  face(a,col,{x:0,y:0,z:N},kind);
+}
+
+/* ---------- 颜色（参考实物：蓝色烤漆尺架 + 银白色金属件） ---------- */
+const C={
+  frame:[50,92,148],     // 尺架正面（蓝）
+  frameW:[38,72,120],    // 尺架侧壁（深蓝）
+  frameT:[62,108,168],   // 尺架臂尖端面（亮蓝）
+  plate:[42,50,58],      // 隔热护板（深灰）
+  plateW:[32,38,45],
+  screw:[176,186,196],   // 紧固螺钉
+  anvil:[208,218,224],   // 测砧
+  spin:[186,198,206],    // 螺杆
+  sleeve:[224,232,236],  // 固定套管
+  thim:[214,168,74],     // 微分筒（不透明黄金色）
+  thimD:[176,132,48],
+  rat:[96,110,118],      // 棘轮
+  obj:[224,168,96],      // 被测物体
+  gold:[255,212,121]
+};
+
+/* =========================================================
+   2. 构建场景
+   ========================================================= */
+function buildScene(){
+  FACES.length=0;
+  const s=S.s, R=S.R;
+  // 微分筒与螺杆刚性相连：轴向位置由【真实开口 s】决定，转角由【读数 R】决定
+  const thX=G.thX0+s;                 // 微分筒左边缘（随螺杆轴向移动）
+  const spinX0=s, spinX1=thX+G.thLen; // 螺杆：测量面 → 微分筒右端
+
+  /* — 尺架（U 形弓架）：中心线已用半圆弧生成，无需再细分 — */
+  extrudeBand(FRAME_PATH, FRAME_HZ, C.frame, C.frameW, C.frameT, 'frame');
+  // 隔热护板：贴在两臂外侧的深色塑料板（沿同一中心线，稍微凸出本体）
+  extrudeBand(FRAME_PATH, FRAME_HZ+0.14, C.plate, C.plateW, C.plate, 'frame',
+              1, 3, 0.2, 5.0, true);     // 左臂
+  extrudeBand(FRAME_PATH, FRAME_HZ+0.14, C.plate, C.plateW, C.plate, 'frame',
+              67, 69, 0.2, 5.0, true);   // 右臂
+  // 紧固螺钉（压在两块护板上）
+  for(const p of [{x:-17.2,y:3.0},{x:29.7,y:3.0}]){
+    discZ(p.x,p.y,-(FRAME_HZ+0.22),1.25,C.screw,'frame',-1);
+    discZ(p.x,p.y, (FRAME_HZ+0.22),1.25,C.screw,'frame', 1);
+  }
+
+  /* — 测砧 — */
+  cylX(G.anvilX0,G.anvilX1,G.CY,G.CZ,G.anvilR,C.anvil,26,true,true,'anvil');
+  // 测砧测量面（亮）
+  cylX(-0.35,0.02,G.CY,G.CZ,G.anvilR,[236,244,246],26,true,true,'anvilFace');
+
+  /* — 测微螺杆 — */
+  cylX(spinX0,spinX1,G.CY,G.CZ,G.spinR,C.spin,26,true,true,'spin');
+  cylX(spinX0-0.02,spinX0+0.35,G.CY,G.CZ,G.spinR,[236,244,246],26,true,true,'spinFace');
+
+  /* — 固定套管 — */
+  cylX(G.slvX0,G.slvX1,G.CY,G.CZ,G.slvR,C.sleeve,30,true,true,'sleeve');
+  // 锁紧螺母（位于尺架右臂右侧、主尺 0 刻线左侧的套管上）
+  cylX(37.5,41.0,G.CY,G.CZ,G.slvR+0.6,[104,120,132],22,true,true,'locknut');
+
+  /* — 微分筒（锥形：左粗右细）—— 轴向同样细分，保证深度排序正确、筒身实心不透明 — */
+  const segs=64, nt=axSegsOf(thX,thX+G.thLen);
+  const rAtX=x=>G.thR-1.6*(x-thX)/G.thLen;
+  for(let k=0;k<nt;k++){
+    const xa=thX+G.thLen*k/nt, xb=thX+G.thLen*(k+1)/nt;
+    const ra=rAtX(xa), rb=rAtX(xb);
+    for(let i=0;i<segs;i++){
+      const a0=i/segs*2*Math.PI, a1=(i+1)/segs*2*Math.PI;
+      const v=[{x:xa,y:G.CY+ra*Math.cos(a0),z:G.CZ+ra*Math.sin(a0)},
+               {x:xb,y:G.CY+rb*Math.cos(a0),z:G.CZ+rb*Math.sin(a0)},
+               {x:xb,y:G.CY+rb*Math.cos(a1),z:G.CZ+rb*Math.sin(a1)},
+               {x:xa,y:G.CY+ra*Math.cos(a1),z:G.CZ+ra*Math.sin(a1)}];
+      const am=(a0+a1)/2;
+      face(v,C.thim,{x:0.12,y:Math.cos(am),z:Math.sin(am)},'thimble');
+    }
+  }
+  { // 微分筒左端封口面（实心金色盖，保证左端不"露空"）
+    const a=[];for(let i=0;i<segs;i++){const t=i/segs*2*Math.PI;
+      a.push({x:thX,y:G.CY+G.thR*Math.cos(t),z:G.CZ+G.thR*Math.sin(t)});}
+    face(a.reverse(),C.thim,{x:-1,y:0,z:0},'thimbleEnd');
+  }
+  { // 微分筒右端台阶环面（与棘轮之间的封口，保证右端也不"露空"）
+    const rB=G.thR-1.6, a=[];
+    for(let i=0;i<segs;i++){const t=i/segs*2*Math.PI;
+      a.push({x:thX+G.thLen,y:G.CY+rB*Math.cos(t),z:G.CZ+rB*Math.sin(t)});}
+    face(a,C.thim,{x:1,y:0,z:0},'thimbleEnd');
+  }
+
+  /* — 棘轮（测力装置）— */
+  const ratX=thX+G.thLen;
+  cylX(ratX,ratX+G.ratLen,G.CY,G.CZ,G.ratR,C.rat,22,true,true,'ratchet');
+
+  /* — 被测物体 — */
+  if(S.objSize>0.02){
+    const oy=G.objY/2, oz=G.objZ/2;
+    box(0,-oy,-oz, S.objSize,oy,oz, C.obj,'obj');
+  }
+  return {thX,ratX,spinX1};
+}
+
+/* 额外线段（螺纹、刻度、标注引线） */
+let LINES=[];
+function buildLines(){
+  LINES=[];
+  const R=S.R, s=S.s, thX=G.thX0+s;
+
+  /* — 棘轮滚花（细棱）— */
+  {
+    const ratX=thX+G.thLen;
+    for(let i=0;i<12;i++){
+      const a=i/12*2*Math.PI;
+      const p={x:ratX+G.ratLen*0.18,y:G.CY+G.ratR*Math.cos(a),z:G.CZ+G.ratR*Math.sin(a)};
+      LINES.push({a:p,b:{x:p.x+G.ratLen*0.64,y:p.y,z:p.z},c:[64,74,80],w:2,
+                  n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
+    }
+  }
+
+  /* — 螺纹示意：只画【套管左端以外】真正露出的那一段螺杆，
+        圈数 = 段长 / 螺距，螺距严格取 0.5 mm；相位随读数 R 一起转 — */
+  if(S.thread){
+    // 只画靠近套管左端的最多 15 mm（30 圈），螺距仍严格为 0.5 mm
+    const x0=Math.max(s+0.35, G.slvX0-15.35), x1=G.slvX0-0.35;
+    if(x1-x0>1.2){
+      const turns=clamp((x1-x0)/PITCH,1,30);
+      const steps=Math.round(turns*12);
+      const ph=(R/PITCH)*2*Math.PI;
+      let prev=null;
+      for(let i=0;i<=steps;i++){
+        const t=i/steps, x=x0+(x1-x0)*t, a=t*turns*2*Math.PI+ph;
+        const p={x:x,y:G.CY+G.spinR*1.05*Math.cos(a),z:G.CZ+G.spinR*1.05*Math.sin(a)};
+        if(prev) LINES.push({a:prev,b:p,c:[112,126,132],w:1.4,
+                             n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
+        prev=p;
+      }
+    }
+  }
+
+  /* — 固定套管主尺刻度 —
+     零误差的物理含义：主尺刻线的标定相对理想位置偏移了 e。
+     故刻线 v 画在 x = scaleX0 + v − e，微分筒边缘在 x = scaleX0 + s，
+     边缘所指的主尺读数 v* 满足 v* − e = s  ⟹ v* = s + e = R（与读数完全一致）。 */
+  if(S.scale){
+    const r=G.slvR+0.06, z0=S.zero;
+    /* 微分筒【不透明】：主尺刻线只画到微分筒左边缘 thX 为止。
+       被筒身盖住的一段根本不生成线段，否则线段是最后统一绘制的、无深度遮挡，
+       会画在微分筒上面，看起来就像微分筒是透明能透视主尺。 */
+    const xEnd=Math.min(G.slvX1-1, thX-0.4);
+    if(xEnd>G.scaleX0-z0-0.8){
+      LINES.push({a:{x:G.scaleX0-z0-0.8,y:G.CY+r,z:G.CZ},
+                  b:{x:xEnd,            y:G.CY+r,z:G.CZ},c:[40,60,66],w:1.6,
+                  n:{x:0,y:1,z:0}});
+    }
+    for(let v=0; v<=RANGE; v+=0.5){
+      const x=G.scaleX0+v-z0;
+      if(x>G.slvX1-0.8 || x>xEnd) break;
+      const whole=(Math.abs(v-Math.round(v))<1e-6);
+      const span=(whole?26:15)*Math.PI/180;    // 整毫米弧长更长
+      const dir=whole?1:-1;                    // 整毫米在基准线上方、半毫米在下方
+      let prev=null;
+      for(let i=0;i<=6;i++){
+        const a=dir*span*i/6;
+        const p={x:x,y:G.CY+r*Math.cos(a),z:G.CZ+r*Math.sin(a)};
+        if(prev) LINES.push({a:prev,b:p,c:[38,56,62],w:whole?1.6:1.1,
+                             n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
+        prev=p;
+      }
+    }
+  }
+
+  /* — 微分筒 50 分度刻度（转角由读数 R 决定）——
+     刻线两端半径必须按【锥面】取值，否则长刻线右端会脱离筒面悬空。 */
+  const theta=(R/PITCH)*360;                   // 微分筒累计转角（度）
+  const rAt=x=>G.thR-1.6*(x-thX)/G.thLen+0.07;
+  for(let k=0;k<DIV;k++){
+    const a=(k*(360/DIV)-theta)*Math.PI/180;
+    const long=(k%5===0), ten=(k%10===0);
+    const L=ten?9.6:(long?7.0:4.2);
+    const xa=thX+0.5, xb=Math.min(thX+G.thLen-1.2, xa+L);
+    const ra=rAt(xa), rb=rAt(xb);
+    LINES.push({a:{x:xa,y:G.CY+ra*Math.cos(a),z:G.CZ+ra*Math.sin(a)},
+                b:{x:xb,y:G.CY+rb*Math.cos(a),z:G.CZ+rb*Math.sin(a)},
+                c:ten?[84,56,14]:(long?[68,46,10]:[96,70,28]),
+                w:ten?2.3:(long?1.9:1.3),
+                n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
+  }
+}
+
+/* 微分筒上的数字（0/10/20/30/40）：随筒一起转，只画朝向相机的一侧 */
+function drawThimbleNumbers(thX){
+  const theta=(S.R/PITCH)*360;
+  const rAt=x=>G.thR-1.6*(x-thX)/G.thLen+0.07;
+  ctx.font='bold 9.5px system-ui,-apple,"Microsoft YaHei"';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let k=0;k<DIV;k+=10){
+    const a=(k*(360/DIV)-theta)*Math.PI/180;
+    const n=rotV({x:0,y:Math.cos(a),z:Math.sin(a)});
+    if(n.z>0.15) continue;                     // 背向相机的数字不画
+    const rr=rAt(thX+2.4)+0.55;
+    const p=proj({x:thX+3.0,y:G.CY+rr*Math.cos(a),z:G.CZ+rr*Math.sin(a)});
+    ctx.fillStyle='rgba(10,22,20,0.70)';
+    ctx.fillRect(p.x-8,p.y-6.5,16,13);
+    ctx.fillStyle='#ffdf8a';
+    ctx.fillText(String(k),p.x,p.y);
+  }
+}
+
+/* =========================================================
+   3. 渲染 3D
+   ========================================================= */
+const METAL={anvil:1,anvilFace:1,spin:1,spinFace:1,sleeve:1,thimble:1,ratchet:1,screw:1,locknut:1};
+function shadeFace(f){
+  const n=rotV(f.n);
+  const L={x:0.42,y:0.62,z:-0.66};                 // 主光：左上前方
+  const d=Math.max(0,n.x*L.x+n.y*L.y+n.z*L.z);     // 漫反射
+  const h=Math.max(0,n.x*0.30+n.y*0.50+n.z*(-0.80)); // 与主高光方向的接近度
+  // 边缘光：面心指向相机的方向
+  let cx=0,cy=0,cz=0; for(const p of f.v){cx+=p.x;cy+=p.y;cz+=p.z;}
+  const k=f.v.length||1, rc=rot({x:cx/k,y:cy/k,z:cz/k});
+  const vx=rc.x, vy=rc.y, vz=rc.z+CAM.dist;
+  const vl=Math.hypot(vx,vy,vz)||1;
+  const rim=1-Math.abs((n.x*vx+n.y*vy+n.z*vz)/vl);
+  if(f.kind==='thimbleEnd') // 两端封口面：均匀实心金，不受朝向影响，杜绝"空心/透明"观感
+    return {amb:0.78+0.10*d, spec:0.02};
+  if(f.kind==='thimble')    // 筒身实心不透明：漫反射为主、极弱高光，取消交替条纹
+    return {amb:0.42+0.58*d, spec:Math.pow(h,20)*0.08+Math.pow(rim,5)*0.03};
+  if(METAL[f.kind])      // 电镀钢：暗底 + 宽窄两道高光 + 边缘反光
+    return {amb:0.22+0.80*d,
+            spec:Math.pow(h,5)*0.14+Math.pow(h,24)*0.48+Math.pow(rim,3)*0.16};
+  return {amb:0.34+0.66*d, spec:Math.pow(h,8)*0.30+Math.pow(rim,4)*0.06};
+}
+function visible(f){
+  const c={x:0,y:0,z:0};
+  for(const p of f.v){c.x+=p.x;c.y+=p.y;c.z+=p.z;}
+  const k=f.v.length; c.x/=k;c.y/=k;c.z/=k;
+  const rc2=rot(c), n=rotV(f.n);
+  // 视线：由相机(0,0,-dist)指向面心
+  const vx=rc2.x, vy=rc2.y, vz=rc2.z+CAM.dist;
+  return (n.x*vx+n.y*vy+n.z*vz)<0;
+}
+function render3D(){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  computeAuto();
+  ctx.clearRect(0,0,W,H);
+
+  // 地面网格（增强 3D 空间感）
+  ctx.strokeStyle='rgba(94,224,160,0.07)'; ctx.lineWidth=1;
+  for(let gx=-35;gx<=115;gx+=10){
+    const p1=proj({x:gx,y:-32,z:-14}), p2=proj({x:gx,y:-32,z:14});
+    ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+  }
+  for(let gz=-14;gz<=14;gz+=7){
+    const p1=proj({x:-35,y:-32,z:gz}), p2=proj({x:115,y:-32,z:gz});
+    ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+  }
+
+  buildScene();
+  const info=buildSceneInfo();
+  buildLines();
+
+  // 面：深度排序 —— z 越大离相机越远，故【降序】：先画远的，后画近的（画家算法）
+  const list=FACES.map(f=>{
+    let z=0; const ps=f.v.map(p=>{const q=proj(p); z+=q.z; return q;});
+    return {f,ps,z:z/f.v.length};
+  }).filter(o=>visible(o.f)).sort((a,b)=>b.z-a.z);
+
+  for(const o of list){
+    const f=o.f, sh=shadeFace(f);
+    let [r,g,b]=f.c;
+    r=clamp(r*sh.amb+255*sh.spec,0,255);
+    g=clamp(g*sh.amb+255*sh.spec,0,255);
+    b=clamp(b*sh.amb+255*sh.spec,0,255);
+    ctx.beginPath();
+    ctx.moveTo(o.ps[0].x,o.ps[0].y);
+    for(let i=1;i<o.ps.length;i++) ctx.lineTo(o.ps[i].x,o.ps[i].y);
+    ctx.closePath();
+    ctx.fillStyle='rgb('+(r|0)+','+(g|0)+','+(b|0)+')';
+    ctx.fill();
+    // 取消所有面的描边，消除同一部件的“分界线”，让曲面过渡圆润自然
+  }
+
+  // 线段（螺纹 / 刻度）：带背面剔除
+  for(const ln of LINES){
+    if(ln.n){
+      const n=rotV(ln.n);
+      if(n.z>0.12) continue;             // 背向相机的刻度不画
+    }
+    const p1=proj(ln.a), p2=proj(ln.b);
+    ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
+    ctx.strokeStyle='rgb('+ln.c.join(',')+')'; ctx.lineWidth=ln.w||1.2; ctx.stroke();
+  }
+
+  drawThimbleNumbers(info.thX);   // 微分筒上的 0/10/20/30/40 数字
+
+  // 读数指示：微分筒左边缘（轴向位置 = 真实开口 s）
+  const pTop=proj({x:G.scaleX0+S.s,y:G.CY+G.slvR+0.1,z:G.CZ});
+  ctx.strokeStyle='rgba(255,212,121,0.95)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pTop.x,pTop.y-16); ctx.lineTo(pTop.x,pTop.y+8); ctx.stroke();
+  ctx.fillStyle='rgba(255,212,121,0.95)';
+  ctx.beginPath(); ctx.arc(pTop.x,pTop.y-20,3.2,0,7); ctx.fill();
+
+  if(S.labels) drawLabels(info);
+}
+function buildSceneInfo(){
+  // 必须与 buildScene() 一致：微分筒轴向位置由【真实开口 s】决定，不能用 R
+  const thX=G.thX0+S.s;
+  return {thX, ratX:thX+G.thLen, sx:S.s};
+}
+function label(txt,p3,dx,dy){
+  const p=proj(p3);
+  const W=cv.clientWidth, H=cv.clientHeight;
+  ctx.font='11.5px "Microsoft YaHei"';
+  const tw=ctx.measureText(txt).width;
+  const L=dx<0;                                     // 文字在引线左侧
+  let tx=p.x+dx+(L?-4:4);                           // 文字起点
+  const ty=clamp(p.y+dy,11,Math.max(11,H-11));      // 纵向夹在画布内
+  // 横向夹在画布内：整体平移，保证标签框完整可见
+  const bx0=L?tx-tw:tx;                             // 标签框左端
+  const shift=clamp(bx0,5,Math.max(5,W-tw-5))-bx0;
+  tx+=shift;
+  const bx=L?tx-tw:tx;
+  const ex=clamp(p.x+dx+shift,4,Math.max(4,W-4));   // 引线终点
+  ctx.strokeStyle='rgba(127,216,196,0.75)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(ex,ty); ctx.stroke();
+  ctx.beginPath(); ctx.arc(p.x,p.y,2.6,0,7); ctx.fillStyle='#7fd8c4'; ctx.fill();
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(8,20,18,0.72)';
+  ctx.fillRect(bx-3,ty-8,tw+6,16);
+  ctx.fillStyle='#c8f0e4'; ctx.fillText(txt,bx,ty);
+}
+function drawLabels(info){
+  label('尺架（U 形弓架）',{x:8,y:-18.5,z:-FRAME_HZ},-34,16);
+  label('隔热护板',{x:-19.2,y:-3.0,z:-FRAME_HZ-0.2},-54,2);
+  label('测砧（固定）',{x:-6,y:2.8,z:0},-52,28);
+  label('测微螺杆',{x:Math.max(4,info.sx*0.5),y:2.6,z:0},12,-34);
+  if(S.objSize>0.02) label('被测物体',{x:S.objSize/2,y:-2.6,z:2.6},-16,54);
+  label('固定刻度（主尺）',{x:G.scaleX0+9,y:5.4,z:0},-26,-32);
+  label('微分筒（50 分度）',{x:info.thX+13,y:7.4,z:0},30,-26);
+  label('棘轮（测力装置）',{x:info.ratX+3,y:4.4,z:0},30,20);
+  label('锁紧装置',{x:39.2,y:-5.9,z:0},-46,38);
+}
+
+/* =========================================================
+   4. 读数放大窗（2D）
+   ========================================================= */
+function fitCanvas(c,c2){
+  const dpr=window.devicePixelRatio||1, r=c.getBoundingClientRect();
+  c.width=Math.max(1,Math.round(r.width*dpr));
+  c.height=Math.max(1,Math.round(r.height*dpr));
+  c2.setTransform(dpr,0,0,dpr,0,0);
+}
+function reading(){
+  const R=clamp(S.R,-0.06,RANGE+0.06);
+  const main=Math.floor(R/0.5+1e-9)*0.5;      // 固定刻度（0.5 mm 的整数倍）
+  const th=(R-main)*100;                       // 可动刻度格数（0~50，含估读）
+  return {R, main, th, thDisp:clamp(th,-1,51)};
+}
+function drawReader(){
+  const W=rc.clientWidth, H=rc.clientHeight;
+  rctx.clearRect(0,0,W,H);
+  // 暗色台面背景（模拟实物照片）
+  const bg=rctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#26343c'); bg.addColorStop(1,'#151e25');
+  rctx.fillStyle=bg; rctx.fillRect(0,0,W,H);
+  const rd=reading();
+
+  /* 本窗口是一枚【跟随读数的放大镜】：只放大读数线附近固定跨度的真实场景，
+     因此无论微分筒转到哪儿，筒面刻度都有足够宽度显示，也不会被裁切。 */
+  const SPAN_MM=7.0, LEFT_MM=4.0;          // 视窗跨 7 mm，读数线左侧留 4 mm 主尺
+  const ax=14, ay=6, aw=W-28, ah=H-16;
+  const pxm=aw/SPAN_MM;
+  const vL=S.R-LEFT_MM;                    // 视窗左边界对应的主尺读数
+  const X=v=>ax+(v-vL)*pxm;
+  const ex=ax+LEFT_MM*pxm;                 // 读数线（微分筒左边缘）屏幕位置
+  const barH=9, txtH=13;
+  // 竖直方向尺度放大 2 倍：微分筒可视高度 82 → 164，套管 58 → 116，
+  // 筒面 50 格刻度在竖直方向展开得更开，学生更容易数格与估读。
+  const thH=Math.max(88,Math.min(ah-42,164));   // 微分筒可视高度
+  const slvH=thH-48;                            // 套管可视高度（比微分筒细）
+  const thT=ay+4, thB=thT+thH;                  // 微分筒上下边界
+  const cy=thT+thH/2;                           // 轴心高度 = 主尺基准线
+  const slvT=cy-slvH/2, slvB=cy+slvH/2;
+  const Rr=thH/2;
+
+  /* ── 固定套管（银白金属圆柱） ── */
+  const sg=rctx.createLinearGradient(0,slvT,0,slvB);
+  sg.addColorStop(0,'#8b979d'); sg.addColorStop(0.16,'#dee5e8');
+  sg.addColorStop(0.5,'#f7f9fa'); sg.addColorStop(0.84,'#dee5e8');
+  sg.addColorStop(1,'#87939a');
+  rctx.fillStyle=sg; rctx.fillRect(ax,slvT,aw,slvH);
+
+  /* ── 主尺刻度：裁剪到【微分筒左边缘以左】，被遮住的部分根本不绘制 ── */
+  rctx.save();
+  rctx.beginPath(); rctx.rect(ax,slvT-4,Math.max(0,ex-ax),slvH+8); rctx.clip();
+  for(let v=Math.max(0,Math.floor(vL*2)/2); v<=vL+SPAN_MM; v+=0.5){
+    const x=X(v); if(x<-2) continue; if(x>ex+0.5) break;
+    const whole=(Math.abs(v-Math.round(v))<1e-6);
+    rctx.strokeStyle=whole?'#0e181c':'#33454b';
+    rctx.lineWidth=whole?2.4:1.5;
+    rctx.beginPath();
+    if(whole){ rctx.moveTo(x,cy); rctx.lineTo(x,cy+slvH*0.34); }
+    else     { rctx.moveTo(x,cy); rctx.lineTo(x,cy-slvH*0.20); }
+    rctx.stroke();
+    if(whole){
+      rctx.fillStyle='#0e181c'; rctx.font='bold 14px system-ui';
+      rctx.textAlign='center'; rctx.textBaseline='bottom';
+      rctx.fillText(String(Math.round(v)),x,cy-4);
+    }
+  }
+  rctx.strokeStyle='#0e181c'; rctx.lineWidth=2.2;
+  rctx.beginPath(); rctx.moveTo(ax,cy); rctx.lineTo(ex,cy); rctx.stroke();
+  rctx.restore();
+
+  /* ── 微分筒：不透明黄金色，覆盖右侧（主尺被遮住就绝不可见） ── */
+  const tw=ax+aw-ex;
+  const tg=rctx.createLinearGradient(0,thT,0,thB);
+  tg.addColorStop(0,'#8a6412'); tg.addColorStop(0.14,'#dcaa3e');
+  tg.addColorStop(0.42,'#fce8b8'); tg.addColorStop(0.58,'#fef1c6');
+  tg.addColorStop(0.86,'#dcaa3e'); tg.addColorStop(1,'#7a5710');
+  rctx.save();
+  rctx.beginPath(); rctx.rect(ex,thT,tw,thH); rctx.clip();
+  rctx.fillStyle=tg; rctx.fillRect(ex,thT,tw,thH);
+
+  /* ── 微分筒 50 分度：绕圆周旋转（不是直线移动）
+     φ = k·(360/50) − θ；正面可见半圆上画成沿轴线的水平短线，
+     y = cy + R·sin φ（越靠筒的上下边缘越密集＝柱面透视），长度按 cos φ 缩短。 ── */
+  const theta=(S.R/PITCH)*360;
+  const x0=ex+5, span=Math.max(34,Math.min(thH*1.7, tw-30));
+  for(let k=0;k<DIV;k++){
+    const phi=(k*(360/DIV)-theta)*Math.PI/180;
+    const cz=Math.cos(phi), sn=Math.sin(phi);
+    if(cz<=0.05) continue;                       // 背面不画
+    const y=cy+Rr*0.90*sn;
+    const lng=(k%5===0), ten=(k%10===0);
+    const fade=Math.pow(cz,0.5);
+    const len=(ten? span*0.92 : (lng? span*0.64 : span*0.42))*cz;
+    rctx.globalAlpha=0.55+0.45*fade;
+    rctx.strokeStyle=ten?'#1d1202':(lng?'#261903':'#3a2606');
+    rctx.lineWidth=ten?3.0:(lng?2.3:1.5);
+    rctx.beginPath(); rctx.moveTo(x0,y); rctx.lineTo(x0+len,y); rctx.stroke();
+    if(lng && Math.abs(sn)<0.90){                // 竖直放大后空间更足，多标几格
+      const nx=x0+len+5;
+      rctx.font=(ten?'bold 15px':'bold 13px')+' system-ui';
+      rctx.textAlign='left'; rctx.textBaseline='middle';
+      rctx.lineJoin='round'; rctx.lineWidth=3.5;
+      rctx.strokeStyle='rgba(255,246,214,0.92)'; // 浅色描边，金底上更清晰
+      rctx.strokeText(String(k),nx,y);
+      rctx.fillStyle=ten?'#1d1202':'#261903';
+      rctx.fillText(String(k),nx,y);
+    }
+    rctx.globalAlpha=1;
+  }
+  rctx.restore();
+
+  /* ── 读数基准：微分筒左边缘（竖直橙线）+ 正面基准延长线 ── */
+  rctx.strokeStyle='#e67e22'; rctx.lineWidth=3.2;
+  rctx.beginPath(); rctx.moveTo(ex,thT); rctx.lineTo(ex,thB); rctx.stroke();
+  rctx.strokeStyle='rgba(255,150,60,0.9)'; rctx.lineWidth=1.6;
+  rctx.setLineDash([5,3]);
+  rctx.beginPath(); rctx.moveTo(ex,cy); rctx.lineTo(ax+aw-2,cy); rctx.stroke();
+  rctx.setLineDash([]);
+
+  /* ── 0–25 mm 全程位置指示条 ── */
+  const by=thB+8;
+  rctx.fillStyle='rgba(255,255,255,0.10)'; rctx.fillRect(ax,by,aw,barH);
+  rctx.fillStyle='rgba(255,255,255,0.16)'; rctx.fillRect(ax,by,aw,1);
+  const bx=ax+aw*clamp(S.R/RANGE,0,1);
+  rctx.fillStyle='#e67e22'; rctx.fillRect(bx-1.5,by-2,3,barH+4);
+  rctx.font='9px system-ui'; rctx.textBaseline='top'; rctx.fillStyle='#7e949c';
+  rctx.textAlign='left';  rctx.fillText('0',ax,by+barH+2);
+  rctx.textAlign='right'; rctx.fillText('25 mm',ax+aw,by+barH+2);
+
+  /* ── 底部读数说明 ── */
+  rctx.textBaseline='bottom';
+  rctx.textAlign='left'; rctx.fillStyle='#d5e6ea'; rctx.font='bold 11.5px system-ui';
+  rctx.fillText('读数 = 主尺 '+rd.main.toFixed(1)+' mm + 微分筒 '+rd.thDisp.toFixed(1)+' × 0.01 mm',ax,H-4);
+  rctx.textAlign='right'; rctx.fillStyle='#8fd6c0'; rctx.font='bold 11.5px system-ui';
+  rctx.fillText('合计 '+rd.R.toFixed(3)+' mm',ax+aw,H-4);
+}
+
+/* =========================================================
+   5. 读数结果面板
+   ========================================================= */
+function fmt3(v){ return (v<0?'−':'')+Math.abs(v).toFixed(3); }
+function updateReadout(){
+  const rd=reading();
+  const main=rd.main, th=rd.thDisp, R=rd.R;
+  const zero=S.zero, real=r3(R-zero);
+  const hide=!!EX;
+  const mask=v=>hide?'<span style="color:#5f8d86">? . ? ? ?</span>':fmt3(v)+' mm';
+  $('readout').innerHTML=
+    '<div class="ro"><span class="k">① 固定刻度（主尺）</span><span class="v">'
+      +(hide?'? . ?':main.toFixed(1))+' mm</span></div>'+
+    '<div class="ro"><span class="k">② 可动刻度（微分筒）</span><span class="v">'
+      +(hide?'? . ?':th.toFixed(1))+' × 0.01 = '+(hide?'? . ? ? ?':(th*0.01).toFixed(3))+' mm</span></div>'+
+    '<div class="ro"><span class="k">③ 读数 R = ① + ②</span><span class="v big">'
+      +mask(R)+'</span></div>'+
+    '<div class="ro"><span class="k">零误差 e</span><span class="v" style="color:'
+      +(zero===0?'#87aca6':'#ffd479')+'">'+(zero>0?'+':'')+zero.toFixed(3)+' mm</span></div>'+
+    '<div class="res"><div>被测物体真实尺寸</div>'+
+      '<div class="n">'+(hide?'? . ? ? ?':fmt3(real))+' <span style="font-size:12px">mm</span></div>'+
+      '<div class="fml">真实值 = 读数 R − 零误差 e = '+(hide?'…':fmt3(R)+' − ('+(zero>0?'+':'')+zero.toFixed(3)+')')+'</div></div>'+
+    '<div class="note" style="margin-top:6px">开口 s = '+S.s.toFixed(3)+' mm　'
+      +'微分筒累计转过 '+((S.R/PITCH)*360/360).toFixed(3)+' 周（'+(S.R/PITCH*360).toFixed(1)+'°）</div>';
+  $('vTurn').textContent=R.toFixed(3);
+  $('vTurnDeg').textContent=(S.R/PITCH*360).toFixed(1);   // 连续转角，不取整
+  $('vZero').textContent=(zero>0?'+':'')+zero.toFixed(3);
+}
+
+/* =========================================================
+   6. 状态更新
+   ========================================================= */
+function setR(R){                     // 由读数反推开口（零误差不变）
+  S.R=r4(clamp(R,RMIN,RANGE));        // 连续：量化到 0.01 格，不是整数一格
+  S.s=r4(clamp(S.R-S.zero,0,RANGE));
+  syncUI(); render();
+}
+function setS(s){                     // 由真实开口反推读数
+  S.s=r4(clamp(s,0,RANGE));
+  S.R=r4(clamp(S.s+S.zero,RMIN,RANGE));
+  syncUI(); render();
+}
+function syncUI(){
+  $('rTurn').value=S.R;
+  $('rZero').value=S.zero;
+}
+function render(){ render3D(); drawReader(); updateReadout(); }
+
+/* =========================================================
+   7. 交互
+   ========================================================= */
+let drag=null;
+function hitThimble(mx,my){
+  // 微分筒在屏幕上的投影包围盒（粗判：命中其中心附近区域）
+  const thX=G.thX0+S.R;
+  const c=proj({x:thX+G.thLen*0.5,y:G.CY,z:G.CZ});
+  const e1=proj({x:thX,y:G.CY+G.thR,z:G.CZ});
+  const e2=proj({x:thX+G.thLen,y:G.CY+G.thR,z:G.CZ});
+  const r=Math.max(18,Math.hypot(e1.x-c.x,e1.y-c.y)*0.9);
+  return Math.hypot(mx-c.x,my-c.y)<r+10;
+}
+cv.addEventListener('mousedown',e=>{
+  const r=cv.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  if(hitThimble(mx,my)) drag={mode:'thimble',y:my,R0:S.R};
+  else drag={mode:'orbit',x:mx,y:my,yaw:S.yaw,pitch:S.pitch};
+  cv.classList.add('drag');
+});
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const r=cv.getBoundingClientRect();
+  const mx=e.clientX-r.left, my=e.clientY-r.top;
+  if(drag.mode==='orbit'){
+    S.yaw=drag.yaw+(mx-drag.x)*0.35;
+    S.pitch=clamp(drag.pitch-(my-drag.y)*0.3,-80,80);
+    render3D();
+  } else {
+    /* 垂直拖动 → 转动微分筒（向上转 = 读数增大）。
+       增量刻意取【不是 0.01 mm（一格）的整数倍】，这样筒可以停在任意角度，
+       读数自然落在非整格位置（如 22.4 格），符合实际可估读、可连续转动的情况。
+       按住 Shift 进入精细模式（1/5 步进），便于停在想要的估读位。 */
+    const k=(e.shiftKey?0.00134:0.0067);
+    setR(drag.R0+(drag.y-my)*k);
+  }
+});
+window.addEventListener('mouseup',()=>{ drag=null; cv.classList.remove('drag'); });
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  S.zoom=clamp(S.zoom*(e.deltaY>0?0.92:1.08),0.45,2.6);
+  render3D();
+},{passive:false});
+
+/* 滑块 */
+$('rTurn').addEventListener('input',e=>{ S.spin=false; $('bSpin').classList.remove('on');
+  $('bSpin').textContent='▶ 自动转动'; setR(parseFloat(e.target.value)); });
+$('rZero').addEventListener('input',e=>{
+  S.zero=r3(parseFloat(e.target.value));
+  S.R=r3(clamp(S.s+S.zero,RMIN,RANGE));
+  syncUI(); render();
+});
+$('selObj').addEventListener('change',e=>{
+  const v=e.target.value;
+  if(v==='none'){ S.objKey='none'; S.objSize=0; animateTo(0); }
+  else if(v==='rand'){
+    const d=r3(Math.round((Math.random()*RANGE*1000))/1000);
+    S.objKey='rand'; S.objSize=d; animateTo(d);
+  } else { S.objKey=v; S.objSize=parseFloat(v); animateTo(S.objSize); }
+});
+$('bClamp').onclick=()=>{ if(S.objSize>0) animateTo(S.objSize); else animateTo(0); };
+$('bZero').onclick=()=>{ S.zero=0; S.R=r3(clamp(S.s,0,RANGE)); syncUI(); render(); };
+$('bRandZero').onclick=()=>{
+  const z=r3(Math.round((Math.random()*101-50))/1000);      // -0.050 ~ +0.050
+  S.zero=z; S.R=r3(clamp(S.s+z,RMIN,RANGE)); syncUI(); render();
+};
+
+/* 视角按钮 */
+$('bReset').onclick=()=>{ S.yaw=-26; S.pitch=-15; S.zoom=1; render3D(); };
+$('bLabel').onclick=function(){ S.labels=!S.labels; this.classList.toggle('on',S.labels); render3D(); };
+$('bThread').onclick=function(){ S.thread=!S.thread; this.classList.toggle('on',S.thread); render3D(); };
+$('bScale').onclick=function(){ S.scale=!S.scale; this.classList.toggle('on',S.scale); render3D(); };
+$('bSpin').onclick=function(){
+  S.spin=!S.spin; this.classList.toggle('on',S.spin);
+  this.textContent=S.spin?'⏸ 暂停转动':'▶ 自动转动';
+  if(S.spin) tickSpin();
+};
+
+/* 自动转动 */
+let spinT=0;
+function tickSpin(){
+  if(!S.spin) return;
+  spinT+=0.016;
+  const R=RMIN+((spinT*1.1)%(RANGE-RMIN));   // 全量程循环
+  S.R=r3(R); S.s=r3(clamp(R-S.zero,0,RANGE));
+  if(S.objSize>0.02) S.s=r3(Math.max(S.s,S.objSize));
+  syncUI(); render();
+  requestAnimationFrame(tickSpin);
+}
+
+/* 夹紧动画 */
+let anim=null;
+function animateTo(target){
+  const from=S.s, t0=performance.now(), dur=520;
+  if(anim) cancelAnimationFrame(anim);
+  (function step(now){
+    const t=clamp((now-t0)/dur,0,1);
+    const e2=1-Math.pow(1-t,3);
+    S.s=r3(from+(target-from)*e2);
+    S.R=r3(clamp(S.s+S.zero,RMIN,RANGE));
+    syncUI(); render();
+    if(t<1) anim=requestAnimationFrame(step); else anim=null;
+  })(t0);
+}
+
+/* =========================================================
+   8. 练习
+   ========================================================= */
+$('exNew').onclick=newEx;
+$('exOk').onclick=checkEx;
+$('exShow').onclick=()=>{
+  if(!EX){ $('exJ').innerHTML='<span class="no">请先点击「出题」</span>'; return; }
+  const m=Math.floor(EX.R/0.5+1e-9)*0.5, t=((EX.R-m)*100);
+  $('exJ').innerHTML='<span class="hl">读数 R = '+EX.R.toFixed(3)+' mm</span>'
+    +'<div class="note">固定刻度 '+m.toFixed(1)+' mm ＋ 可动 '+t.toFixed(1)+' 格 × 0.01</div>'
+    +'<div class="note">零误差 e = '+(EX.zero>0?'+':'')+EX.zero.toFixed(3)
+    +' mm → 物体真实尺寸 = '+EX.real.toFixed(3)+' mm</div>';
+  endEx();
+};
+$('exAns').addEventListener('keydown',e=>{ if(e.key==='Enter') checkEx(); });
+function newEx(){
+  const s=r3(Math.round(Math.random()*24000+500)/1000);      // 0.500 ~ 24.500
+  const z=Math.random()<0.45?r3(Math.round((Math.random()*101-50))/1000):0;
+  S.objKey='rand'; S.objSize=s; S.zero=z; S.s=s; S.R=r3(clamp(s+z,RMIN,RANGE));
+  S.spin=false; $('bSpin').classList.remove('on'); $('bSpin').textContent='▶ 自动转动';
+  EX={R:r3(S.R), zero:z, real:r3(s)};
+  $('exQ').innerHTML='读出图示的<b>读数值 R</b>（保留到 0.001 mm）：';
+  $('exAns').value=''; $('exJ').textContent='';
+  $('selObj').value='rand';
+  // 练习期间锁死读数/零误差滑块，防止直接从界面读出答案
+  $('rTurn').disabled=true; $('rZero').disabled=true;
+  syncUI(); render();
+}
+function endEx(){ EX=null; $('rTurn').disabled=false; $('rZero').disabled=false; render(); }
+function checkEx(){
+  if(!EX){ $('exJ').innerHTML='<span class="no">请先点击「出题」</span>'; return; }
+  const v=parseFloat($('exAns').value);
+  if(!isFinite(v)){ $('exJ').innerHTML='<span class="no">请输入数值（如 6.725）</span>'; return; }
+  const d=Math.abs(v-EX.R);
+  if(d<=0.002){
+    const mm=Math.floor(EX.R/0.5+1e-9)*0.5;          // 固定刻度（0.5 mm 的整数倍）
+    $('exJ').innerHTML='<span class="ok">✓ 正确！读数 R = '+EX.R.toFixed(3)+' mm</span>'
+      +'<div class="note">固定刻度 '+mm.toFixed(1)+' mm ＋ 可动 '
+      +((EX.R-mm)*100).toFixed(1)+' 格 × 0.01</div>'
+      +'<div class="note">零误差 e = '+(EX.zero>0?'+':'')+EX.zero.toFixed(3)
+      +' mm → 物体真实尺寸 = '+EX.real.toFixed(3)+' mm</div>'
+      +'<div class="note" style="color:#5ee0a0">（已显示答案，可继续「出题」）</div>';
+    endEx();
+  } else {
+    const hint=d>0.4?'（差得较多：注意<b>半毫米刻线是否露出</b>）'
+      :(d>0.05?'（接近了：检查<b>可动刻度是否估读一位</b>）':'（很接近：估读位再细看一格）');
+    $('exJ').innerHTML='<span class="no">✗ 相差 '+d.toFixed(3)+' mm　'+hint+'</span>';
+  }
+}
+
+/* =========================================================
+   9. 启动
+   ========================================================= */
+function fitAll(){
+  fitCanvas(cv,ctx); fitCanvas(rc,rctx);
+  render();
+}
+window.addEventListener('resize',fitAll);
+fitAll();
+</script>
+</body>
+</html>
