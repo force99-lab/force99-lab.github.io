@@ -3682,8 +3682,14 @@ const WORKS = [
     type:"animation", title:"连接体 + 弹簧模型 · 三页式讲解",
     icon:"🌀", cover:"assets/img/connected-body-spring-cover.png",
     link:"animations/connected-body-spring.html", date:"2026-09-11", tag:"动量与能量"
+  },
+  {
+    type:"solve", title:"球壳与小球竖直弹性碰撞 · 三页式讲解",
+    icon:"📝", cover:"assets/img/henan15-ball-shell-cover.png",
+    link:"solutions/henan15-ball-shell-collision.html", date:"2026-09-11", tag:"力学"
   }
 ];
+
 
 
 
