@@ -3678,7 +3678,13 @@ const WORKS = [
     icon:"🧱", cover:"assets/img/block-spring-cover.png",
     link:"solutions/block-spring-model.html", date:"2026-09-11", tag:"动量与能量"
   },
+  {
+    type:"animation", title:"连接体 + 弹簧模型 · 三页式讲解",
+    icon:"🌀", cover:"assets/img/connected-body-spring-cover.png",
+    link:"animations/connected-body-spring.html", date:"2026-09-11", tag:"动量与能量"
+  }
 ];
+
 
 
 
