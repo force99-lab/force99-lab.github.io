@@ -3688,12 +3688,7 @@ const WORKS = [
     icon:"📝", cover:"assets/img/henan15-ball-shell-cover.png",
     link:"solutions/henan15-ball-shell-collision.html", date:"2026-09-11", tag:"力学"
   },
-  {
-    type:"solve", title:"球壳与小球竖直弹性碰撞 · 三页式讲解",
-    icon:"📝", cover:"assets/img/henan15-ball-shell-cover.png",
-    link:"solutions/henan15-ball-shell-collision.html", date:"2026-09-11", tag:"力学"
-  }
-];
+  ];
 
 
 
