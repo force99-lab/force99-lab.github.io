@@ -3632,7 +3632,7 @@ const WORKS = [
   },
   {
     type:"animation", title:"频闪照相 · 自由落体 3D 模拟",
-    icon:"\U0001F4F8", cover:"assets/img/strobe-3d-cover.png",
+    icon:"📸", cover:"assets/img/strobe-3d-cover.png",
     link:"animations/strobe-3d-animation.html", date:"2026-09-08", tag:"力学"
   },
 
@@ -3655,23 +3655,28 @@ const WORKS = [
     },
   {
     type:"solve", title:"离子分析器 · 三页式讲解",
-    icon:"\U0001F4DD", cover:"assets/img/ion-analyzer-cover.png",
+    icon:"📝", cover:"assets/img/ion-analyzer-cover.png",
     link:"solutions/ion-analyzer.html", date:"2026-09-10", tag:"电磁学"
   },
   {
     type:"solve", title:"双球平抛反弹 · 轨迹交点与相遇",
-    icon:"\U0001F3C0", cover:"assets/img/double-ball-cover.png",
+    icon:"🏀", cover:"assets/img/double-ball-cover.png",
     link:"solutions/double-ball-projectile.html", date:"2026-09-10", tag:"力学"
   },
   {
     type:"solve", title:"激光玻璃块折射测屏幕曲率半径",
-    icon:"\U0001F4DD", cover:"assets/img/glass-curvature-cover.png",
+    icon:"📝", cover:"assets/img/glass-curvature-cover.png",
     link:"solutions/laser-glass-curvature.html", date:"2026-09-10", tag:"光学"
   },
   {
     type:"animation", title:"螺旋测微器 3D 交互演示",
-    icon:"\U0001F4CF", cover:"assets/img/micrometer-3d-cover.png",
+    icon:"📏", cover:"assets/img/micrometer-3d-cover.png",
     link:"animations/micrometer-3d.html", date:"2026-09-10", tag:"力学实验"
+  },
+  {
+    type:"solve", title:"板块弹簧模型 · 三页式讲解",
+    icon:"🧱", cover:"assets/img/block-spring-cover.png",
+    link:"solutions/block-spring-model.html", date:"2026-09-11", tag:"动量与能量"
   },
 ];
 
