@@ -256,17 +256,15 @@ const G = {
   objY:5, objZ:5,                           // 被测物体截面尺寸（略小于测砧直径 5.2 mm）
   CY:0, CZ:0                                // 轴心
 };
-/* 尺架：真正光滑的 U 形弓架中心线。
-   两臂为直段，顶部为半圆弧，h = 该处半厚。
-   开口向下：两臂在下部托住测砧与套管，圆弧顶部在上方。 */
+/* 尺架：真正光滑的 U 形弓架中心线（开口向下，两臂顶端与测量轴线同高 y=0）。
+   半圆弧包围测量空间、底部圆润；测砧与套管从两臂顶端水平伸出，不再向上凸成"肩"。 */
 const FRAME_PATH=(()=>{
   const pts=[], add=(x,y,h)=>pts.push({x,y,h});
-  // 左臂（直段，从下到上）
-  add(-16.5, -7.0, 4.5);     // 臂尖底面 y=-7，测砧从此穿出
-  add(-17.0, -5.0, 4.6);
-  add(-17.2, -3.0, 4.7);     // 隔热护板 + 螺钉区域
-  add(-17.5, -1.0, 4.7);
-  add(-17.5, -0.2, 4.6);
+  // 左臂（与测量轴线同高 y=0，测砧从此水平伸出；不再向上凸成"肩"）
+  add(-16.5, 0, 4.6);
+  add(-17.0, 0, 4.6);
+  add(-17.2, 0, 4.7);
+  add(-17.5, 0, 4.7);
   // U 顶：半圆弧，圆心(6,0)，半径 23.5
   const cx=6.0, r=23.5;
   for(let i=0;i<=60;i++){
@@ -275,15 +273,15 @@ const FRAME_PATH=(()=>{
     const h=4.0 + 0.35*Math.abs(Math.sin(a));      // 顶部稍薄
     add(x,y,h);
   }
-  // 右臂（直段，从上到下）
-  add(29.5, -0.2, 4.6);
-  add(29.5, -1.0, 4.7);
-  add(29.7, -3.0, 4.7);      // 隔热护板 + 螺钉区域
-  add(30.0, -5.0, 4.6);
-  add(30.5, -7.0, 4.5);      // 臂尖底面 y=-7，套管从此穿过
+  // 右臂（与测量轴线同高 y=0，套管从此水平伸出）
+  add(29.5, 0, 4.7);
+  add(29.7, 0, 4.7);
+  add(30.0, 0, 4.6);
+  add(30.5, 0, 4.6);         // 臂尖（套管从此穿出）
   return pts;
 })();
 const FRAME_HZ=6.0;          // 尺架 z 向半厚（> 套管半径 5.2，视觉上"抱住"套管）
+const GRIP_HZ=FRAME_HZ+0.8;  // 绝缘握把前后鼓出半厚（> 本体，形成黑色胶木手柄）
 
 /* ---------- 状态 ---------- */
 let S = {
@@ -340,7 +338,7 @@ function modelExtremes(){
   const ring=(x,r,n)=>{for(let i=0;i<n;i++){const a=i/n*2*Math.PI;
     pts.push({x:x,y:CY+r*Math.cos(a),z:CZ+r*Math.sin(a)});}};
   // 尺架（U 形弓架 + 隔热护板 + 螺钉）的外包：x[-22.5,36] y[-13.0,+29.5] z[-6.2,6.2]
-  for(const x of [-22.5,36]) for(const y of [-13.0,29.5]) for(const z of [-6.2,6.2]) pts.push({x,y,z});
+  for(const x of [-22.5,36]) for(const y of [-24.0,6.0]) for(const z of [-7.1,7.1]) pts.push({x,y,z});
   ring(G.anvilX0,G.anvilR,12);  ring(G.anvilX1,G.anvilR,12);   // 测砧
   ring(G.slvX0,G.slvR,12);      ring(G.slvX1,G.slvR,12);       // 固定套管
   for(const s of [0,RANGE]){                                    // 两个极限开口
@@ -496,20 +494,21 @@ function discZ(x,y,z,r,col,kind,nsign){
   face(a,col,{x:0,y:0,z:N},kind);
 }
 
-/* ---------- 颜色（参考实物：蓝色烤漆尺架 + 银白色金属件） ---------- */
+/* ---------- 颜色（参考实物：上工 0-25mm 外径千分尺——铬银尺架 + 黑色绝缘握把 + 银铬金属件） ---------- */
 const C={
-  frame:[50,92,148],     // 尺架正面（蓝）
-  frameW:[38,72,120],    // 尺架侧壁（深蓝）
-  frameT:[62,108,168],   // 尺架臂尖端面（亮蓝）
-  plate:[42,50,58],      // 隔热护板（深灰）
-  plateW:[32,38,45],
-  screw:[176,186,196],   // 紧固螺钉
+  frame:[196,202,208],   // 尺架正面（铬银）
+  frameW:[150,158,166],  // 尺架侧壁（深铬）
+  frameT:[216,222,228],  // 尺架臂尖端面（亮铬）
+  plate:[28,30,36],      // 绝缘握把（黑）
+  plateW:[20,22,28],
+  gripText:[222,184,104],// 握把金色铭牌
+  screw:[186,196,206],   // 紧固螺钉
   anvil:[208,218,224],   // 测砧
   spin:[186,198,206],    // 螺杆
-  sleeve:[224,232,236],  // 固定套管
-  thim:[214,168,74],     // 微分筒（不透明黄金色）
-  thimD:[176,132,48],
-  rat:[96,110,118],      // 棘轮
+  sleeve:[226,234,238],  // 固定套管
+  thim:[206,212,219],    // 微分筒（铬银）
+  thimD:[172,180,188],
+  rat:[150,158,166],     // 棘轮（铬银）
   obj:[224,168,96],      // 被测物体
   gold:[255,212,121]
 };
@@ -526,15 +525,14 @@ function buildScene(){
 
   /* — 尺架（U 形弓架）：中心线已用半圆弧生成，无需再细分 — */
   extrudeBand(FRAME_PATH, FRAME_HZ, C.frame, C.frameW, C.frameT, 'frame');
-  // 隔热护板：贴在两臂外侧的深色塑料板（沿同一中心线，稍微凸出本体）
-  extrudeBand(FRAME_PATH, FRAME_HZ+0.14, C.plate, C.plateW, C.plate, 'frame',
-              1, 3, 0.2, 5.0, true);     // 左臂
-  extrudeBand(FRAME_PATH, FRAME_HZ+0.14, C.plate, C.plateW, C.plate, 'frame',
-              67, 69, 0.2, 5.0, true);   // 右臂
-  // 紧固螺钉（压在两块护板上）
-  for(const p of [{x:-17.2,y:3.0},{x:29.7,y:3.0}]){
-    discZ(p.x,p.y,-(FRAME_HZ+0.22),1.25,C.screw,'frame',-1);
-    discZ(p.x,p.y, (FRAME_HZ+0.22),1.25,C.screw,'frame', 1);
+  // 绝缘握把：套在弓架中央大段（U 形下半弧 + 两臂下部）的黑色胶木手柄，
+  // 前后方向明显鼓出（GRIP_HZ > 本体），仅两臂顶端（连接测砧/套管处）保留银铬金属。
+  extrudeBand(FRAME_PATH, GRIP_HZ, C.plate, C.plateW, C.plate, 'frame',
+              8, 62, 0.0, 4.4, true);    // 中央连续黑色握把
+  // 紧固螺钉（压在黑色握把两端，固定手柄）
+  for(const p of [{x:-2.5,y:-17.0},{x:14.5,y:-17.0}]){
+    discZ(p.x,p.y,-(GRIP_HZ+0.25),1.3,C.screw,'frame',-1);
+    discZ(p.x,p.y, (GRIP_HZ+0.25),1.3,C.screw,'frame', 1);
   }
 
   /* — 测砧 — */
@@ -550,6 +548,8 @@ function buildScene(){
   cylX(G.slvX0,G.slvX1,G.CY,G.CZ,G.slvR,C.sleeve,30,true,true,'sleeve');
   // 锁紧螺母（位于尺架右臂右侧、主尺 0 刻线左侧的套管上）
   cylX(37.5,41.0,G.CY,G.CZ,G.slvR+0.6,[104,120,132],22,true,true,'locknut');
+  /* 锁紧扳手：套管上方伸出的黑色小杠杆（棘齿锁紧），便于课堂辨识锁紧装置 */
+  box(38.8, G.slvR-0.4, -0.7, 41.2, G.slvR+2.8, 0.7, [34,38,44], 'locknut');
 
   /* — 微分筒（锥形：左粗右细）—— 轴向同样细分，保证深度排序正确、筒身实心不透明 — */
   const segs=64, nt=axSegsOf(thX,thX+G.thLen);
@@ -639,23 +639,26 @@ function buildLines(){
        会画在微分筒上面，看起来就像微分筒是透明能透视主尺。 */
     const xEnd=Math.min(G.slvX1-1, thX-0.4);
     if(xEnd>G.scaleX0-z0-0.8){
-      LINES.push({a:{x:G.scaleX0-z0-0.8,y:G.CY+r,z:G.CZ},
-                  b:{x:xEnd,            y:G.CY+r,z:G.CZ},c:[40,60,66],w:1.6,
-                  n:{x:0,y:1,z:0}});
-    }
-    for(let v=0; v<=RANGE; v+=0.5){
-      const x=G.scaleX0+v-z0;
-      if(x>G.slvX1-0.8 || x>xEnd) break;
-      const whole=(Math.abs(v-Math.round(v))<1e-6);
-      const span=(whole?26:15)*Math.PI/180;    // 整毫米弧长更长
-      const dir=whole?1:-1;                    // 整毫米在基准线上方、半毫米在下方
-      let prev=null;
-      for(let i=0;i<=6;i++){
-        const a=dir*span*i/6;
-        const p={x:x,y:G.CY+r*Math.cos(a),z:G.CZ+r*Math.sin(a)};
-        if(prev) LINES.push({a:prev,b:p,c:[38,56,62],w:whole?1.6:1.1,
-                             n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
-        prev=p;
+      /* 纵向基准线：套筒【前侧面】中线、沿轴向；整毫米刻线在它上方、半毫米在下方
+         （与读数放大窗一致）；被微分筒遮住的段不画（截断到 xEnd）。 */
+      const aB=-Math.PI/2;                // 外侧面（朝向相机的 −z 侧）：刻度画在可见的外表面，而非远端内侧面
+      LINES.push({a:{x:G.scaleX0-z0-0.8, y:G.CY+r*Math.cos(aB), z:G.CZ+r*Math.sin(aB)},
+                  b:{x:xEnd,            y:G.CY+r*Math.cos(aB), z:G.CZ+r*Math.sin(aB)},
+                  c:[16,24,30], w:2.4, n:{x:0,y:Math.cos(aB),z:Math.sin(aB)}});
+      for(let v=0; v<=RANGE; v+=0.5){
+        const x=G.scaleX0+v-z0;
+        if(x>G.slvX1-0.8 || x>xEnd) break;
+        const whole=(Math.abs(v-Math.round(v))<1e-6);
+        const span=(whole?0.42:0.26);          // 刻线弧长（整毫米更长）
+        const aC=aB + (whole?0.30:-0.24);      // 整毫米在基准线上方、半毫米在下方
+        let prev=null;
+        for(let i=0;i<=6;i++){
+          const a=aC + (i/6-0.5)*span;
+          const p={x:x, y:G.CY+r*Math.cos(a), z:G.CZ+r*Math.sin(a)};
+          if(prev) LINES.push({a:prev,b:p,c:[22,32,38],w:whole?1.7:1.1,
+                               n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
+          prev=p;
+        }
       }
     }
   }
@@ -665,34 +668,42 @@ function buildLines(){
   const theta=(R/PITCH)*360;                   // 微分筒累计转角（度）
   const rAt=x=>G.thR-1.6*(x-thX)/G.thLen+0.07;
   for(let k=0;k<DIV;k++){
-    const a=(k*(360/DIV)-theta)*Math.PI/180;
+    const a=(k*(360/DIV)-theta)*Math.PI/180 - Math.PI/2;   // −π/2：复位(θ=0)时 0 刻度落在外侧面中间
     const long=(k%5===0), ten=(k%10===0);
     const L=ten?9.6:(long?7.0:4.2);
     const xa=thX+0.5, xb=Math.min(thX+G.thLen-1.2, xa+L);
     const ra=rAt(xa), rb=rAt(xb);
     LINES.push({a:{x:xa,y:G.CY+ra*Math.cos(a),z:G.CZ+ra*Math.sin(a)},
                 b:{x:xb,y:G.CY+rb*Math.cos(a),z:G.CZ+rb*Math.sin(a)},
-                c:ten?[84,56,14]:(long?[68,46,10]:[96,70,28]),
+                c:ten?[24,28,34]:(long?[38,42,48]:[64,68,74]),
                 w:ten?2.3:(long?1.9:1.3),
                 n:{x:0,y:Math.cos(a),z:Math.sin(a)}});
   }
+  /* 微分筒指标竖线（橙）：随筒转动，复位(θ=0)时落在外侧面中间、与套筒基准线重合，用于读数对齐。 */
+  {
+    const ph=-Math.PI/2 - theta*Math.PI/180;
+    const rrd=G.thR*0.99;
+    const a={x:thX+1.5,         y:G.CY+rrd*Math.cos(ph), z:G.CZ+rrd*Math.sin(ph)};
+    const b={x:thX+G.thLen-2.5, y:G.CY+rrd*Math.cos(ph), z:G.CZ+rrd*Math.sin(ph)};
+    LINES.push({a,b,c:[210,64,54], w:2.0, n:{x:0,y:Math.cos(ph),z:Math.sin(ph)}});
+  }
+  /* 微分筒保留为干净实心金属圆柱（50 分度刻度 + 橙色指标线已足够读数，
+     去除密集滚花线以突出整体立体感）。 */
 }
 
 /* 微分筒上的数字（0/10/20/30/40）：随筒一起转，只画朝向相机的一侧 */
 function drawThimbleNumbers(thX){
   const theta=(S.R/PITCH)*360;
   const rAt=x=>G.thR-1.6*(x-thX)/G.thLen+0.07;
-  ctx.font='bold 9.5px system-ui,-apple,"Microsoft YaHei"';
+  ctx.font='bold 19px system-ui,-apple,"Microsoft YaHei"';
   ctx.textAlign='center'; ctx.textBaseline='middle';
   for(let k=0;k<DIV;k+=10){
-    const a=(k*(360/DIV)-theta)*Math.PI/180;
+    const a=(k*(360/DIV)-theta)*Math.PI/180 - Math.PI/2;   // 与微分筒刻度同相位：复位时 0 在外侧面
     const n=rotV({x:0,y:Math.cos(a),z:Math.sin(a)});
     if(n.z>0.15) continue;                     // 背向相机的数字不画
-    const rr=rAt(thX+2.4)+0.55;
+    const rr=rAt(thX+2.4)+1.0;
     const p=proj({x:thX+3.0,y:G.CY+rr*Math.cos(a),z:G.CZ+rr*Math.sin(a)});
-    ctx.fillStyle='rgba(10,22,20,0.70)';
-    ctx.fillRect(p.x-8,p.y-6.5,16,13);
-    ctx.fillStyle='#ffdf8a';
+    ctx.fillStyle='#1c232a';
     ctx.fillText(String(k),p.x,p.y);
   }
 }
@@ -712,10 +723,10 @@ function shadeFace(f){
   const vx=rc.x, vy=rc.y, vz=rc.z+CAM.dist;
   const vl=Math.hypot(vx,vy,vz)||1;
   const rim=1-Math.abs((n.x*vx+n.y*vy+n.z*vz)/vl);
-  if(f.kind==='thimbleEnd') // 两端封口面：均匀实心金，不受朝向影响，杜绝"空心/透明"观感
-    return {amb:0.78+0.10*d, spec:0.02};
-  if(f.kind==='thimble')    // 筒身实心不透明：漫反射为主、极弱高光，取消交替条纹
-    return {amb:0.42+0.58*d, spec:Math.pow(h,20)*0.08+Math.pow(rim,5)*0.03};
+  if(f.kind==='thimbleEnd') // 两端封口面：均匀实心铬，不受朝向影响，杜绝"空心/透明"观感
+    return {amb:0.60+0.40*d, spec:0.06};
+  if(f.kind==='thimble')    // 筒身实心不透明：铬质漫反射 + 弱高光，无交替条纹
+    return {amb:0.34+0.66*d, spec:Math.pow(h,14)*0.16+Math.pow(rim,4)*0.06};
   if(METAL[f.kind])      // 电镀钢：暗底 + 宽窄两道高光 + 边缘反光
     return {amb:0.22+0.80*d,
             spec:Math.pow(h,5)*0.14+Math.pow(h,24)*0.48+Math.pow(rim,3)*0.16};
@@ -783,16 +794,46 @@ function render3D(){
   }
 
   drawThimbleNumbers(info.thX);   // 微分筒上的 0/10/20/30/40 数字
-
-  // 读数指示：微分筒左边缘（轴向位置 = 真实开口 s）
-  const pTop=proj({x:G.scaleX0+S.s,y:G.CY+G.slvR+0.1,z:G.CZ});
-  ctx.strokeStyle='rgba(255,212,121,0.95)'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(pTop.x,pTop.y-16); ctx.lineTo(pTop.x,pTop.y+8); ctx.stroke();
-  ctx.fillStyle='rgba(255,212,121,0.95)';
-  ctx.beginPath(); ctx.arc(pTop.x,pTop.y-20,3.2,0,7); ctx.fill();
+  drawSleeveNumbers();            // 固定套管整毫米数字（3D 视图可直接读数）
+  drawBrand();                    // 绝缘握把金色铭牌
 
   if(S.labels) drawLabels(info);
 }
+/* 固定套管整毫米数字（0/5/10/15/20/25）：投影在套筒【外侧面】中间，
+   与 3D 主尺一致，使 3D 视图也能直接读主尺；被微分筒遮住的段不画。 */
+function drawSleeveNumbers(){
+  const z0=S.zero, thX=G.thX0+S.s;
+  const xEnd=Math.min(G.slvX1-1, thX-0.4);
+  const aB=-Math.PI/2;                // 外侧面（朝向相机的 −z 侧）
+  const nv=rotV({x:0,y:Math.cos(aB),z:Math.sin(aB)});
+  if(nv.z>0.12) return;               // 外侧面背向相机时不画
+  ctx.font='bold 22px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let v=0; v<=RANGE; v+=5){
+    const x=G.scaleX0+v-z0;
+    if(x>xEnd) break;
+    const aTop=aB+0.51;                  // 整毫米刻线最顶端角度
+    const rr=G.slvR+0.06+0.35;           // 落点：贴套筒表面（仅极小出屏余量，不悬空）
+    const p=proj({x:x, y:G.CY+rr*Math.cos(aTop), z:G.CZ+rr*Math.sin(aTop)});
+    ctx.fillStyle='#13202a';
+    ctx.fillText(String(v), p.x, p.y);
+  }
+}
+
+/* 绝缘握把铭牌：黑色握把上的金字"上工"星标 + 规格，仅在朝相机的前表面可见时绘制 */
+function drawBrand(){
+  const nz=rotV({x:0,y:0,z:-1}).z;          // 握把前表面（朝相机一侧）法线
+  if(nz>-0.2) return;                        // 仅当该面朝向相机时绘制
+  const p=proj({x:6.0,y:-22.4,z:-(GRIP_HZ+0.3)});
+  ctx.save();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#d8b860';
+  ctx.font='bold 11px "Microsoft YaHei",system-ui';
+  ctx.fillText('★ LXQ', p.x, p.y-5);
+  ctx.font='7.5px system-ui';
+  ctx.fillText('0-25mm  0.01', p.x, p.y+7);
+  ctx.restore();
+}
+
 function buildSceneInfo(){
   // 必须与 buildScene() 一致：微分筒轴向位置由【真实开口 s】决定，不能用 R
   const thX=G.thX0+S.s;
@@ -816,13 +857,13 @@ function label(txt,p3,dx,dy){
   ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(ex,ty); ctx.stroke();
   ctx.beginPath(); ctx.arc(p.x,p.y,2.6,0,7); ctx.fillStyle='#7fd8c4'; ctx.fill();
   ctx.textAlign='left'; ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(8,20,18,0.72)';
-  ctx.fillRect(bx-3,ty-8,tw+6,16);
+  ctx.lineJoin='round'; ctx.lineWidth=3;
+  ctx.strokeStyle='rgba(6,16,14,0.85)'; ctx.strokeText(txt,bx,ty);
   ctx.fillStyle='#c8f0e4'; ctx.fillText(txt,bx,ty);
 }
 function drawLabels(info){
   label('尺架（U 形弓架）',{x:8,y:-18.5,z:-FRAME_HZ},-34,16);
-  label('隔热护板',{x:-19.2,y:-3.0,z:-FRAME_HZ-0.2},-54,2);
+  label('绝缘握把',{x:6,y:-24,z:-GRIP_HZ},-40,18);
   label('测砧（固定）',{x:-6,y:2.8,z:0},-52,28);
   label('测微螺杆',{x:Math.max(4,info.sx*0.5),y:2.6,z:0},12,-34);
   if(S.objSize>0.02) label('被测物体',{x:S.objSize/2,y:-2.6,z:2.6},-16,54);
@@ -903,12 +944,12 @@ function drawReader(){
   rctx.beginPath(); rctx.moveTo(ax,cy); rctx.lineTo(ex,cy); rctx.stroke();
   rctx.restore();
 
-  /* ── 微分筒：不透明黄金色，覆盖右侧（主尺被遮住就绝不可见） ── */
+  /* ── 微分筒：银铬金属色（与 3D 微分筒一致），覆盖右侧（主尺被遮住就绝不可见） ── */
   const tw=ax+aw-ex;
   const tg=rctx.createLinearGradient(0,thT,0,thB);
-  tg.addColorStop(0,'#8a6412'); tg.addColorStop(0.14,'#dcaa3e');
-  tg.addColorStop(0.42,'#fce8b8'); tg.addColorStop(0.58,'#fef1c6');
-  tg.addColorStop(0.86,'#dcaa3e'); tg.addColorStop(1,'#7a5710');
+  tg.addColorStop(0,'#6f7b81'); tg.addColorStop(0.14,'#a5afb5');
+  tg.addColorStop(0.42,'#e8eef1'); tg.addColorStop(0.58,'#eef4f7');
+  tg.addColorStop(0.86,'#a5afb5'); tg.addColorStop(1,'#6f7b81');
   rctx.save();
   rctx.beginPath(); rctx.rect(ex,thT,tw,thH); rctx.clip();
   rctx.fillStyle=tg; rctx.fillRect(ex,thT,tw,thH);
@@ -927,7 +968,7 @@ function drawReader(){
     const fade=Math.pow(cz,0.5);
     const len=(ten? span*0.92 : (lng? span*0.64 : span*0.42))*cz;
     rctx.globalAlpha=0.55+0.45*fade;
-    rctx.strokeStyle=ten?'#1d1202':(lng?'#261903':'#3a2606');
+    rctx.strokeStyle=ten?'#0b0f12':(lng?'#14191d':'#252c31');
     rctx.lineWidth=ten?3.0:(lng?2.3:1.5);
     rctx.beginPath(); rctx.moveTo(x0,y); rctx.lineTo(x0+len,y); rctx.stroke();
     if(lng && Math.abs(sn)<0.90){                // 竖直放大后空间更足，多标几格
@@ -935,29 +976,26 @@ function drawReader(){
       rctx.font=(ten?'bold 15px':'bold 13px')+' system-ui';
       rctx.textAlign='left'; rctx.textBaseline='middle';
       rctx.lineJoin='round'; rctx.lineWidth=3.5;
-      rctx.strokeStyle='rgba(255,246,214,0.92)'; // 浅色描边，金底上更清晰
+      rctx.strokeStyle='rgba(255,255,255,0.94)'; // 浅色描边，银底上更清晰
       rctx.strokeText(String(k),nx,y);
-      rctx.fillStyle=ten?'#1d1202':'#261903';
+      rctx.fillStyle=ten?'#0b0f12':'#14191d';
       rctx.fillText(String(k),nx,y);
     }
     rctx.globalAlpha=1;
   }
   rctx.restore();
 
-  /* ── 读数基准：微分筒左边缘（竖直橙线）+ 正面基准延长线 ── */
-  rctx.strokeStyle='#e67e22'; rctx.lineWidth=3.2;
-  rctx.beginPath(); rctx.moveTo(ex,thT); rctx.lineTo(ex,thB); rctx.stroke();
-  rctx.strokeStyle='rgba(255,150,60,0.9)'; rctx.lineWidth=1.6;
-  rctx.setLineDash([5,3]);
-  rctx.beginPath(); rctx.moveTo(ex,cy); rctx.lineTo(ax+aw-2,cy); rctx.stroke();
-  rctx.setLineDash([]);
+  /* ── 读数基准：贯穿全程的【细横向基准线】（与固定套管一致），
+        学生看微分筒哪条刻度线与之对齐 ── */
+  rctx.strokeStyle='#0e181c'; rctx.lineWidth=1.6;            // 横向基准线（真实）
+  rctx.beginPath(); rctx.moveTo(ax,cy); rctx.lineTo(ax+aw-2,cy); rctx.stroke();
 
   /* ── 0–25 mm 全程位置指示条 ── */
   const by=thB+8;
   rctx.fillStyle='rgba(255,255,255,0.10)'; rctx.fillRect(ax,by,aw,barH);
   rctx.fillStyle='rgba(255,255,255,0.16)'; rctx.fillRect(ax,by,aw,1);
   const bx=ax+aw*clamp(S.R/RANGE,0,1);
-  rctx.fillStyle='#e67e22'; rctx.fillRect(bx-1.5,by-2,3,barH+4);
+  rctx.fillStyle='#5ee0a0'; rctx.fillRect(bx-1.5,by-2,3,barH+4);
   rctx.font='9px system-ui'; rctx.textBaseline='top'; rctx.fillStyle='#7e949c';
   rctx.textAlign='left';  rctx.fillText('0',ax,by+barH+2);
   rctx.textAlign='right'; rctx.fillText('25 mm',ax+aw,by+barH+2);
