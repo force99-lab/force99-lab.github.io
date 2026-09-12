@@ -1,522 +1,1268 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>游标卡尺交互动画 · 10/20分度 · 加法与减法读数</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>游标卡尺 3D 交互演示 · 0.1/0.05/0.02 mm · 高中物理 · force99</title>
 <style>
-  :root{
-    --teal:#19b3a6; --teal-d:#0e8d83; --ink:#1d2b32; --bg:#0a1218;
-    --panel:#15242c; --panel2:#1d3138; --line:#27424b; --txt:#e6f0f3;
-    --muted:#90a7ae; --ok:#35d07f; --err:#ff6b6b; --gold:#ffc24b;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--txt);
-    font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;}
-  .wrap{max-width:1060px;margin:0 auto;padding:18px 16px 40px;}
-  h1{font-size:20px;margin:0 0 2px;color:#fff;letter-spacing:1px;}
-  h1 b{color:var(--teal);}
-  .sub{color:var(--muted);font-size:13px;margin:0 0 14px;}
-  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;
-    padding:10px 12px;margin-bottom:12px;}
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-  .seg button{background:transparent;color:var(--muted);border:0;padding:7px 14px;
-    font-size:13px;cursor:pointer;transition:.15s;}
-  .seg button.on{background:var(--teal);color:#04201d;font-weight:700;}
-  .btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);
-    border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;transition:.15s;}
-  .btn:hover{border-color:var(--teal);color:#fff;}
-  .chk{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;}
-  .stage{position:relative;background:linear-gradient(160deg,#0b1620,#13242f);
-    border:1px solid #2a4452;border-radius:14px;padding:8px;
-    box-shadow:inset 0 2px 14px rgba(0,0,0,.5);}
-  canvas{width:100%;display:block;border-radius:10px;cursor:default;}
-  .sliderrow{display:flex;align-items:center;gap:12px;margin:12px 2px 4px;}
-  .sliderrow label{font-size:13px;color:var(--muted);white-space:nowrap;}
-  input[type=range]{flex:1;accent-color:var(--teal);}
-  .readbox{display:flex;flex-wrap:wrap;gap:12px;background:var(--panel);
-    border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:12px;align-items:flex-start;}
-  .readbox .field{display:flex;flex-direction:column;gap:6px;}
-  .readbox input[type=text]{width:160px;background:#0c171c;border:1px solid var(--line);
-    color:#fff;border-radius:8px;padding:9px 11px;font-size:15px;font-family:"Consolas",monospace;}
-  .readbox input[type=text]:focus{outline:none;border-color:var(--teal);}
-  .feedback{font-size:14px;line-height:1.6;flex:1;min-width:260px;
-    background:#0c171c;border:1px solid var(--line);border-radius:8px;padding:10px 12px;}
-  .feedback.ok{border-color:var(--ok);color:#bff7d6;}
-  .feedback.err{border-color:var(--err);color:#ffd2d2;}
-  .feedback b{color:#fff;}
-  .methods{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
-  @media(max-width:720px){.methods{grid-template-columns:1fr;}}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;}
-  .card h3{margin:0 0 8px;font-size:15px;color:var(--teal);}
-  .card .formula{background:#0c171c;border:1px dashed var(--line);border-radius:8px;
-    padding:10px;font-size:13.5px;line-height:1.9;color:#e7f0f3;}
-  .card .formula .v{color:var(--gold);font-family:"Consolas",monospace;}
-  .card .note{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.6;}
-  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px;}
-  .legend i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px;}
+:root{
+  --bg:#0b1a17; --bg2:#0f211d; --panel:#132a24; --line:#2a5a4a;
+  --acc:#5ee0a0; --acc2:#7fd8c4; --warn:#ffd479; --bad:#ff7a7a;
+  --txt:#d6f2e8; --mut:#87aca6;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:linear-gradient(160deg,#0b1a17 0%,#0f211d 60%,#0a1613 100%);
+  color:var(--txt);font:13px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+header{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:8px 14px;
+  border-bottom:1px solid var(--line);background:rgba(10,26,22,.85)}
+header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+header h1 span{color:var(--acc)}
+header .sub{font-size:11px;color:var(--mut)}
+.sp{flex:1}
+.wm{font:600 12px/1 "Segoe UI",system-ui;color:#2f6b5b;letter-spacing:1px}
+.tag{font-size:11px;padding:2px 7px;border:1px solid var(--line);border-radius:20px;color:var(--acc2)}
 
-  /* 读数悬浮面板：尺体右下方、测量值与你的读数同高 */
-  .readfloat{position:absolute;right:14px;bottom:14px;max-width:min(400px,92%);
-    background:rgba(9,18,24,.86);border:1px solid var(--line);border-radius:12px;
-    padding:12px 14px;backdrop-filter:blur(3px);box-shadow:0 6px 20px rgba(0,0,0,.45);}
-  .rf-row{display:flex;gap:20px;align-items:center;flex-wrap:wrap;}
-  .rf-guess{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .rf-guess label{font-size:13px;color:var(--muted);white-space:nowrap;}
-  .rf-guess input[type=text]{width:128px;background:#0c171c;border:1px solid var(--line);
-    color:#fff;border-radius:8px;padding:8px 10px;font-size:15px;font-family:"Consolas",monospace;}
-  .rf-guess input[type=text]:focus{outline:none;border-color:var(--teal);}
-  .readfloat .feedback{margin-top:10px;}
+#app{flex:1;display:flex;min-height:0}
+#stage{flex:1;position:relative;min-width:0;background:
+  radial-gradient(ellipse at 50% 45%,#16332c 0%,#0b1a17 70%)}
+#cv3d{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#cv3d.drag{cursor:grabbing}
+#hint{position:absolute;left:12px;bottom:10px;font-size:11px;color:#6d9c92;
+  background:rgba(8,20,18,.55);padding:4px 8px;border-radius:6px;pointer-events:none}
+
+#panel{flex:0 0 390px;border-left:1px solid var(--line);background:var(--panel);
+  overflow-y:auto;padding:10px}
+.card{border:1px solid var(--line);border-radius:9px;margin-bottom:10px;overflow:hidden;
+  background:rgba(11,26,22,.5)}
+.cardhd{padding:6px 10px;font-size:12px;font-weight:700;color:var(--acc);
+  border-bottom:1px solid var(--line);background:rgba(19,42,36,.7);
+  display:flex;align-items:center;gap:6px}
+.cardhd .tip{font-size:10px;color:var(--mut);font-weight:400}
+.cardbd{padding:9px 10px}
+#cvRead{width:100%;height:210px;display:block;background:#f4f6f4;border-radius:4px}
+
+#readout{font-size:12.5px}
+.ro{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;
+  border-bottom:1px dashed rgba(90,160,140,.18)}
+.ro:last-child{border-bottom:none}
+.ro .k{color:var(--mut)}
+.ro .v{font-weight:700;font-variant-numeric:tabular-nums}
+.big{font-size:20px;color:var(--warn);font-weight:800;letter-spacing:.5px}
+.res{background:rgba(94,224,160,.08);border:1px solid rgba(94,224,160,.25);
+  border-radius:7px;padding:6px 9px;margin-top:6px;font-size:12.5px}
+.res .n{font-size:19px;font-weight:800;color:var(--warn);font-variant-numeric:tabular-nums}
+.fml{font-size:11px;color:var(--mut);margin-top:3px}
+
+.ctl{margin-bottom:9px}
+.ctl label{display:block;font-size:11.5px;color:var(--mut);margin-bottom:3px}
+.ctl .val{color:var(--acc2);font-weight:700;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:20px;-webkit-appearance:none;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:#20493c}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
+  border-radius:50%;background:var(--acc);margin-top:-5px;border:2px solid #0b1a17;cursor:pointer}
+select,input[type=text],input[type=number]{width:100%;background:#0e241f;color:var(--txt);border:1px solid var(--line);
+  border-radius:6px;padding:5px 7px;font-size:12.5px}
+.btns{display:flex;gap:6px;flex-wrap:wrap}
+.btns button{flex:1 1 auto;background:#1a3c33;color:var(--txt);border:1px solid var(--line);
+  border-radius:6px;padding:6px 8px;font-size:12px;cursor:pointer}
+.btns button:hover{border-color:var(--acc);color:var(--acc)}
+.btns button.acc{background:#1d5c46;border-color:var(--acc);color:#eafff6;font-weight:700}
+.btns button.warn{background:#4a3a12;border-color:#a8873a;color:var(--warn)}
+.btns button.on{background:#1d4739;border-color:var(--acc);color:var(--acc)}
+
+.ex{background:rgba(255,212,121,.08);border:1px solid rgba(255,212,121,.3);
+  border-radius:7px;padding:7px 9px;margin-top:6px;font-size:12.5px}
+.ex .q{font-weight:700;color:var(--warn)}
+#exAns{width:120px;display:inline-block}
+#inR{width:110px;display:inline-block}
+#bCheckR{margin-left:6px;padding:5px 10px}
+.judge{margin-top:5px;font-size:12px;font-weight:700}
+.ok{color:var(--acc)} .no{color:var(--bad)}
+
+details{border-top:1px solid rgba(90,160,140,.15);padding-top:5px;margin-top:5px}
+details:first-child{border-top:none;margin-top:0}
+summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--acc2);padding:3px 0;outline:none}
+.dbody{font-size:12px;color:#bfe3d8;padding:2px 0 6px 2px}
+.dbody ul{margin:4px 0;padding-left:18px}
+.dbody li{margin:3px 0}
+.key{color:var(--warn);font-weight:700}
+.hl{color:var(--acc);font-weight:700}
+.f{display:block;background:rgba(8,20,18,.6);border-left:3px solid var(--acc);
+  padding:4px 8px;margin:4px 0;font-family:"Cambria Math",Georgia,serif;font-size:13px;color:#e8fff6}
+code{background:#0e241f;padding:1px 5px;border-radius:4px;color:var(--warn);font-size:12px}
+.note{font-size:11px;color:var(--mut)}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>游标卡尺 <b>交互动画</b></h1>
-  <p class="sub">实体银色尺身 · 深底强对比 · 10分度 / 20分度 · 主尺刻度放大 3 倍便于课堂观看 · 游标可左右拖动 · 输入读数即时判错并给出正确值 · 加法与减法两种读数法</p>
 
-  <div class="toolbar">
-    <div class="seg" id="modeSeg">
-      <button data-mode="10" class="on">10 分度（精度 0.1 mm）</button>
-      <button data-mode="20">20 分度（精度 0.05 mm）</button>
+<header>
+  <h1>游标卡尺 <span>3D 交互演示</span></h1>
+  <span class="tag">三种精度 · 加法/减法读数</span>
+  <span class="sub">0.1 mm / 0.05 mm / 0.02 mm</span>
+  <span class="sp"></span>
+  <span class="wm">force99</span>
+</header>
+
+<div id="app">
+  <section id="stage">
+    <canvas id="cv3d"></canvas>
+    <div id="hint">拖动游标框开合 · 拖动空白区平移 · 滚轮缩放 · 右侧可调整体立体视角</div>
+  </section>
+
+  <aside id="panel">
+    <!-- 读数放大窗 -->
+    <div class="card">
+      <div class="cardhd">读数放大窗 <span class="tip">主尺 + 游标尺对齐细节</span></div>
+      <div class="cardbd">
+        <canvas id="cvRead" width="700" height="210"></canvas>
+      </div>
     </div>
-    <label class="chk"><input type="checkbox" id="showAlign"> 对齐红线（有 / 无）</label>
-    <button class="btn" id="rand">🎲 随机位置</button>
-    <button class="btn" id="reset">↺ 重置</button>
-  </div>
 
-  <div class="stage">
-    <canvas id="cv"></canvas>
-    <div class="readfloat" id="readfloat">
-      <div class="rf-row">
-        <div class="rf-guess">
-          <label for="guess">你的读数 (mm)</label>
-          <input type="text" id="guess" placeholder="如 23.40" autocomplete="off">
-          <button class="btn" id="check" style="background:var(--teal);color:#04201d;font-weight:700;border-color:var(--teal)">✔ 检查</button>
-          <button class="btn" id="hint">看对齐线</button>
+    <!-- 当前读数 -->
+    <div class="card">
+      <div class="cardhd">当前读数</div>
+      <div class="cardbd" id="readout">
+        <div class="ro"><span class="k">精度</span><span class="v" id="roPrec">0.02 mm</span></div>
+        <div class="ro"><span class="k">主尺读数</span><span class="v" id="roMain">0 mm</span></div>
+        <div class="ro"><span class="k">游标对齐格数</span><span class="v" id="roN">0 格</span></div>
+        <div class="ro"><span class="k">零误差 e</span><span class="v" id="roZero">0.00 mm</span></div>
+        <div class="res">
+          <div>读数值 R =
+            <input type="number" id="inR" step="0.01" placeholder="mm"> mm
+            <button id="bCheckR">确认</button>
+          </div>
+          <div id="rVal" style="display:none">读数值 R = <span class="n" id="roR">0.00</span> mm</div>
+          <div class="fml" id="roFml">0 mm + 0 × 0.02 mm = 0.00 mm</div>
+          <div class="judge" id="rJudge"></div>
+        </div>
+        <div class="res" id="subBox" style="display:none">
+          <div>减法读数：对齐线主尺读数 − 对齐线至游标零距</div>
+          <div class="ro"><span class="k">对齐线主尺读数</span><span class="v" id="roSubMain">0 mm</span></div>
+          <div class="ro"><span class="k">对齐线至零距</span><span class="v" id="roSubDist">0.00 mm</span></div>
+          <div class="fml" id="roSubFml">0 mm − 0.00 mm = 0.00 mm</div>
+          <div>真实尺寸 L = R − e = <span class="n" id="roTrue">0.00</span> mm</div>
         </div>
       </div>
-      <div class="feedback" id="feedback">移动游标到任意位置，观察主尺与游标哪条刻线在基准线上对齐，然后输入你的读数并提交。</div>
     </div>
-  </div>
 
-  <div class="legend">
-    <span><i style="background:#aeb9bf"></i>主尺刻线（基准线以上，固定）</span>
-    <span><i style="background:var(--teal)"></i>游标刻线（基准线以下，随滑块移动）</span>
-    <span><i style="background:var(--err)"></i>对齐位置</span>
-    <span>提示：拖动活动爪或下方滑块改变测量值；勾选"对齐红线"可显示/隐藏基准线上的对齐位置，便于学生练习读数</span>
-  </div>
-
-  <div class="sliderrow">
-    <label>游标位置（测量值 mm）</label>
-    <input type="range" id="pos" min="0" max="24" step="0.1" value="23.4">
-  </div>
-
-  <div class="methods">
+    <!-- 控制 -->
     <div class="card">
-      <h3>① 加法读数法（最常用）</h3>
-      <div class="formula" id="addF"></div>
-      <div class="note">先读<b>主尺</b>：游标 0 刻度左边最近的主尺整毫米数；再读<b>游标</b>：与主尺刻线在基准线上对齐的那条游标刻线序号 × 精度。两者相加即得测量值。</div>
+      <div class="cardhd">控制面板</div>
+      <div class="cardbd">
+        <div class="ctl">
+          <label>测量开合 <span class="val" id="vOpen">0.00 mm</span></label>
+          <input type="range" id="rOpen" min="0" max="150" step="0.02" value="0">
+        </div>
+        <div class="ctl">
+          <label>零误差 e <span class="val" id="vZero">0.00 mm</span></label>
+          <input type="range" id="rZero" min="-2" max="2" step="0.02" value="0">
+          <div class="note">零误差：两爪闭合时游标零线偏离主尺零线的值（可正可负）</div>
+        </div>
+        <div class="ctl">
+          <label>精度</label>
+          <div class="btns" id="precBtns">
+            <button data-p="0.1">0.1 mm（10 分度）</button>
+            <button data-p="0.05">0.05 mm（20 分度）</button>
+            <button data-p="0.02" class="acc">0.02 mm（50 分度）</button>
+          </div>
+        </div>
+        <div class="ctl">
+          <label>读数模式</label>
+          <div class="btns">
+            <button id="bAdd" class="acc">加法读数</button>
+            <button id="bSub">减法读数</button>
+          </div>
+          <div class="note" id="modeNote">加法读数：R = 主尺读数（零线左侧整毫米）+ 对齐格数 × 精度</div>
+        </div>
+        <div class="ctl">
+          <label>立体视角 <span class="val" id="vTilt">0.00</span></label>
+          <input type="range" id="rTilt" min="0" max="1" step="0.01" value="0">
+        </div>
+        <div class="ctl">
+          <label>被测物体</label>
+          <select id="selObj">
+            <option value="none">无（直接练习开合）</option>
+            <option value="cyl">立体圆柱（外径）</option>
+            <option value="plate">薄片（厚度）</option>
+            <option value="cup">开口朝下圆筒（内径）</option>
+            <option value="depth">深度测量</option>
+          </select>
+        </div>
+        <div class="btns">
+          <button id="bReset">↺ 复位</button>
+          <button id="bShow" class="warn">显示答案</button>
+        </div>
+      </div>
     </div>
+
+    <!-- 练习 -->
     <div class="card">
-      <h3>② 减法读数法</h3>
-      <div class="formula" id="subF"></div>
-      <div class="note">先找游标 0 右边最近的主尺整毫米数，再减去“（总格数 − 对齐刻线序号）× 精度”。结果与加法法一致，适合验证。</div>
+      <div class="cardhd">练习</div>
+      <div class="cardbd">
+        <div class="btns">
+          <button id="bEx" class="acc">随机出题</button>
+          <button id="bEndEx">结束练习</button>
+        </div>
+        <div class="ex" id="exBox" style="display:none;margin-top:8px">
+          <div class="q" id="exQ">读出图示读数：</div>
+          <div style="margin-top:5px">
+            <input type="number" id="exAns" step="0.01" placeholder="mm">
+            <button id="bCheck" style="margin-left:6px;padding:5px 10px">提交</button>
+          </div>
+          <div class="judge" id="exJ"></div>
+        </div>
+        <details>
+          <summary>读数方法提示</summary>
+          <div class="dbody">
+            <p><b class="key">加法读数</b>：先读主尺（游标零线左侧最近整毫米），再找游标上与主尺对齐的第 n 条线，<span class="f">R = 主尺读数 + n × 精度</span></p>
+            <p><b class="key">减法读数</b>：找游标与主尺对齐的刻度线，读该处主尺读数，减它到游标零刻度的距离，<span class="f">R = 对齐线主尺读数 − 对齐线至零距</span></p>
+            <ul>
+              <li>0.1 mm 精度：游标 10 格总长 9 mm，每格 0.9 mm</li>
+              <li>0.05 mm 精度：游标 20 格总长 19 mm，每格 0.95 mm</li>
+              <li>0.02 mm 精度：游标 50 格总长 49 mm，每格 0.98 mm</li>
+            </ul>
+          </div>
+        </details>
+      </div>
     </div>
-  </div>
+  </aside>
 </div>
 
 <script>
-/* ===================== 基本参数 ===================== */
-const cv = document.getElementById('cv');
-const ctx = cv.getContext('2d');
-const W = 1000, H = 470;                // 逻辑画布尺寸
-let dpr = Math.max(1, window.devicePixelRatio || 1);
+/* =========================================================
+   1. 常量与状态
+   ========================================================= */
+const SCALE=4.4;                 // 像素 / mm（留出尺尾空间供深度尺伸出）
+const MAIN_LEN_MM=150;           // 主尺量程 150 mm
+const BEAM_H=52;                 // 主尺高度（px）实测自参考图
+const JAW_W=49;                  // 测量爪根宽（px）
+const JAW_LOWER_H=101;           // 下爪长（px）
+const JAW_UPPER_H=46;            // 上爪长（px）实测 ≈0.89×主尺厚
+const SLIDE_LIP_H_TOP=17;        // 游标框上边缘（覆盖主尺顶面，容纳 0.02mm 标注）
+const SLIDE_LIP_H_BOT=26;        // 游标框下边缘高度（承载游标刻度）
+const SLIDE_BACK_W=38;           // 游标框右侧背板宽度
+const DEPTH_ROD_W=18;            // 深度尺宽度
+const PX = { mainLen:MAIN_LEN_MM*SCALE, mainH:BEAM_H, jawW:JAW_W,
+             jawLowerH:JAW_LOWER_H, jawUpperH:JAW_UPPER_H,
+             slideLipHTop:SLIDE_LIP_H_TOP, slideLipHBot:SLIDE_LIP_H_BOT,
+             slideBackW:SLIDE_BACK_W, depthRodW:DEPTH_ROD_W };
 
-// 物理常量（主尺刻度间距放大约 3 倍：5 → 15 px/mm）
-const PXMM = 15.0;                       // 每毫米像素（课堂放大）
-const X0   = 140;                        // 主尺 0（固定量爪测量面）的 x
-const MAXR = 24;                         // 最大读数(mm)，保证游标不出界且与右下读数面板错开
+const PRECS=[
+  {p:0.10, nDiv:10, vLen:9.0,  name:'0.1 mm',  desc:'10 分度'},
+  {p:0.05, nDiv:20, vLen:19.0, name:'0.05 mm', desc:'20 分度'},
+  {p:0.02, nDiv:50, vLen:49.0, name:'0.02 mm', desc:'50 分度'}
+];
 
-// —— 纵向分区（关键：主尺与游标在基准线上下分离，互不遮挡）——
-const BEAM_X = 30, BEAM_TOP = 50, BEAM_BOT = 256, BEAM_W = 900; // 固定尺身
-const DATUM  = 172;                      // 基准线：主尺刻线尖端到此(向上)，游标刻线尖端到此(向下)
-const SCALE_BAND_TOP = 116;              // 主尺刻度带（比尺身略亮的凹槽带）
-const SLIDER_H = 78;                     // 游标滑块实体高度（DATUM 以下，不遮主尺）
-const EX_H = 112;                        // 外量爪（向下）高度
-const IN_H = 34;                         // 内量爪（向上）高度
-
-const MODES = {
-  '10': { div:10, span:9,  prec:0.1  },
-  '20': { div:20, span:19, prec:0.05 }
+const S={
+  prec:0.02,                     // 当前精度
+  open:0,                        // 当前开合（mm）
+  zero:0,                        // 零误差（mm）
+  mode:'add',                    // 'add' | 'sub'
+  objKey:'none',                 // 被测物体类型
+  labels:false                   // 是否显示部件标签
 };
-let mode = '10';
-let R = 23.4;                            // 当前读数（已吸附到精度）
-let showAlign = false;
-let dragging = false;
+let EX=null;                     // 练习状态
 
-/* ===================== 画布尺寸 ===================== */
-function resize(){
-  const cssW = cv.clientWidth || W;
-  const scale = cssW / W;
-  cv.width  = Math.round(W * dpr);
-  cv.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  cv.style.height = (H * scale) + 'px';
+const cv=document.getElementById('cv3d'), ctx=cv.getContext('2d');
+const rc=document.getElementById('cvRead'), rctx=rc.getContext('2d');
+
+function $(id){return document.getElementById(id);}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function r2(v){return Math.round(v*100)/100;}
+function r3(v){return Math.round(v*1000)/1000;}
+
+function getPrecInfo(p){
+  return PRECS.find(x=>Math.abs(x.p-p)<1e-9);
 }
-function snap(v){ const p = MODES[mode].prec; return Math.round(v/p)*p; }
 
-/* ===================== 几何计算 ===================== */
-function geom(){
-  const m = MODES[mode];
-  const slideX = X0 + R * PXMM;          // 游标 0（活动量爪测量面）x
-  const mainInt = Math.floor(R);
-  const frac = R - mainInt;
-  const k = Math.round(frac / m.prec);   // 对齐的游标刻线序号
-  const Vmm = R + k * (m.span/m.div);    // 对齐处对应的主尺 mm 值（应为整数）
-  const alignX = X0 + Vmm * PXMM;        // 对齐线屏幕 x
-  const add = mainInt + k * m.prec;
-  const sub = (mainInt + 1) - (m.div - k) * m.prec;
-  return {m, slideX, mainInt, frac, k, Vmm, alignX, add, sub};
+/* =========================================================
+   2. 坐标变换与渲染工具
+   ========================================================= */
+let CX,CY;                       // 主尺中心在画布中的位置
+let ZOOM=1;
+let PAN_X=0, PAN_Y=0;            // 整体平移（拖动空白区）
+let TILT=0;                      // 立体斜视角（默认正视，与参考图一致）
+let DPR=1;                       // 设备像素比（高清屏防模糊）
+function worldX(x){return CX + x*SCALE*ZOOM;}
+function worldY(y){return CY + y*ZOOM;}
+// 把坐标吸附到设备像素中心，消除刻度线/数字的亚像素模糊
+function px1(v){ return (Math.round(v*DPR)+0.5)/DPR; }
+
+// 屏幕坐标 → 世界坐标（抵消 PAN 平移与 TILT 斜切），否则平移后命中判断会错位
+function screenToWorld(sx, sy){
+  const t=TILT*0.24, k=TILT*0.10;
+  const x=(sx - t*sy + t*(PAN_Y + CY) - PAN_X) / (1 + t*k);
+  const y=sy + k*x - PAN_Y;
+  return {x, y};
 }
-const $ = id => document.getElementById(id);
 
-/* ===================== 绘制工具 ===================== */
-function roundRect(x,y,w,h,r){
+// 地面投影，增强立体感
+function drawShadow(){
+  const L=PX.mainLen*ZOOM;
+  const x0=worldX(0)-PX.jawW*ZOOM;
+  const wdt=L+PX.jawW*ZOOM+60*ZOOM;
+  const y=worldY(PX.mainH/2)+PX.jawLowerH*ZOOM+18*ZOOM;
+  const cxm=x0+wdt/2;
+  const g=ctx.createRadialGradient(cxm, y, 0, cxm, y, wdt*0.55);
+  g.addColorStop(0,'rgba(0,0,0,0.40)');
+  g.addColorStop(0.6,'rgba(0,0,0,0.16)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;
   ctx.beginPath();
-  ctx.moveTo(x+r,y);
-  ctx.arcTo(x+w,y,x+w,y+h,r);
-  ctx.arcTo(x+w,y+h,x,y+h,r);
-  ctx.arcTo(x,y+h,x,y,r);
-  ctx.arcTo(x,y,x+w,y,r);
-  ctx.closePath();
+  ctx.ellipse(cxm, y, wdt*0.55, 15*ZOOM, 0, 0, 7);
+  ctx.fill();
 }
-// 银色金属渐变（在深底上强烈对比）
-function metalGrad(x,y,w,h){
-  const g = ctx.createLinearGradient(x, y, x, y+h);
-  g.addColorStop(0,   '#ffffff');
-  g.addColorStop(0.16,'#f4f7f9');
-  g.addColorStop(0.5, '#cfd7dd');
-  g.addColorStop(0.84,'#a3adb5');
-  g.addColorStop(1,   '#828d95');
+
+// 高质感不锈钢：模拟真实金属的多段反射（亮—暗—亮—暗—底缘反射光）
+function metalGrad(ctx,x0,y0,x1,y1,base=[216,226,234]){
+  const g=ctx.createLinearGradient(x0,y0,x1,y1);
+  const [r,gv,b]=base;
+  const C=(dr,dg,db)=>`rgb(${Math.max(0,Math.min(255,r+dr))},${Math.max(0,Math.min(255,gv+dg))},${Math.max(0,Math.min(255,b+db))})`;
+  g.addColorStop(0.00, C(-78,-72,-64));   // 顶棱压暗（倒角背光）
+  g.addColorStop(0.05, C(-14,-12,-8));
+  g.addColorStop(0.12, C(+30,+26,+20));   // 顶部天空高光带
+  g.addColorStop(0.20, C(+10,+10,+10));
+  g.addColorStop(0.34, C(-6,-4,-2));
+  g.addColorStop(0.46, C(+14,+14,+14));   // 中段反射带
+  g.addColorStop(0.56, C(-4,-2,0));
+  g.addColorStop(0.70, C(-34,-30,-24));   // 暗部
+  g.addColorStop(0.84, C(-58,-52,-44));   // 下部最暗
+  g.addColorStop(0.94, C(-16,-12,-8));
+  g.addColorStop(0.99, C(+22,+20,+18));   // 底缘地面反射光
+  g.addColorStop(1.00, C(-46,-40,-34));
   return g;
 }
-function screw(x,y,r){
-  const g = ctx.createRadialGradient(x-r*0.3,y-r*0.3,1,x,y,r);
-  g.addColorStop(0,'#ffffff'); g.addColorStop(0.6,'#b6c0c7'); g.addColorStop(1,'#727c83');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
-  ctx.strokeStyle='rgba(40,50,55,.5)'; ctx.lineWidth=1; ctx.stroke();
-  ctx.strokeStyle='rgba(60,70,75,.7)'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(x-r*0.6,y); ctx.lineTo(x+r*0.6,y); ctx.stroke();
+function metalGradH(ctx,top,bottom,base=[216,226,234]){
+  return metalGrad(ctx,0,top,0,bottom,base);
 }
-// 滚花拇指轮（滑块右侧，便于拖动）
-function thumbWheel(cx,cy,r){
-  const g = ctx.createLinearGradient(cx-r,cy-r,cx+r,cy+r);
-  g.addColorStop(0,'#8c969d'); g.addColorStop(0.45,'#e4e9ec'); g.addColorStop(1,'#747f86');
+
+// 拉丝纹理（确定性伪随机，避免每帧闪烁）
+function brushed(ctx,x,y,w,h,alpha=0.055,step=3){
+  if(w<=0||h<=0) return;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+  for(let i=0;i*step<h;i++){
+    const yy=y+i*step+0.5;
+    const v=((i*2654435761)%1000)/1000;
+    ctx.strokeStyle = v>0.5
+      ? `rgba(255,255,255,${alpha*(0.5+v)})`
+      : `rgba(0,0,0,${alpha*(1.2-v)})`;
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,yy); ctx.lineTo(x+w,yy); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// 展台背景：冷顶光 + 环境光晕，突出金属
+function drawBackdrop(){
+  const w=cv.width/DPR,h=cv.height/DPR;
+  const g=ctx.createRadialGradient(w*0.44,h*0.28,0, w*0.44,h*0.28, Math.max(w,h)*0.8);
+  g.addColorStop(0,'#1e4a3c'); g.addColorStop(0.40,'#143430'); g.addColorStop(1,'#07120f');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  const g2=ctx.createLinearGradient(0,0,0,h*0.55);
+  g2.addColorStop(0,'rgba(190,255,232,0.12)'); g2.addColorStop(1,'rgba(190,255,232,0)');
+  ctx.fillStyle=g2; ctx.fillRect(0,0,w,h*0.55);
+}
+
+/* =========================================================
+   3. 读数计算
+   ========================================================= */
+function calcReading(open){
+  const info=getPrecInfo(S.prec);
+  const nDiv=info.nDiv, vPitch=info.vLen/nDiv;   // 游标每格实际长度（mm）
+  // 主尺读数：游标零线左侧最近的整毫米（含该线）
+  let main=Math.floor(open+1e-9);
+  // 找游标上与主尺最对齐的格
+  let bestN=0, bestD=Infinity;
+  for(let i=0;i<nDiv;i++){
+    const xV=open + i*vPitch;
+    const nearest=Math.round(xV);
+    const d=Math.abs(xV-nearest);
+    if(d<bestD){bestD=d; bestN=i;}
+  }
+  const R=r2(main + bestN*info.p);
+  return {main, n:bestN, R};
+}
+
+/* =========================================================
+   4. 主 3D 视图绘制
+   ========================================================= */
+function drawCaliper(){
+  const w=cv.width/DPR, h=cv.height/DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,w,h);
+  drawBackdrop();
+  // 左侧留固定爪空间、右侧留出深度尺伸出段
+  CX=(PX.jawW+12)*ZOOM;
+  CY=h/2 + 10*ZOOM;
+  ctx.save();
+  ctx.translate(PAN_X, PAN_Y);
+  if(Math.abs(TILT)>0.01){                 // 斜切模拟立体视角
+    ctx.translate(0, CY);
+    ctx.transform(1, -TILT*0.10, TILT*0.24, 1, 0, 0);
+    ctx.translate(0, -CY);
+  }
+  drawShadow();
+  drawDepthRod(S.open);     // 深度尺：先画（位于主尺背面，尺身段被主尺遮挡，仅尺尾伸出段可见）
+  drawMainScale();
+  drawObject(S.open);
+  drawSlide(S.open);
+  if(S.labels) drawLabels();
+  ctx.restore();
+}
+
+function drawMainScale(){
+  const L=PX.mainLen*ZOOM, H=PX.mainH*ZOOM;
+  const x0=worldX(0), y0=worldY(-H/2);
+  const y1=y0+H;
+  const thick=8*ZOOM;
+
+  // 主尺梁（包含左固定爪根部与右侧深度尺槽区域）
+  ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=14*ZOOM; ctx.shadowOffsetY=5*ZOOM;
+  const g=metalGradH(ctx,y0,y1,[216,226,234]);
   ctx.fillStyle=g;
-  ctx.beginPath(); ctx.ellipse(cx,cy,r,r*0.7,0,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle='rgba(60,72,80,.6)'; ctx.lineWidth=1; ctx.stroke();
-  ctx.strokeStyle='rgba(80,90,95,.38)'; ctx.lineWidth=1;
-  for(let i=-r+3; i<r-2; i+=3){
-    ctx.beginPath(); ctx.moveTo(cx+i,cy-r*0.45); ctx.lineTo(cx+i+5,cy+r*0.45); ctx.stroke();
+  const beamX=x0-PX.jawW*ZOOM, beamW=L+PX.jawW*ZOOM+PX.slideBackW*ZOOM;
+  ctx.fillRect(beamX, y0, beamW, H);
+  ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+
+  // 拉丝纹理
+  brushed(ctx, beamX, y0, beamW, H, 0.05, 3*ZOOM);
+
+  // 顶面倒角：上缘亮线 + 次缘暗线，出立体
+  ctx.fillStyle='rgba(255,255,255,0.72)';
+  ctx.fillRect(beamX, y0, beamW, 1.6*ZOOM);
+  ctx.fillStyle='rgba(0,0,0,0.18)';
+  ctx.fillRect(beamX, y0+1.6*ZOOM, beamW, 1.2*ZOOM);
+
+  // 下侧面厚度（暗）
+  ctx.fillStyle='#8e989e';
+  ctx.fillRect(beamX, y1, beamW, thick);
+  ctx.fillStyle='rgba(0,0,0,0.30)';
+  ctx.fillRect(beamX, y1, beamW, 2*ZOOM);
+
+  // 刻度带（下半部稍亮，便于刻度对比）
+  ctx.fillStyle='rgba(255,255,255,0.30)';
+  ctx.fillRect(x0, y0+H*0.45, L, H*0.55);
+
+  // 左固定上测量爪（测内径）
+  drawFixedUpperJaw(x0, y0, ZOOM);
+  // 左固定下测量爪（测外径）
+  drawFixedLowerJaw(x0, y1, ZOOM);
+
+  // 右侧深度尺出口槽（背面通道，暗凹，使深度尺似从主尺背面伸出）
+  const tailX=x0+L;
+  const rodY2=y0+H*0.62, slotW=9*ZOOM, rodH2=7*ZOOM;
+  ctx.fillStyle='rgba(18,26,32,0.50)';
+  ctx.fillRect(tailX-slotW, rodY2-2*ZOOM, slotW, rodH2+4*ZOOM);
+  ctx.fillStyle='rgba(255,255,255,0.22)';
+  ctx.fillRect(tailX-slotW, rodY2-2*ZOOM, slotW, 1*ZOOM);
+
+  // 主尺刻度：每 10mm 标注厘米整数 0,1,2,3,… ；刻线与数字整体变细
+  ctx.strokeStyle='#000000'; ctx.fillStyle='#000000';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const yNum=y0+26*ZOOM;           // 数字中心线
+  const yTickBase=y0+48*ZOOM;      // 刻线底端对齐线（不触底边）
+  ctx.font=`${11*ZOOM}px "Microsoft YaHei",system-ui`;
+  for(let i=0;i<=MAIN_LEN_MM;i++){
+    const x=px1(x0+i*SCALE*ZOOM);
+    const len=(i%10===0?13:(i%5===0?10:7))*ZOOM;
+    ctx.lineWidth=(i%10===0?1.2:(i%5===0?0.9:0.55))*ZOOM;
+    ctx.beginPath(); ctx.moveTo(x,yTickBase); ctx.lineTo(x,yTickBase-len); ctx.stroke();
+    if(i%10===0) ctx.fillText(String(i/10), x, yNum);   // 0,1,2,3,...,15
   }
+
+  // 品牌区：金色凸雕 LXQ，每个字母下方各一个小金色三角（向下）
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  const lxqX=x0-40*ZOOM, lxqY=yNum;
+  ctx.font=`bold ${13*ZOOM}px "Microsoft YaHei",system-ui`;
+  const lxqChars=['L','X','Q'];
+  // 金色凸雕：暗影 + 金面 + 顶部高光
+  ctx.fillStyle='rgba(90,66,12,0.55)';
+  ctx.fillText('LXQ', lxqX, lxqY+1.4*ZOOM);
+  const gg=ctx.createLinearGradient(0, lxqY-7*ZOOM, 0, lxqY+7*ZOOM);
+  gg.addColorStop(0,'#f8e9ad'); gg.addColorStop(0.5,'#d9b34e'); gg.addColorStop(1,'#a87d1d');
+  ctx.fillStyle=gg;
+  ctx.fillText('LXQ', lxqX, lxqY);
+  ctx.fillStyle='rgba(255,250,228,0.7)';
+  ctx.fillText('LXQ', lxqX, lxqY-0.6*ZOOM);
+  // 每个字母下方小金色三角（向下）
+  ctx.fillStyle='#caa24a';
+  const triW=5*ZOOM, triH=4.5*ZOOM, triGap=10*ZOOM;
+  let cx=lxqX;
+  for(let k=0;k<lxqChars.length;k++){
+    const wPrev=ctx.measureText(lxqChars.slice(0,k).join('')).width;
+    const wNow =ctx.measureText(lxqChars.slice(0,k+1).join('')).width;
+    const w=wNow-wPrev, midX=cx+w/2, ty=lxqY+triGap;
+    ctx.beginPath();
+    ctx.moveTo(midX-triW/2, ty);
+    ctx.lineTo(midX+triW/2, ty);
+    ctx.lineTo(midX, ty+triH);
+    ctx.closePath(); ctx.fill();
+    cx+=w;
+  }
+
+  // 量程字（顶部小字，蚀刻感）
+  ctx.fillStyle='rgba(16,26,32,0.70)';
+  ctx.font=`${7*ZOOM}px system-ui`;
+  ctx.textAlign='right'; ctx.textBaseline='top';
+  ctx.fillText('0-150 mm', x0+L-8*ZOOM, y0+3*ZOOM);
 }
 
-/* ===================== 主绘制 ===================== */
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  // 深色舞台底（与银色尺身强对比）
-  const bg = ctx.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#0b1620'); bg.addColorStop(1,'#13242f');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+function drawFixedLowerJaw(x0, yBot, z){
+  // 外量爪：尖朝下梯形，右侧竖直面＝测量面（朝内/右），左侧向下收缩
+  const rw=49*z, tw=26*z, h=PX.jawLowerH*z;
+  const gapZ=0.7*z, topBevel=5*z;  // 顶部微小内缩倒角：中部/底部严丝合缝，顶部留很小间隙
+  ctx.fillStyle=metalGradH(ctx, yBot, yBot+h, [200,208,212]);
+  ctx.beginPath();
+  ctx.moveTo(x0-rw, yBot);              // 根部左
+  ctx.lineTo(x0-gapZ, yBot);            // 根部右（测量面顶，微向内缩）
+  ctx.lineTo(x0, yBot+topBevel);        // 测量面直段起点
+  ctx.lineTo(x0, yBot+h);               // 尖端右（测量面底）
+  ctx.lineTo(x0-tw, yBot+h);            // 尖端左
+  ctx.closePath(); ctx.fill();
+  // 抛光镜面：拉丝（贴近测量面更亮）
+  brushed(ctx, x0-rw, yBot, rw, h, 0.045, 3*z);
+  // 测量面刃口高光亮线（贴测量面最外缘直段，中部/底部相接）
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.fillRect(x0-1.0*z, yBot+topBevel, 1.0*z, h-topBevel);
+  // 测量部分打薄＋深色标：尖端测量处窄暗带（齐平、向爪内推进，非切除）
+  const cw=5.2*z, ch=h*0.5;
+  ctx.fillStyle='rgba(34,44,52,0.5)';
+  ctx.fillRect(x0-cw, yBot+h-ch, cw, ch);
+  // 底缘接触暗边（窄，仅出立体，不覆盖整面）
+  ctx.fillStyle='rgba(0,0,0,0.22)';
+  ctx.fillRect(x0-rw, yBot+h-1.0*z, rw, 1.0*z);
+}
 
-  const G = geom();
-  const slideX = G.slideX;
+function drawFixedUpperJaw(x0, yTop, z){
+  // 内量爪（主尺上爪）：左右互换——主尺上爪在右侧；测量竖直面在外侧（左侧，指向左/游标），曲线面在内侧（右侧）
+  // 复位时外侧竖直面与游标上爪外侧竖直面在 x0+off 处相接；张开时游标右移，两测量面分离
+  const off=11*z, rw=31*z, tw=3*z, h=PX.jawUpperH*z;
+  const faceL=x0+off;                  // 测量面左缘（外侧竖直边）
+  ctx.fillStyle=metalGradH(ctx, yTop-h, yTop, [205,213,217]);
+  ctx.beginPath();
+  ctx.moveTo(faceL, yTop-h);           // 尖端左（测量面顶，与活动爪相接）
+  ctx.lineTo(faceL, yTop);             // 根部左（测量面/外侧直边）
+  ctx.lineTo(faceL+rw, yTop);          // 根部右（内侧）
+  // 右侧非测量面：向内曲线面
+  ctx.quadraticCurveTo(faceL+(rw+tw)/2+7*z, yTop-h*0.45, faceL+tw, yTop-h);
+  ctx.closePath(); ctx.fill();
+  // 测量面刃口高光亮线（贴测量面最外缘）
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.fillRect(faceL, yTop-h, 1.0*z, h);
+  // 测量部分打薄＋深色标：尖端测量处窄暗带（齐平、向爪内推进，非切除）
+  const cw=2.6*z, ch=h*0.55;
+  ctx.fillStyle='rgba(34,44,52,0.5)';
+  ctx.fillRect(faceL, yTop-h, cw, ch);   // 暗带向右（爪内）
+}
 
-  /* ---- 固定尺身（银色主梁） ---- */
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=18; ctx.shadowOffsetY=10;
-  ctx.fillStyle=metalGrad(BEAM_X,BEAM_TOP,BEAM_W,BEAM_BOT-BEAM_TOP);
-  roundRect(BEAM_X,BEAM_TOP,BEAM_W,BEAM_BOT-BEAM_TOP,14); ctx.fill();
-  ctx.restore();
-  // 顶部高光 + 暗边轮廓（深底上更有立体感）
-  ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=1.6;
-  ctx.beginPath(); ctx.moveTo(BEAM_X+16,BEAM_TOP+4); ctx.lineTo(BEAM_X+BEAM_W-16,BEAM_TOP+4); ctx.stroke();
-  ctx.strokeStyle='rgba(60,72,80,.55)'; ctx.lineWidth=1.2;
-  roundRect(BEAM_X,BEAM_TOP,BEAM_W,BEAM_BOT-BEAM_TOP,14); ctx.stroke();
+function drawSlide(open){
+  const H=PX.mainH*ZOOM;
+  const x0=worldX(0), yTop=worldY(-H/2), yBot=yTop+H;
+  const mx=worldX(open);
+  const info=getPrecInfo(S.prec);
+  const vLenPx=info.vLen*SCALE*ZOOM;
+  const lipTop=PX.slideLipHTop*ZOOM;
+  const lipBot=PX.slideLipHBot*ZOOM;
+  const over=7*ZOOM;                 // 游标框上边缘高出主尺上边缘的量（不与之平齐）
+  const gap=0;
+  const slideLeft=mx-4*ZOOM;
+  // 右侧不设实心背板：框体到游标末端为止，中间保持镂空露出主尺
+  const slideRight=mx+vLenPx+6*ZOOM;
 
-  /* ---- 主尺刻度带（凹槽亮带，明确“主尺”形状） ---- */
-  ctx.save();
-  roundRect(BEAM_X+6, SCALE_BAND_TOP, BEAM_W-12, DATUM-SCALE_BAND_TOP, 8);
-  ctx.clip();
-  const band = ctx.createLinearGradient(0,SCALE_BAND_TOP,0,DATUM);
-  band.addColorStop(0,'#e9eef1'); band.addColorStop(1,'#c3ccd2');
-  ctx.fillStyle=band; ctx.fillRect(BEAM_X,SCALE_BAND_TOP,BEAM_W,DATUM-SCALE_BAND_TOP);
-  // 上沿暗线（凹陷感）
-  ctx.strokeStyle='rgba(90,105,112,.6)'; ctx.lineWidth=1.4;
-  ctx.beginPath(); ctx.moveTo(BEAM_X,SCALE_BAND_TOP+1); ctx.lineTo(BEAM_X+BEAM_W,SCALE_BAND_TOP+1); ctx.stroke();
-  ctx.restore();
+  // 活动下测量爪
+  drawMovingLowerJaw(mx, yBot, ZOOM);
+  // 活动上测量爪
+  drawMovingUpperJaw(mx, yTop, ZOOM);
 
-  /* ---- 主尺刻线（向上，尖端到基准线 DATUM；全部在 DATUM 以上，永不被遮） ---- */
-  ctx.textAlign='center';
-  const maxMM = Math.ceil((BEAM_W-24)/PXMM);
-  for(let mm=0; mm<=maxMM; mm++){
-    const x = X0 + mm*PXMM;
-    if(x > BEAM_X+BEAM_W-24) break;
-    const major = (mm%10===0);
-    const mid   = (mm%5===0);
-    const len = major?46:(mid?34:22);
-    ctx.strokeStyle='#1c2429'; ctx.lineWidth=major?2.4:1.4;
-    ctx.beginPath(); ctx.moveTo(x,DATUM); ctx.lineTo(x,DATUM-len); ctx.stroke();
-    if(major){
-      ctx.fillStyle='#11181c'; ctx.font='13px Consolas, monospace';
-      ctx.fillText((mm/10).toString(), x, DATUM-len-9);
+  // 游标框阴影
+  ctx.shadowColor='rgba(0,0,0,0.30)'; ctx.shadowBlur=10*ZOOM; ctx.shadowOffsetY=3*ZOOM;
+
+  const fw=slideRight-slideLeft;
+  // 上边缘：框体套在主尺上，且上边缘高出主尺上边缘 over（不与之平齐）
+  ctx.fillStyle=metalGradH(ctx, yTop-over, yTop+lipTop, [210,220,228]);
+  ctx.fillRect(slideLeft, yTop-over, fw, lipTop+over);
+  // 下边缘（宽，承载游标刻度）
+  ctx.fillStyle=metalGradH(ctx, yBot, yBot+lipBot, [208,218,226]);
+  ctx.fillRect(slideLeft, yBot, fw, lipBot);
+  // 拉丝纹理
+  brushed(ctx, slideLeft, yTop-over, fw, lipTop+over, 0.06, 3*ZOOM);
+  brushed(ctx, slideLeft, yBot, fw, lipBot, 0.06, 3*ZOOM);
+
+  // （右侧背板已移除——原实心矩形堵住镂空，与实物不符）
+
+  ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+
+  // 上缘高光 + 次缘暗线（倒角立体）——位于高出主尺的上边缘处
+  ctx.fillStyle='rgba(255,255,255,0.75)';
+  ctx.fillRect(slideLeft, yTop-over, fw, 1.6*ZOOM);
+  ctx.fillStyle='rgba(0,0,0,0.20)';
+  ctx.fillRect(slideLeft, yTop-over+1.6*ZOOM, fw, 1.2*ZOOM);
+  // 下边缘底部：暗边 + 极细底缘反射光
+  ctx.fillStyle='rgba(0,0,0,0.34)';
+  ctx.fillRect(slideLeft, yBot+lipBot-2*ZOOM, fw, 2*ZOOM);
+  ctx.fillStyle='rgba(255,255,255,0.28)';
+  ctx.fillRect(slideLeft, yBot+lipBot-0.8*ZOOM, fw, 0.8*ZOOM);
+  // 与主尺相接处的接触阴影
+  ctx.fillStyle='rgba(0,0,0,0.24)';
+  ctx.fillRect(slideLeft, yBot-1.5*ZOOM, fw, 1.5*ZOOM);
+
+  // 游标刻度：自框顶向下（与主尺刻线底端紧邻，便于对齐读数）；刻线/数字变细
+  ctx.strokeStyle='#000000'; ctx.fillStyle='#000000';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let i=0;i<=info.nDiv;i++){
+    const x=px1(mx + i*info.vLen/info.nDiv*SCALE*ZOOM);
+    const len=(i%10===0?14:(i%5===0?11:9))*ZOOM;
+    ctx.lineWidth=(i%10===0?1.3:0.8)*ZOOM;
+    ctx.beginPath(); ctx.moveTo(x, yBot); ctx.lineTo(x, yBot+len); ctx.stroke();
+    // 含"5"的中间数字消除（5,15,25,35,45…），保留末端分度（如 50）
+    if(i===info.nDiv || ((i%5===0 || i===0) && !String(i).includes('5'))){
+      ctx.font=`${9*ZOOM}px "Microsoft YaHei",system-ui`;
+      ctx.fillText(String(i), x, yBot+16*ZOOM);
     }
   }
-  ctx.fillStyle='#11181c'; ctx.font='12px sans-serif';
-  ctx.fillText('主尺 / cm', X0-2, SCALE_BAND_TOP+16);
-  // 基准线（主尺与游标共用参考）
-  ctx.strokeStyle='rgba(60,70,75,.55)'; ctx.lineWidth=1.4;
-  ctx.beginPath(); ctx.moveTo(X0-14,DATUM); ctx.lineTo(BEAM_X+BEAM_W-14,DATUM); ctx.stroke();
 
-  /* ---- 固定量爪（左） ---- */
-  // 外量爪（向下）：厚实 C 形，底部内收倒角，参考真实卡尺
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=8; ctx.shadowOffsetY=5;
-  ctx.fillStyle=metalGrad(X0-60,BEAM_BOT,62,EX_H+12);
+  // 锁紧螺钉：竖直滚花圆柱，坐在游标框高出主尺的上边缘正中
+  drawLockScrew(slideLeft + fw*0.49, yTop - over);
+
+  // 黑色滚花拇指推手（下边缘下方）
+  const px=slideRight - Math.max(6*ZOOM, vLenPx*0.08);
+  const py=yBot+lipBot-1*ZOOM;
+  drawThumbPusher(px, py, 20*ZOOM, 12*ZOOM);
+
+  // 精度铭牌（游标上边部分的正中央——上臂竖直中点）
+  const yName=yTop - over + (over+lipTop)/2;
+  ctx.fillStyle='rgba(70,82,92,0.95)';
+  ctx.font=`bold ${9*ZOOM}px "Microsoft YaHei",system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(info.name, slideLeft + fw*0.49, yName);
+
+  // 深度尺已在 drawCaliper 中先于主尺绘制（背面层），此处不再重复绘制
+}
+
+function drawMovingLowerJaw(mx, yBot, z){
+  // 活动外量爪：尖朝下，左侧竖直面＝测量面（朝内/左），右侧向下收缩
+  const rw=49*z, tw=26*z, h=PX.jawLowerH*z;
+  const gapZ=0.7*z, topBevel=5*z;  // 顶部微小内缩倒角：中部/底部严丝合缝，顶部留很小间隙
+  ctx.fillStyle=metalGradH(ctx, yBot, yBot+h, [202,210,214]);
   ctx.beginPath();
-  ctx.moveTo(X0-60, BEAM_BOT);
-  ctx.lineTo(X0,    BEAM_BOT);
-  ctx.lineTo(X0,    BEAM_BOT+EX_H-18);      // 测量面（右）
-  ctx.lineTo(X0-10, BEAM_BOT+EX_H-3);
-  ctx.lineTo(X0-34, BEAM_BOT+EX_H);         // 底部圆弧钝头
-  ctx.lineTo(X0-54, BEAM_BOT+EX_H-8);
-  ctx.lineTo(X0-64, BEAM_BOT+16);
+  ctx.moveTo(mx+gapZ, yBot);            // 根部左（测量面顶，微向内缩）
+  ctx.lineTo(mx+rw, yBot);              // 根部右
+  ctx.lineTo(mx+tw, yBot+h);            // 尖端右
+  ctx.lineTo(mx, yBot+h);               // 尖端左（测量面底）
+  ctx.lineTo(mx, yBot+topBevel);        // 测量面直段起点
   ctx.closePath(); ctx.fill();
-  ctx.restore();
-  ctx.strokeStyle='rgba(60,72,80,.55)'; ctx.lineWidth=1.2; ctx.stroke();
-  // 测量面强调
-  ctx.fillStyle='#5b656c'; ctx.fillRect(X0-3, BEAM_BOT+4, 3, EX_H-24);
-  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(X0-58,BEAM_BOT+4); ctx.lineTo(X0-2,BEAM_BOT+4); ctx.stroke();
+  // 测量面刃口高光亮线（贴测量面最外缘直段，中部/底部相接）
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.fillRect(mx, yBot+topBevel, 1.0*z, h-topBevel);
+  // 测量部分打薄＋深色标：尖端测量处窄暗带（齐平、向爪内推进，非切除）
+  const cw=5.2*z, ch=h*0.5;
+  ctx.fillStyle='rgba(34,44,52,0.5)';
+  ctx.fillRect(mx, yBot+h-ch, cw, ch);
+}
 
-  // 内量爪（向上）：短小平台，测量面在外侧右方
-  ctx.fillStyle=metalGrad(X0-34,BEAM_TOP-IN_H-4,38,IN_H+8);
+function drawMovingUpperJaw(mx, yTop, z){
+  // 活动内量爪（游标上测量爪）：左右互换——游标上爪在左侧；测量竖直面在外侧（右侧，指向右/主尺），曲线面在内侧（左侧）
+  // 复位时外侧竖直面与主尺上爪外侧竖直面在 mx+off 处相接；张开时随游标右移，测量面分离
+  const off=11*z, rw=31*z, tw=3*z, h=PX.jawUpperH*z;
+  const beamLeft=worldX(0)-PX.jawW*ZOOM;       // 主尺左边缘（收缩上限）
+  const faceR=mx+off;                          // 测量面右缘（外侧竖直边）
+  const rootLeft=Math.max(beamLeft, faceR-rw); // 收缩：最多到尺身左边
+  ctx.fillStyle=metalGradH(ctx, yTop-h, yTop, [205,213,217]);
   ctx.beginPath();
-  ctx.moveTo(X0-34, BEAM_TOP);
-  ctx.lineTo(X0,    BEAM_TOP);
-  ctx.lineTo(X0,    BEAM_TOP-IN_H+5);       // 内侧面
-  ctx.lineTo(X0-7,  BEAM_TOP-IN_H);         // 顶面内倒角
-  ctx.lineTo(X0-30, BEAM_TOP-IN_H);         // 顶面
-  ctx.lineTo(X0-34, BEAM_TOP-7);            // 外侧面
+  ctx.moveTo(faceR, yTop-h);        // 尖端右（测量面顶，与主尺上爪相接）
+  ctx.lineTo(faceR, yTop);          // 根部右（测量面/外侧直边）
+  ctx.lineTo(rootLeft, yTop);      // 根部左（内侧）
+  // 左侧非测量面：向内曲线面
+  ctx.quadraticCurveTo((faceR+rootLeft)/2-7*z, yTop-h*0.45, faceR-tw, yTop-h);
   ctx.closePath(); ctx.fill();
-  ctx.strokeStyle='rgba(60,72,80,.55)'; ctx.lineWidth=1.1; ctx.stroke();
-  ctx.fillStyle='#5b656c'; ctx.fillRect(X0-3, BEAM_TOP-IN_H+4, 3, IN_H-8); // 测量面
+  // 测量面刃口高光亮线（贴测量面最外缘）
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.fillRect(faceR-1.0*z, yTop-h, 1.0*z, h);
+  // 测量部分打薄＋深色标：尖端测量处窄暗带（齐平、向爪内推进，非切除）
+  const cw=2.6*z, ch=h*0.55;
+  ctx.fillStyle='rgba(34,44,52,0.5)';
+  ctx.fillRect(faceR-cw, yTop-h, cw, ch);   // 暗带向左（爪内）
+}
 
-  /* ---- 游标滑块 / 游标板（DATUM 以下） ---- */
-  const carX = slideX - 18;                   // 左侧留白，0 刻度不被遮
-  const carW = G.m.span*PXMM + 46;            // 滑块长度随分度自适应，确保刻度都在框内
-  const carTop = DATUM + 4;
-  const carBot = carTop + SLIDER_H;
+function drawLockScrew(cx, baseY){
+  // 竖直滚花圆柱锁紧螺钉：baseY=游标框上边缘顶面（主尺顶边）
+  const r=7.5*ZOOM;              // 圆柱半径（实测直径 42px/142 × 52 ≈ 15）
+  const hCyl=23*ZOOM;            // 柱身高（实测 62px/142 × 52 ≈ 23）
+  const hStem=8*ZOOM;            // 螺杆可见高
+  const topY=baseY - hCyl - hStem;
+  // 落影
+  ctx.fillStyle='rgba(0,0,0,0.32)';
+  ctx.beginPath(); ctx.ellipse(cx+r*0.55, baseY-1*ZOOM, r*1.2, r*0.32, 0, 0, 7); ctx.fill();
+  // 螺杆（水平渐变出圆周感）+ 螺纹
+  const gS=ctx.createLinearGradient(cx-4*ZOOM,0,cx+4*ZOOM,0);
+  gS.addColorStop(0,'#66747e'); gS.addColorStop(0.4,'#ccd6dc'); gS.addColorStop(1,'#57646c');
+  ctx.fillStyle=gS;
+  ctx.fillRect(cx-4*ZOOM, topY+hCyl, 8*ZOOM, hStem);
+  ctx.strokeStyle='rgba(38,48,56,0.55)'; ctx.lineWidth=1;
+  for(let k=1;k<4;k++){
+    const yy=topY+hCyl+k*(hStem/4);
+    ctx.beginPath(); ctx.moveTo(cx-4*ZOOM, yy); ctx.lineTo(cx+4*ZOOM, yy); ctx.stroke();
+  }
+  // 柱身：水平渐变模拟圆柱受光（左暗→左上亮→高光→右暗）
+  const g=ctx.createLinearGradient(cx-r,0,cx+r,0);
+  g.addColorStop(0,'#5a6871'); g.addColorStop(0.16,'#c3ced6');
+  g.addColorStop(0.40,'#f0f6fa'); g.addColorStop(0.60,'#bcc8d0');
+  g.addColorStop(0.84,'#74828b'); g.addColorStop(1,'#4a565e');
+  ctx.fillStyle=g;
+  ctx.fillRect(cx-r, topY, 2*r, hCyl);
+  // 竖直滚花条纹（明暗交替）
+  for(let i=1;i<12;i++){
+    const xx=cx-r+i*(2*r/12);
+    ctx.strokeStyle = i%2 ? 'rgba(38,50,58,0.32)' : 'rgba(255,255,255,0.30)';
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xx, topY+2.5*ZOOM); ctx.lineTo(xx, topY+hCyl-1*ZOOM); ctx.stroke();
+  }
+  // 顶面椭圆（受光）
+  const gt=ctx.createRadialGradient(cx-r*0.3, topY-r*0.12, 1, cx, topY, r*1.1);
+  gt.addColorStop(0,'#ffffff'); gt.addColorStop(0.65,'#d9e2e9'); gt.addColorStop(1,'#9dabb4');
+  ctx.fillStyle=gt;
+  ctx.beginPath(); ctx.ellipse(cx, topY, r, r*0.36, 0, 0, 7); ctx.fill();
+  // 柱底与框面相接的接触暗弧
+  ctx.fillStyle='rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(cx, baseY, r*1.02, r*0.30, 0, 0, Math.PI); ctx.fill();
+}
+
+function drawKnurledScrew(cx, cy, r){
+  // 落影
+  ctx.fillStyle='rgba(0,0,0,0.38)';
+  ctx.beginPath(); ctx.ellipse(cx+r*0.30, cy+r*0.42, r*1.02, r*0.92, 0, 0, 7); ctx.fill();
+  // 滚花外圈：冷银不锈钢（左上高光→右下暗）
+  const g=ctx.createRadialGradient(cx-r*0.42, cy-r*0.46, r*0.08, cx, cy, r);
+  g.addColorStop(0,'#ffffff');
+  g.addColorStop(0.30,'#dae3ea');
+  g.addColorStop(0.62,'#9dabb5');
+  g.addColorStop(0.86,'#6b7880');
+  g.addColorStop(1,'#48545c');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, 7); ctx.fill();
+  // 滚花齿（立体感）
+  ctx.lineWidth=Math.max(0.8, r*0.09);
+  for(let a=0;a<22;a++){
+    const ang=a*Math.PI/11;
+    ctx.strokeStyle='rgba(58,70,80,0.50)';
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(ang)*r*0.70, cy+Math.sin(ang)*r*0.70);
+    ctx.lineTo(cx+Math.cos(ang)*r*0.99, cy+Math.sin(ang)*r*0.99);
+    ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.moveTo(cx+Math.cos(ang+0.14)*r*0.72, cy+Math.sin(ang+0.14)*r*0.72);
+    ctx.lineTo(cx+Math.cos(ang+0.14)*r*0.97, cy+Math.sin(ang+0.14)*r*0.97);
+    ctx.stroke();
+  }
+  // 内凹盘面
+  const g2=ctx.createRadialGradient(cx-r*0.22, cy-r*0.28, 1, cx, cy, r*0.66);
+  g2.addColorStop(0,'#f2f7fb');
+  g2.addColorStop(0.55,'#aebbc4');
+  g2.addColorStop(1,'#75838c');
+  ctx.fillStyle=g2;
+  ctx.beginPath(); ctx.arc(cx, cy, r*0.66, 0, 7); ctx.fill();
+  ctx.strokeStyle='rgba(50,60,68,0.55)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cx, cy, r*0.66, 0, 7); ctx.stroke();
+  // 一字槽（带立体）
+  ctx.strokeStyle='rgba(30,38,44,0.85)'; ctx.lineWidth=Math.max(1.6, r*0.26);
+  ctx.beginPath(); ctx.moveTo(cx-r*0.42, cy); ctx.lineTo(cx+r*0.42, cy); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx-r*0.42, cy+r*0.10); ctx.lineTo(cx+r*0.42, cy+r*0.10); ctx.stroke();
+  // 顶部高光斑
+  ctx.fillStyle='rgba(255,255,255,0.60)';
+  ctx.beginPath(); ctx.ellipse(cx-r*0.30, cy-r*0.40, r*0.26, r*0.15, -0.55, 0, 7); ctx.fill();
+}
+
+function drawThumbPusher(cx, cy, w, h){
+  const x=cx-w/2, y=cy;
+  ctx.fillStyle=metalGradH(ctx, y, y+h, [206,214,220]);   // 主尺同色金属银（非黑）
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x+w, y);
+  ctx.lineTo(x+w-4*ZOOM, y+h);
+  ctx.lineTo(x+4*ZOOM, y+h);
+  ctx.closePath();
+  ctx.fill();
+  // 滚花槽
+  ctx.strokeStyle='rgba(255,255,255,0.20)'; ctx.lineWidth=1;
+  for(let i=1;i<9;i++){
+    const xx=x+i*(w/9);
+    ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx+(i-5)*0.5*ZOOM, y+h); ctx.stroke();
+  }
+}
+
+function drawDepthRod(open){
+  // 深度尺：沿主尺背面槽内的水平细杆，固定端在游标背、随游标右移而从尺尾(150)伸出
+  // 整体先于主尺绘制 → 尺身段被主尺遮挡，视觉上“在主尺背面”；仅尺尾右侧伸出段可见
+  const L=PX.mainLen*ZOOM, H=PX.mainH*ZOOM;
+  const y0=worldY(-H/2);
+  const rodLeft=worldX(open);                       // 固定端（随游标）
+  const rodRight=worldX(MAIN_LEN_MM)+open*SCALE*ZOOM; // 伸出端 = 尺尾 + 读数
+  const rodH=7*ZOOM;
+  const rodY=y0 + H*0.62;
+  // 整杆（尺身段随后被主尺覆盖）
+  ctx.fillStyle=metalGradH(ctx, rodY, rodY+rodH, [198,206,212]);
+  ctx.fillRect(rodLeft, rodY, Math.max(0,rodRight-rodLeft), rodH);
+  // 上下棱边
+  ctx.fillStyle='rgba(255,255,255,0.50)';
+  ctx.fillRect(rodLeft, rodY, Math.max(0,rodRight-rodLeft), 1.2*ZOOM);
+  ctx.fillStyle='rgba(0,0,0,0.30)';
+  ctx.fillRect(rodLeft, rodY+rodH-1.2*ZOOM, Math.max(0,rodRight-rodLeft), 1.2*ZOOM);
+  // 伸出段刻度（每 5 mm）——仅在尺尾右侧可见
+  const tailX=worldX(MAIN_LEN_MM);
+  ctx.strokeStyle='#3a4a52'; ctx.fillStyle='#3a4a52'; ctx.lineWidth=1;
+  ctx.font=`${7*ZOOM}px system-ui`; ctx.textAlign='left'; ctx.textBaseline='top';
+  for(let i=0;i<=open;i+=5){
+    const x=tailX + i*SCALE*ZOOM;
+    if(x<=tailX+0.5) continue;
+    ctx.beginPath(); ctx.moveTo(x, rodY+rodH); ctx.lineTo(x, rodY+rodH+4*ZOOM); ctx.stroke();
+    if(i>0) ctx.fillText(String(i), x+2*ZOOM, rodY+rodH+3*ZOOM);
+  }
+}
+
+/* 立体圆柱：椭圆端面 + 柱面横向渐变 + 高光竖带（用于外径测量） */
+function drawCylinder3D(cx, yTop, w, h, cA, cB, cC){
+  const rx=w/2, ry=Math.max(3*ZOOM, w*0.26);
+  // 柱身（下缘为椭圆前弧，形成筒状立体）
+  const g=ctx.createLinearGradient(cx-rx,0,cx+rx,0);
+  g.addColorStop(0,cA); g.addColorStop(0.38,cB); g.addColorStop(1,cC);
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(cx-rx, yTop);
+  ctx.lineTo(cx-rx, yTop+h);
+  ctx.ellipse(cx, yTop+h, rx, ry, 0, Math.PI, 0, true);
+  ctx.lineTo(cx+rx, yTop);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(38,48,56,0.55)'; ctx.lineWidth=1; ctx.stroke();
+  // 顶面椭圆
+  const gt=ctx.createLinearGradient(cx-rx, yTop-ry, cx+rx, yTop+ry);
+  gt.addColorStop(0,cB); gt.addColorStop(1,cA);
+  ctx.fillStyle=gt;
+  ctx.beginPath(); ctx.ellipse(cx, yTop, rx, ry, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle='rgba(38,48,56,0.5)'; ctx.stroke();
+  // 高光竖带
+  ctx.fillStyle='rgba(255,255,255,0.30)';
+  ctx.fillRect(cx-rx*0.36, yTop+ry*0.15, rx*0.20, h*0.86);
+}
+
+/* 立体开口朝下圆筒：顶端封闭、下端敞开（可见内腔）——用于内径测量 */
+function drawCupDown(cx, yTop, outerW, innerW, h, cA, cB, cC){
+  const rO=outerW/2, rI=innerW/2;
+  const ryO=Math.max(3*ZOOM, outerW*0.26), ryI=ryO*(rI/rO);
+  const yBot=yTop+h;
+  // 外壁
+  const g=ctx.createLinearGradient(cx-rO,0,cx+rO,0);
+  g.addColorStop(0,cA); g.addColorStop(0.38,cB); g.addColorStop(1,cC);
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(cx-rO, yTop);
+  ctx.lineTo(cx-rO, yBot);
+  ctx.ellipse(cx, yBot, rO, ryO, 0, Math.PI, 0, true);
+  ctx.lineTo(cx+rO, yTop);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(38,48,56,0.55)'; ctx.lineWidth=1; ctx.stroke();
+  // 顶盖（封闭端椭圆）
+  const gt=ctx.createLinearGradient(cx-rO, yTop-ryO, cx+rO, yTop+ryO);
+  gt.addColorStop(0,cB); gt.addColorStop(1,cA);
+  ctx.fillStyle=gt;
+  ctx.beginPath(); ctx.ellipse(cx, yTop, rO, ryO, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle='rgba(38,48,56,0.5)'; ctx.stroke();
+  // 下端筒口：唇口 + 内腔（暗），体现"开口朝下"
+  ctx.fillStyle='#57636c';
+  ctx.beginPath(); ctx.ellipse(cx, yBot, rO, ryO, 0, 0, 7); ctx.fill();
+  ctx.fillStyle='#1c242a';
+  ctx.beginPath(); ctx.ellipse(cx, yBot+1.5*ZOOM, rI, ryI, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle='#7b8891'; ctx.lineWidth=2*ZOOM;
+  ctx.beginPath(); ctx.ellipse(cx, yBot, rO, ryO, 0, 0, 7); ctx.stroke();
+}
+
+function drawObject(open){
+  if(S.objKey==='none') return;
+  const x0=worldX(0), yTop=worldY(-PX.mainH/2), yBot=yTop+PX.mainH*ZOOM;
+  const mx=worldX(open);
+  const gapPx=mx-x0;
+  const cx=(x0+mx)/2;
   ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=12; ctx.shadowOffsetY=6;
-  ctx.fillStyle=metalGrad(carX,carTop,carW,carBot-carTop);
-  roundRect(carX,carTop,carW,carBot-carTop,9); ctx.fill();
+  if(S.objKey==='cyl'){
+    // 外径测量：立体圆柱，直径 = 两外量爪测量面间距
+    const w=Math.max(20*ZOOM, gapPx-4*ZOOM);
+    const yT=yBot + 12*ZOOM, h=52*ZOOM;
+    drawCylinder3D(cx, yT, w, h, '#5d6a72','#e3edf2','#48545c');
+  }else if(S.objKey==='plate'){
+    const h=Math.min(gapPx-6*ZOOM, 14*ZOOM);
+    const cy=yBot + PX.jawLowerH*ZOOM*0.35;
+    const g=ctx.createLinearGradient(cx-gapPx/2+3*ZOOM, cy-h/2, cx+gapPx/2-3*ZOOM, cy+h/2);
+    g.addColorStop(0,'#b8c0c4'); g.addColorStop(0.5,'#eef4f6'); g.addColorStop(1,'#a8b0b4');
+    ctx.fillStyle=g;
+    ctx.fillRect(cx-gapPx/2+3*ZOOM, cy-h/2, gapPx-6*ZOOM, h);
+    ctx.strokeStyle='#6a7a7e'; ctx.lineWidth=1;
+    ctx.strokeRect(cx-gapPx/2+3*ZOOM, cy-h/2, gapPx-6*ZOOM, h);
+  }else if(S.objKey==='cup'){
+    // 内径测量：立体开口朝下圆筒，内量爪伸入筒内，内径 = 开合值
+    const innerD=Math.max(30*ZOOM, gapPx);
+    const wallT=6*ZOOM, outerD=innerD+2*wallT, cupH=48*ZOOM;
+    const rimY=yTop - PX.jawUpperH*ZOOM*0.42;   // 筒口高度（量爪插入其中）
+    drawCupDown(cx, rimY-cupH, outerD, innerD, cupH, '#8a7a52','#e2d3a4','#6a5c3c');
+  }else if(S.objKey==='depth'){
+    // 深度测量：尺尾顶住工件，深度尺水平伸入孔中
+    const H=PX.mainH*ZOOM;
+    const y0=worldY(-H/2);
+    const tailX=worldX(MAIN_LEN_MM);
+    const rodY=y0 + H*0.58, rodH=8*ZOOM;
+    const depthPx=gapPx;
+    const bw=Math.max(26*ZOOM, depthPx+16*ZOOM), bh=46*ZOOM;
+    const bx=tailX, byy=rodY-14*ZOOM;
+    // 工件
+    const g=ctx.createLinearGradient(0, byy, 0, byy+bh);
+    g.addColorStop(0,'#98a4aa'); g.addColorStop(0.5,'#7d8990'); g.addColorStop(1,'#5d686e');
+    ctx.fillStyle=g;
+    ctx.fillRect(bx, byy, bw, bh);
+    ctx.strokeStyle='#46525a'; ctx.lineWidth=1;
+    ctx.strokeRect(bx, byy, bw, bh);
+    // 水平孔（深度尺伸入）
+    ctx.fillStyle='#2f3840';
+    ctx.fillRect(bx, rodY-1*ZOOM, bw-5*ZOOM, rodH+2*ZOOM);
+  }
   ctx.restore();
-  ctx.strokeStyle='rgba(60,72,80,.55)'; ctx.lineWidth=1.2; ctx.stroke();
-  // 滑块顶沿亮线（与基准线呼应）
-  ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(carX+8,carTop+3); ctx.lineTo(carX+carW-8,carTop+3); ctx.stroke();
+}
 
-  /* ---- 游标刻线（向下，尖端到基准线 DATUM；0 在 slideX）—— 全部在滑块实体上，清晰可见 ---- */
-  const vDiv = G.m.span/G.m.div;              // 每格 mm
-  for(let j=0; j<=G.m.div; j++){
-    const x = slideX + j*vDiv*PXMM;
-    const major = (j%5===0);
-    const len = major?30:20;
-    const is0 = (j===0);
-    if(is0){
-      // 0 指标：加粗竖线（DATUM 向下贯穿滑块）+ 指向下方基准线的三角，置于最上层
-      ctx.strokeStyle='#0a7a70'; ctx.lineWidth=3.2;
-      ctx.beginPath(); ctx.moveTo(x,DATUM); ctx.lineTo(x,carBot-6); ctx.stroke();
-      ctx.fillStyle='#0a7a70';
-      ctx.beginPath(); ctx.moveTo(x,DATUM); ctx.lineTo(x-5,DATUM-7); ctx.lineTo(x+5,DATUM-7); ctx.closePath(); ctx.fill();
-      ctx.fillStyle='#09655c'; ctx.font='bold 12px Consolas, monospace';
-      ctx.fillText('0', x, carBot+14);
-    } else {
-      ctx.strokeStyle = major ? '#0e8d83' : '#0e8d83';
-      ctx.lineWidth = major ? 1.8 : 1.3;
-      ctx.beginPath(); ctx.moveTo(x,DATUM); ctx.lineTo(x,DATUM+len); ctx.stroke();
-      if(major){
-        ctx.fillStyle='#0b6f67'; ctx.font='11px Consolas, monospace';
-        ctx.fillText(j.toString(), x, DATUM+len+13);
-      }
+function drawHexNut(cx, cy, w, h){
+  const r=w/2;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const ang=i*Math.PI/3 - Math.PI/6;
+    const x=cx+Math.cos(ang)*r;
+    const y=cy+Math.sin(ang)*(h/2);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  const g=ctx.createLinearGradient(cx-r, cy-h/2, cx+r, cy+h/2);
+  g.addColorStop(0,'#9a8a50'); g.addColorStop(0.25,'#d4c480'); g.addColorStop(0.5,'#f0e0a0');
+  g.addColorStop(0.75,'#c4b470'); g.addColorStop(1,'#8a7a45');
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle='#6a5a30'; ctx.lineWidth=1; ctx.stroke();
+  // 中心孔
+  ctx.fillStyle='#3a3420';
+  ctx.beginPath(); ctx.arc(cx, cy, Math.min(r*0.32, 12*ZOOM), 0, 7); ctx.fill();
+  ctx.strokeStyle='#5e5030'; ctx.lineWidth=1; ctx.stroke();
+  // 顶面倒角高光
+  ctx.fillStyle='rgba(255,255,255,0.25)';
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const ang=i*Math.PI/3 - Math.PI/6;
+    const x=cx+Math.cos(ang)*r*0.82;
+    const y=cy+Math.sin(ang)*(h/2)*0.82;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+function drawLabels(){
+  // 部件标签（可选）
+}
+
+/* =========================================================
+   5. 读数放大窗
+   ========================================================= */
+function drawReader(){
+  const W=rc.width/DPR, H=rc.height/DPR;
+  rctx.setTransform(DPR,0,0,DPR,0,0);
+  rctx.clearRect(0,0,W,H);
+  rctx.fillStyle='#f4f6f4'; rctx.fillRect(0,0,W,H);
+
+  const info=getPrecInfo(S.prec);
+  const nDiv=info.nDiv, vPitch=info.vLen/nDiv, vLen=info.vLen;
+  const cy=H/2 + 4;
+  const sep=9;                          // 主尺与游标基线间距（减小，便于对齐观察）
+  const margin=30;                      // 左右留白
+  const usable=Math.max(60, W-margin*2);
+  const s=usable / vLen;                // 像素/mm：使整把游标尺铺满可读区（完整显示）
+  const vZeroX=margin;                  // 游标零线 x（左端）
+  const rd=calcReading(S.open);
+
+  // 主尺（上半部，基线 cy-sep，刻度向上，数字在上方；黑色、刻度变长）
+  rctx.fillStyle='#e8ecec';
+  rctx.fillRect(0,0,W,cy-sep+2);
+  rctx.strokeStyle='#000'; rctx.fillStyle='#000';
+  rctx.lineWidth=1.2;
+  rctx.beginPath(); rctx.moveTo(0,cy-sep); rctx.lineTo(W,cy-sep); rctx.stroke();
+  const mmStart=Math.floor(S.open)-2, mmEnd=Math.ceil(S.open+vLen)+2;
+  for(let mm=mmStart; mm<=mmEnd; mm++){
+    const x=vZeroX + (mm-S.open)*s;
+    if(x<-20 || x>W+20) continue;
+    const h=(mm%10===0?19:(mm%5===0?14:9));   // 刻度线适当变长
+    rctx.beginPath(); rctx.moveTo(x,cy-sep); rctx.lineTo(x,cy-sep-h); rctx.stroke();
+    if(mm%10===0){                            // 仅标整厘米为 1,2,3…（5,15,25 消除）
+      rctx.font='bold 14px system-ui';
+      rctx.textAlign='center'; rctx.textBaseline='bottom';
+      rctx.fillText(String(mm/10), x, cy-sep-h-3);
     }
   }
-  ctx.fillStyle='#0b6f67'; ctx.font='12px sans-serif';
-  ctx.fillText('游标', slideX+10, carBot-12);
 
-  /* ---- 活动量爪（随滑块，右） ---- */
-  // 外量爪（向下）：厚实 C 形，与固定爪镜像
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=8; ctx.shadowOffsetY=5;
-  ctx.fillStyle=metalGrad(slideX,BEAM_BOT,64,EX_H+12);
-  ctx.beginPath();
-  ctx.moveTo(slideX,     BEAM_BOT);
-  ctx.lineTo(slideX+60,  BEAM_BOT);
-  ctx.lineTo(slideX+64,  BEAM_BOT+16);
-  ctx.lineTo(slideX+54,  BEAM_BOT+EX_H-8);
-  ctx.lineTo(slideX+34,  BEAM_BOT+EX_H);
-  ctx.lineTo(slideX+10,  BEAM_BOT+EX_H-3);
-  ctx.lineTo(slideX,     BEAM_BOT+EX_H-18);  // 测量面（左）
-  ctx.closePath(); ctx.fill();
-  ctx.restore();
-  ctx.strokeStyle='rgba(60,72,80,.55)'; ctx.lineWidth=1.2; ctx.stroke();
-  ctx.fillStyle='#5b656c'; ctx.fillRect(slideX, BEAM_BOT+4, 3, EX_H-24);      // 测量面
-  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(slideX+2,BEAM_BOT+4); ctx.lineTo(slideX+58,BEAM_BOT+4); ctx.stroke();
-
-  // 内量爪（向上）：短小平台，与固定爪镜像
-  ctx.fillStyle=metalGrad(slideX,BEAM_TOP-IN_H-4,38,IN_H+8);
-  ctx.beginPath();
-  ctx.moveTo(slideX,     BEAM_TOP);
-  ctx.lineTo(slideX+34,  BEAM_TOP);
-  ctx.lineTo(slideX+34,  BEAM_TOP-7);
-  ctx.lineTo(slideX+30,  BEAM_TOP-IN_H);
-  ctx.lineTo(slideX+7,   BEAM_TOP-IN_H);
-  ctx.lineTo(slideX,     BEAM_TOP-IN_H+5);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle='rgba(60,72,80,.55)'; ctx.lineWidth=1.1; ctx.stroke();
-  ctx.fillStyle='#5b656c'; ctx.fillRect(slideX, BEAM_TOP-IN_H+4, 3, IN_H-8); // 测量面
-
-  // 游标板螺钉（参考真实卡尺 3 颗）
-  const sy = carTop + 18;
-  screw(carX+14, sy, 7);
-  screw(carX+carW/2, sy, 7);
-  screw(carX+carW-14, sy, 7);
-
-  // 拇指滚花轮（滑块右侧下方，便于拖动）
-  thumbWheel(slideX+42, BEAM_BOT+EX_H-8, 11);
-
-  // 深度杆（沿尺身底部中心，从滑块右侧到右端）
-  const rodX = carX+carW-8, rodW = (BEAM_X+BEAM_W-26)-rodX;
-  if(rodW>0){
-    ctx.fillStyle='#b6c0c7'; ctx.fillRect(rodX, BEAM_BOT-8, rodW, 6);
-    ctx.strokeStyle='rgba(60,72,80,.5)'; ctx.lineWidth=.9; ctx.strokeRect(rodX,BEAM_BOT-8,rodW,6);
+  // 游标尺（下半部，基线 cy+sep，刻度向下，整把铺满宽度；黑色、刻度变长）
+  rctx.fillStyle='#dce4e4';
+  rctx.fillRect(0,cy+sep-2,W,H-(cy+sep)+2);
+  rctx.strokeStyle='#000';
+  rctx.beginPath(); rctx.moveTo(0,cy+sep); rctx.lineTo(W,cy+sep); rctx.stroke();
+  // 游标零线（左端虚线）
+  rctx.strokeStyle='rgba(255,120,80,0.65)'; rctx.lineWidth=1.5; rctx.setLineDash([4,3]);
+  rctx.beginPath(); rctx.moveTo(vZeroX,10); rctx.lineTo(vZeroX,H-10); rctx.stroke();
+  rctx.setLineDash([]);
+  for(let i=0;i<=nDiv;i++){
+    const x=vZeroX + i*vPitch*s;        // 整把游标第 i 格位置
+    const h=(i%10===0?19:(i%5===0?14:9));   // 适当变长
+    rctx.beginPath(); rctx.moveTo(x,cy+sep); rctx.lineTo(x,cy+sep+h); rctx.stroke();
+    if(i===nDiv || ((i%5===0 || i===0) && !String(i).includes('5'))){   // 含"5"的中间数字消除，保留末端 50
+      rctx.strokeStyle='#000'; rctx.fillStyle='#000';
+      rctx.font='bold 12px system-ui'; rctx.textAlign='center'; rctx.textBaseline='top';
+      rctx.fillText(String(i), x, cy+sep+h+3);
+    }
   }
+  // 游标尺矩形方框：左、右、下三边（顶部开口，与主尺相接）
+  // 左边界向左 2 格、右边界向右 2 格、下边界向上 6 格（GE＝1 格，与最小刻度线同单位）
+  const GE=9;
+  const vLeft=vZeroX-2*GE, vRight=vZeroX+usable+2*GE, vBottom=H-4-6*GE;
+  rctx.strokeStyle='#5c6b74'; rctx.lineWidth=2;
+  rctx.beginPath();
+  rctx.moveTo(vLeft, cy+sep); rctx.lineTo(vLeft, vBottom);
+  rctx.lineTo(vRight, vBottom); rctx.lineTo(vRight, cy+sep);
+  rctx.stroke();
 
-  /* ---- 对齐线高亮（贯穿主尺与游标，便于观察对齐） ---- */
-  if(showAlign){
-    ctx.strokeStyle='rgba(255,80,80,.9)'; ctx.lineWidth=2.4;
-    ctx.beginPath(); ctx.moveTo(G.alignX,SCALE_BAND_TOP+4); ctx.lineTo(G.alignX,carBot-4); ctx.stroke();
-    ctx.fillStyle='#ff5050'; ctx.beginPath(); ctx.arc(G.alignX,DATUM,4.5,0,7); ctx.fill();
-    ctx.fillStyle='#ff7676'; ctx.font='12px sans-serif'; ctx.textAlign='left';
-    ctx.fillText('第 '+G.k+' 条游标线对齐', G.alignX+10, SCALE_BAND_TOP+18);
-  }
-
-  // 测量值不再绘制到画布，避免与尺重叠；对齐红线由 showAlign 控制
+  // 对齐线（绿）：第 n 格与主尺对齐，全程高亮（取消对齐数字标注）
+  const alignX=vZeroX + rd.n*vPitch*s;
+  rctx.strokeStyle='#2a7d5a'; rctx.lineWidth=2.2;
+  rctx.beginPath(); rctx.moveTo(alignX, cy-sep-16); rctx.lineTo(alignX, cy+sep+16); rctx.stroke();
 }
 
-/* ===================== UI 逻辑 ===================== */
-function readUI(){
-  R = snap(parseFloat($('pos').value) || 0);
-  R = Math.max(0, Math.min(MAXR, R));
-  $('pos').value = R;
+/* =========================================================
+   6. UI 同步与渲染
+   ========================================================= */
+function fitCanvas(c){
+  const rect=c.parentElement.getBoundingClientRect();
+  DPR = window.devicePixelRatio || 1;
+  c.width=Math.max(1,Math.round(rect.width*DPR));
+  c.height=Math.max(1,Math.round(rect.height*DPR));
 }
-function updateMethods(){
-  const G = geom();
-  const p = G.m.prec;
-  const f = (x)=>x.toFixed(2);
-  $('addF').innerHTML =
-    '主尺读数 = <span class="v">'+G.mainInt+'</span> mm<br>'+
-    '游标读数 = 第 <span class="v">'+G.k+'</span> 条 × 精度 <span class="v">'+p+'</span> = <span class="v">'+(G.k*p).toFixed(2)+'</span> mm<br>'+
-    '总 和 = <span class="v">'+f(G.add)+'</span> mm';
-  $('subF').innerHTML =
-    '游标0右侧最近整毫米 = <span class="v">'+(G.mainInt+1)+'</span> mm<br>'+
-    '− (总格数 <span class="v">'+G.m.div+'</span> − 对齐 <span class="v">'+G.k+'</span>) × 精度 <span class="v">'+p+'</span><br>'+
-    '= <span class="v">'+(G.mainInt+1)+'</span> − <span class="v">'+((G.m.div-G.k)*p).toFixed(2)+'</span> = <span class="v">'+f(G.sub)+'</span> mm';
+function fitAll(){
+  fitCanvas(cv); fitCanvas(rc);
+  render();
 }
-function refresh(){ readUI(); draw(); updateMethods(); }
-
-/* 分度切换 */
-$('modeSeg').addEventListener('click', e=>{
-  const b = e.target.closest('button'); if(!b) return;
-  mode = b.dataset.mode;
-  [...$('modeSeg').children].forEach(x=>x.classList.toggle('on', x===b));
-  $('pos').step = MODES[mode].prec;
-  R = snap(R); refresh();
-});
-/* 滑块 */
-$('pos').addEventListener('input', refresh);
-/* 显示对齐线（可选择有 / 无） */
-$('showAlign').addEventListener('change', e=>{ showAlign=e.target.checked; draw(); });
-/* 随机 / 重置 */
-$('rand').addEventListener('click', ()=>{ R = snap(Math.random()*MAXR); $('pos').value=R; refresh(); });
-$('reset').addEventListener('click', ()=>{ R = 23.4; $('pos').value=R; $('guess').value='';
-  $('feedback').className='feedback'; $('feedback').innerHTML='已重置。移动游标到任意位置，观察基准线上对齐的游标刻线，再输入读数。'; refresh(); });
-/* 看对齐线 */
-$('hint').addEventListener('click', ()=>{ showAlign=true; $('showAlign').checked=true; draw(); });
-
-/* 检查读数 */
-$('check').addEventListener('click', checkReading);
-$('guess').addEventListener('keydown', e=>{ if(e.key==='Enter') checkReading(); });
-
-function checkReading(){
-  const G = geom();
-  const val = parseFloat($('guess').value);
-  const fb = $('feedback');
-  if(isNaN(val)){ fb.className='feedback err'; fb.innerHTML='请输入一个数值（单位 mm）。'; return; }
-  const tol = G.m.prec/2 + 1e-9;
-  if(Math.abs(val - R) <= tol){
-    fb.className='feedback ok';
-    fb.innerHTML='✓ <b>正确！</b> 读数为 <b>'+R.toFixed(2)+' mm</b>。'+
-      '第 <b>'+G.k+'</b> 条游标刻线与主尺对齐（'+MODES[mode].div+'分度，精度 '+G.m.prec+' mm）。'+
-      '已为你标出对齐线。';
-    showAlign=true; $('showAlign').checked=true; draw();
-  } else {
-    fb.className='feedback err';
-    fb.innerHTML='✗ <b>不正确。</b> 正确读数应为 <b>'+R.toFixed(2)+' mm</b>。<br>'+
-      '拆解：主尺 = <b>'+G.mainInt+'</b> mm，第 <b>'+G.k+'</b> 条游标线对齐 → 游标 = <b>'+(G.k*G.m.prec).toFixed(2)+'</b> mm，'+
-      '相加 = <b>'+R.toFixed(2)+'</b> mm。<br>'+
-      '请重点看：游标 0 左侧最近主尺整毫米，以及哪一条游标刻线与主尺刻线在基准线上重合。已标出对齐线。';
-    showAlign=true; $('showAlign').checked=true; draw();
-  }
+function render(){
+  drawCaliper(); drawReader(); syncUI();
 }
 
-/* 拖动活动爪改变位置 */
-function canvasX(e){
-  const r = cv.getBoundingClientRect();
-  return (e.clientX - r.left) * (W / r.width);
+function syncUI(){
+  const rd=calcReading(S.open);
+  const trueVal=r2(rd.R - S.zero);
+  const pinf=getPrecInfo(S.prec);
+  const vPitch=pinf.vLen/pinf.nDiv;
+  const vMain=rd.main+rd.n;
+  const dist=r2(rd.n*vPitch);
+  const Rsub=r2(vMain - dist);
+  $('roPrec').textContent=info(S.prec).name;
+  $('roMain').textContent=rd.main+' mm';
+  $('roN').textContent=rd.n+' 格';
+  $('roZero').textContent=(S.zero>=0?'+':'')+S.zero.toFixed(2)+' mm';
+  $('roR').textContent=rd.R.toFixed(2);
+  $('roFml').textContent=(S.mode==='sub'? vMain+' mm − '+dist.toFixed(2)+' mm = '+Rsub.toFixed(2)+' mm' : rd.main+' mm + '+rd.n+' × '+S.prec+' mm = '+rd.R.toFixed(2)+' mm');
+  $('roSubMain').textContent=vMain+' mm';
+  $('roSubDist').textContent=dist.toFixed(2)+' mm';
+  $('roSubFml').textContent=vMain+' mm − '+dist.toFixed(2)+' mm = '+Rsub.toFixed(2)+' mm';
+  $('roTrue').textContent=trueVal.toFixed(2);
+  $('vOpen').textContent=S.open.toFixed(2)+' mm';
+  $('vZero').textContent=S.zero.toFixed(2)+' mm';
+  $('rOpen').value=S.open;
+  $('rZero').value=S.zero;
+  $('subBox').style.display=S.mode==='sub'?'block':'none';
+  // 读数模式说明内容
+  $('modeNote').textContent = S.mode==='sub'
+    ? '减法读数：R = 对齐线主尺读数 − 对齐线至游标零刻度的距离'
+    : '加法读数：R = 主尺读数（零线左侧整毫米）+ 对齐格数 × 精度';
+  // 读数变化时重置交互式判分状态（隐藏答案公式，保持自测意义）
+  $('rVal').style.display='none';
+  $('rJudge').textContent='';
+  $('roFml').style.display='none';
+
+  // 按钮状态
+  document.querySelectorAll('#precBtns button').forEach(b=>{
+    b.classList.toggle('acc', parseFloat(b.dataset.p)===S.prec);
+  });
+  $('bAdd').classList.toggle('acc', S.mode==='add');
+  $('bSub').classList.toggle('acc', S.mode==='sub');
 }
-cv.addEventListener('pointerdown', e=>{
-  const x = canvasX(e);
-  const G = geom();
-  if(x > G.slideX-26 && x < G.slideX+G.m.span*PXMM+34){
-    dragging = true; cv.setPointerCapture(e.pointerId); cv.style.cursor='grabbing';
+function info(p){return getPrecInfo(p);}
+
+/* =========================================================
+   7. 交互事件
+   ========================================================= */
+let drag=null;
+cv.addEventListener('mousedown',e=>{
+  const rect=cv.getBoundingClientRect();
+  const sxp=e.clientX-rect.left, syp=e.clientY-rect.top;   // 画布原始坐标
+  const wpt=screenToWorld(sxp, syp);                       // 抵消平移/斜切
+  const mx=wpt.x, my=wpt.y;
+  const H=PX.mainH*ZOOM;
+  const yTop=worldY(-H/2), yBot=yTop+H;
+  const sx=worldX(S.open);
+  const info=getPrecInfo(S.prec);
+  const slideRight=sx+info.vLen*SCALE*ZOOM+6*ZOOM;
+  // 命中游标框/量爪 → 拖动开合；否则 → 整体平移视图
+  if(mx>=sx-40 && mx<=slideRight+20 &&
+     my>=yTop-PX.jawUpperH*ZOOM-20 && my<=yBot+PX.jawLowerH*ZOOM+PX.slideLipHBot*ZOOM+20){
+    drag={mode:'slide', wx:mx, open0:S.open};
+    cv.classList.add('drag');
+  }else{
+    drag={mode:'pan', sx:sxp, sy:syp, px0:PAN_X, py0:PAN_Y};
+    cv.classList.add('drag');
   }
 });
-cv.addEventListener('pointermove', e=>{
-  const x = canvasX(e);
-  const G = geom();
-  if(!dragging){
-    cv.style.cursor = (x>G.slideX-26 && x<G.slideX+G.m.span*PXMM+34) ? 'grab' : 'default';
+window.addEventListener('mousemove',e=>{
+  if(!drag) return;
+  const rect=cv.getBoundingClientRect();
+  const sxp=e.clientX-rect.left, syp=e.clientY-rect.top;
+  if(drag.mode==='slide'){
+    const w=screenToWorld(sxp, syp);
+    const dx=(w.x-drag.wx)/(SCALE*ZOOM);
+    setOpen(clamp(drag.open0+dx, 0, MAIN_LEN_MM-10));
+  }else{
+    PAN_X=drag.px0+(sxp-drag.sx);
+    PAN_Y=clamp(drag.py0+(syp-drag.sy), -260, 260);
+    render();
+  }
+});
+window.addEventListener('mouseup',()=>{drag=null; cv.classList.remove('drag');});
+
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  ZOOM=clamp(ZOOM - e.deltaY*0.001, 0.6, 1.6);
+  render();
+},{passive:false});
+
+function setOpen(v){
+  S.open=clamp(r2(v), 0, MAIN_LEN_MM-10);
+  $('rOpen').value=S.open;
+  render();
+}
+function setZero(v){
+  S.zero=r2(clamp(v,-2,2));
+  $('rZero').value=S.zero;
+  render();
+}
+
+$('rOpen').addEventListener('input',e=>setOpen(parseFloat(e.target.value)));
+$('rZero').addEventListener('input',e=>setZero(parseFloat(e.target.value)));
+
+document.querySelectorAll('#precBtns button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    S.prec=parseFloat(b.dataset.p);
+    render();
+  });
+});
+$('bAdd').addEventListener('click',()=>{S.mode='add'; render();});
+$('bSub').addEventListener('click',()=>{S.mode='sub'; render();});
+$('selObj').addEventListener('change',e=>{S.objKey=e.target.value; render();});
+$('rTilt').addEventListener('input',e=>{
+  TILT=parseFloat(e.target.value);
+  $('vTilt').textContent=TILT.toFixed(2);
+  render();
+});
+$('bReset').addEventListener('click',()=>{
+  S.open=0; S.zero=0; S.mode='add'; S.prec=0.02; S.objKey='none';
+  PAN_X=0; PAN_Y=0; TILT=0; $('rTilt').value=0; $('vTilt').textContent='0.00';
+  EX=null; $('exBox').style.display='none'; $('rOpen').disabled=false; $('rZero').disabled=false;
+  render();
+});
+$('bShow').addEventListener('click',()=>{
+  const rd=calcReading(S.open);
+  const trueVal=r2(rd.R - S.zero);
+  const sub=S.mode==='sub'?'；真实尺寸 L = '+trueVal.toFixed(2)+' mm':'';
+  $('rVal').style.display='block';
+  $('roFml').style.display='block';
+  alert('读数值 R = '+rd.R.toFixed(2)+' mm'+sub);
+});
+
+/* 交互式读数判分：先输入，再确认；正确打钩，错误显示正确读数 */
+function checkReadingR(){
+  const rd=calcReading(S.open);
+  const v=parseFloat($('inR').value);
+  if(!isFinite(v)){
+    $('rJudge').innerHTML='<span class="no">请先输入读数（mm）</span>';
     return;
   }
-  R = snap((x - X0)/PXMM);
-  R = Math.max(0, Math.min(MAXR, R));
-  $('pos').value = R; refresh();
-});
-cv.addEventListener('pointerup',   ()=>{ dragging=false; cv.style.cursor='grab'; });
-cv.addEventListener('pointercancel',()=>{ dragging=false; cv.style.cursor='grab'; });
-
-/* 初始化 */
-function boot(){
-  resize();
-  $('pos').step = MODES[mode].prec;
-  refresh();
+  const d=Math.abs(v-rd.R), tol=S.prec/2;
+  $('rVal').style.display='block';
+  $('roFml').style.display='block';
+  if(d<=tol){
+    $('rJudge').innerHTML='<span class="ok">✓ 正确！R = '+rd.R.toFixed(2)+' mm</span>';
+  }else{
+    $('rJudge').innerHTML='<span class="no">✗ 错误，正确读数 R = '+rd.R.toFixed(2)+' mm</span>'
+      +'<div class="note">你输入 '+v.toFixed(2)+' mm，相差 '+d.toFixed(2)+' mm</div>';
+  }
 }
-window.addEventListener('resize', ()=>{ resize(); draw(); });
-boot();
+$('bCheckR').addEventListener('click',checkReadingR);
+$('inR').addEventListener('keydown',e=>{ if(e.key==='Enter') checkReadingR(); });
+
+/* =========================================================
+   8. 练习
+   ========================================================= */
+function randomOpenForPrec(p){
+  const info=getPrecInfo(p);
+  const main=Math.floor(Math.random()*120)+5;          // 5 ~ 124 mm
+  const n=Math.floor(Math.random()*(info.nDiv-2))+1;
+  return r2(main + n*info.p);
+}
+$('bEx').addEventListener('click',()=>{
+  const o=randomOpenForPrec(S.prec);
+  const z=r2((Math.random()*40-20)/100);                // -0.20 ~ +0.20 mm
+  S.open=o; S.zero=z; S.mode='add'; S.objKey='cyl';
+  EX={R:r2(o), zero:z, real:r2(o-z)};
+  $('exQ').innerHTML='请用当前精度读出<b>读数值 R</b>（mm）：';
+  $('exAns').value=''; $('exJ').textContent='';
+  $('exBox').style.display='block';
+  $('rOpen').disabled=true; $('rZero').disabled=true;
+  render();
+});
+$('bEndEx').addEventListener('click',()=>{
+  EX=null; $('exBox').style.display='none'; $('rOpen').disabled=false; $('rZero').disabled=false;
+  render();
+});
+$('bCheck').addEventListener('click',()=>{
+  if(!EX){ $('exJ').innerHTML='<span class="no">请先点击「随机出题」</span>'; return; }
+  const v=parseFloat($('exAns').value);
+  if(!isFinite(v)){ $('exJ').innerHTML='<span class="no">请输入数值</span>'; return; }
+  const d=Math.abs(v-EX.R);
+  const tol=S.prec/2;
+  if(d<=tol){
+    const rd=calcReading(S.open);
+    $('exJ').innerHTML='<span class="ok">✓ 正确！R = '+EX.R.toFixed(2)+' mm</span>'
+      +'<div class="note">'+rd.main+' mm + '+rd.n+' × '+S.prec+' = '+EX.R.toFixed(2)+' mm</div>'
+      +'<div class="note">零误差 e = '+(EX.zero>=0?'+':'')+EX.zero.toFixed(2)+' mm → 真实尺寸 = '+EX.real.toFixed(2)+' mm</div>';
+  }else{
+    $('exJ').innerHTML='<span class="no">✗ 相差 '+d.toFixed(2)+' mm。提示：先看游标零线左侧主尺整毫米，再找对齐格。</span>';
+  }
+});
+
+/* =========================================================
+   9. 供外部探针/截图使用的状态更新接口
+   ========================================================= */
+window.updateState=function(prec, open, mode, zero){
+  if(prec!==undefined) S.prec=prec;
+  if(open!==undefined) S.open=clamp(r2(open),0,MAIN_LEN_MM-10);
+  if(mode!==undefined) S.mode=mode;
+  if(zero!==undefined) S.zero=r2(zero);
+  render();
+};
+
+/* =========================================================
+   10. 启动
+   ========================================================= */
+window.addEventListener('resize',fitAll);
+fitAll();
 </script>
 </body>
 </html>
