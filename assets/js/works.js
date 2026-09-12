@@ -3688,7 +3688,13 @@ const WORKS = [
     icon:"📝", cover:"assets/img/henan15-ball-shell-cover.png",
     link:"solutions/henan15-ball-shell-collision.html", date:"2026-09-11", tag:"力学"
   },
-  ];
+  {
+    type:"solve", title:"圆环与定滑轮连接的两球 · 三页式讲解",
+    icon:"📝", cover:"assets/img/ring2-pulley-two-balls-cover.png",
+    link:"solutions/ring2-pulley-two-balls.html", date:"2026-09-12", tag:"力学"
+  }
+];
+
 
 
 
