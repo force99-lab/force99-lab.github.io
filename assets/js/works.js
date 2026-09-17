@@ -2378,7 +2378,7 @@ const WORKS = [
 
 
 
-    icon:"💡", link:"solutions/2026-heijiliaomeng-t15-solution.html", date:"2026-08-17", tag:"高考压轴"
+    icon:"💡", cover:"assets/img/2026-heijiliaomeng-t15-cover.png", link:"solutions/2026-heijiliaomeng-t15-solution.html", date:"2026-08-17", tag:"高考压轴"
 
 
 
@@ -3395,6 +3395,10 @@ const WORKS = [
 
 
     icon:"🧲",
+
+
+
+    cover:"assets/img/2026-sichuan-t14-cover.png",
 
 
 
