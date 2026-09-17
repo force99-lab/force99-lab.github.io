@@ -3692,8 +3692,14 @@ const WORKS = [
     type:"solve", title:"圆环与定滑轮连接的两球 · 三页式讲解",
     icon:"📝", cover:"assets/img/ring2-pulley-two-balls-cover.png",
     link:"solutions/ring2-pulley-two-balls.html", date:"2026-09-12", tag:"力学"
+  },
+  {
+    type:"solve", title:"滑道双段摩擦追击 · 三页式讲解",
+    icon:"📝", cover:"assets/img/shanxi2026-T14-cover.png",
+    link:"solutions/shanxi2026-T14.html", date:"2026-09-17", tag:"力学"
   }
 ];
+
 
 
 
