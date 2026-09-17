@@ -3697,8 +3697,14 @@ const WORKS = [
     type:"solve", title:"滑道双段摩擦追击 · 三页式讲解",
     icon:"📝", cover:"assets/img/shanxi2026-T14-cover.png",
     link:"solutions/shanxi2026-T14.html", date:"2026-09-17", tag:"力学"
+  },
+  {
+    type:"solve", title:"传送带模型 · 三页式讲解",
+    icon:"📝", cover:"assets/img/docx13-conveyor-cover.png",
+    link:"solutions/docx13-conveyor.html", date:"2026-09-17", tag:"力学"
   }
 ];
+
 
 
 
