@@ -3614,11 +3614,11 @@ const WORKS = [
       icon:"🎬", cover:"", link:"animations/light-line.html", date:"2026-09-07", tag:"光学"
     },
   {
-    type:"animation", title:"椭圆光路 Ellipse Optical Path",
+    type:"animation", title:"椭圆光路 Ellipse Optical Path", desc:"光线在椭圆两焦点间多次反射，直观演示椭圆的光学聚焦特性。",
     icon:"🔆", cover:"assets/img/ellipse-optical-path-cover.png", link:"animations/ellipse-optical-path-2.html", date:"2026-09-07", tag:"光学"
   },
   {
-    type:"solve", title:"第43届预赛第14题精讲",
+    type:"solve", title:"第43届预赛第14题精讲", desc:"线性变力与洛伦兹力复合场中带电粒子的运动过程与临界分析。",
     icon:"📝", cover:"assets/img/contest43-q14-cover.png", link:"solutions/contest43-q14.html", date:"2026-09-07", tag:"竞赛"
   },
   {
@@ -3627,15 +3627,15 @@ const WORKS = [
     icon:"🏆", cover:"assets/img/physics-olympiad-compare-cover.png", link:"articles/physics-olympiad-compare-tech.html", date:"2026-09-07", tag:"竞赛研究"
   },
   {
-    type:"solve", title:"第43届预赛第11题精讲",
+    type:"solve", title:"第43届预赛第11题精讲", desc:"攀岩弹性绳模型：机械能守恒与弹性势能转化的综合应用。",
     icon:"📝", cover:"assets/img/contest43-q11-cover.png", link:"solutions/contest43-q11.html", date:"2026-09-08", tag:"竞赛"
   },
   {
-    type:"solve", title:"第43届预赛第12题精讲",
+    type:"solve", title:"第43届预赛第12题精讲", desc:"磁镜效应：磁场梯度中带电粒子磁矩守恒与往复振荡。",
     icon:"📝", cover:"assets/img/contest43-q12-cover.png", link:"solutions/contest43-q12.html", date:"2026-09-08", tag:"竞赛"
   },
   {
-    type:"animation", title:"频闪照相 · 自由落体 3D 模拟",
+    type:"animation", title:"频闪照相 · 自由落体 3D 模拟", desc:"以频闪照相方式逐帧记录自由落体，3D 呈现匀变速直线运动规律。",
     icon:"📸", cover:"assets/img/strobe-3d-cover.png",
     link:"animations/strobe-3d-animation.html", date:"2026-09-08", tag:"力学"
   },
@@ -3658,52 +3658,52 @@ const WORKS = [
       icon:"📄", cover:"assets/img/gaokao-english-cover.png", link:"articles/gaokao-english-weight.html", date:"2026-09-10", tag:"教育观察"
     },
   {
-    type:"solve", title:"离子分析器 · 三页式讲解",
+    type:"solve", title:"离子分析器 · 三页式讲解", desc:"离子分析器：偏转区静电场与检测区磁场的复合作用与定量计算。",
     icon:"📝", cover:"assets/img/ion-analyzer-cover.png",
     link:"solutions/ion-analyzer.html", date:"2026-09-10", tag:"电磁学"
   },
   {
-    type:"solve", title:"双球平抛反弹 · 轨迹交点与相遇",
+    type:"solve", title:"双球平抛反弹 · 轨迹交点与相遇", desc:"两球平抛与反弹轨迹的交点求解与相遇时刻分析。",
     icon:"🏀", cover:"assets/img/double-ball-cover.png",
     link:"solutions/double-ball-projectile.html", date:"2026-09-10", tag:"力学"
   },
   {
-    type:"solve", title:"激光玻璃块折射测屏幕曲率半径",
+    type:"solve", title:"激光玻璃块折射测屏幕曲率半径", desc:"激光经玻璃块折射后投射屏幕，测量屏幕曲率半径的光学方法。",
     icon:"📝", cover:"assets/img/glass-curvature-cover.png",
     link:"solutions/laser-glass-curvature.html", date:"2026-09-10", tag:"光学"
   },
   {
-    type:"animation", title:"螺旋测微器 3D 交互演示",
+    type:"animation", title:"螺旋测微器 3D 交互演示", desc:"螺旋测微器 3D 交互演示：读数方法与螺旋放大原理。",
     icon:"📏", cover:"assets/img/micrometer-3d-cover.png",
     link:"animations/micrometer-3d.html", date:"2026-09-10", tag:"力学实验"
   },
   {
-    type:"solve", title:"板块弹簧模型 · 三页式讲解",
+    type:"solve", title:"板块弹簧模型 · 三页式讲解", desc:"板块弹簧模型：摩擦力做功、能量转化与临界条件判定。",
     icon:"🧱", cover:"assets/img/block-spring-cover.png",
     link:"solutions/block-spring-model.html", date:"2026-09-11", tag:"动量与能量"
   },
   {
-    type:"animation", title:"连接体 + 弹簧模型 · 三页式讲解",
+    type:"animation", title:"连接体 + 弹簧模型 · 三页式讲解", desc:"连接体与弹簧模型：动量守恒、机械能守恒与简谐运动分析。",
     icon:"🌀", cover:"assets/img/connected-body-spring-cover.png",
     link:"animations/connected-body-spring.html", date:"2026-09-11", tag:"动量与能量"
   },
   {
-    type:"solve", title:"球壳与小球竖直弹性碰撞 · 三页式讲解",
+    type:"solve", title:"球壳与小球竖直弹性碰撞 · 三页式讲解", desc:"球壳与小球竖直弹性碰撞：动量守恒与弹性碰撞规律应用。",
     icon:"📝", cover:"assets/img/henan15-ball-shell-cover.png",
     link:"solutions/henan15-ball-shell-collision.html", date:"2026-09-11", tag:"力学"
   },
   {
-    type:"solve", title:"圆环与定滑轮连接的两球 · 三页式讲解",
+    type:"solve", title:"圆环与定滑轮连接的两球 · 三页式讲解", desc:"圆环与定滑轮连接的两球：关联速度与机械能守恒。",
     icon:"📝", cover:"assets/img/ring2-pulley-two-balls-cover.png",
     link:"solutions/ring2-pulley-two-balls.html", date:"2026-09-12", tag:"力学"
   },
   {
-    type:"solve", title:"滑道双段摩擦追击 · 三页式讲解",
+    type:"solve", title:"滑道双段摩擦追击 · 三页式讲解", desc:"滑道双段摩擦追击：分段受力分析与临界速度判断。",
     icon:"📝", cover:"assets/img/shanxi2026-T14-cover.png",
     link:"solutions/shanxi2026-T14.html", date:"2026-09-17", tag:"力学"
   },
   {
-    type:"solve", title:"传送带模型 · 三页式讲解",
+    type:"solve", title:"传送带模型 · 三页式讲解", desc:"传送带模型：相对滑动、摩擦生热与临界速度分析。",
     icon:"📝", cover:"assets/img/docx13-conveyor-cover.png",
     link:"solutions/docx13-conveyor.html", date:"2026-09-17", tag:"力学"
   }
