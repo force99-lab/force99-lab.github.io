@@ -3707,6 +3707,12 @@ const WORKS = [
     icon:"📝", cover:"assets/img/docx13-conveyor-cover.png",
     link:"solutions/docx13-conveyor.html", date:"2026-09-17", tag:"力学"
   }
+,
+      {
+      type:"solve", title:"斜面双物块·系统牛顿第二定律",
+      desc:"质量相等的甲、乙以初速v0沿同一斜面下滑、动摩擦因数不同，用系统牛顿第二定律判定 μ1+μ2=2tanθ 及地面对斜面摩擦方向（2025·黑吉辽蒙卷·T10）。",
+      icon:"📐", cover:"assets/img/incline-two-blocks-cover.png", link:"solutions/incline-two-blocks.html", date:"2026-09-18", tag:"动力学"
+    }
 ];
 
 
