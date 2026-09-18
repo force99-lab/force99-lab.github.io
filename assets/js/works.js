@@ -3683,7 +3683,7 @@ const WORKS = [
     link:"solutions/block-spring-model.html", date:"2026-09-11", tag:"动量与能量"
   },
   {
-    type:"animation", title:"连接体 + 弹簧模型 · 三页式讲解", desc:"连接体与弹簧模型：动量守恒、机械能守恒与简谐运动分析。",
+    type:"solve", title:"连接体 + 弹簧模型 · 三页式讲解", desc:"连接体与弹簧模型：动量守恒、机械能守恒与简谐运动分析。",
     icon:"🌀", cover:"assets/img/connected-body-spring-cover.png",
     link:"animations/connected-body-spring.html", date:"2026-09-11", tag:"动量与能量"
   },
