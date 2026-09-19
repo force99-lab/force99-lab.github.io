@@ -3713,7 +3713,8 @@ const WORKS = [
       desc:"质量相等的甲、乙以初速v0沿同一斜面下滑、动摩擦因数不同，用系统牛顿第二定律判定 μ1+μ2=2tanθ 及地面对斜面摩擦方向（2025·黑吉辽蒙卷·T10）。",
       icon:"📐", cover:"assets/img/incline-two-blocks-cover.png", link:"solutions/incline-two-blocks.html", date:"2026-09-18", tag:"动力学"
     },
-  { type:"animation", title:"水面波的传播与干涉 3D", desc:"双波源相干叠加：3D 水面波纹的传播、干涉加强与减弱区的动态演示。", icon:"🌊", cover:"assets/img/water-wave-interference-cover.png", link:"animations/water-wave-interference-3d.html", date:"2026-09-19", tag:"机械波" }
+  { type:"animation", title:"水面波的传播与干涉 3D", desc:"双波源相干叠加：3D 水面波纹的传播、干涉加强与减弱区的动态演示。", icon:"🌊", cover:"assets/img/water-wave-interference-cover.png", link:"animations/water-wave-interference-3d.html", date:"2026-09-19", tag:"机械波" },
+  { type:"animation", title:"转盘上的静摩擦力 3D", desc:"转盘带动木块：静摩擦力方向判定、角速度动态变化与临界打滑条件的 3D 演示。", icon:"🌀", cover:"assets/img/turntable-static-friction-cover.png", link:"animations/turntable-static-friction-3d.html", date:"2026-09-19", tag:"圆周运动" }
 ];
 
 
