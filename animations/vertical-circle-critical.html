@@ -123,6 +123,8 @@
         <hr style="border-color:var(--line);opacity:.5;margin:5px 0;">
         <p><span class="k">速度规律</span>（机械能守恒）：</p>
         <p><code>v² = v₀² − 2gR(1−cosθ)</code></p>
+        <p><span class="k">小初速往复</span>（<code>v₀&lt;√(2gR)</code>，不脱离）：</p>
+        <p>以最低点为对称，在 <code>±θ_max</code> 间往复：<code>θ_max=arccos(1−v₀²/2gR)</code></p>
         <p><span class="k">弹力规律</span>（指向圆心为正）：</p>
         <p><code>N = m(v²/R + g·cosθ)</code></p>
         <p>= <code>m[v₀²/R − 2g + 3g·cosθ]</code></p>
@@ -171,15 +173,17 @@
   function newState(){
     const R = parseFloat(elR.value);
     const v0 = parseFloat(elV0.value);
+    const rest = v0 <= 1e-7;   // 初速度为 0：小球静止于最低点
     return {
       R, v0,
       theta: 0,        // 弧度，自最低点逆时针
-      dir: 1,          // +1 逆时针(上行) / -1 顺时针(下行)
+      w: v0/R,         // 角速度 dθ/dt（状态量），上行时为正
+      dir: 1,          // 由 w 符号派生：+1 上行 / -1 下行
       v: v0,           // 当前速率
       t: 0,
-      phase: 'track',  // 'track' | 'projectile' | 'stop'
-      stopped: false,
-      stopMsg: '',
+      phase: rest ? 'stop' : 'track',  // 'track' | 'projectile' | 'stop'
+      stopped: rest,
+      stopMsg: rest ? '初速度为 0，小球静止于最低点' : '',
       loops: 0,
       // 抛体
       px: 0, py: -R, vx: 0, vy: 0,
@@ -195,21 +199,14 @@
     };
   }
 
-  function vAt(theta, v0, R){
-    const val = v0*v0 - 2*G*R*(1-Math.cos(theta));
-    return Math.sqrt(Math.max(0, val));
-  }
-  function Nat(theta, v, R){ // m=1
-    return v*v/R + G*Math.cos(theta);
-  }
-
   function regimeInfo(v0,R){
     const vc1 = Math.sqrt(5*G*R);
     const vc2 = Math.sqrt(2*G*R);
     let cls, txt;
-    if(v0 >= vc1){ cls='loop'; txt='完整圆周运动（N≥0 全程）'; }
+    if(v0 <= 1e-7){ cls='rest'; txt='初速度为 0，静止于最低点'; }
+    else if(v0 >= vc1){ cls='loop'; txt='完整圆周运动（N≥0 全程）'; }
     else if(v0 >= vc2){ cls='det'; txt='越过水平直径后脱离（上半圆脱离）'; }
-    else { cls='osc'; txt='在下半圆往复（不脱离）'; }
+    else { cls='osc'; txt='以最低点对称往复（不脱离）'; }
     return {vc1, vc2, cls, txt};
   }
 
@@ -228,42 +225,28 @@
     const sub = 8; const h = dt/sub;
     for(let i=0;i<sub;i++){
       if(S.phase==='track'){
-        const v = vAt(S.theta, v0, R);
-        S.curV = v;
-        S.curN = Nat(S.theta, v, R);
-        // 脱离判定：上半圆且 N<0
-        if(S.theta>Math.PI/2 - 1e-9 && S.curN < -1e-6){
-          // 脱离，转入抛体
+        // 角动力学积分（半隐式欧拉，对振幅收敛良好）：α = −(g/R)·sinθ
+        // 用角速度 ω 作状态量，重力在转向点自然使球减速→停→反向，
+        // 故往复运动以最低点为对称（经最低点时凭惯性通过，不反弹）。
+        const alpha = -(G/R)*Math.sin(S.theta);
+        S.w += alpha*h;
+        S.theta += S.w*h;
+        S.dir = S.w >= 0 ? 1 : -1;
+        S.v = Math.abs(S.w)*R;
+        S.curV = S.v;
+        S.curN = S.w*S.w*R + G*Math.cos(S.theta);   // N = m(Rω² + g·cosθ)，m=1
+        // 完整圆周运动：越过最低点后不断循环（不停止）
+        if(S.theta >= 2*Math.PI){ S.loops++; S.theta -= 2*Math.PI; }
+        // 脱离判定：上半圆且轨道需提供拉力（N<0 即约束失效）
+        if(S.theta > Math.PI/2 - 1e-9 && S.curN < -1e-6){
           S.detachTheta = S.theta;
           S.phase='projectile';
           S.px = R*Math.sin(S.theta);
           S.py = -R*Math.cos(S.theta);
-          // 切线速度（θ 增大方向）
-          S.vx = v*Math.cos(S.theta);
-          S.vy = v*Math.sin(S.theta);
+          S.vx = S.w*R*Math.cos(S.theta);   // 切线速度（θ 增大方向）
+          S.vy = S.w*R*Math.sin(S.theta);
           S.projPath.push([S.px,S.py]);
           break;
-        }
-        // 角度推进
-        const dth = (v/R)*h*S.dir;
-        S.theta += dth;
-        // 完整圆周运动：越过最低点后不断循环（不停止）
-        if(S.theta >= 2*Math.PI){
-          S.loops++;
-          S.theta -= 2*Math.PI;
-        }
-        // 往复运动：初速度不足越过转向角时，v 减为零后沿轨道返回
-        if(S.dir>0 && v <= 1e-7){
-          // 精确停在上行极限角 θ_max = arccos(1 − v₀²/2gR)
-          S.theta = Math.acos(Math.max(-1,Math.min(1, 1 - v0*v0/(2*G*R))));
-          S.dir = -1;            // 改为下行
-        } else if(S.dir<0 && S.theta<=0){
-          S.theta = 0;
-          if(v <= 1e-7){ // v₀=0：静止于最低点
-            S.stopped=true; S.phase='stop'; S.stopMsg='初速度为 0，小球静止于最低点';
-            break;
-          }
-          S.dir = 1; // 回到最低点后再次上行（往复）
         }
       } else if(S.phase==='projectile'){
         S.vx = S.vx; // 无水平力
