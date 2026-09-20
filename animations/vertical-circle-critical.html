@@ -44,7 +44,9 @@
   .know code{background:#0c1613;padding:1px 5px;border-radius:4px;color:var(--accent2);
     font-family:"Consolas",monospace;}
   .graphbox{display:flex;flex-direction:column;gap:8px;}
-  canvas.gr{background:#0c1613;border:1px solid var(--line);border-radius:8px;display:block;width:100%;}
+  canvas.gr{background:#0c1613;border:1px solid var(--line);border-radius:8px;display:block;}
+  .graphrow{display:flex;gap:14px;margin-top:12px;}
+  .graphcell{flex:1 1 0;min-width:0;display:flex;flex-direction:column;}
   .grtitle{font-size:12px;color:var(--mut);display:flex;justify-content:space-between;}
   .grtitle b{color:var(--ink);font-variant-numeric:tabular-nums;}
   .foot{font-size:11px;color:var(--mut);margin-top:2px;}
@@ -57,7 +59,20 @@
   <div class="left">
     <h1>竖直圆轨道 · 圆周运动临界</h1>
     <div class="sub">光滑圆轨道与水平面相切，小球自最低点以初速度 v₀ 进入</div>
-    <canvas id="anim" class="anim" width="600" height="600"></canvas>
+    <canvas id="anim" class="anim" width="600" height="440"></canvas>
+
+    <!-- 两图像：左区下半部分，左右布局 -->
+    <div class="graphrow">
+      <div class="graphcell">
+        <div class="grtitle"><span>速率 v(t)</span><b id="gv">v=0.00</b></div>
+        <canvas id="gvCanvas" class="gr" width="292" height="150"></canvas>
+      </div>
+      <div class="graphcell">
+        <div class="grtitle"><span>弹力 N(t) &nbsp;(m=1kg)</span><b id="gn">N=0.0</b></div>
+        <canvas id="gnCanvas" class="gr" width="292" height="150"></canvas>
+      </div>
+    </div>
+    <div class="foot">设小球质量 m=1 kg，故 N 数值即单位为 N。脱离轨道后无接触，N=0。</div>
   </div>
 
   <!-- 右：控制区 + 物理知识区 -->
@@ -94,17 +109,6 @@
         瞬时速率 v：<b id="vel">0.00 m/s</b> &nbsp; 轨道弹力 N：<b id="N">0.0 N</b><br>
         仿真时间 t：<b id="time">0.00 s</b>
       </div>
-    </div>
-
-    <div class="card">
-      <h2>速度 — 时间 &nbsp;/&nbsp; 弹力 — 时间</h2>
-      <div class="graphbox">
-        <div class="grtitle"><span>速率 v(t)</span><b id="gv">v=0.00</b></div>
-        <canvas id="gvCanvas" class="gr" width="400" height="150"></canvas>
-        <div class="grtitle"><span>弹力 N(t) &nbsp; (m=1kg)</span><b id="gn">N=0.0</b></div>
-        <canvas id="gnCanvas" class="gr" width="400" height="150"></canvas>
-      </div>
-      <div class="foot">设小球质量 m=1 kg，故 N 数值即单位为 N。脱离轨道后无接触，N=0。</div>
     </div>
 
     <div class="card">
@@ -301,6 +305,7 @@
 
   function draw(){
     const W=anim._w, H=anim._h;
+    const rBall = 9;                 // 小球像素半径
     actx.clearRect(0,0,W,H);
     const R=S.R;
     const maxR=3;
@@ -322,7 +327,7 @@
     // 最低点标记
     actx.fillStyle='#9fb3a8';
     actx.beginPath(); actx.arc(cx,groundY,3,0,2*Math.PI); actx.fill();
-    actx.fillText('最低点', cx+8, groundY-6);
+    actx.fillText('最低点', cx-74, groundY-9);
     // 圆心
     actx.fillStyle='#5a7568';
     actx.beginPath(); actx.arc(cx,cy,2.5,0,2*Math.PI); actx.fill();
@@ -347,10 +352,11 @@
       actx.stroke(); actx.setLineDash([]);
     }
 
-    // 当前小球位置：轨道运动用极角参数；抛体/停止态用世界坐标 px,py
-    // （脱离后落地时小球停在落点，而非轨道上的冻结位置）
+    // 当前小球位置：轨道运动用极角参数（球心内移 rBall 使球与轨道内壁相切）；
+    // 抛体/停止态用世界坐标 px,py（脱离后落地时小球停在落点，而非轨道上的冻结位置）
     let bx, by;
-    if(S.phase==='track'){ [bx,by]=W2S(R*Math.sin(S.theta), -R*Math.cos(S.theta), R, scale, cx, cy); }
+    const rOff = rBall/scale;        // 世界单位：球心内移量
+    if(S.phase==='track'){ [bx,by]=W2S((R-rOff)*Math.sin(S.theta), -(R-rOff)*Math.cos(S.theta), R, scale, cx, cy); }
     else { [bx,by]=W2S(S.px,S.py,R,scale,cx,cy); }
 
     // 速度矢量（终止状态不画）
@@ -362,11 +368,11 @@
       if(vlen>1e-4){
         const k = (S.phase==='projectile'?0.6:0.5)/Math.max(vlen,1);
         const ex = bx + vxW*k*scale, ey = by - vyW*k*scale;
-        actx.strokeStyle='#ff6b6b'; actx.lineWidth=2.5;
+        actx.strokeStyle='#ffd24d'; actx.lineWidth=2.5;
         actx.beginPath(); actx.moveTo(bx,by); actx.lineTo(ex,ey); actx.stroke();
         // 箭头
         const ang=Math.atan2(ey-by,ex-bx);
-        actx.fillStyle='#ff6b6b';
+        actx.fillStyle='#ffd24d';
         actx.beginPath();
         actx.moveTo(ex,ey);
         actx.lineTo(ex-8*Math.cos(ang-0.4), ey-8*Math.sin(ang-0.4));
@@ -375,13 +381,22 @@
       }
     }
 
-    // 小球
-    const rBall = 9;
-    const grd=actx.createRadialGradient(bx-3,by-3,2,bx,by,rBall);
-    grd.addColorStop(0,'#bdf6e4'); grd.addColorStop(1,'#39d0a3');
+    // 小球（立体红色，与轨道内壁相切）
+    actx.save();
+    actx.shadowColor='rgba(0,0,0,.42)'; actx.shadowBlur=6; actx.shadowOffsetY=2;
+    const grd=actx.createRadialGradient(bx-rBall*0.36,by-rBall*0.36,rBall*0.12,bx,by,rBall);
+    grd.addColorStop(0,'#ffd9cf');
+    grd.addColorStop(0.35,'#ff6f5e');
+    grd.addColorStop(0.78,'#e23b3b');
+    grd.addColorStop(1,'#9e1414');
     actx.fillStyle=grd;
     actx.beginPath(); actx.arc(bx,by,rBall,0,2*Math.PI); actx.fill();
-    actx.strokeStyle='#0c1613'; actx.lineWidth=1.5; actx.stroke();
+    actx.restore();
+    // 高光点
+    actx.fillStyle='rgba(255,255,255,.55)';
+    actx.beginPath();
+    actx.ellipse(bx-rBall*0.32,by-rBall*0.36,rBall*0.26,rBall*0.16,-0.6,0,2*Math.PI);
+    actx.fill();
 
     // 脱离点提示
     if(S.detachTheta!==null){
