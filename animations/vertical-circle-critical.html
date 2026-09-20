@@ -283,6 +283,7 @@
   function draw(){
     const W=anim._w, H=anim._h;
     const rBall = 9;                 // 小球像素半径
+    const tubeW = 11;                // 轨道管壁像素厚度
     actx.clearRect(0,0,W,H);
     const R=S.R;
     const maxR=3;
@@ -295,21 +296,40 @@
     // 轨道运动用极角参数（球心内移 rBall 使球与轨道内壁相切）；
     // 抛体/停止态用世界坐标 px,py（脱离后落地时小球停在落点，而非轨道上的冻结位置）
     let bx, by;
-    const rOff = rBall/scale;        // 世界单位：球心内移量
+    const rOffTrack  = (tubeW/2 + rBall)/scale;  // 轨道相切：球心内移到管壁内壁
+    const rOffGround = rBall/scale;              // 落地静止：球心抬高，使小球立于水平面
     if(S.phase==='track'){
-      // 轨道运动：球心内移 rOff，小球与轨道内壁相切
-      [bx,by]=W2S((R-rOff)*Math.sin(S.theta), -(R-rOff)*Math.cos(S.theta), R, scale, cx, cy);
+      // 轨道运动：球心内移 rOffTrack，小球与轨道内壁相切
+      [bx,by]=W2S((R-rOffTrack)*Math.sin(S.theta), -(R-rOffTrack)*Math.cos(S.theta), R, scale, cx, cy);
     } else if(S.phase==='stop'){
-      // 落地静止：球心抬高 rOff，使小球立于水平面而非半埋
-      [bx,by]=W2S(S.px, S.py + rOff, R, scale, cx, cy);
+      // 落地静止：球心抬高 rOffGround，使小球立于水平面而非半埋
+      [bx,by]=W2S(S.px, S.py + rOffGround, R, scale, cx, cy);
     } else {
       // 抛体运动：球心沿真实轨迹（在空中）
       [bx,by]=W2S(S.px,S.py,R,scale,cx,cy);
     }
 
-    // 圆轨道
-    actx.strokeStyle='#39d0a3'; actx.lineWidth=4;
-    actx.beginPath(); actx.arc(cx,cy,R*scale,0,2*Math.PI); actx.stroke();
+    // 圆轨道：3D 金属白银色管壁（外暗缘 + 对角银色渐变 + 顶部高光 + 底部暗弧）
+    const ringR = R*scale;
+    // ① 外缘暗边（管壁轮廓/阴影）
+    actx.lineCap='round';
+    actx.strokeStyle='#3a4046'; actx.lineWidth=tubeW+4;
+    actx.beginPath(); actx.arc(cx,cy,ringR,0,2*Math.PI); actx.stroke();
+    // ② 银色金属主体：对角线性渐变模拟金属高光（左上亮、右下暗）
+    const mg = actx.createLinearGradient(cx-ringR, cy-ringR, cx+ringR, cy+ringR);
+    mg.addColorStop(0.00,'#f6f9fb');   // 高光
+    mg.addColorStop(0.20,'#d2d9df');
+    mg.addColorStop(0.48,'#9aa2aa');   // 中调银灰
+    mg.addColorStop(0.74,'#c7ced4');
+    mg.addColorStop(1.00,'#717981');   // 暗部
+    actx.strokeStyle=mg; actx.lineWidth=tubeW;
+    actx.beginPath(); actx.arc(cx,cy,ringR,0,2*Math.PI); actx.stroke();
+    // ③ 顶部受光高光弧（上半圆：π→2π，y 向下故上方为北）
+    actx.strokeStyle='rgba(255,255,255,.78)'; actx.lineWidth=tubeW*0.34;
+    actx.beginPath(); actx.arc(cx,cy,ringR, Math.PI*1.12, Math.PI*1.88); actx.stroke();
+    // ④ 底部背光暗弧（下半圆：0→π）
+    actx.strokeStyle='rgba(44,50,56,.45)'; actx.lineWidth=tubeW*0.42;
+    actx.beginPath(); actx.arc(cx,cy,ringR, Math.PI*0.12, Math.PI*0.88); actx.stroke();
 
     // 离轨阶段（抛体/落地）：在小球周围挖出"遮挡间隙"，
     // 使小球明确位于轨道前方，避免轨道线穿球（穿在轨道上）的错觉
