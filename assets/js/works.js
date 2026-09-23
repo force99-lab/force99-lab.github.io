@@ -3727,6 +3727,12 @@ const WORKS = [
       desc:"子弹水平击入木块（完全非弹性碰撞）后与木块共速摆动，带动穿在固定导轨上的金属圆环向右滑移；交互演示水平动量守恒、机械能守恒与系统质心恒速漂移。",
       icon:"🎬", cover:"assets/img/bullet-ring-pendulum-cover.png", link:"animations/bullet-ring-pendulum.html", date:"2026-09-23", tag:"动量"
     }
+,
+      {
+      type:"animation", title:"子弹—木块—滑环 摆动力学",
+      desc:"子弹水平击入木块（完全非弹性碰撞）后与木块共速摆动，带动穿在固定导轨上的金属圆环向右滑移；交互演示水平动量守恒、机械能守恒与系统质心恒速漂移。",
+      icon:"🎬", cover:"assets/img/bullet-ring-pendulum-cover.png", link:"animations/bullet-ring-pendulum.html", date:"2026-09-23", tag:"动量"
+    }
 ];
 
 
