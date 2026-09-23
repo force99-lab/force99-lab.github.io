@@ -3721,6 +3721,12 @@ const WORKS = [
       desc:"光滑竖直圆轨道与水平面相切，小球自最低点以可控初速度进入；实时绘制速率与轨道弹力的 v-t、N-t 图像，直观演示整圈、上半圆脱离与下半圆往复三种临界工况。",
       icon:"🎬", cover:"assets/img/vertical-circle-critical-cover.png", link:"animations/vertical-circle-critical.html", date:"2026-09-20", tag:"圆周运动"
     }
+,
+      {
+      type:"animation", title:"子弹—木块—滑环 摆动力学",
+      desc:"子弹水平击入木块（完全非弹性碰撞）后与木块共速摆动，带动穿在固定导轨上的金属圆环向右滑移；交互演示水平动量守恒、机械能守恒与系统质心恒速漂移。",
+      icon:"🎬", cover:"assets/img/bullet-ring-pendulum-cover.png", link:"animations/bullet-ring-pendulum.html", date:"2026-09-23", tag:"动量"
+    }
 ];
 
 
