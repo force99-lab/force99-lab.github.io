@@ -3727,6 +3727,12 @@ const WORKS = [
       desc:"子弹水平击入木块（完全非弹性碰撞）后与木块共速摆动，带动穿在固定导轨上的金属圆环向右滑移；交互演示水平动量守恒、机械能守恒与系统质心恒速漂移。",
       icon:"🎬", cover:"assets/img/bullet-ring-pendulum-cover.png", link:"animations/bullet-ring-pendulum.html", date:"2026-09-23", tag:"动量"
     }
+,
+      {
+      type:"animation", title:"人船模型 · 动量守恒",
+      desc:"船静止于水面、不计水阻，人从船头走至船尾：实时绘制人与船的位移矢量及 v-t、p-t 图像，直观演示动量守恒下速度、动量与位移的变化关系。",
+      icon:"🎬", cover:"assets/img/human-boat-model-cover.png", link:"animations/human-boat-model.html", date:"2026-09-24", tag:"动量"
+    }
 ];
 
 
