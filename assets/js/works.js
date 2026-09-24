@@ -3733,6 +3733,12 @@ const WORKS = [
       desc:"船静止于水面、不计水阻，人从船头走至船尾：实时绘制人与船的位移矢量及 v-t、p-t 图像，直观演示动量守恒下速度、动量与位移的变化关系。",
       icon:"🎬", cover:"assets/img/human-boat-model-cover.png", link:"animations/human-boat-model.html", date:"2026-09-24", tag:"动量"
     }
+,
+      {
+      type:"solve", title:"第43届复赛第4题精讲",
+      desc:"空间电动力绳系卫星：运动电动势发电、洛伦兹阻力致轨道衰减、重力梯度与洛伦兹力矩平衡偏角。",
+      icon:"📐", cover:"assets/img/contest43-q4-cover.png", link:"solutions/contest43-q4.html", date:"2026-09-24", tag:"物理竞赛"
+    }
 ];
 
 
