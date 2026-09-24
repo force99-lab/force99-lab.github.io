@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>人船模型（动量守恒）</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #070a0e;
+    color: #cdd6e0;
+    font-family: "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+  .app { display: flex; height: 100vh; }
+  .left {
+    flex: 1 1 auto; position: relative; min-width: 0;
+    background: radial-gradient(120% 120% at 30% 15%, #0e1925 0%, #080c12 60%, #05080c 100%);
+  }
+  #cv { width: 100%; height: 100%; display: block; }
+  .right {
+    width: 396px; flex: 0 0 396px;
+    background: linear-gradient(180deg, #0c121b 0%, #090e15 100%);
+    border-left: 1px solid #1b2735;
+    padding: 16px 18px; overflow-y: auto;
+  }
+  .right h1 { font-size: 18px; margin: 2px 0 2px; color: #eaf2fb; letter-spacing: .5px; }
+  .right .sub { font-size: 12px; color: #6f8298; margin: 0 0 12px; }
+  .legend { display: flex; gap: 18px; margin: 4px 0 4px; font-size: 12.5px; align-items: center; }
+  .legend b { color: #9fb6cc; font-weight: 500; }
+  .cap2 { font-size: 11.5px; color: #6f8298; margin: 2px 0 10px; line-height: 1.55; }
+  .btns { display: flex; gap: 8px; margin: 4px 0 12px; }
+  .btns button {
+    flex: 1; cursor: pointer; font-size: 13px; padding: 8px 0; border-radius: 8px;
+    border: 1px solid #2a3a4d; background: #14202e; color: #cfe2f2; transition: .15s;
+  }
+  .btns button:hover { background: #1c2d40; border-color: #3a577a; }
+  .btns button.on { background: #163b33; border-color: #2f7d68; color: #9af0d8; }
+  .ctrl { margin: 9px 0; }
+  .ctrl .row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12.5px; }
+  .ctrl .row b { color: #9fb6cc; font-weight: 500; }
+  .ctrl .row span { color: #ffce8a; font-variant-numeric: tabular-nums; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 5px; margin: 6px 0 0;
+    background: #1d2a3a; border-radius: 4px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #7ff0d6, #1f9e86); cursor: pointer; border: none;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; border: none;
+    background: radial-gradient(circle at 35% 35%, #7ff0d6, #1f9e86); cursor: pointer;
+  }
+  .status {
+    margin: 12px 0 6px; padding: 10px 12px; border-radius: 10px;
+    background: #0e1722; border: 1px solid #1d2c3d; font-size: 12.5px; line-height: 1.55;
+  }
+  .status table { width: 100%; border-collapse: collapse; }
+  .status td { padding: 1.5px 0; }
+  .status td.k { color: #7e93a8; width: 50%; }
+  .status td.v { color: #e7f1fb; text-align: right; font-variant-numeric: tabular-nums; }
+  .know { margin-top: 14px; font-size: 12.5px; line-height: 1.6; }
+  .know h3 { font-size: 13.5px; margin: 12px 0 4px; color: #8fe6cf; }
+  .know .box { border-left: 3px solid #2f7d68; background: #0e1a18; padding: 7px 11px; border-radius: 0 8px 8px 0; margin: 6px 0; }
+  .know .warn { border-left: 3px solid #c77f33; background: #1d160c; padding: 7px 11px; border-radius: 0 8px 8px 0; margin: 6px 0; color: #e8c79b; }
+  .know code { color: #ffd98a; background: #11202c; padding: 0 4px; border-radius: 4px; font-size: 12px; }
+  .know p { margin: 5px 0; color: #b9c8d8; }
+  .hint { font-size: 11px; color: #5d7388; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="left"><canvas id="cv"></canvas></div>
+  <div class="right">
+    <h1>人船模型 · 动量守恒</h1>
+    <p class="sub">船静止于水面 · 不计水阻 · 人从船头走向船尾</p>
+
+    <div class="btns">
+      <button id="btnPlay" class="on">⏸ 暂停</button>
+      <button id="btnReset">↺ 重置</button>
+    </div>
+
+    <div class="ctrl" data-k="m">
+      <div class="row"><b>人的质量 m</b><span id="v_m">70 kg</span></div>
+      <input type="range" id="r_m" min="40" max="90" step="5" value="70">
+    </div>
+    <div class="ctrl" data-k="M">
+      <div class="row"><b>船的质量 M</b><span id="v_M">300 kg</span></div>
+      <input type="range" id="r_M" min="100" max="800" step="20" value="300">
+    </div>
+    <div class="ctrl" data-k="L">
+      <div class="row"><b>船长 L</b><span id="v_L">5.0 m</span></div>
+      <input type="range" id="r_L" min="3" max="8" step="0.5" value="5">
+    </div>
+    <div class="ctrl" data-k="U">
+      <div class="row"><b>步行相对速率 U</b><span id="v_U">1.2 m/s</span></div>
+      <input type="range" id="r_U" min="0.5" max="2" step="0.1" value="1.2">
+    </div>
+    <div class="ctrl" data-k="speed">
+      <div class="row"><b>播放速度</b><span id="v_speed">1.00×</span></div>
+      <input type="range" id="r_speed" min="0.25" max="2" step="0.05" value="1">
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="know">
+      <h3>核心规律</h3>
+      <p>水平方向不计水阻 → <b>系统所受合外力为零，动量守恒</b>。初态静止，故任一时刻</p>
+      <p class="box"><code>m·v_人 + M·v_船 = 0</code> &nbsp;⇒&nbsp; <code>v_船 = −(m/M)·v_人</code></p>
+      <p>人与船相互作用为内力，<b>系统质心水平位置不变</b>（动画中央虚线即质心所在，始终不动）。</p>
+      <h3>位移关系（走完全程）</h3>
+      <p class="box">人与船相对位移等于船长 L：<code>Δx_人 − Δx_船 = L</code><br>
+      动量守恒约束：<code>m·Δx_人 + M·Δx_船 = 0</code><br>
+      联立得 <code>Δx_人 = M/(m+M)·L</code>，<code>Δx_船 = −m/(m+M)·L</code></p>
+      <p>即：人走得越远，船退得越多；<b>船越重，船退得越少</b>。两者位移大小之比 <code>|Δx_人| : |Δx_船| = M : m</code>。</p>
+      <h3>易错警示</h3>
+      <p class="warn">✗ 认为“人向前走、船不动”——错。无外力时质心必静止，船必向反方向退。</p>
+      <p class="warn">✗ 把船的位移当成 L——错。人相对船走 L，但船自身后退，人相对地面只前进 <code>M/(m+M)·L</code>。</p>
+      <p class="hint">提示：动画下方位移条中<b>橙色（人）</b>与<b>青色（船）</b>两段长度之和恰好等于船长 L；速度箭头长度实时反映速度大小与方向。</p>
+    </div>
+  </div>
+</div>
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+let W = 0, H = 0, dpr = 1;
+let scale = 100;          // 像素 / 米（按场景自适应）
+let waterY = 0;           // 水面屏幕 y
+let topH = 0;             // 上区（运动动画）高度
+
+function resize(){
+  const r = cv.getBoundingClientRect();
+  W = r.width; H = r.height;
+  dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.round(W * dpr));
+  cv.height = Math.max(1, Math.round(H * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+// ---------------- 状态 ----------------
+let S = null;
+let params = { m: 70, M: 300, L: 5, U: 1.2 };
+let speed = 1.0;
+let running = true;
+const HOLD = 1.0;         // 到达端点后的停顿（秒）
+
+function newState(){
+  const { m, M, L, U } = params;
+  // 以质心为原点（世界坐标 x_cm = 0）：让初始时刻人(船头,a=0)与船满足质心=0
+  const xb0 = m * L / (2 * (m + M));        // 船初始中心
+  const xp0 = -M * L / (2 * (m + M));       // 人初始位置（船头）
+  S = {
+    dir: 1,              // +1: 船头→船尾 ; -1: 船尾→船头
+    tau: 0,
+    t: 0,
+    T: Math.PI * L / (2 * U),
+    xb: xb0, xp: xp0,
+    xb0, xp0,
+    xbRef: xb0, xpRef: xp0,   // 本程位移基准（每段行走开始时重置）
+    a: 0, u_rel: 0,
+    v_b: 0, v_p: 0,
+    holdT: 0, phase: 'walk',
+    cycleStart: 0,       // 当前周期起点时间（用于图像向右生长）
+    hist: []             // {t, vp, vb, pp, pb}
+  };
+}
+
+function step(dt){
+  if(!running) return;
+  const { m, M, L, U } = params;
+  S.t += dt;
+
+  if(S.phase === 'hold'){
+    S.holdT -= dt;
+    S.v_b = 0; S.v_p = 0; S.u_rel = 0;
+    if(S.holdT <= 0){
+      S.dir *= -1; S.tau = 0; S.phase = 'walk';
+      S.xbRef = S.xb; S.xpRef = S.xp;                 // 新一程：重置位移基准
+      if(S.dir === 1){ S.cycleStart = S.t; S.hist.length = 0; }  // 新周期：图像重新生长
+    }
+    pushHist();
+    return;
+  }
+
+  S.tau += dt / S.T;
+  const tau = Math.min(S.tau, 1);
+  // 相对位置 a（沿船从船头 0 到船尾 L）：S 形加减速，端点速度为 0
+  const a = S.dir > 0
+    ? L * (1 - Math.cos(Math.PI * tau)) / 2
+    : L * (1 + Math.cos(Math.PI * tau)) / 2;
+  const u_rel = S.dir * U * Math.sin(Math.PI * tau);   // 相对船的步行速度（端点为 0）
+  // 由动量守恒推得二者对地位速度与位移
+  const v_b = -m / (m + M) * u_rel;
+  const v_p =  M / (m + M) * u_rel;
+  S.a = a; S.u_rel = u_rel; S.v_b = v_b; S.v_p = v_p;
+  S.xb += v_b * dt;
+  S.xp = S.xb + (a - L / 2);
+
+  if(S.tau >= 1){
+    S.tau = 1; S.phase = 'hold'; S.holdT = HOLD;
+    S.v_b = 0; S.v_p = 0; S.u_rel = 0;
+    // 位置由积分自然归位（动量守恒保证质心恒定，无需硬性跳变）
+  }
+  pushHist();
+}
+
+function pushHist(){
+  S.hist.push({ t: S.t, vp: S.v_p, vb: S.v_b, pp: params.m * S.v_p, pb: params.M * S.v_b });
+  if(S.hist.length > 1600) S.hist.shift();
+}
+
+// ---------------- 坐标变换（质心固定在屏幕中央） ----------------
+function computeScale(){
+  const { m, M, L } = params;
+  const boatRight = m / (2 * (m + M)) * L + L / 2;          // 船最右端相对质心
+  const personMax = M / (m + M) * L / 2 + 0.5;              // 人最远相对质心 + 余量
+  const E = Math.max(boatRight, personMax);
+  scale = Math.min(125, Math.max(26, (W * 0.42) / E));
+}
+const sx = wx => W / 2 + wx * scale;
+
+// ---------------- 布局 ----------------
+function regions(){
+  topH = Math.round(H * 0.60);
+  const gap = 12;
+  const botY = topH + gap;
+  const botH = H - botY - gap;
+  const midX = Math.round(W / 2);
+  const pad = 10;
+  return {
+    topH,
+    vRect: { x: pad, y: botY, w: midX - pad - 6, h: botH },
+    pRect: { x: midX + 6, y: botY, w: W - (midX + 6) - pad, h: botH }
+  };
+}
+
+// ---------------- 绘制 ----------------
+function roundRect(x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function draw(){
+  computeScale();
+  const R = regions();
+  topH = R.topH;
+  waterY = Math.round(topH * 0.56);
+  ctx.clearRect(0, 0, W, H);
+
+  // —— 上区：运动动画 ——
+  drawSky();
+  drawWater();
+  drawReflection();
+  // 人初始位置定格在背景（淡影人 + 淡影船，作为位移矢量起点）
+  drawStartMarkers();
+  // 质心参考线（固定不动，仅在上区）
+  ctx.save();
+  ctx.strokeStyle = 'rgba(150,180,210,0.16)'; ctx.lineWidth = 1; ctx.setLineDash([5, 6]);
+  ctx.beginPath(); ctx.moveTo(W / 2, 8); ctx.lineTo(W / 2, topH - 8); ctx.stroke();
+  ctx.restore();
+
+  drawBoat(S.xb);
+  drawPerson(S.xp);
+  drawArrows();
+  drawDisplacementVectors();
+  drawDisplacementBar(R);
+  drawLogo(R);
+
+  // 上区 / 下区 分隔线
+  ctx.strokeStyle = 'rgba(120,150,180,0.18)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, topH); ctx.lineTo(W, topH); ctx.stroke();
+
+  // —— 下区：两张随时间生长的图像 ——
+  plotCurves(R.vRect, 'vp', 'vb', false, '速度–时间  v–t', 'v / (m·s⁻¹)');
+  plotCurves(R.pRect, 'pp', 'pb', true, '动量–时间  p–t', 'p / (kg·m·s⁻¹)');
+}
+
+function pseudo(n){ const s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); }
+
+function drawSky(){
+  const g = ctx.createLinearGradient(0, 0, 0, waterY);
+  g.addColorStop(0.0, '#081420'); g.addColorStop(0.45, '#122a40');
+  g.addColorStop(0.8, '#26486a'); g.addColorStop(1.0, '#3a6382');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, waterY);
+  // 星辰
+  for(let i = 0; i < 74; i++){
+    const px = pseudo(i * 1.7) * W, py = pseudo(i * 3.1 + 5) * waterY * 0.6;
+    const a = 0.10 + pseudo(i * 2.3 + 9) * 0.35;
+    ctx.fillStyle = 'rgba(220,235,255,' + a.toFixed(2) + ')';
+    ctx.fillRect(px, py, 1.4, 1.4);
+  }
+  // 月亮 + 光晕
+  const mx = W * 0.80, my = waterY * 0.27, mr = 24;
+  const halo = ctx.createRadialGradient(mx, my, mr * 0.4, mx, my, mr * 6);
+  halo.addColorStop(0, 'rgba(255,240,210,0.20)');
+  halo.addColorStop(0.4, 'rgba(220,230,255,0.07)');
+  halo.addColorStop(1, 'rgba(220,230,255,0)');
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(mx, my, mr * 6, 0, Math.PI * 2); ctx.fill();
+  const mg = ctx.createRadialGradient(mx - mr * 0.3, my - mr * 0.3, mr * 0.2, mx, my, mr);
+  mg.addColorStop(0, '#fffdf3'); mg.addColorStop(0.7, '#f3e9c8'); mg.addColorStop(1, '#d9cfa8');
+  ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
+  // 地平线暖带
+  const hb = ctx.createLinearGradient(0, waterY - 72, 0, waterY);
+  hb.addColorStop(0, 'rgba(255,190,120,0)'); hb.addColorStop(1, 'rgba(255,180,110,0.16)');
+  ctx.fillStyle = hb; ctx.fillRect(0, waterY - 72, W, 72);
+  // 远山剪影
+  const hh = waterY * 0.11;
+  ctx.fillStyle = 'rgba(9,20,31,0.8)';
+  ctx.beginPath(); ctx.moveTo(0, waterY);
+  for(let x = 0; x <= W; x += 12){
+    const y = waterY - hh * (0.5 + 0.5 * Math.sin(x * 0.006 + 1.3)) * (0.6 + 0.4 * Math.sin(x * 0.017 + 0.5));
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, waterY); ctx.closePath(); ctx.fill();
+}
+
+function drawWater(){
+  const g = ctx.createLinearGradient(0, waterY, 0, topH);
+  g.addColorStop(0, '#2b5a78'); g.addColorStop(0.25, '#1b4560');
+  g.addColorStop(0.6, '#0e2c40'); g.addColorStop(1, '#071521');
+  ctx.fillStyle = g; ctx.fillRect(0, waterY, W, topH - waterY);
+  // 月光倒影（竖直闪烁带）
+  const mx = W * 0.80;
+  for(let k = 0; k < 60; k++){
+    const yy = waterY + (k / 60) * (topH - waterY);
+    const wdt = 14 + 26 * Math.abs(Math.sin(k * 0.6 + S.t * 1.5));
+    const a = 0.12 * (1 - k / 60);
+    ctx.fillStyle = 'rgba(255,240,210,' + a.toFixed(3) + ')';
+    ctx.fillRect(mx - wdt / 2 + Math.sin(k * 0.9 + S.t * 2) * 6, yy, wdt, 2);
+  }
+  // 波纹
+  ctx.strokeStyle = 'rgba(180,220,240,0.10)'; ctx.lineWidth = 1.4;
+  for(let k = 0; k < 4; k++){
+    const y = waterY + 12 + k * (topH - waterY - 12) / 4.5;
+    ctx.beginPath();
+    for(let x = 0; x <= W; x += 8){
+      const yy = y + Math.sin(x * 0.025 + S.t * 1.3 + k * 0.7) * (3 + k * 0.6);
+      if(x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+  }
+  // 水平高光碎纹
+  ctx.strokeStyle = 'rgba(200,230,255,0.05)'; ctx.lineWidth = 1;
+  for(let j = 0; j < 22; j++){
+    const yy = waterY + 8 + pseudo(j * 4.4) * (topH - waterY - 16);
+    const x0 = pseudo(j * 7.1) * W, x1 = x0 + 20 + pseudo(j * 2.2) * 60;
+    ctx.beginPath(); ctx.moveTo(x0, yy); ctx.lineTo(x1, yy); ctx.stroke();
+  }
+}
+
+function drawReflection(){
+  ctx.save();
+  ctx.globalAlpha = 0.16;
+  ctx.translate(0, waterY); ctx.scale(1, -0.55); ctx.translate(0, -waterY);
+  drawBoat(S.xb);
+  drawPerson(S.xp);
+  ctx.restore();
+}
+
+function boatGeom(xb){
+  const cx = sx(xb);
+  const half = (params.L / 2) * scale;
+  const deckY = waterY - 16;
+  const botY = waterY + 12;
+  return { cx, half, deckY, botY };
+}
+
+function drawBoat(xb, tint){
+  const g0 = boatGeom(xb);
+  const cx = g0.cx, deckY = g0.deckY, botY = g0.botY;
+  const half = g0.half + 0.22 * scale;   // 绘制用船体略加船舷余量，保证人行至两端仍站在甲板上
+  ctx.save();
+  // 船体
+  ctx.beginPath();
+  ctx.moveTo(cx - half, deckY);
+  ctx.lineTo(cx + half, deckY);
+  ctx.quadraticCurveTo(cx + half * 0.72, botY + 12, cx, botY + 16);
+  ctx.quadraticCurveTo(cx - half * 0.72, botY + 12, cx - half, deckY);
+  ctx.closePath();
+  if(tint){
+    ctx.fillStyle = tint; ctx.fill();                       // 背景定格标记：单色冷调
+  } else {
+    const hg = ctx.createLinearGradient(0, deckY, 0, botY + 16);
+    hg.addColorStop(0, '#9a6634'); hg.addColorStop(0.5, '#6f4622'); hg.addColorStop(1, '#43290f');
+    ctx.fillStyle = hg; ctx.fill();
+    // 甲板
+    ctx.fillStyle = '#a06d3a'; ctx.fillRect(cx - half, deckY - 4, 2 * half, 6);
+    // 木纹
+    ctx.strokeStyle = 'rgba(40,24,10,0.5)'; ctx.lineWidth = 1;
+    for(let i = 1; i < 6; i++){
+      const xx = cx - half + 2 * half * i / 6;
+      ctx.beginPath(); ctx.moveTo(xx, deckY - 3); ctx.lineTo(xx, botY + 8); ctx.stroke();
+    }
+  }
+  // 船头立柱（左 = 船头，人从此出发）
+  ctx.fillStyle = tint || '#caa46a'; ctx.fillRect(cx - half - 3, deckY - 24, 4, 22);
+  ctx.restore();
+}
+
+function drawPerson(xp, ghost, tint){
+  const { deckY } = boatGeom(S.xb);
+  const cx = sx(xp);
+  const footY = deckY - 3;
+  const ph = Math.min(scale * 1.0, 76);    // 身高（像素）
+  const facing = ghost ? 1 : S.dir;        // 朝行走方向（侧视图）
+  const phase = ghost ? 0 : S.a * 5;       // 步频随已走距离（ghost 取静态站姿）
+  const sw = Math.sin(phase) * ph * 0.13;  // 步态摆幅（向前为正）
+
+  // 配色（绿夹克 + 深色裤，与棕色船明显区分）
+  const jacket = '#3fae6a', jacketDk = '#2c7d4c', jacketLt = '#5ecb8d';
+  const pants = '#2b3844', pantsDk = '#1b242d';
+  const skin = '#f0c49e', skinDk = '#cf9d76';
+  const hair = '#372a1f', shoe = '#14181d';
+
+  // 真实比例：头:身高 ≈ 1:6.5，肩在 0.80、髋在 0.46 身高处
+  const headR  = ph * 0.068;
+  const headCY = footY - ph + headR * 1.02;
+  const shY    = footY - ph * 0.80;
+  const hipY   = footY - ph * 0.46;
+  const bw     = ph * 0.125;               // 侧视躯干横向宽度（身体厚度）
+  const legW   = ph * 0.072;
+  const armW   = ph * 0.055;
+  const midY   = (shY + hipY) / 2;
+
+  // 侧视图：近侧肢体亮、远侧肢体暗（画在躯干后）；对侧协调摆动
+  // 近侧脚 +sw（前）、远侧脚 −sw（后）；近侧手与同侧脚反相 −sw，远侧手 +sw
+  const legNear = sw, legFar = -sw;
+  const armNear = -sw, armFar = sw;
+
+  ctx.save();
+  ctx.translate(cx, 0);
+  ctx.scale(facing, 1);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
+  // —— 远侧腿（暗，后） ——
+  ctx.strokeStyle = tint ? tint : pantsDk; ctx.lineWidth = legW;
+  ctx.beginPath(); ctx.moveTo(-legW * 0.35, hipY - ph * 0.02); ctx.lineTo(legFar, footY); ctx.stroke();
+  if(!tint){ ctx.fillStyle = shoe; ctx.beginPath(); ctx.ellipse(legFar + legW * 0.18, footY + legW * 0.10, legW * 0.85, legW * 0.42, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  // —— 远侧手臂（暗，大部分被躯干遮挡，仅前后露出） ——
+  ctx.strokeStyle = tint ? tint : jacketDk; ctx.lineWidth = armW;
+  ctx.beginPath(); ctx.moveTo(bw * 0.15, shY + ph * 0.06); ctx.lineTo(bw * 0.10 + armFar, hipY + ph * 0.07); ctx.stroke();
+  if(!tint){ ctx.fillStyle = skinDk; ctx.beginPath(); ctx.arc(bw * 0.10 + armFar, hipY + ph * 0.07, armW * 0.55, 0, Math.PI * 2); ctx.fill(); }
+
+  // —— 躯干（侧视轮廓：肩胸略宽、腰略收、前腹微凸） ——
+  const tGrad = tint ? null : ctx.createLinearGradient(-bw * 0.5, shY, bw * 0.6, hipY);
+  if(tGrad){ tGrad.addColorStop(0, jacketDk); tGrad.addColorStop(0.55, jacket); tGrad.addColorStop(1, jacketLt); }
+  ctx.fillStyle = tint ? tint : tGrad;
+  ctx.beginPath();
+  ctx.moveTo(-bw * 0.52, shY);
+  ctx.quadraticCurveTo(-bw * 0.62, midY, -bw * 0.46, hipY);      // 后脊
+  ctx.lineTo(bw * 0.46, hipY);
+  ctx.quadraticCurveTo(bw * 0.70, midY, bw * 0.52, shY);          // 前胸 / 微凸小腹
+  ctx.quadraticCurveTo(bw * 0.20, shY - ph * 0.028, -bw * 0.52, shY); // 肩顶
+  ctx.closePath(); ctx.fill();
+
+  // —— 近侧腿（亮，前） ——
+  ctx.strokeStyle = tint ? tint : pants; ctx.lineWidth = legW;
+  ctx.beginPath(); ctx.moveTo(legW * 0.35, hipY - ph * 0.02); ctx.lineTo(legNear, footY); ctx.stroke();
+  if(!tint){ ctx.fillStyle = shoe; ctx.beginPath(); ctx.ellipse(legNear + legW * 0.18, footY + legW * 0.10, legW * 0.85, legW * 0.42, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  // —— 近侧手臂（亮，在躯干外侧，与同侧脚反相） ——
+  ctx.strokeStyle = tint ? tint : jacket; ctx.lineWidth = armW;
+  ctx.beginPath(); ctx.moveTo(bw * 0.45, shY + ph * 0.045); ctx.lineTo(bw * 0.45 + armNear, hipY + ph * 0.07); ctx.stroke();
+  if(!tint){ ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(bw * 0.45 + armNear, hipY + ph * 0.07, armW * 0.55, 0, Math.PI * 2); ctx.fill(); }
+
+  // —— 脖子（梯形，从颅底到双肩） ——
+  ctx.fillStyle = tint ? tint : skinDk;
+  ctx.beginPath();
+  ctx.moveTo(bw * 0.34, headCY + headR * 0.55); ctx.lineTo(-bw * 0.28, headCY + headR * 0.55);
+  ctx.lineTo(-bw * 0.28, shY + ph * 0.005); ctx.lineTo(bw * 0.34, shY + ph * 0.005);
+  ctx.closePath(); ctx.fill();
+
+  // —— 头（侧视：脸朝 +x，头发覆盖后脑与头顶） ——
+  if(tint){
+    ctx.fillStyle = tint;
+    ctx.beginPath(); ctx.ellipse(-headR * 0.05, headCY, headR * 0.92, headR * 1.06, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(headR * 0.34, headCY + headR * 0.10, headR * 0.68, headR * 0.80, 0, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.fillStyle = hair;   // 颅底（后脑 + 顶）
+    ctx.beginPath(); ctx.ellipse(-headR * 0.05, headCY, headR * 0.92, headR * 1.06, 0, 0, Math.PI * 2); ctx.fill();
+    const sg = ctx.createRadialGradient(headR * 0.3, headCY - headR * 0.1, headR * 0.1, headR * 0.2, headCY + headR * 0.1, headR * 0.95);
+    sg.addColorStop(0, skin); sg.addColorStop(1, skinDk);
+    ctx.fillStyle = sg;     // 面部（前下侧）
+    ctx.beginPath(); ctx.ellipse(headR * 0.34, headCY + headR * 0.10, headR * 0.68, headR * 0.80, 0, 0, Math.PI * 2); ctx.fill();
+    // 鼻尖（朝 +x 的脸缘）
+    ctx.fillStyle = skinDk;
+    ctx.beginPath(); ctx.moveTo(headR * 0.84, headCY - headR * 0.02); ctx.lineTo(headR * 1.10, headCY + headR * 0.20); ctx.lineTo(headR * 0.70, headCY + headR * 0.34); ctx.closePath(); ctx.fill();
+    // 耳朵（后脑前缘）
+    ctx.beginPath(); ctx.arc(-headR * 0.20, headCY + headR * 0.16, headR * 0.17, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawArrows(){
+  const vScale = 30;                     // px / (m·s⁻¹)
+  // 人：在人身高中部
+  const py = waterY - 16 - 4 - Math.min(scale * 0.85, 64) * 0.55;
+  arrow(sx(S.xp), py, sx(S.xp) + S.v_p * vScale, py, '#ff9a52');
+  // 船：在水面下
+  const by = waterY + 30;
+  arrow(sx(S.xb), by, sx(S.xb) + S.v_b * vScale, by, '#5fe0c8');
+}
+
+function arrow(x1, y1, x2, y2, color){
+  const dx = x2 - x1, len = Math.abs(dx);
+  if(len < 4) return;
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const s = Math.sign(dx), hl = 7;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * hl, y2 - hl * 0.55);
+  ctx.lineTo(x2 - s * hl, y2 + hl * 0.55);
+  ctx.closePath(); ctx.fill();
+}
+
+// 人初始位置「定格」在背景：单色冷调淡影（人 + 船），作为本程位移矢量起点
+function drawStartMarkers(){
+  const tint = '#93a8bd';
+  ctx.save();
+  ctx.globalAlpha = 0.20;
+  drawPerson(S.xpRef, true, tint);
+  drawBoat(S.xbRef, tint);
+  ctx.restore();
+}
+
+function vector(x0, y0, x1, y1, color, label){
+  const dx = x1 - x0;
+  if(Math.abs(dx) < 3) return;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  const s = Math.sign(dx), hl = 9;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - s * hl, y1 - hl * 0.6);
+  ctx.lineTo(x1 - s * hl, y1 + hl * 0.6);
+  ctx.closePath(); ctx.fill();
+  // 标签
+  ctx.fillStyle = color; ctx.font = '11px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, (x0 + x1) / 2, y0 - 10);
+  ctx.restore();
+}
+
+// 动态位移矢量：人（橙）与船（青）都以「人初始位置」为公共起点，随运动生长；
+// 两者长度之和（|Δx_人| + |Δx_船|）在端点恰好 = 船长 L
+function drawDisplacementVectors(){
+  const yP = waterY - 118;     // 人位移矢量（人物头顶上方天空带）
+  const yB = waterY - 140;     // 船位移矢量（更上方，避免与速度箭头/人物重叠）
+  const x0 = sx(S.xpRef);      // 公共起点：人初始位置
+  const dxP = S.xp - S.xpRef;  // 人位移（相对地面）
+  const dxB = S.xb - S.xbRef;  // 船位移（相对地面）
+  const x1p = x0 + dxP * scale;
+  const x1b = x0 + dxB * scale;
+  vector(x0, yP, x1p, yP, '#ff9a52', 'Δx_人 = ' + dxP.toFixed(2) + ' m');
+  vector(x0, yB, x1b, yB, '#5fe0c8', 'Δx_船 = ' + dxB.toFixed(2) + ' m');
+}
+
+// 位移条：青色（船位移） + 橙色（人位移）两段，随运动生长；
+// 其总长 = |Δx_船| + |Δx_人|，在最远端恰好填满上方的「船长 L」参考括号
+function drawDisplacementBar(R){
+  const barW = params.L * scale;             // 船长 L 的屏幕长度（固定参考）
+  const barX = W / 2 - barW / 2;
+  const by = R.topH - 30;                    // 条中心 y
+
+  // 背板
+  roundRect(8, by - 26, W - 16, 52, 10);
+  ctx.fillStyle = 'rgba(10,18,26,0.55)'; ctx.fill();
+
+  // 船头立柱参考（一小段，标记参考括号左端为「船初始位置」）
+  ctx.fillStyle = '#caa46a'; ctx.fillRect(barX - 4, by - 2, 3, 18);
+
+  // 两段位移（按真实物理量取长度，随运动生长）
+  const segB = Math.min(barW, Math.abs(S.xb - S.xbRef) * scale);   // 本程船位移
+  const segP = Math.min(barW - segB, Math.abs(S.xp - S.xpRef) * scale); // 本程人位移
+  // 青色（船）在左，橙色（人）在右
+  ctx.fillStyle = '#5fe0c8'; ctx.fillRect(barX, by, segB, 14);
+  ctx.fillStyle = '#ff9a52'; ctx.fillRect(barX + segB, by, segP, 14);
+
+  // 上方「船长 L」参考括号（固定 = 船的屏幕长度）
+  const full = (segB + segP >= barW - 0.5);   // 已抵达最远端：两段之和 = 船长
+  ctx.save();
+  ctx.strokeStyle = full ? 'rgba(120,240,200,0.85)' : 'rgba(205,225,245,0.40)';
+  ctx.lineWidth = 1.4;
+  if(full){ ctx.shadowColor = 'rgba(120,240,200,0.6)'; ctx.shadowBlur = 8; }
+  ctx.beginPath();
+  ctx.moveTo(barX, by - 23); ctx.lineTo(barX, by - 14);
+  ctx.moveTo(barX + barW, by - 23); ctx.lineTo(barX + barW, by - 14);
+  ctx.moveTo(barX, by - 23); ctx.lineTo(barX + barW, by - 23);
+  ctx.stroke();
+  ctx.restore();
+
+  // 抵达最远端：清晰标注「两位移大小相加恰好等于船长」
+  if(full){
+    ctx.save();
+    ctx.fillStyle = 'rgba(150,240,210,0.95)';
+    ctx.font = 'bold 12px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText('|Δx_人| + |Δx_船| = L = ' + params.L.toFixed(2) + ' m', W / 2, by - 30);
+    ctx.restore();
+  }
+}
+
+function drawLogo(R){
+  ctx.save();
+  ctx.textBaseline = 'alphabetic';
+  ctx.globalAlpha = 0.22;
+  const pad = 16, size = 14;
+  const px = W - pad - 72, py = R.topH - pad - 2;
+  ctx.fillStyle = '#5fe0c8';
+  ctx.beginPath(); ctx.moveTo(px, py - 6); ctx.lineTo(px + 5, py + 4); ctx.lineTo(px - 5, py + 4); ctx.closePath(); ctx.fill();
+  ctx.textAlign = 'right'; ctx.font = 'bold ' + size + 'px "Microsoft YaHei", system-ui, sans-serif';
+  ctx.fillStyle = '#9fb6cc';
+  ctx.fillText('force99', W - pad, R.topH - pad);
+  ctx.restore();
+}
+
+// 随时间生长的图像（速度 / 动量）：小方格背景 + 坐标轴物理量符号标注
+function plotCurves(rect, kp, kb, fill, title, yunit){
+  const { x, y, w, h } = rect;
+  const padL = 15, padR = 6, padT = 18, padB = 15;
+  const ix = x + padL, iy = y + padT, iw = w - padL - padR, ih = h - padT - padB;
+
+  // 背板
+  ctx.fillStyle = '#0b131c'; roundRect(x, y, w, h, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(27,42,58,1)'; ctx.lineWidth = 1; ctx.stroke();
+
+  // 小方格背景
+  ctx.save();
+  ctx.beginPath(); ctx.rect(ix, iy, iw, ih); ctx.clip();
+  ctx.strokeStyle = 'rgba(120,150,180,0.11)'; ctx.lineWidth = 1;
+  const gx = 15, gy = 15;
+  for(let g = ix; g <= ix + iw; g += gx){ ctx.beginPath(); ctx.moveTo(g, iy); ctx.lineTo(g, iy + ih); ctx.stroke(); }
+  for(let g = iy; g <= iy + ih; g += gy){ ctx.beginPath(); ctx.moveTo(ix, g); ctx.lineTo(ix + iw, g); ctx.stroke(); }
+  ctx.restore();
+
+  // 坐标轴（左轴 + 下轴）
+  ctx.strokeStyle = 'rgba(150,175,200,0.45)'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(ix, iy); ctx.lineTo(ix, iy + ih);          // y 轴
+  ctx.moveTo(ix, iy + ih); ctx.lineTo(ix + iw, iy + ih); // x 轴
+  ctx.stroke();
+  // 零轴
+  const midY = iy + ih / 2;
+  ctx.strokeStyle = 'rgba(180,200,220,0.30)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ix, midY); ctx.lineTo(ix + iw, midY); ctx.stroke();
+
+  const hist = S.hist;
+  let vmax = 1e-4;
+  if(hist.length) for(const p of hist) vmax = Math.max(vmax, Math.abs(p[kp]), Math.abs(p[kb]));
+  vmax *= 1.18;
+  const Tspan = 2 * S.T + 2 * HOLD;           // 一个完整往返周期
+  const X = t => ix + Math.min(1, Math.max(0, (t - S.cycleStart) / Tspan)) * iw;
+  const Y = v => midY - v / vmax * (ih / 2 - 6);
+
+  if(hist.length >= 2){
+    const trace = (key) => {
+      ctx.beginPath();
+      let started = false;
+      for(const p of hist){
+        const xx = X(p.t), yy = Y(p[key]);
+        if(!started){ ctx.moveTo(xx, yy); started = true; } else ctx.lineTo(xx, yy);
+      }
+    };
+    // 动量图：以面积表示大小相等、方向相反（便于与速度图区分）
+    if(fill){
+      ctx.save();
+      trace(kp); ctx.lineTo(X(hist[hist.length - 1].t), midY); ctx.lineTo(X(hist[0].t), midY); ctx.closePath();
+      ctx.fillStyle = 'rgba(255,154,82,0.16)'; ctx.fill();
+      trace(kb); ctx.lineTo(X(hist[hist.length - 1].t), midY); ctx.lineTo(X(hist[0].t), midY); ctx.closePath();
+      ctx.fillStyle = 'rgba(95,224,200,0.16)'; ctx.fill();
+      ctx.restore();
+    }
+    const drawLine = (key, color) => { ctx.strokeStyle = color; ctx.lineWidth = 2; trace(key); ctx.stroke(); };
+    drawLine(kp, '#ff9a52');
+    drawLine(kb, '#5fe0c8');
+  }
+
+  // 标题
+  ctx.fillStyle = 'rgba(205,225,245,0.92)'; ctx.font = '12px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(title, x + 8, y + 13);
+  // y 轴物理量符号（竖排，置于坐标轴左侧留白内）
+  ctx.save();
+  ctx.translate(x + 7, iy + ih / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(150,175,200,0.85)'; ctx.font = '10.5px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(yunit, 0, 0);
+  ctx.restore();
+  // x 轴物理量符号
+  ctx.fillStyle = 'rgba(150,175,200,0.85)'; ctx.font = '10.5px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('t / s', x + w - 8, y + h - 4);
+}
+
+// ---------------- 右侧读数 ----------------
+let roFrame = 0;
+function readout(){
+  if(roFrame++ % 3 !== 0) return;
+  const { m, M, L } = params;
+  const p_p = m * S.v_p;
+  const p_b = M * S.v_b;
+  const P = p_p + p_b;
+  const dx_p = S.xp - S.xpRef;
+  const dx_b = S.xb - S.xbRef;
+  const xcm = (m * S.xp + M * S.xb) / (m + M);
+  const phaseTxt = S.phase === 'hold'
+    ? (S.dir > 0 ? '船尾（停留）' : '船头（停留）')
+    : (S.dir > 0 ? '船头 → 船尾' : '船尾 → 船头');
+  document.getElementById('status').innerHTML = `
+    <table>
+      <tr><td class="k">阶段</td><td class="v">${phaseTxt}</td></tr>
+      <tr><td class="k">时间 t</td><td class="v">${S.t.toFixed(2)} s</td></tr>
+      <tr><td class="k">人的速度 v_人</td><td class="v">${S.v_p.toFixed(3)} m/s</td></tr>
+      <tr><td class="k">船的速度 v_船</td><td class="v">${S.v_b.toFixed(3)} m/s</td></tr>
+      <tr><td class="k">人的动量 p_人</td><td class="v">${p_p.toFixed(2)} kg·m/s</td></tr>
+      <tr><td class="k">船的动量 p_船</td><td class="v">${p_b.toFixed(2)} kg·m/s</td></tr>
+      <tr><td class="k">系统总动量 P</td><td class="v">${P.toFixed(3)} (≈0)</td></tr>
+      <tr><td class="k">人位移 Δx_人（本程）</td><td class="v">${dx_p.toFixed(3)} m</td></tr>
+      <tr><td class="k">船位移 Δx_船（本程）</td><td class="v">${dx_b.toFixed(3)} m</td></tr>
+      <tr><td class="k">质心位置 x_cm</td><td class="v">${xcm.toFixed(4)} m（恒定）</td></tr>
+    </table>`;
+}
+
+// ---------------- 主循环 ----------------
+let lastT = performance.now();
+function frame(now){
+  let dt = (now - lastT) / 1000; lastT = now;
+  if(dt > 0.05) dt = 0.05;
+  step(dt * speed);
+  draw();
+  readout();
+  requestAnimationFrame(frame);
+}
+
+// ---------------- 控件 ----------------
+function bindSlider(id, key, fmt, reset){
+  const r = document.getElementById('r_' + id);
+  const v = document.getElementById('v_' + id);
+  r.addEventListener('input', () => {
+    const val = parseFloat(r.value);
+    v.textContent = fmt(val);
+    if(reset){ params[key] = val; newState(); }
+    else { speed = val; }
+  });
+}
+bindSlider('m', 'm', v => v.toFixed(0) + ' kg', true);
+bindSlider('M', 'M', v => v.toFixed(0) + ' kg', true);
+bindSlider('L', 'L', v => v.toFixed(1) + ' m', true);
+bindSlider('U', 'U', v => v.toFixed(1) + ' m/s', true);
+bindSlider('speed', 'speed', v => v.toFixed(2) + '×', false);
+
+const btnPlay = document.getElementById('btnPlay');
+btnPlay.addEventListener('click', () => {
+  running = !running;
+  btnPlay.textContent = running ? '⏸ 暂停' : '▶ 播放';
+  btnPlay.classList.toggle('on', running);
+});
+document.getElementById('btnReset').addEventListener('click', () => { newState(); });
+window.addEventListener('keydown', e => {
+  if(e.code === 'Space'){ e.preventDefault(); btnPlay.click(); }
+  if(e.code === 'KeyR'){ newState(); }
+});
+
+resize();
+newState();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
