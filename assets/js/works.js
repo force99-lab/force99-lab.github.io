@@ -3739,6 +3739,12 @@ const WORKS = [
       desc:"空间电动力绳系卫星：运动电动势发电、洛伦兹阻力致轨道衰减、重力梯度与洛伦兹力矩平衡偏角。",
       icon:"📐", cover:"assets/img/contest43-q4-cover.png", link:"solutions/contest43-q4.html", date:"2026-09-24", tag:"物理竞赛"
     }
+,
+      {
+      type:"animation", title:"匀变速直线运动的速度—时间图像",
+      desc:"以真实赛车演示匀变速直线运动：自动采集时间-速度数据、拟合 v-t 图像，并取两点求斜率得出加速度 a 与初速度 v₀，直观呈现速度正负与图像的对应关系。",
+      icon:"🎬", cover:"assets/img/uniform-vt-graph-cover.png", link:"animations/uniform-vt-graph.html", date:"2026-09-24", tag:"运动学"
+    }
 ];
 
 
