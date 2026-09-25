@@ -3755,7 +3755,7 @@ const WORKS = [
       {
       type:"animation", title:"回旋加速器的工作原理（三维演示）",
       desc:"三维透视演示回旋加速器：粒子在 D 形盒内做匀速圆周运动，每次经过缝隙都被交变电场加速，并同步生成速度与动能随时间变化的图像。",
-      icon:"🎬", cover:"assets/img/cyclotron3d-cover.png", link:"animations/cyclotron3d.html", date:"2026-09-26", tag:"电磁学"
+      icon:"🌀", cover:"assets/img/cyclotron3d-cover.png", link:"animations/cyclotron3d.html", date:"2026-09-26", tag:"电磁学"
     }
 ];
 
