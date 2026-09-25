@@ -3751,6 +3751,12 @@ const WORKS = [
       desc:"电子枪发射电子，六节金属圆筒（漂移管）交替接交流电源两极；电子在缝隙中被电场加速、在筒内匀速漂移，圆筒与导线随极性红蓝交替变化，并配 U–t、v–t 双图揭示共振加速规律。",
       icon:"🎬", cover:"assets/img/linear-accelerator-cover.png", link:"animations/linear-accelerator.html", date:"2026-09-25", tag:"电场"
     }
+,
+      {
+      type:"animation", title:"回旋加速器的工作原理（三维演示）",
+      desc:"三维透视演示回旋加速器：粒子在 D 形盒内做匀速圆周运动，每次经过缝隙都被交变电场加速，并同步生成速度与动能随时间变化的图像。",
+      icon:"🎬", cover:"assets/img/cyclotron3d-cover.png", link:"animations/cyclotron3d.html", date:"2026-09-26", tag:"电磁学"
+    }
 ];
 
 
