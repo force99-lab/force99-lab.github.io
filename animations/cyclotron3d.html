@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>回旋加速器的工作原理（三维演示）</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:rgba(19,31,48,.76); --panel-b:rgba(95,224,200,.20);
+    --txt:#e2ecf6; --sub:#8ba3ba; --teal:#5fe0c8; --red:#ff5d6c; --blue:#5a97ff;
+    --gold:#ffd24a; --purple:#a98bff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{min-height:100%}
+  body{
+    background:radial-gradient(1300px 760px at 68% -12%,#15273f 0%,var(--bg) 58%) fixed;
+    color:var(--txt); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; padding:12px;
+  }
+  #wrap{display:flex; gap:12px; max-width:1360px; margin:0 auto; align-items:stretch}
+  #left{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px}
+  #right{flex:0 0 352px; display:flex; flex-direction:column; gap:10px}
+  .stageTitle{
+    font-size:12.5px; font-weight:700; letter-spacing:.4px; color:var(--teal);
+    padding:1px 2px 0; display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  }
+  .stageTitle::before{content:""; width:5px; height:13px; border-radius:2px;
+    background:linear-gradient(var(--teal),#2c7d6a); display:inline-block}
+  .stageTitle small{color:var(--sub); font-weight:400; font-size:11px; letter-spacing:0}
+  .card{background:var(--panel); border:1px solid var(--panel-b); border-radius:13px;
+    backdrop-filter:blur(6px); box-shadow:0 8px 26px rgba(0,0,0,.32)}
+  #acc{width:100%; height:460px; display:block; border-radius:13px}
+  .graphrow{display:flex; gap:9px}
+  .graphcell{flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:3px}
+  .graphcell canvas{width:100%; height:196px; display:block; border-radius:13px}
+  .panel{padding:11px 12px}
+  .panel h3{font-size:12.5px; color:var(--teal); letter-spacing:.5px; margin-bottom:8px;
+    display:flex; align-items:center; gap:6px; font-weight:700}
+  .panel h3::before{content:""; width:4px; height:12px; border-radius:2px;
+    background:linear-gradient(var(--teal),#2c7d6a)}
+  .row{display:flex; align-items:center; gap:8px; margin-bottom:7px}
+  .row:last-child{margin-bottom:0}
+  .lbl{font-size:11.5px; color:var(--sub); flex:0 0 54px}
+  input[type=range]{flex:1 1 auto; min-width:0; accent-color:#5fe0c8; height:16px}
+  .val{font-size:11px; color:var(--teal); flex:0 0 40px; text-align:right; font-variant-numeric:tabular-nums}
+  button{
+    font-family:inherit; font-size:12px; color:var(--txt); cursor:pointer;
+    background:rgba(95,224,200,.10); border:1px solid rgba(95,224,200,.34);
+    border-radius:9px; padding:5px 12px; transition:.15s;
+  }
+  button:hover{background:rgba(95,224,200,.20)}
+  button.primary{background:rgba(95,224,200,.20); border-color:rgba(95,224,200,.55); font-weight:700}
+  .toggles{display:grid; grid-template-columns:1fr 1fr; gap:5px 8px; margin-top:8px}
+  .toggles label{font-size:11.5px; color:var(--sub); display:flex; align-items:center; gap:5px; cursor:pointer}
+  .toggles input{accent-color:#5fe0c8}
+  .readout{display:grid; grid-template-columns:1fr 1fr; gap:4px 9px; margin-top:9px;
+    border-top:1px dashed rgba(120,160,200,.22); padding-top:8px}
+  .ro{font-size:11px; color:var(--sub); display:flex; justify-content:space-between; gap:5px}
+  .ro b{color:var(--txt); font-weight:600; font-variant-numeric:tabular-nums}
+  .ro b.warm{color:var(--gold)} .ro b.pos{color:var(--red)} .ro b.neg{color:var(--blue)}
+  /* 状态行：固定行高，徽标文字出现/消失都不改变布局（否则动画区会整体上下跳） */
+  #statusline{min-height:17px; display:flex; align-items:center; gap:7px;
+    padding:0 2px; font-size:11px; color:var(--sub)}
+  #slowBadge{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:0 1 auto}
+  .legend{display:flex; flex-wrap:wrap; gap:4px 11px; margin-top:8px;
+    border-top:1px dashed rgba(120,160,200,.22); padding-top:8px}
+  .lg{font-size:10.5px; color:var(--sub); display:flex; align-items:center; gap:4px}
+  .dot{width:9px; height:9px; border-radius:50%; display:inline-block}
+  .bar{width:14px; height:3px; border-radius:2px; display:inline-block}
+  .know{font-size:11.5px; line-height:1.66; color:#cbd8e6}
+  .know .k{margin-bottom:7px}
+  .know .k:last-child{margin-bottom:0}
+  .know b.t{color:var(--teal); font-weight:700}
+  .know code{font-family:Consolas,"Cascadia Mono",monospace; color:#ffe6a3;
+    background:rgba(255,210,74,.09); border-radius:4px; padding:0 4px; font-size:11.5px}
+  .know .note{color:var(--sub); font-size:10.8px}
+  .folder{border-top:1px dashed rgba(120,160,200,.22); padding-top:6px; margin-top:6px}
+  .folder summary{cursor:pointer; font-size:11.5px; color:var(--teal); font-weight:700; list-style:none}
+  .folder summary::-webkit-details-marker{display:none}
+  .folder summary::before{content:"▸ "; }
+  .folder[open] summary::before{content:"▾ "}
+  .folder .body{margin-top:5px; font-size:11.3px; line-height:1.66; color:#c2d1e0}
+  @media (max-width:1080px){#wrap{flex-direction:column}#right{flex:1 1 auto}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="stageTitle">① 回旋加速器三维结构</div>
+    <div id="statusline"><small id="slowBadge" style="color:#ffb46b;font-weight:700"></small></div>
+    <canvas id="acc" class="card"></canvas>
+    <div class="graphrow">
+      <div class="graphcell">
+        <div class="stageTitle">② 粒子速度—时间图像 v–t</div>
+        <canvas id="vtc" class="card"></canvas>
+      </div>
+      <div class="graphcell">
+        <div class="stageTitle">③ 粒子动能—时间图像 E<sub>k</sub>–t</div>
+        <canvas id="ekt" class="card"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="right">
+    <div class="panel card">
+      <h3>回旋加速器工作原理</h3>
+      <div class="row">
+        <button id="play" class="primary">暂停</button>
+        <button id="reset">重置</button>
+      </div>
+      <div class="row"><span class="lbl">动画速度</span><input type="range" id="sp" min="20" max="300" value="100"><span class="val" id="spv">1.0×</span></div>
+      <div class="row"><span class="lbl">视角旋转</span><input type="range" id="yaw" min="-70" max="70" value="8"><span class="val" id="yawv">8°</span></div>
+      <div class="row"><span class="lbl">俯仰角</span><input type="range" id="pit" min="12" max="58" value="38"><span class="val" id="pitv">38°</span></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tB" checked>磁场 B 箭头</label>
+        <label><input type="checkbox" id="tE" checked>缝隙电场 E</label>
+        <label><input type="checkbox" id="tTraj" checked>运动轨迹</label>
+        <label><input type="checkbox" id="tPrev">全轨迹预览</label>
+        <label><input type="checkbox" id="tVel" checked>速度矢量</label>
+        <label><input type="checkbox" id="tLab" checked>标注</label>
+      </div>
+      <div class="readout">
+        <div class="ro">加速次数<b id="rn">0 / 18</b></div>
+        <div class="ro">回旋圈数<b id="rloop">0.00</b></div>
+        <div class="ro">速度 v<b class="warm" id="rv">0.350</b></div>
+        <div class="ro">半径 r<b class="warm" id="rr">0.350</b></div>
+        <div class="ro">动能 E<sub>k</sub><b class="warm" id="rek">0.12</b></div>
+        <div class="ro">电压 u<b id="ru">+0.500</b></div>
+        <div class="ro">缝隙 d<b id="rd">0.62</b></div>
+        <div class="ro">场强 E=u/d<b id="rE">+0.806</b></div>
+      </div>
+      <div class="legend">
+        <span class="lg"><i class="bar" style="background:linear-gradient(90deg,#3d1378,#8b5cf6)"></i>磁场 B</span>
+        <span class="lg"><i class="bar" style="background:var(--red)"></i>E 向右(+)</span>
+        <span class="lg"><i class="bar" style="background:var(--blue)"></i>E 向左(−)</span>
+        <span class="lg"><i class="bar" style="background:#40ec8c"></i>运动轨迹</span>
+        <span class="lg"><i class="dot" style="background:var(--gold)"></i>带电粒子</span>
+      </div>
+    </div>
+
+    <div class="panel card know">
+      <h3>物理知识归纳</h3>
+      <div class="k"><b class="t">① 盒内：磁场约束，匀速圆周</b><br>
+        <code>qvB = mv²/r</code> → <code>r = mv/(qB) = v/ω</code><br>
+        <code>T = 2πm/(qB)</code>，与速率、半径<b>无关</b> —— 这是能用固定频率交流电持续同步加速的根本原因。</div>
+
+      <div class="k"><b class="t">② 缝隙内：电场加速</b><br>
+        缝隙中电场强度 <code>E = U/d</code>（U 为两 D 形盒间的瞬时电压，d 为缝隙宽度）<br>
+        每穿过一次获得动能 <code>ΔE<sub>k</sub> = qE·d = qU</code>，<b>与 d 无关</b>；d 越小则场强 E 越大、加速越快。<br>
+        场强方向随电压每 <code>T/2</code> 反转一次，始终与粒子运动方向一致。</div>
+
+      <div class="k"><b class="t">③ 同步（共振）条件</b><br>
+        <code>T<sub>电</sub> = T<sub>回</sub> = 2πm/(qB)</code><br>
+        粒子在盒内走半个圆周用时 <code>T/2</code>，回到缝隙时电压恰好反相，于是每次都被加速。</div>
+
+      <div class="k"><b class="t">④ 为什么说“电压提前 1/4 周期”</b><br>
+        粒子穿过缝隙的时间远比它在盒内走半个圆周的时间 <code>T/2</code> 短（本演示为了看清过程，把缝隙画大并做了慢放），<br>
+        所以要求它到达<b>缝隙中点</b>的瞬间电压恰好达到<b>峰值</b>。<br>
+        若把交流电压写成常用的 <code>u = U₀sin ωt</code>，<code>t = 0</code> 时 <code>u = 0</code>，粒子此刻恰好释放却拿不到电压、无法起步；把相位前移 <code>π/2</code> 得 <code>u = U₀cos ωt</code>，峰值正好落在 <code>t = 0</code> —— 这就相当于“电压比粒子<b>提前 1/4 周期</b>到达峰值”。此后粒子每隔 <code>T/2</code> 回到缝隙，余弦函数在 <code>T/2</code> 的整数倍处都是极值，自动保持同步。<br>
+        <span class="note">⚠ 真正的同步条件仍是 <code>T<sub>电</sub> = T<sub>回</sub></code>；“提前 1/4 周期”只是选定相位起点的技巧。</span></div>
+
+      <div class="k"><b class="t">⑤ 最大动能</b><br>
+        <code>E<sub>k,max</sub> = q²B²R²/(2m)</code>，只由磁感应强度 B 和 D 形盒半径 R 决定，<b>与加速电压 U 无关</b>。<br>
+        <span class="note">增大 U 只是让加速次数变少、更快达到同一最大动能。</span></div>
+
+      <details class="folder">
+        <summary>⑥ 常见易错点</summary>
+        <div class="body">
+          · 粒子在 D 形盒内速率<b>不变</b>（洛伦兹力不做功），只在缝隙中被加速。<br>
+          · 增大加速电压 U 不提高 <code>E<sub>k,max</sub></code>，只减少回旋圈数与总时间。<br>
+          · 回旋周期与速率无关，故交流电频率不必随粒子加速而改变。<br>
+          · 缝隙宽度 d 只影响场强 <code>E = U/d</code> 与加速的“快慢”，不影响每次获得的动能 <code>qU</code>。<br>
+          · 粒子出射时 <code>r = R</code>，此时 <code>v<sub>max</sub> = qBR/m</code>。
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   回旋加速器 · 三维演示（canvas 伪 3D：正交投影 + 画家算法）
+   归一化单位：qB/m = 1  →  ω = 1，回旋周期 T = 2π
+   每次过缝：Δ(v²) = 2qU/m = 1
+   ============================================================ */
+
+/* ---------- 物理常量（先算后画） ---------- */
+const D_SLIT = 1.20;                               // 缝隙宽度 d（世界单位，已放大以便观察电场）
+const K      = 18;                                 // 加速次数 = 半圆段数
+const V0     = 0.35;                               // 释放初速
+const U0     = 0.50;                               // 电压峰值（使 Δ(v²)=2qU/m=1）
+const H_DISC = 1.02;                               // 盒厚（加厚以强化立体感）
+const L_B    = 1.05;                               // 磁场箭头长度
+const WBAND  = 0.10;                               // 过缝窗口半宽（仅用于显示插值）
+const SLOW   = 0.16;                               // 过缝最慢倍率（缝中央）
+const SLOFW  = 0.45;                               // 慢放影响半径：宽于缝窗口，两端平滑归 1
+const TE     = 0.75;                               // 引出段时长
+const T_FULL = (K - 1) * Math.PI + Math.PI / 2;    // 末段只走 1/4 圆到顶点
+const T_END  = T_FULL + TE;
+const TSCALE = 6.0;                                // 动画秒 → 归一化时间
+const HOLD   = 0.9;                                // 结束停顿
+
+const vOf = j => Math.sqrt(V0 * V0 + j);           // v(j)² = v0² + j
+const uOf = tp => U0 * Math.cos(tp);               // 峰值恰在 tp = 0, π, 2π …
+
+/* ---------- 半圆段序列 ---------- */
+const SEG = [];
+(function () {
+  let y = 0;
+  for (let m = 1; m <= K; m++) {
+    const rr = vOf(m), odd = (m % 2 === 1);
+    const cy = odd ? y - rr : y + rr;
+    const y1 = odd ? y - 2 * rr : y + 2 * rr;
+    SEG.push({ m: m, box: odd ? 'R' : 'L', r: rr, y0: y, y1: y1, cy: cy, xEdge: odd ? D_SLIT / 2 : -D_SLIT / 2 });
+    y = y1;
+  }
+})();
+const SWEEP = m => (m === K) ? Math.PI / 2 : Math.PI;
+
+/* 盘心 = 轨迹包围盒中心（世界坐标以盘心为原点） */
+const DC = (function () {
+  let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+  const add = (x, y) => { if (x < mnx) mnx = x; if (x > mxx) mxx = x; if (y < mny) mny = y; if (y > mxy) mxy = y; };
+  for (const s of SEG) {
+    const a0 = (s.box === 'R') ? Math.PI / 2 : -Math.PI / 2, sw = SWEEP(s.m);
+    for (let i = 0; i <= 48; i++) {
+      const a = a0 - sw * i / 48;
+      add(s.xEdge + s.r * Math.cos(a), s.cy + s.r * Math.sin(a));
+    }
+  }
+  return { x: (mnx + mxx) / 2, y: (mny + mxy) / 2 };
+})();
+/* 两个 D 形盒沿“缝隙方向”的中心线 = 轨迹包围盒中心
+   → 轨迹在盒内上下左右都居中（不再偏在一侧） */
+const BOX_CY = DC.y;
+
+/* D 形盒半径：取轨迹到盒心 (xEdge, BOX_CY) 的最大距离，
+   保证最外圈整段落在盒内，同时盒恰好“套住”轨迹 */
+const R_DEE = (function () {
+  let mx = 0;
+  for (const s of SEG) {
+    const a0 = (s.box === 'R') ? Math.PI / 2 : -Math.PI / 2, sw = SWEEP(s.m);
+    for (let i = 0; i <= 48; i++) {
+      const a = a0 - sw * i / 48;
+      const x = s.xEdge + s.r * Math.cos(a), y = s.cy + s.r * Math.sin(a);
+      const d = Math.hypot(x - s.xEdge, y - BOX_CY);
+      if (d > mx) mx = d;
+    }
+  }
+  return Math.round((mx + 0.10) * 100) / 100;
+})();
+const WX = x => x - DC.x, WY = y => y - DC.y;
+
+function arcPos(m, w) {
+  const s = SEG[m - 1], sw = SWEEP(m);
+  const a = ((s.box === 'R') ? Math.PI / 2 : -Math.PI / 2) - sw * w;
+  return { x: s.xEdge + s.r * Math.cos(a), y: s.cy + s.r * Math.sin(a), a: a };
+}
+const apexPoint = () => arcPos(K, 1);
+const apexDir = () => ({ x: 0, y: 1 });            // 左盒顶点处切向 = +y
+
+/* ---------- 状态求解：给定归一化时间 tp ---------- */
+function stateAt(tp) {
+  const t = Math.min(Math.max(tp, 0), T_END);
+  if (t >= T_FULL) {                               // 引出：沿切向匀速直线飞出
+    const ap = apexPoint(), d = apexDir(), s = vOf(K) * (t - T_FULL);
+    return { x: ap.x + d.x * s, y: ap.y + d.y * s, v: vOf(K), mode: 'exit', m: K };
+  }
+  /* 时间轴分段（严格首尾相接，互不重叠）：
+       段 m 的圆弧 : t ∈ [ (m−1)π + 2w , (m−1)π + SWEEP(m) ]
+       第 m 次过缝 : t ∈ [ (m−1)π , (m−1)π + 2w ]   （u=0 入口 / u=0.5 中心 / u=1 出口）
+     其中 w = WBAND。t=(m−1)π 时电压恰好为峰值，粒子正处于缝中央。            */
+  const c = Math.round(t / Math.PI) + 1;           // 候选过缝号（第 c 次过缝在 tp=(c-1)π）
+  if (c >= 1 && c <= K) {
+    const tc = (c - 1) * Math.PI, dt = t - tc;
+    if (dt >= 0 && dt <= 2 * WBAND) {              // 缝隙中：匀加速直线通过
+      const u = dt / (2 * WBAND);
+      const vi = vOf(c - 1), vf = vOf(c);
+      /* 以“缝中央（u=0.5，电压峰值）”为时间原点的匀加速位移剖面：
+         g(0)=0、g(0.5)=0.5、g(1)=1，且 g 单调 —— 保证峰值时刻粒子恰在缝中心 */
+      const sm = 2 * u - 1;
+      const g = 0.5 + 0.5 * (2 * vi * sm + (vf - vi) * sm * Math.abs(sm)) / (vi + vf);
+      const s = SEG[c - 1];
+      const xFrom = (c === 1) ? -D_SLIT / 2 : SEG[c - 2].xEdge;
+      return { x: xFrom + (s.xEdge - xFrom) * g, y: s.y0, v: vi + (vf - vi) * u,
+               mode: 'slit', m: c, u: u };
+    }
+  }
+  /* 段 m 的圆弧从 t = (m−1)π + 2w 起（粒子离开缝隙后才开始），
+     可用时长 = SWEEP(m) − 2w，保证与缝隙窗口首尾相接、互不重叠、位置严格连续 */
+  /* 用 ceil 而非 floor：使 t 恰落在段起点时也归属该段，避免边界帧“回跳” */
+  const m = Math.min(Math.max(Math.ceil((t - 2 * WBAND) / Math.PI - 1e-9), 1), K);
+  const w = Math.min(Math.max((t - (m - 1) * Math.PI - 2 * WBAND) / (SWEEP(m) - 2 * WBAND), 0), 1);
+  const p = arcPos(m, w);
+  return { x: p.x, y: p.y, a: p.a, v: vOf(m), mode: 'arc', m: m, w: w };
+}
+function slowAt(tp) {
+  /* 慢放系数：以“缝中央（电压峰值）”为原点，用升余弦在 ±SLOFW 内平滑过渡，
+     两端严格等于 1、缝中央降到 SLOW —— 不会出现“突然变慢”的台阶 */
+  const t = Math.min(Math.max(tp, 0), T_END);
+  const c = Math.round(t / Math.PI) + 1;
+  if (c >= 1 && c <= K) {
+    const dt = t - (c - 1) * Math.PI - WBAND;
+    if (dt > -SLOFW && dt < SLOFW) {
+      const b = 0.5 * (1 + Math.cos(Math.PI * dt / SLOFW));   // 缝中央 1，±SLOFW 处 0
+      return 1 - (1 - SLOW) * b;
+    }
+  }
+  return 1;
+}
+
+/* ---------- 三维投影 ----------
+   世界：x / y 水平，z 竖直向上；盘心为原点
+   屏幕 y 向下为正；depth 越大越远                                */
+const VIEW = { yaw: 8, pitch: 38, Z: 80, ox: 0, oy: 0 };
+let CYAW = 1, SYAW = 0, CP = 1, SP = 0;
+function updTrig() {
+  const R = Math.PI / 180;
+  CYAW = Math.cos(VIEW.yaw * R); SYAW = Math.sin(VIEW.yaw * R);
+  CP = Math.cos(VIEW.pitch * R); SP = Math.sin(VIEW.pitch * R);
+}
+function pr(x, y, z) {
+  const x1 =  x * CYAW + y * SYAW;
+  const y1 = -x * SYAW + y * CYAW;
+  return [VIEW.ox + x1 * VIEW.Z, VIEW.oy + (-y1 * SP - z * CP) * VIEW.Z];
+}
+function depthOf(x, y, z) {
+  const y1 = -x * SYAW + y * CYAW;
+  return y1 * CP - z * SP;
+}
+
+/* ---------- 画布 ---------- */
+const cv = document.getElementById('acc'), ctx = cv.getContext('2d');
+const vtc = document.getElementById('vtc');
+const ekt = document.getElementById('ekt');
+const $ = id => document.getElementById(id);
+let CVW = 900, CVH = 460, DPR = 1;
+function hidpi(c, w, h) {
+  const d = window.devicePixelRatio || 1;
+  c.width = Math.max(1, Math.round(w * d));
+  c.height = Math.max(1, Math.round(h * d));
+  const g = c.getContext('2d');
+  g.setTransform(d, 0, 0, d, 0, 0);
+  return g;
+}
+
+/* ---------- 静态几何 ---------- */
+const GEO = { disc: [], arrows: [], traj: [], slitY: [] };
+const NA = 76;
+
+function buildSlitY() {
+  GEO.slitY = [];
+  const h = R_DEE * 0.80;
+  for (let i = 0; i < 9; i++) GEO.slitY.push(BOX_CY - h + 2 * h * i / 8);
+}
+function buildArrows() {
+  GEO.arrows = [];
+  const stepX = 1.30, stepY = 1.14;
+  let row = 0;
+  for (let y = BOX_CY - R_DEE + 0.5; y <= BOX_CY + R_DEE - 0.35; y += stepY, row++) {
+    const off = (row % 2) * stepX * 0.5;
+    for (let x = -R_DEE + 0.5 + off; x <= R_DEE - 0.4; x += stepX) {
+      if (Math.hypot(x, y - BOX_CY) > R_DEE * 0.93) continue;
+      if (Math.abs(x) < D_SLIT / 2 + 0.34) continue;
+      GEO.arrows.push({ x: x, y: y });
+    }
+  }
+}
+/* D 形盒拆成"面"：顶面 / 底面 / 直边侧面 / 外弧侧面。
+   逐面做背面剔除 + 深度排序（画家算法），两盒才能正确互相遮挡、不再糊成一团。 */
+function buildDisc() {
+  const faces = [];
+  for (let k = 0; k < 2; k++) {
+    const sgn = k === 0 ? 1 : -1;                  // +1 → 右盒 D₁
+    const xE = sgn * D_SLIT / 2;
+    const a0 = sgn > 0 ? -Math.PI / 2 : Math.PI / 2;
+    const a1 = sgn > 0 ?  Math.PI / 2 : 3 * Math.PI / 2;
+    const ring = [];
+    for (let i = 0; i <= NA; i++) {
+      const a = a0 + (a1 - a0) * i / NA;
+      ring.push([xE + R_DEE * Math.cos(a), BOX_CY + R_DEE * Math.sin(a), a]);
+    }
+    faces.push({ sgn: sgn, kind: 'top', n: [0, 0, 1], xE: xE,
+                 v: ring.map(p => [p[0], p[1], H_DISC]) });
+    faces.push({ sgn: sgn, kind: 'bot', n: [0, 0, -1], xE: xE,
+                 v: ring.map(p => [p[0], p[1], 0]) });
+    faces.push({ sgn: sgn, kind: 'flat', n: [-sgn, 0, 0], xE: xE, ring: ring,
+                 v: [[xE, BOX_CY - R_DEE, 0], [xE, BOX_CY + R_DEE, 0],
+                     [xE, BOX_CY + R_DEE, H_DISC], [xE, BOX_CY - R_DEE, H_DISC]] });
+    faces.push({ sgn: sgn, kind: 'arc', n: null, xE: xE, ring: ring });
+  }
+  GEO.disc = faces;
+}
+/* 外弧侧面只有朝向观察者的那半圈可见（正面），按视野角直接切出可见弧段 */
+function arcSidePoly(f) {
+  const R = f.ring, n = R.length, yaw = VIEW.yaw * Math.PI / 180;
+  let i0 = -1, i1 = -1;
+  for (let i = 0; i < n; i++) {
+    if (Math.sin(yaw - R[i][2]) > 1e-6) { if (i0 < 0) i0 = i; i1 = i; }
+  }
+  if (i0 < 0) return null;
+  const top = [], bot = [];
+  for (let i = i0; i <= i1; i++) {
+    top.push([R[i][0], R[i][1], H_DISC]);
+    bot.push([R[i][0], R[i][1], 0]);
+  }
+  return top.concat(bot.reverse());
+}
+/* 背面剔除：面法向与"指向观察者"的方向点乘 > 0 才可见。
+   观察者方向 = -∇(depth) = (SYAW·CP, -CYAW·CP, SP) */
+function faceVis(n) {
+  return n[0] * SYAW * CP - n[1] * CYAW * CP + n[2] * SP > 1e-9;
+}
+function buildTraj() {
+  const P = [];
+  for (let m = 1; m <= K; m++) {
+    const s = SEG[m - 1], sw = SWEEP(m), a0 = (s.box === 'R') ? Math.PI / 2 : -Math.PI / 2;
+    const n = 26;
+    for (let i = 0; i <= n; i++) {
+      if (m > 1 && i === 0) continue;
+      const a = a0 - sw * i / n;
+      P.push({ x: s.xEdge + s.r * Math.cos(a), y: s.cy + s.r * Math.sin(a),
+               tp: (m - 1) * Math.PI + 2 * WBAND + (sw - 2 * WBAND) * i / n });
+    }
+    if (m < K) P.push({ x: SEG[m].xEdge, y: SEG[m].y0, tp: m * Math.PI });
+  }
+  const ap = apexPoint(), d = apexDir(), v = vOf(K), n = 18;
+  for (let i = 1; i <= n; i++) {
+    const s = v * TE * i / n;
+    P.push({ x: ap.x + d.x * s, y: ap.y + d.y * s, tp: T_FULL + TE * i / n });
+  }
+  GEO.traj = P;
+}
+function refit() {
+  updTrig();
+  /* 关键：测量包围盒时必须用“未缩放”投影（Z=1、原点 0），
+     否则会与 VIEW.Z 形成循环依赖 —— 每次重算都把画面再缩小一圈。 */
+  let mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+  const put = (x, y, z) => {
+    const x1 = x * CYAW + y * SYAW;
+    const y1 = -x * SYAW + y * CYAW;
+    const px = x1, py = -y1 * SP - z * CP;
+    if (px < mnx) mnx = px; if (px > mxx) mxx = px;
+    if (py < mny) mny = py; if (py > mxy) mxy = py;
+  };
+  for (let k = 0; k < 2; k++) {
+    const sgn = k === 0 ? 1 : -1, xE = sgn * D_SLIT / 2;
+    const a0 = sgn > 0 ? -Math.PI / 2 : Math.PI / 2;
+    for (let i = 0; i <= 72; i++) {
+      const a = a0 + Math.PI * i / 72;
+      const X = xE + R_DEE * Math.cos(a), Y = BOX_CY + R_DEE * Math.sin(a);
+      put(X, Y, 0); put(X, Y, H_DISC); put(X, Y, H_DISC + L_B);
+    }
+  }
+  for (const p of GEO.traj) put(p.x, p.y, H_DISC);
+  const mx = 16, my = 14;
+  const bw = Math.max(1e-6, mxx - mnx), bh = Math.max(1e-6, mxy - mny);
+  VIEW.Z = Math.min((CVW - 2 * mx) / bw, (CVH - 2 * my) / bh);   // 单位/像素
+  VIEW.ox = CVW / 2 - (mnx + mxx) / 2 * VIEW.Z;                    // 平移使内容居中
+  VIEW.oy = CVH / 2 - (mny + mxy) / 2 * VIEW.Z;
+}
+
+/* ---------- 绘图小工具 ---------- */
+function poly(pts, close) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  if (close) ctx.closePath();
+}
+function arrowHead(x0, y0, x1, y1, w) {
+  const a = Math.atan2(y1 - y0, x1 - x0);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - Math.cos(a - 0.42) * w, y1 - Math.sin(a - 0.42) * w);
+  ctx.lineTo(x1 - Math.cos(a + 0.42) * w, y1 - Math.sin(a + 0.42) * w);
+  ctx.closePath(); ctx.fill();
+}
+
+/* ---------- 场景绘制 ---------- */
+const state = { running: true, speed: 1, t: 0, last: 0,
+                showB: true, showE: true, showTraj: true, showPrev: false, showVel: true, showLab: true };
+
+/* 直边侧面（缝隙内壁）刻意压暗：缝隙读起来是"一道暗缝"，两盒不会被看成糊在一起的一块 */
+const DEE_C = {
+  R: { top: ['#f7d9b2', '#c88b4c'], side: ['#a06432', '#482c11'], flat: ['#6a4114', '#140c04'],
+       edge: 'rgba(255,232,196,.62)' },
+  L: { top: ['#eff4f9', '#a9b5c1'], side: ['#939fab', '#39424a'], flat: ['#59636e', '#131a20'],
+       edge: 'rgba(238,246,254,.62)' }
+};
+
+function drawDisc() {
+  /* 1) 收集所有可见面（含外弧可见段），2) 按平均深度降序（远的先画） 3) 逐面绘制 */
+  const list = [];
+  for (const f of GEO.disc) {
+    const C = (f.sgn > 0) ? DEE_C.R : DEE_C.L;
+    let v = f.v, kind = f.kind;
+    if (kind === 'arc') {
+      if (f.n !== null) { if (!faceVis(f.n)) continue; }
+      v = arcSidePoly(f);
+      if (!v) continue;                             // 整圈背向观察者 → 该侧面不可见
+    } else if (!faceVis(f.n)) continue;             // 平面面：背面剔除
+    let d = 0;
+    for (const p of v) d += depthOf(p[0], p[1], p[2]);
+    list.push({ f: f, C: C, v: v, kind: kind, d: d / v.length });
+  }
+  list.sort((p, q) => q.d - p.d);
+
+  for (const it of list) {
+    const f = it.f, C = it.C, v = it.v;
+    const sp = v.map(p => pr(p[0], p[1], p[2]));
+    let y0 = 1e9, y1 = -1e9;
+    for (const p of sp) { if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+    if (it.kind === 'bot') {                        // 俯视角下不可见；侧视/仰视时作暗色兜底
+      poly(sp, true); ctx.fillStyle = C.side[1]; ctx.fill(); continue;
+    }
+    if (it.kind === 'top') {
+      const g = ctx.createLinearGradient(0, y0, 0, y1);
+      g.addColorStop(0, C.top[0]); g.addColorStop(.5, C.top[1]); g.addColorStop(1, C.top[0]);
+      poly(sp, true); ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = C.edge; ctx.lineWidth = 1.2; ctx.stroke();
+      /* 顶面装饰弧（裁剪在顶面内） */
+      ctx.save(); poly(sp, true); ctx.clip();
+      const hp = [];
+      for (let i = 0; i <= 40; i++) {
+        const a = -Math.PI / 2 + Math.PI * i / 40;
+        hp.push(pr(f.xE + R_DEE * 0.85 * Math.cos(a), BOX_CY + R_DEE * 0.85 * Math.sin(a), H_DISC));
+      }
+      poly(hp, false); ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.restore();
+      continue;
+    }
+    /* 侧面（外弧 / 直边）：渐变 + 描边 */
+    const cs = (it.kind === 'arc') ? C.side : C.flat;
+    const g = ctx.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, cs[0]); g.addColorStop(1, cs[1]);
+    poly(sp, true); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = 'rgba(8,14,22,.52)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+}
+
+function drawBField() {
+  /* 磁感线统一用深紫色（#4c1d95 → #7c3aed → #b08cfb），末端留一点高光保证在深底上可辨 */
+  ctx.save();
+  for (const A of GEO.arrows) {
+    const p0 = pr(A.x, A.y, H_DISC), p1 = pr(A.x, A.y, H_DISC + L_B);
+    const g = ctx.createLinearGradient(p0[0], p0[1], p1[0], p1[1]);
+    g.addColorStop(0, '#3d1378'); g.addColorStop(.45, '#7c3aed'); g.addColorStop(1, '#b08cfb');
+    ctx.strokeStyle = g; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(124,58,237,.75)'; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1] + 3); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#8b5cf6';
+    arrowHead(p0[0], p0[1], p1[0], p1[1], 6.4);
+    ctx.fillStyle = 'rgba(76,29,149,.4)';
+    ctx.beginPath(); ctx.ellipse(p0[0], p0[1], 4.4, 2.1, 0, 0, 6.2832); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawEField(tp) {
+  const u = uOf(tp), mag = Math.abs(u) / U0, sign = u >= 0 ? 1 : -1;
+  const col1 = sign > 0 ? '#ffb3b8' : '#b3ccff';
+  const col2 = sign > 0 ? '#ff2038' : '#1f6bff';
+  const zE = H_DISC + 0.09, yA = R_DEE * 0.80;
+  ctx.save(); ctx.lineCap = 'round';
+  /* ① 缝隙高亮带：整条缝随电压变红/变蓝，一眼看出“电场方向在周期性反转” */
+  const band = [pr(-D_SLIT / 2, BOX_CY - yA, zE), pr(D_SLIT / 2, BOX_CY - yA, zE),
+                pr(D_SLIT / 2, BOX_CY + yA, zE), pr(-D_SLIT / 2, BOX_CY + yA, zE)];
+  poly(band, true);
+  ctx.fillStyle = sign > 0 ? 'rgba(255,45,70,.16)' : 'rgba(40,110,255,.16)';
+  ctx.fill();
+  ctx.strokeStyle = sign > 0 ? 'rgba(255,90,110,.42)' : 'rgba(110,160,255,.42)';
+  ctx.lineWidth = 1; ctx.stroke();
+  /* ② 场强箭头：长度与粗细随 |u| 同步变化 */
+  for (const y of GEO.slitY) {
+    const len = D_SLIT * (0.42 + 0.58 * mag) * sign;
+    const A = pr(-len / 2, y, zE), B = pr(len / 2, y, zE);
+    ctx.globalAlpha = 0.45 + 0.55 * mag;
+    ctx.shadowColor = col2; ctx.shadowBlur = 8;
+    ctx.strokeStyle = col2; ctx.lineWidth = 2.2 + 2.2 * mag;
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = col1;
+    arrowHead(A[0], A[1], B[0], B[1], 6.5 + 2.4 * mag);
+  }
+  ctx.globalAlpha = 1; ctx.restore();
+}
+
+function drawTraj(tp) {
+  const P = GEO.traj;
+  if (state.showPrev) {
+    ctx.save();
+    ctx.setLineDash([3, 5]); ctx.strokeStyle = 'rgba(96,236,152,.26)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < P.length; i++) {
+      const s = pr(P[i].x, P[i].y, H_DISC + 0.008);
+      i ? ctx.lineTo(s[0], s[1]) : ctx.moveTo(s[0], s[1]);
+    }
+    ctx.stroke(); ctx.restore();
+  }
+  if (!state.showTraj) return;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(64,236,140,.98)';
+  ctx.shadowColor = 'rgba(40,220,130,.8)'; ctx.shadowBlur = 9;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  let started = false, done = false;
+  for (let i = 0; i < P.length; i++) {
+    const s = pr(P[i].x, P[i].y, H_DISC + 0.014);
+    if (!started) { ctx.moveTo(s[0], s[1]); started = true; }
+    else ctx.lineTo(s[0], s[1]);
+    if (P[i].tp >= tp) {
+      const nx = P[i + 1];
+      if (nx) {
+        const f = (tp - P[i].tp) / Math.max(1e-9, nx.tp - P[i].tp);
+        const sn = pr(nx.x, nx.y, H_DISC + 0.014);
+        ctx.lineTo(s[0] + (sn[0] - s[0]) * f, s[1] + (sn[1] - s[1]) * f);
+      }
+      done = true; break;
+    }
+  }
+  if (done || started) ctx.stroke();
+  ctx.restore();
+}
+
+function drawParticle(st) {
+  const p = pr(st.x, st.y, H_DISC + 0.07);
+  const Rr = 8.4;
+  const g = ctx.createRadialGradient(p[0] - Rr * .34, p[1] - Rr * .36, Rr * .16, p[0], p[1], Rr);
+  g.addColorStop(0, '#fff6d0'); g.addColorStop(.35, '#ffd868'); g.addColorStop(1, '#c98600');
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,200,60,.9)'; ctx.shadowBlur = 16;
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], Rr, 0, 6.2832); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  ctx.beginPath(); ctx.arc(p[0] - Rr * .3, p[1] - Rr * .34, Rr * .22, 0, 6.2832); ctx.fill();
+  if (!state.showVel) return;
+  let dx, dy;
+  if (st.mode === 'arc') { dx = Math.sin(st.a); dy = -Math.cos(st.a); }
+  else if (st.mode === 'slit') { dx = (st.m % 2 === 1) ? 1 : -1; dy = 0; }
+  else { const d = apexDir(); dx = d.x; dy = d.y; }
+  const L = 0.5 + 0.42 * st.v;
+  const q = pr(st.x + dx * L, st.y + dy * L, H_DISC + 0.07);
+  ctx.save();
+  ctx.strokeStyle = '#7ef5a8'; ctx.fillStyle = '#7ef5a8';
+  ctx.shadowColor = 'rgba(110,240,160,.85)'; ctx.shadowBlur = 8;
+  ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+  arrowHead(p[0], p[1], q[0], q[1], 7.2);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(191,255,214,.95)'; ctx.font = '600 11px Consolas,monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText('v', q[0] + 6, q[1] - 7);
+}
+
+function drawLeads(tp) {
+  const u = uOf(tp);
+  const cD1 = u >= 0 ? '#ff5d6c' : '#5a97ff';
+  const cD2 = u >= 0 ? '#5a97ff' : '#ff5d6c';
+  const p1 = pr(D_SLIT / 2, BOX_CY + R_DEE, H_DISC);
+  const p2 = pr(-D_SLIT / 2, BOX_CY + R_DEE, H_DISC);
+  ctx.save(); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  const tops = [];
+  for (const it of [[p1, cD1], [p2, cD2]]) {
+    const c = it[0], col = it[1];
+    const mx = c[0] + 34, ty = Math.max(18, c[1] - 34);
+    ctx.strokeStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 7;
+    ctx.beginPath(); ctx.moveTo(c[0], c[1]);
+    ctx.lineTo(mx, c[1] - 14); ctx.lineTo(mx + 20, ty);
+    ctx.lineTo(Math.min(CVW - 10, mx + 62), ty);
+    ctx.stroke();
+    tops.push(ty);
+  }
+  ctx.restore();
+  chip('交变电压  u = U₀ cos ωt', Math.min(CVW - 16, p1[0] + 170), Math.min.apply(null, tops),
+       'rgba(186,206,226,.95)', 'right');
+}
+
+/* 带底衬的标签（保证压在盒体上也清晰可读） */
+function rrect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+function chip(text, x, y, col, align, font) {
+  ctx.save();
+  ctx.font = font || '600 12.5px "Microsoft YaHei"';
+  const tw = ctx.measureText(text).width;
+  const tx = x - (align === 'center' ? tw / 2 : align === 'right' ? tw : 0);
+  rrect(tx - 9, y - 15, tw + 18, 21, 7);
+  ctx.fillStyle = 'rgba(8,15,27,.85)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(125,160,195,.32)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = col; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, tx, y - 4);
+  ctx.restore();
+}
+function leader(x0, y0, x1, y1, col) {
+  ctx.save();
+  ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.strokeStyle = col;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(x1, y1, 2.2, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+  ctx.restore();
+}
+
+function drawLabels(st, tp) {
+  ctx.save();
+  ctx.textBaseline = 'middle';
+  /* D 盒名称（圆角底衬，压在轨迹上也读得清） */
+  const l1 = pr(D_SLIT / 2 + R_DEE * 0.46, BOX_CY + R_DEE * 0.70, H_DISC + 0.03);
+  const l2 = pr(-D_SLIT / 2 - R_DEE * 0.46, BOX_CY - R_DEE * 0.70, H_DISC + 0.03);
+  chip('D₁', l1[0], l1[1] + 4, '#ffe3bd', 'center', '700 14px "Microsoft YaHei"');
+  chip('D₂', l2[0], l2[1] + 4, '#e3edf7', 'center', '700 14px "Microsoft YaHei"');
+
+  /* 磁场标注：左上角空白区 + 引线指向最靠左的箭头 */
+  let best = null;
+  for (const A of GEO.arrows) {
+    const p = pr(A.x, A.y, H_DISC + L_B);
+    if (!best || p[0] < best[0] - 2) best = p;
+  }
+  const mCol = 'rgba(178,150,255,.98)';
+  chip('匀强磁场 B', 14, 26, mCol, 'left');
+  if (best) leader(232, 27, best[0], best[1], 'rgba(124,58,237,.85)');
+
+  /* 缝隙电场标注：左上角空白处 + 引线指向缝隙（与磁场标注错开一行） */
+  const u = uOf(tp);
+  const eCol = u >= 0 ? 'rgba(255,150,160,.98)' : 'rgba(160,192,255,.98)';
+  chip('缝隙加速电场  E = u / d = ' + (u / D_SLIT >= 0 ? '+' : '') + (u / D_SLIT).toFixed(3),
+       14, 47, eCol, 'left');
+  const sp = pr(0, BOX_CY, H_DISC + 0.06);
+  leader(150, 51, sp[0], sp[1], eCol);
+  ctx.restore();
+}
+
+function drawAcc() {
+  const tp = state.t;
+  const bg = ctx.createRadialGradient(CVW * .5, CVH * .42, 40, CVW * .5, CVH * .5, Math.max(CVW, CVH) * .78);
+  bg.addColorStop(0, '#17293f'); bg.addColorStop(1, '#0a1120');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, CVW, CVH);
+  ctx.lineCap = 'butt';
+
+  drawDisc();
+  if (state.showB) drawBField();
+  if (state.showE) drawEField(tp);
+  drawTraj(tp);
+  const st = stateAt(tp);
+  drawParticle(st);
+  drawLeads(tp);
+  if (state.showLab) drawLabels(st, tp);
+
+  ctx.save();
+  ctx.font = '700 11px "Microsoft YaHei"'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(140,175,205,.5)';
+  ctx.fillText('force99', CVW - 12, CVH - 9);
+  ctx.restore();
+}
+
+/* ---------- 图像 ---------- */
+function drawGraph(G, opt) {
+  const g = G.ctx, W = G.w, H = G.h;
+  const L = 40, R = 12, T = 12, B = 26;
+  const pw = W - L - R, ph = H - T - B;
+  g.clearRect(0, 0, W, H);
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, 'rgba(26,42,64,.92)'); bg.addColorStop(1, 'rgba(14,23,38,.92)');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  const X = t => L + pw * Math.min(t, T_END) / T_END;
+  const Y = v => T + ph * (1 - Math.min(v, opt.fmax) / opt.fmax);
+  /* 网格 + y 刻度 */
+  g.lineWidth = 1; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (const tk of opt.ticks) {
+    const y = Y(tk);
+    g.strokeStyle = 'rgba(120,160,200,.13)';
+    g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke();
+    g.fillStyle = 'rgba(150,175,200,.75)'; g.font = '10px Consolas,monospace';
+    g.fillText(String(tk), L - 6, y);
+  }
+  /* x 刻度 */
+  g.textAlign = 'center'; g.textBaseline = 'top';
+  for (let t = 0; t <= T_END; t += 10) {
+    const x = X(t);
+    g.strokeStyle = 'rgba(120,160,200,.10)';
+    g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke();
+    g.fillStyle = 'rgba(150,175,200,.7)'; g.font = '10px Consolas,monospace';
+    g.fillText(String(t), x, T + ph + 6);
+  }
+  /* 轴 */
+  g.strokeStyle = 'rgba(180,215,240,.6)'; g.lineWidth = 1.3;
+  g.beginPath(); g.moveTo(L, T); g.lineTo(L, T + ph); g.lineTo(L + pw, T + ph); g.stroke();
+  g.fillStyle = 'rgba(150,175,200,.85)'; g.font = '10.5px "Microsoft YaHei"';
+  g.textAlign = 'right'; g.textBaseline = 'top';
+  g.fillText('t', X(T_END) + 2, T + ph + 6);
+  g.textAlign = 'left';
+  g.fillText(opt.ylab, 4, 2);
+
+  const tp = Math.min(state.t, T_END);
+  /* 逐步生成的曲线 */
+  const NP = 1400, pts = [];
+  for (let i = 0; i <= NP; i++) {
+    const t = T_END * i / NP;
+    if (t > tp) break;
+    pts.push([X(t), Y(opt.fn(t))]);
+  }
+  if (pts.length > 1) {
+    g.beginPath();
+    g.moveTo(pts[0][0], Y(0));
+    for (const p of pts) g.lineTo(p[0], p[1]);
+    g.lineTo(pts[pts.length - 1][0], Y(0));
+    g.closePath();
+    const fg = g.createLinearGradient(0, T, 0, T + ph);
+    fg.addColorStop(0, opt.fill0); fg.addColorStop(1, opt.fill1);
+    g.fillStyle = fg; g.fill();
+    g.save();
+    g.strokeStyle = opt.color; g.lineWidth = 2.1;
+    g.shadowColor = opt.glow; g.shadowBlur = 8;
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    g.beginPath();
+    for (let i = 0; i < pts.length; i++) i ? g.lineTo(pts[i][0], pts[i][1]) : g.moveTo(pts[i][0], pts[i][1]);
+    g.stroke(); g.restore();
+  }
+  /* 当前时刻 */
+  const cx = X(tp), cy = Y(opt.fn(tp));
+  g.save();
+  g.strokeStyle = 'rgba(160,200,230,.35)'; g.setLineDash([3, 4]); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(cx, T); g.lineTo(cx, T + ph); g.stroke();
+  g.restore();
+  g.save();
+  g.fillStyle = opt.color; g.shadowColor = opt.glow; g.shadowBlur = 10;
+  g.beginPath(); g.arc(cx, cy, 4.2, 0, 6.2832); g.fill();
+  g.restore();
+  g.font = '600 11px Consolas,monospace'; g.textAlign = 'right'; g.textBaseline = 'bottom';
+  g.fillStyle = opt.color;
+  const ly = (cy - 9 < T + 10) ? cy + 15 : cy - 9;
+  g.fillText(opt.fn(tp).toFixed(2), Math.min(cx + 36, L + pw - 4), ly);
+}
+
+const vg = { ctx: vtc.getContext('2d'), w: 1, h: 1 };
+const eg = { ctx: ekt.getContext('2d'), w: 1, h: 1 };
+
+function drawGraphs() {
+  drawGraph(vg, { fmax: 5, ticks: [0, 1, 2, 3, 4, 5], ylab: 'v', color: '#ffd24a',
+                  glow: 'rgba(255,200,60,.7)', fill0: 'rgba(255,210,74,.30)', fill1: 'rgba(255,210,74,.02)',
+                  fn: t => stateAt(t).v });
+  drawGraph(eg, { fmax: 20, ticks: [0, 5, 10, 15, 20], ylab: 'Ek', color: '#7ef5a8',
+                  glow: 'rgba(110,240,160,.7)', fill0: 'rgba(126,245,168,.28)', fill1: 'rgba(126,245,168,.02)',
+                  fn: t => { const s = stateAt(t); return s.v * s.v; } });
+}
+
+/* ---------- 读数 ---------- */
+function refreshReadout() {
+  const tp = Math.min(state.t, T_END);
+  const st = stateAt(tp);
+  const u = uOf(tp), E = u / D_SLIT;
+  let n;
+  if (tp >= T_FULL) n = K;
+  else {
+    const c = Math.round(tp / Math.PI) + 1;
+    const dt = tp - (c - 1) * Math.PI;
+    const inSlit = (c >= 1 && c <= K && dt >= 0 && dt <= 2 * WBAND);
+    n = inSlit ? (c - 1 + dt / (2 * WBAND))
+               : Math.min(Math.max(Math.floor((tp - 2 * WBAND) / Math.PI), 0), K);
+  }
+  $('rn').textContent = (Math.abs(n - Math.round(n)) < 1e-6 ? n : n.toFixed(1)) + ' / ' + K;
+  $('rloop').textContent = (n / 2).toFixed(2);
+  $('rv').textContent = st.v.toFixed(3);
+  $('rr').textContent = (st.mode === 'slit') ? '—' : st.v.toFixed(3);
+  $('rek').textContent = (st.v * st.v).toFixed(2);
+  const ru = $('ru');
+  ru.textContent = (u >= 0 ? '+' : '') + u.toFixed(3);
+  ru.className = u >= 0 ? 'pos' : 'neg';
+  $('rd').textContent = D_SLIT.toFixed(2);
+  const rE = $('rE');
+  rE.textContent = (E >= 0 ? '+' : '') + E.toFixed(3);
+  rE.className = E >= 0 ? 'pos' : 'neg';
+  const sl = slowAt(tp);
+  $('slowBadge').textContent = (st.mode === 'exit') ? '· 粒子已在 r = R 处引出'
+    : (sl < 0.985 ? '· 慢放 ×' + sl.toFixed(2) : '');
+}
+
+/* ---------- 尺寸 / 主循环 ---------- */
+function resizeAll() {
+  const r1 = cv.getBoundingClientRect();
+  CVW = Math.max(320, Math.round(r1.width));
+  CVH = Math.max(240, Math.round(r1.height));
+  hidpi(cv, CVW, CVH);
+  const r2 = vtc.getBoundingClientRect();
+  vg.w = Math.max(200, Math.round(r2.width));
+  vg.h = Math.max(120, Math.round(r2.height));
+  hidpi(vtc, vg.w, vg.h);
+  const r3 = ekt.getBoundingClientRect();
+  eg.w = Math.max(200, Math.round(r3.width));
+  eg.h = Math.max(120, Math.round(r3.height));
+  hidpi(ekt, eg.w, eg.h);
+  refit();
+}
+function frame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - state.last) / 1000) || 0);
+  state.last = now;
+  if (state.running) {
+    state.t += dt * state.speed * TSCALE * slowAt(state.t);
+    if (state.t > T_END + HOLD) state.t = 0;
+  }
+  drawAcc(); drawGraphs(); refreshReadout();
+  requestAnimationFrame(frame);
+}
+function bindUI() {
+  $('play').addEventListener('click', function () {
+    state.running = !state.running;
+    this.textContent = state.running ? '暂停' : '播放';
+  });
+  $('reset').addEventListener('click', function () { state.t = 0; });
+  $('sp').addEventListener('input', function () {
+    state.speed = parseFloat(this.value) / 100;
+    $('spv').textContent = state.speed.toFixed(1) + '×';
+  });
+  $('yaw').addEventListener('input', function () {
+    VIEW.yaw = parseFloat(this.value);
+    $('yawv').textContent = VIEW.yaw.toFixed(0) + '°';
+    refit();
+  });
+  $('pit').addEventListener('input', function () {
+    VIEW.pitch = parseFloat(this.value);
+    $('pitv').textContent = VIEW.pitch.toFixed(0) + '°';
+    refit();
+  });
+  const map = { tB: 'showB', tE: 'showE', tTraj: 'showTraj', tPrev: 'showPrev', tVel: 'showVel', tLab: 'showLab' };
+  for (const id in map) {
+    $(id).addEventListener('change', function () { state[map[id]] = this.checked; });
+  }
+  window.addEventListener('resize', function () { resizeAll(); });
+}
+buildSlitY(); buildArrows(); buildDisc(); buildTraj();
+resizeAll(); bindUI(); refreshReadout(); state.last = performance.now();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
