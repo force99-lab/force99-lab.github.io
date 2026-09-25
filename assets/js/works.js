@@ -3745,6 +3745,12 @@ const WORKS = [
       desc:"以真实赛车演示匀变速直线运动：自动采集时间-速度数据、拟合 v-t 图像，并取两点求斜率得出加速度 a 与初速度 v₀，直观呈现速度正负与图像的对应关系。",
       icon:"🎬", cover:"assets/img/uniform-vt-graph-cover.png", link:"animations/uniform-vt-graph.html", date:"2026-09-24", tag:"运动学"
     }
+,
+      {
+      type:"animation", title:"直线加速器的工作原理",
+      desc:"电子枪发射电子，六节金属圆筒（漂移管）交替接交流电源两极；电子在缝隙中被电场加速、在筒内匀速漂移，圆筒与导线随极性红蓝交替变化，并配 U–t、v–t 双图揭示共振加速规律。",
+      icon:"🎬", cover:"assets/img/linear-accelerator-cover.png", link:"animations/linear-accelerator.html", date:"2026-09-25", tag:"电场"
+    }
 ];
 
 
