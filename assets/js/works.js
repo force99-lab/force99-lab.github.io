@@ -3757,6 +3757,12 @@ const WORKS = [
       desc:"三维透视演示回旋加速器：粒子在 D 形盒内做匀速圆周运动，每次经过缝隙都被交变电场加速，并同步生成速度与动能随时间变化的图像。",
       icon:"🌀", cover:"assets/img/cyclotron3d-cover.png", link:"animations/cyclotron3d.html", date:"2026-09-26", tag:"电磁学"
     }
+,
+      {
+      type:"animation", title:"关联速度 · 四模型交互演示",
+      desc:"关联速度四模型（绳拉/轻杆/接触/光线转动）交互动画，动态矢量平行四边形展示沿约束方向分量相等与合速度分解。",
+      icon:"🎬", cover:"assets/img/related-velocity-cover.png", link:"animations/related-velocity.html", date:"2026-09-26", tag:"关联速度"
+    }
 ];
 
 
