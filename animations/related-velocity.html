@@ -353,31 +353,19 @@ function rope(x0, y0, x1, y1) {
   }
   ctx.stroke(); ctx.restore();
 }
-/* 定滑轮：墙装托架 + 金属轮缘 + 绳槽（凹环，绳陷其中）+ 轮盘轮辐 + 轮毂轴 */
+/* 定滑轮：金属轮缘 + 绳槽（凹环，绳陷其中）+ 轮盘轮辐 + 轮毂轴（无外白环、无矩形托架） */
 function pulley(cx, cy, r) {
   const c = P(cx, cy), R = SL(r);
   const Rrim = SL(r + 0.06);     // 轮缘外半径（屏幕）
   const Rweb = SL(r - 0.075);    // 中心轮盘半径
   const Rg   = SL(r);            // 绳槽底半径 = 绳中心线
   ctx.save();
-  /* 墙装托架：贴在墙顶、轮轴背后的金属座 */
-  ctx.fillStyle = 'rgba(38,52,66,.95)';
-  ctx.beginPath();
-  ctx.moveTo(c[0] - Rrim - 3, c[1] + Rrim + 2);
-  ctx.lineTo(c[0] - Rrim - 1, c[1] - Rrim - 1);
-  ctx.lineTo(c[0] + Rrim + 1, c[1] - Rrim - 1);
-  ctx.lineTo(c[0] + Rrim + 3, c[1] + Rrim + 2);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(20,30,42,.9)'; ctx.lineWidth = 1.4; ctx.stroke();
   /* 轮缘金属盘（带投影） */
   ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 9; ctx.shadowOffsetY = 2;
   const g = ctx.createRadialGradient(c[0] - R * .34, c[1] - R * .40, R * .08, c[0], c[1], Rrim);
   g.addColorStop(0, '#eaf2fb'); g.addColorStop(.5, '#90a7bc'); g.addColorStop(1, '#33485d');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c[0], c[1], Rrim, 0, TAU); ctx.fill();
   ctx.restore();
-  /* 轮缘外高光（轮缘外缘亮边） */
-  ctx.strokeStyle = 'rgba(238,246,253,.82)'; ctx.lineWidth = Math.max(1.2, SL(0.02));
-  ctx.beginPath(); ctx.arc(c[0], c[1], Rrim, 0, TAU); ctx.stroke();
   /* 绳槽：在轮缘与内盘之间挖出暗色凹环（填充环），绳将陷于其中 */
   const gw = SL(0.036);
   ctx.fillStyle = 'rgba(11,18,28,.94)';
