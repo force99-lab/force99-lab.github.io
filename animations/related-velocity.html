@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>关联速度 · 四模型交互演示</title>
+<style>
+:root{
+  --bg:#070b14; --panel:#0e1626; --line:rgba(88,140,190,.22);
+  --teal:#5fd0c8; --blue:#4a9fd8; --vel:#ffb567; --comp:#5ee3a8; --perp:#b18cff;
+  --text:#dce8f5; --sub:#93aac2; --red:#ff7b7b; --gold:#ffd24d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+#wrap{display:flex;gap:12px;max-width:1420px;margin:0 auto;padding:10px 14px 14px;align-items:stretch}
+#left{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+#right{flex:0 0 358px;display:flex;flex-direction:column;gap:10px}
+#wrap,#left{min-width:0}
+.stageTitle{font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--teal);
+  padding:1px 2px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stageTitle::before{content:"";width:5px;height:13px;border-radius:2px;
+  background:linear-gradient(180deg,var(--teal),var(--blue))}
+.stageTitle small{color:var(--sub);font-weight:400;font-size:11.5px;letter-spacing:0}
+#statusline{min-height:17px;display:flex;align-items:center;gap:7px;
+  padding:0 2px;font-size:11px;color:var(--sub)}
+#badge{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+canvas{width:100%;display:block;border-radius:13px}
+#cv{height:472px}
+.card{background:linear-gradient(180deg,#101b2d,#0c1424);border:1px solid var(--line);
+  border-radius:13px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.panel{padding:11px 12px}
+.panel h3{font-size:12.5px;color:var(--teal);letter-spacing:.5px;margin:0 0 8px;
+  display:flex;align-items:center;gap:6px;font-weight:700}
+.panel h3::before{content:"";width:4px;height:11px;border-radius:2px;background:var(--teal)}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:9px}
+.seg button{padding:6px 4px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(20,34,54,.7);color:var(--sub);font-size:11.5px;cursor:pointer;
+  font-family:inherit;transition:.15s;line-height:1.35}
+.seg button:hover{border-color:rgba(95,208,200,.5);color:var(--text)}
+.seg button.on{background:linear-gradient(180deg,rgba(95,208,200,.22),rgba(74,159,216,.14));
+  border-color:rgba(95,208,200,.65);color:#d8fbf7;font-weight:700}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0}
+button.ctl{padding:5px 12px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(20,34,54,.75);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+button.ctl:hover{border-color:rgba(95,208,200,.5)}
+button.primary{background:linear-gradient(180deg,#2f7fa8,#245f86);border-color:#3d93bd;font-weight:700}
+input[type=range]{flex:1 1 auto;min-width:0;accent-color:var(--teal);height:4px}
+.lbl{font-size:11.5px;color:var(--sub);flex:0 0 52px}
+.val{font-size:11.5px;color:var(--gold);flex:0 0 44px;text-align:right;font-variant-numeric:tabular-nums}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin:9px 0 4px;
+  font-size:11.5px;color:var(--sub)}
+.toggles label{display:flex;align-items:center;gap:5px;cursor:pointer}
+input[type=checkbox]{accent-color:var(--teal)}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:9px;
+  padding-top:9px;border-top:1px dashed rgba(120,160,200,.22)}
+.ro{font-size:11.5px;color:var(--sub);display:flex;justify-content:space-between;
+  align-items:baseline;gap:4px;min-width:0}
+.ro b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ro b.warm{color:var(--vel)}
+.ro b.grn{color:var(--comp)}
+.ro b.pur{color:var(--perp)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 11px;margin-top:8px;
+  border-top:1px dashed rgba(120,160,200,.22);padding-top:8px}
+.lg{font-size:10.5px;color:var(--sub);display:flex;align-items:center;gap:4px}
+.bar{width:14px;height:3px;border-radius:2px;display:inline-block}
+.dotb{width:9px;height:9px;border-radius:50%;display:inline-block}
+.know{font-size:11.5px;line-height:1.62;color:#cbd8e6}
+.know .k{margin-bottom:9px}
+.know .k:last-child{margin-bottom:0}
+.know .t{color:var(--teal);font-size:11.5px}
+.know .hi{color:var(--red);font-weight:700}
+.know .warn{color:var(--vel)}
+.know code{font-family:"Cambria Math",Georgia,serif;font-size:12.5px;color:#ffe0b0;
+  background:rgba(255,181,103,.09);padding:0 3px;border-radius:3px}
+@media (max-width:1080px){#wrap{flex-direction:column}#right{flex:1 1 auto}
+  .seg{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="stageTitle"><span id="mTitle">① 绳子拉关联</span><small id="mHint"></small></div>
+    <div id="statusline"><small id="badge"></small></div>
+    <canvas id="cv" class="card"></canvas>
+  </div>
+  <div id="right">
+    <div class="panel card">
+      <h3>关联速度问题</h3>
+      <div class="seg" id="seg"></div>
+      <div class="row">
+        <button id="play" class="ctl primary">暂停</button>
+        <button id="reset" class="ctl">重置</button>
+        <span style="font-size:10.5px;color:var(--sub);margin-left:auto">空格 暂停 · ←→ 换模型</span>
+      </div>
+      <div class="row"><span class="lbl">动画速度</span><input type="range" id="sp" min="20" max="200" value="100"><span class="val" id="spv">1.0×</span></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tDec" checked>速度分解</label>
+        <label><input type="checkbox" id="tCmp" checked>沿绳/杆分量</label>
+        <label><input type="checkbox" id="tTrl" checked>轨迹</label>
+        <label><input type="checkbox" id="tLab" checked>标注</label>
+      </div>
+      <div class="readout" id="ro"></div>
+      <div class="legend">
+        <span class="lg"><i class="bar" style="background:#ff4d4d"></i>相等的关联分量（约束方向）</span>
+        <span class="lg"><i class="bar" style="background:#ffb567"></i>实际速度（合速度）</span>
+        <span class="lg"><i class="bar" style="background:#b18cff"></i>垂直分量（只改变方向）</span>
+      </div>
+    </div>
+    <div class="panel card know" id="know"></div>
+  </div>
+</div>
+<script>
+"use strict";
+/* ================= 基础 ================= */
+const D2R = Math.PI / 180, TAU = Math.PI * 2;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let CW = 820, CH = 472;
+const $ = id => document.getElementById(id);
+
+const C = {
+  grid: 'rgba(88,140,190,.09)',
+  ink: '#cfe0f2', sub: '#93aac2', line: 'rgba(150,190,225,.85)',
+  metal1: '#e8eef4', metal2: '#98a4b0', metal3: '#5d6672',
+  ground: '#4a6b8c', water: 'rgba(58,120,180,.20)', waterLine: 'rgba(120,200,240,.75)',
+  vel: '#ffb567', comp: '#5ee3a8', perp: '#b18cff',
+  eq: '#ff4d4d', eqDim: 'rgba(255,77,77,.85)',
+  obj: '#4a9fd8', boat: '#3c7fbd', ball: '#9fd8f0', gold: '#ffd24d',
+  rod: '#c8d6e4', half: '#7fb4dd', light: '#ffe07a', mark: 'rgba(255,210,77,.95)'
+};
+
+/* ================= 视图（等比自适应 + 留白放标注） ================= */
+const V = { s: 1, ox: 0, oy: 0, x0: 0, x1: 1, y0: 0, y1: 1 };
+function setView(x0, x1, y0, y1) {
+  V.x0 = x0; V.x1 = x1; V.y0 = y0; V.y1 = y1;
+  const s = Math.min(CW / (x1 - x0), CH / (y1 - y0));
+  V.s = s;
+  V.ox = CW / 2 - (x0 + x1) / 2 * s;
+  V.oy = CH / 2 + (y0 + y1) / 2 * s;      // 世界 y 向上 ⇒ 屏幕 y 反向
+}
+/* 世界 → 屏幕 */
+function P(x, y) { return [V.ox + x * V.s, V.oy - y * V.s]; }
+/* 世界长度 → 屏幕像素 */
+function SL(v) { return v * V.s; }
+/* 屏幕像素 → 世界长度 */
+function WS(px) { return px / V.s; }
+
+/* ================= 绘制原语 ================= */
+function seg(x0, y0, x1, y1, col, w, dash) {
+  const a = P(x0, y0), b = P(x1, y1);
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w || 1.4; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.restore();
+}
+/* 屏幕内安全边距：箭头末端 / 文字锚点一律收回画布内，杜绝被裁切 */
+const PAD = 9;
+function clampSeg(a, b) {          // 把 b 沿 a→b 方向收到安全区内
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  let t = 1;
+  if (dx > 0.001) t = Math.min(t, (CW - PAD - a[0]) / dx);
+  if (dx < -0.001) t = Math.min(t, (PAD - a[0]) / dx);
+  if (dy > 0.001) t = Math.min(t, (CH - PAD - a[1]) / dy);
+  if (dy < -0.001) t = Math.min(t, (PAD - a[1]) / dy);
+  t = Math.max(0, Math.min(1, t));
+  return [a[0] + dx * t, a[1] + dy * t];
+}
+function arrow(x0, y0, x1, y1, col, w, head) {
+  const a = P(x0, y0), b = clampSeg(a, P(x1, y1));
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+  if (len < 1.2) return;
+  const ux = dx / len, uy = dy / len;
+  const h = Math.min(head || 9, len * 0.5);
+  const bx = b[0] - ux * h * 0.86, by = b[1] - uy * h * 0.86;
+  ctx.save();
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w || 2; ctx.lineCap = 'round';
+  ctx.shadowColor = col; ctx.shadowBlur = 5;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(bx, by); ctx.stroke();
+  const hw = h * 0.40;
+  ctx.beginPath();
+  ctx.moveTo(b[0], b[1]);
+  ctx.lineTo(bx - uy * hw, by + ux * hw);
+  ctx.lineTo(bx + uy * hw, by - ux * hw);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+/* 速度矢量箭头：直接绘制彩色本体（无白色描边） */
+function arrowH(x0, y0, x1, y1, col, w, head) {
+  arrow(x0, y0, x1, y1, col, w, head);
+}
+/* 速度分解平行四边形：v = 法向分量(红) + 切向分量(浅色实线)
+   各边均为实线（无白色描边、无虚线行进） */
+function decomp(o, v, n, t, colV) {
+  const V = [o[0] + v[0], o[1] + v[1]];
+  const N = [o[0] + n[0], o[1] + n[1]];
+  const T = [o[0] + t[0], o[1] + t[1]];
+  ctx.save();
+  ctx.strokeStyle = 'rgba(228,242,255,.88)'; ctx.lineWidth = 1.4;
+  seg(V[0], V[1], N[0], N[1]);                         // 完成边：速度末端 → 法向末端（平行切向）
+  seg(V[0], V[1], T[0], T[1]);                         // 完成边：速度末端 → 切向末端（平行法向）
+  ctx.restore();
+  arrowH(o[0], o[1], V[0], V[1], colV, 2.8, 12);       // 合速度（橙，对角线）
+  if (state.show.cmp) {
+    arrowH(o[0], o[1], N[0], N[1], C.eq, 2.6, 10);     // 法向分量（红）
+    seg(o[0], o[1], T[0], T[1], 'rgba(216,234,250,.96)', 1.6);  // 切向分量（浅色实线）
+  }
+}
+function tag(s, x, y, col, font, align, base) {
+  const p = P(x, y);
+  ctx.save();
+  ctx.font = font || '700 13px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = col; ctx.textAlign = align || 'center';
+  ctx.textBaseline = base || 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.4;
+  ctx.strokeStyle = 'rgba(6,11,20,.82)';
+  /* 文字锚点收回安全区（按对齐方式与字宽） */
+  const tw = ctx.measureText(s).width, al = align || 'center';
+  let px = p[0];
+  if (al === 'center') px = Math.min(Math.max(px, PAD + tw / 2), CW - PAD - tw / 2);
+  else if (al === 'left') px = Math.min(Math.max(px, PAD), CW - PAD - tw);
+  else px = Math.min(Math.max(px, PAD + tw), CW - PAD);
+  const py = Math.min(Math.max(p[1], PAD + 7), CH - PAD - 7);
+  ctx.strokeText(s, px, py);
+  ctx.fillText(s, px, py);
+  ctx.restore();
+}
+/* 屏幕像素文本（用于留白区的说明） */
+function ptag(s, sx, sy, col, font, align, base) {
+  ctx.save();
+  ctx.font = font || '600 12.5px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = col; ctx.textAlign = align || 'left'; ctx.textBaseline = base || 'middle';
+  ctx.fillText(s, sx, sy); ctx.restore();
+}
+function ball(x, y, r, c1, c2) {
+  const p = P(x, y), R = Math.max(4, SL(r));
+  const g = ctx.createRadialGradient(p[0] - R * .35, p[1] - R * .38, R * .12, p[0], p[1], R);
+  g.addColorStop(0, '#ffffff'); g.addColorStop(.32, c1); g.addColorStop(.8, c2); g.addColorStop(1, '#1c3a55');
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p[0], p[1], R, 0, TAU); ctx.fill(); ctx.restore();
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.beginPath(); ctx.ellipse(p[0] - R * .3, p[1] - R * .34, R * .24, R * .15, -.6, 0, TAU); ctx.fill();
+}
+function keydot(x, y, col) {
+  const p = P(x, y);
+  ctx.save(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(p[0], p[1], 3.6, 0, TAU); ctx.fill(); ctx.restore();
+}
+/* 角度弧：a0→a1 为世界角度（逆时针为正，y 向上） */
+function arcAng(cx, cy, r, a0, a1, col, txt) {
+  const c = P(cx, cy);
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(c[0], c[1], SL(r), -a1, -a0, false); ctx.stroke(); ctx.restore();
+  if (txt) {
+    const am = (a0 + a1) / 2, rr = r * 1.34;
+    tag(txt, cx + rr * Math.cos(am), cy + rr * Math.sin(am), col, '700 14px "Cambria Math",Georgia,serif');
+  }
+}
+function poly(pts, fill, stroke, lw) {
+  ctx.save();
+  ctx.beginPath();
+  pts.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); });
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1.4; ctx.stroke(); }
+  ctx.restore();
+}
+function rrect(x, y, w, h, r, fill, stroke, lw) {
+  ctx.save(); ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else { ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); }
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+  ctx.restore();
+}
+/* 留白信息卡（屏幕坐标） */
+function card(x, y, w, h) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(16,27,45,.72)';
+  ctx.strokeStyle = 'rgba(95,208,200,.25)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, 9); else ctx.rect(x, y, w, h);
+  ctx.fill(); ctx.stroke(); ctx.restore();
+}
+
+/* ================= 场景公共元素 ================= */
+function gridBG() {
+  const g = ctx.createRadialGradient(CW * .42, CH * .38, 30, CW * .5, CH * .5, Math.max(CW, CH) * .8);
+  g.addColorStop(0, '#111d31'); g.addColorStop(1, '#070b14');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+  ctx.save(); ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  const step = SL(0.5);
+  if (step > 8) {
+    for (let x = 0; x < CW; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke(); }
+    for (let y = 0; y < CH; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+function waterBand(y, x0, x1) {
+  const a = P(x0, y), b = P(x1, y);
+  const top = Math.min(a[1], b[1]);
+  ctx.save();
+  ctx.fillStyle = C.water; ctx.fillRect(a[0], top, b[0] - a[0], CH - top);
+  ctx.strokeStyle = C.waterLine; ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for (let x = a[0]; x <= b[0]; x += 3) {
+    const yy = top + Math.sin((x - a[0]) / 13 + state.t * 2.2) * 1.7;
+    x === a[0] ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+  }
+  ctx.stroke();
+  /* 水下斜纹 */
+  ctx.strokeStyle = 'rgba(120,200,240,.13)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < 60; i++) {
+    const x = a[0] + i * 17, y2 = top + 12 + (i % 4) * 9;
+    if (x > b[0]) break;                 /* 装饰斜纹不越出水域 */
+    ctx.moveTo(x, y2); ctx.lineTo(x - 9, y2 + 9);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+/* 厚堤岸：顶面 + 岸体（比单线更像实景） */
+function bankDeck(y, x0, x1) {
+  const a = P(x0, y), b = P(x1, y);
+  ctx.save();
+  const g = ctx.createLinearGradient(0, a[1], 0, a[1] + 70);
+  g.addColorStop(0, '#2b4056'); g.addColorStop(.55, 'rgba(30,45,62,.75)'); g.addColorStop(1, 'rgba(18,28,40,0)');
+  ctx.fillStyle = g; ctx.fillRect(a[0], a[1], b[0] - a[0], 70);
+  ctx.strokeStyle = '#8fb4d6'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], a[1]); ctx.stroke();
+  ctx.strokeStyle = 'rgba(200,232,255,.42)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1] - 3); ctx.lineTo(b[0], a[1] - 3); ctx.stroke();
+  ctx.strokeStyle = 'rgba(74,107,140,.42)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = a[0] + 5; x < b[0]; x += 14) { ctx.moveTo(x, a[1] + 3); ctx.lineTo(x - 8, a[1] + 13); }
+  ctx.stroke();
+  ctx.restore();
+}
+/* 麻绳：暗描边 + 亮芯 + 麻花斜纹 */
+function rope(x0, y0, x1, y1) {
+  const a = P(x0, y0), b = P(x1, y1);
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+  if (L < 0.5) return;
+  const ux = dx / L, uy = dy / L;
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(58,42,22,.9)'; ctx.lineWidth = 3.9;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  ctx.strokeStyle = '#e8d6ac'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  ctx.strokeStyle = 'rgba(126,98,56,.5)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let t = 5; t < L - 3; t += 7.5) {
+    const px = a[0] + ux * t, py = a[1] + uy * t;
+    ctx.moveTo(px - uy * 1.7, py + ux * 1.7); ctx.lineTo(px + uy * 1.7, py - ux * 1.7);
+  }
+  ctx.stroke(); ctx.restore();
+}
+/* 定滑轮：墙装托架 + 金属轮缘 + 绳槽（凹环，绳陷其中）+ 轮盘轮辐 + 轮毂轴 */
+function pulley(cx, cy, r) {
+  const c = P(cx, cy), R = SL(r);
+  const Rrim = SL(r + 0.06);     // 轮缘外半径（屏幕）
+  const Rweb = SL(r - 0.075);    // 中心轮盘半径
+  const Rg   = SL(r);            // 绳槽底半径 = 绳中心线
+  ctx.save();
+  /* 墙装托架：贴在墙顶、轮轴背后的金属座 */
+  ctx.fillStyle = 'rgba(38,52,66,.95)';
+  ctx.beginPath();
+  ctx.moveTo(c[0] - Rrim - 3, c[1] + Rrim + 2);
+  ctx.lineTo(c[0] - Rrim - 1, c[1] - Rrim - 1);
+  ctx.lineTo(c[0] + Rrim + 1, c[1] - Rrim - 1);
+  ctx.lineTo(c[0] + Rrim + 3, c[1] + Rrim + 2);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(20,30,42,.9)'; ctx.lineWidth = 1.4; ctx.stroke();
+  /* 轮缘金属盘（带投影） */
+  ctx.shadowColor = 'rgba(0,0,0,.5)'; ctx.shadowBlur = 9; ctx.shadowOffsetY = 2;
+  const g = ctx.createRadialGradient(c[0] - R * .34, c[1] - R * .40, R * .08, c[0], c[1], Rrim);
+  g.addColorStop(0, '#eaf2fb'); g.addColorStop(.5, '#90a7bc'); g.addColorStop(1, '#33485d');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c[0], c[1], Rrim, 0, TAU); ctx.fill();
+  ctx.restore();
+  /* 轮缘外高光（轮缘外缘亮边） */
+  ctx.strokeStyle = 'rgba(238,246,253,.82)'; ctx.lineWidth = Math.max(1.2, SL(0.02));
+  ctx.beginPath(); ctx.arc(c[0], c[1], Rrim, 0, TAU); ctx.stroke();
+  /* 绳槽：在轮缘与内盘之间挖出暗色凹环（填充环），绳将陷于其中 */
+  const gw = SL(0.036);
+  ctx.fillStyle = 'rgba(11,18,28,.94)';
+  ctx.beginPath();
+  ctx.arc(c[0], c[1], Rg + gw, 0, TAU);
+  ctx.arc(c[0], c[1], Rg - gw, 0, TAU, true);
+  ctx.fill();
+  /* 槽内两侧受光薄高光（轮缘内壁 + 内盘外壁），强化“凹”的立体感 */
+  ctx.strokeStyle = 'rgba(150,176,202,.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(c[0], c[1], Rg + gw - 0.9, 0, TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(c[0], c[1], Rg - gw + 0.9, 0, TAU); ctx.stroke();
+  /* 中心轮盘（金属） */
+  const g2 = ctx.createRadialGradient(c[0] - Rweb * .3, c[1] - Rweb * .3, Rweb * .1, c[0], c[1], Rweb);
+  g2.addColorStop(0, '#cfdae7'); g2.addColorStop(1, '#5d7286');
+  ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(c[0], c[1], Rweb, 0, TAU); ctx.fill();
+  /* 轮辐 */
+  ctx.strokeStyle = 'rgba(38,54,70,.72)'; ctx.lineWidth = Math.max(1.6, SL(0.024));
+  for (let i = 0; i < 4; i++) {
+    const an = i * Math.PI / 2 + 0.4;
+    ctx.beginPath();
+    ctx.moveTo(c[0] + Math.cos(an) * SL(r * 0.30), c[1] + Math.sin(an) * SL(r * 0.30));
+    ctx.lineTo(c[0] + Math.cos(an) * Rweb, c[1] + Math.sin(an) * Rweb);
+    ctx.stroke();
+  }
+  /* 轮毂 + 轴 */
+  ctx.fillStyle = '#2a3a4b'; ctx.beginPath(); ctx.arc(c[0], c[1], SL(r * 0.30), 0, TAU); ctx.fill();
+  ctx.fillStyle = '#0e1620'; ctx.beginPath(); ctx.arc(c[0], c[1], SL(r * 0.12), 0, TAU); ctx.fill();
+  ctx.restore();
+}
+/* 绳在轮上的包弧（屏幕角 s0→s1，逆时针=false 表示角度递增） */
+function pulleyArc(cx, cy, r, s0, s1) {
+  const c = P(cx, cy), R = SL(r);
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(58,42,22,.9)'; ctx.lineWidth = 3.9;
+  ctx.beginPath(); ctx.arc(c[0], c[1], R, s0, s1, false); ctx.stroke();
+  ctx.strokeStyle = '#e8d6ac'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.arc(c[0], c[1], R, s0, s1, false); ctx.stroke();
+  ctx.restore();
+}
+/* 绳在轮上的包弧（世界角 ang0 → ang1，逆时针/角度递增；用 P() 转换，避免画布 y 翻转混淆）
+   绳中心线落在半径 r 的槽底，从斜段切点绕上半圈到轮顶 */
+function ropeArc(cx, cy, r, ang0, ang1) {
+  const N = 30;
+  const build = () => {
+    const a = [];
+    for (let i = 0; i <= N; i++) {
+      const ang = ang0 + (ang1 - ang0) * (i / N);
+      a.push(P(cx + r * Math.cos(ang), cy + r * Math.sin(ang)));
+    }
+    return a;
+  };
+  const trace = (col, w) => {
+    const p = build();
+    ctx.beginPath();
+    p.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]));
+    ctx.strokeStyle = col; ctx.lineWidth = w; ctx.stroke();
+  };
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  trace('rgba(58,42,22,.9)', 3.9);
+  trace('#e8d6ac', 2.4);
+  ctx.restore();
+}
+function groundBand(y, x0, x1) {
+  const a = P(x0, y), b = P(x1, y);
+  ctx.save();
+  ctx.strokeStyle = C.ground; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  ctx.strokeStyle = 'rgba(74,107,140,.5)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = a[0]; x < b[0]; x += 11) { ctx.moveTo(x, a[1] + 1); ctx.lineTo(x - 6, a[1] + 8); }
+  ctx.stroke();
+  ctx.restore();
+}
+function wallV(x, y0, y1) {
+  const a = P(x, y0), b = P(x, y1);
+  ctx.save();
+  ctx.strokeStyle = C.ground; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  ctx.strokeStyle = 'rgba(74,107,140,.5)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let y = a[1]; y < b[1]; y += 11) { ctx.moveTo(a[0] - 1, y); ctx.lineTo(a[0] - 8, y + 6); }
+  ctx.stroke(); ctx.restore();
+}
+function watermark() {
+  ctx.save();
+  ctx.font = '700 11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(140,175,205,.45)';
+  ctx.fillText('force99', CW - 12, CH - 9);
+  ctx.restore();
+}
+/* 平行四边形虚线补全（分解同一速度） */
+function para(o, e1, e2, c1, c2, col) {
+  seg(o[0] + c1 * e1[0], o[1] + c1 * e1[1], o[0] + c1 * e1[0] + c2 * e2[0], o[1] + c1 * e1[1] + c2 * e2[1], col, 1.2, [4, 4]);
+  seg(o[0] + c2 * e2[0], o[1] + c2 * e2[1], o[0] + c1 * e1[0] + c2 * e2[0], o[1] + c1 * e1[1] + c2 * e2[1], col, 1.2, [4, 4]);
+}
+
+/* ================= 状态 ================= */
+const state = {
+  model: 0, t: 0, running: true, speed: 1, dir: 1,
+  show: { dec: true, cmp: true, trail: true, lab: true }
+};
+const RATE = [0, 0.55, 0.38, 0.20, 0.72];   // 物理秒 / 动画秒
+
+/* ================= 模型 1：绳子拉关联 ================= */
+const M1 = {
+  id: 1, name: '绳子拉关联', title: '① 绳子拉关联 · 小车经定滑轮拉船',
+  hint: '绳不可伸长 ⇒ 沿绳方向分速度相等：v船·cos α = v',
+  view: [-4.05, 7.55, -0.95, 4.15],
+  H: 3.0, R: 0.30, A0: 30 * D2R, A1: 47 * D2R, XC0: 1.2, V0: 1.0,
+  init() { this.a = this.A0; },
+  /* 绳总长守恒：水平段 + 斜段 = const */
+  rope() { return this.H / Math.sin(this.a); },
+  total() { return this.XC0 + this.H / Math.sin(this.A0); },
+  step(dt) {
+    const v = this.V0;
+    const da = v * Math.pow(Math.sin(this.a), 2) / (this.H * Math.cos(this.a));
+    this.a += da * dt * state.dir;
+    if (this.a > this.A1) { this.a = this.A1; state.dir = -1; }
+    if (this.a < this.A0) { this.a = this.A0; state.dir = 1; }
+  },
+  parts() {
+    const a = this.a, H = this.H;
+    const h0 = 0.06;                              // 船系缆点高度
+    const xB = ((H - h0) * Math.cos(a) + this.R) / Math.sin(a);  // 船位置：使斜绳与轮缘相切（非过轴心）
+    const S = this.rope();                    // 斜绳长
+    const xc = -(this.total() - S);           // 车中心（水平段长）
+    const vB = this.V0 / Math.cos(a);         // 船速 = v/cos α
+    return { a, xB, S, xc, vB, along: vB * Math.cos(a), perp: vB * Math.sin(a) };
+  },
+  draw() {
+    const { a, xB, S, xc, vB, along, perp } = this.parts();
+    const H = this.H, yT = H - 0.12, r = this.R;      // 岸台面顶 / 定滑轮半径
+    const ca = Math.cos(a), sa = Math.sin(a);
+    setView.apply(null, this.view);
+
+    bankDeck(yT, -4.4, 0);                          // 左岸厚堤岸（延伸到画面外）
+    waterBand(0, -0.7, 7.1);                        // 水面
+    wallV(0, -0.10, H);                             // 岸壁（兼滑轮支架）
+
+    /* 艏柱扫过的水面轨迹 */
+    if (state.show.trail) {
+      const maxX = ((this.H - 0.06) * Math.cos(this.A0) + this.R) / Math.sin(this.A0);
+      seg(maxX, 0.30, xB, 0.30, 'rgba(255,181,103,.42)', 1.4, [5, 5]);
+    }
+
+    /* ---- 麻绳：与定滑轮严格相切（水平段切于轮顶 + 轮上包弧绕上半圈 + 斜段切于轮缘右侧） ---- */
+    const e1 = [-ca, sa];                           // 沿绳单位矢（船 → 轮，与水平成 α）
+    const e2 = [-sa, -ca];                          // 垂直绳单位矢（左下）
+    const yR = H + r;                               // 水平段高度 = 轮顶（相切）
+    const h0 = 0.06;                                // 船系缆点高度
+    const dBoat = Math.hypot(xB, H - h0);           // 系缆点 → 轮心 距离
+    const BT = Math.sqrt(dBoat * dBoat - r * r);    // 切线段长 = √(d² − r²)
+    const Tx = xB + BT * e1[0], Ty = h0 + BT * e1[1];  // 斜段与轮缘切点 T（位于轮右侧）
+    const thT = Math.atan2(Ty - H, Tx);             // T 的世界角（∈ 0~π/2）
+    pulley(0, H, r);                                // 先画轮盘
+    rope(xc + 0.50, yR, 0, yR);                     // 水平段：车尾挂点 → 轮顶切点
+    ropeArc(0, H, r, thT, Math.PI / 2);             // 包弧：切点 T → 轮顶（沿右上半圈，绳陷槽中）
+    rope(Tx, Ty, xB, h0);                           // 斜段：切点 T → 船艏系缆点（直线，与轮缘相切）
+
+    this.drawBoat(xB);
+    this.drawCar(xc, yT);
+    /* 水线以下淡淡压一层水色，木船吃水更真实 */
+    const yw = P(0, 0)[1];
+    ctx.save(); ctx.fillStyle = 'rgba(46,104,160,.42)';
+    ctx.fillRect(0, yw, CW, CH - yw); ctx.restore();
+
+    /* ---- 角 α：绳与水平方向夹角（画在船艏，两分量所夹的角就是它） ---- */
+    const ropeAng = Math.PI - a;                   // 绳方向世界角（向左上，与水平夹 α）
+    arcAng(xB, 0.06, 0.62, ropeAng, Math.PI, 'rgba(255,181,103,.95)', state.show.lab ? 'α' : '');
+    if (state.show.lab) seg(xB - 1.42, 0.06, xB - 0.10, 0.06, 'rgba(255,181,103,.42)', 1.2, [4, 4]);
+
+    /* ---- 速度分解（本模型的灵魂）：放在绳与船接触处，矢量长度 = 原 2.5× ---- */
+    const k = 1.125, o = [xB, 0.06];
+    /* 小车：v 水平向左 —— 与船的沿绳分量相等（同色 + 等长，红色） */
+    const yv = yT + 0.74;
+    seg(xc + 0.50, yR, xc + 0.50, yv - 0.07, 'rgba(255,77,77,.42)', 1.2, [4, 4]);  // 挂点 → 矢量引线
+    arrow(xc + 0.50, yv, xc + 0.50 - k * this.V0, yv, C.eq, 2.8, 11);
+    if (state.show.lab) tag('v', xc + 0.50 - k * this.V0 * 0.5, yv + 0.30, C.eq,
+                            '700 14px "Cambria Math",Georgia,serif');
+
+    if (state.show.dec || state.show.cmp) {
+      /* 船的合速度（真实速度，水平向左） */
+      arrow(o[0], o[1], o[0] - k * vB, o[1], C.vel, 2.8, 11);
+      if (state.show.lab) tag('v船', o[0] + 0.46, o[1] + 0.04, C.vel,
+                              '700 13.5px "Microsoft YaHei",sans-serif');
+      if (state.show.cmp) {
+        const c1 = k * along, c2 = k * perp;
+        arrow(o[0], o[1], o[0] + c1 * e1[0], o[1] + c1 * e1[1], C.eq, 2.6, 10);
+        arrow(o[0], o[1], o[0] + c2 * e2[0], o[1] + c2 * e2[1], C.perp, 2.4, 9);
+        para(o, e1, e2, c1, c2, 'rgba(160,200,235,.5)');
+        if (state.show.lab) {
+          /* 标签沿「垂直于该矢量」的方向外推，杜绝压在箭头上 */
+          const m1 = 0.62, m2 = 0.62;
+          tag('v∥ = v', o[0] + c1 * e1[0] * m1 + 0.36 * sa, o[1] + c1 * e1[1] * m1 + 0.36 * ca, C.eq,
+              '700 12.5px "Microsoft YaHei",sans-serif');
+          tag('v⊥', o[0] + c2 * e2[0] * m2 + 0.36 * ca, o[1] + c2 * e2[1] * m2 - 0.36 * sa, C.perp,
+              '700 12.5px "Microsoft YaHei",sans-serif');
+        }
+      }
+    }
+    keydot(xB, 0, C.gold);
+    if (state.show.lab) tag('B', xB + 0.12, -0.30, '#cfe0f2', '700 13px "Microsoft YaHei",sans-serif');
+    watermark();
+  },
+  /* 小车：低趴跑车（黄漆 + 深色玻璃），车轮与台面严格相切（轮心 = 台面 + 轮半径） */
+  drawCar(x, yT) {
+    const rw = 0.125, wy = yT + rw;
+    const MV = (u, v) => { const q = P(x + u, v); ctx.moveTo(q[0], q[1]); };
+    const LN = (u, v) => { const q = P(x + u, v); ctx.lineTo(q[0], q[1]); };
+    const QC = (au, av, bu, bv) => {
+      const c = P(x + au, av), q = P(x + bu, bv); ctx.quadraticCurveTo(c[0], c[1], q[0], q[1]);
+    };
+    /* 车体轮廓：长机盖 + 低圆顶 + 快背短尾 */
+    const body = () => {
+      ctx.beginPath();
+      MV(-0.56, yT + 0.17);
+      QC(-0.53, yT + 0.30, -0.32, yT + 0.33);
+      QC(-0.15, yT + 0.36, -0.05, yT + 0.46);
+      QC(0.05, yT + 0.51, 0.20, yT + 0.44);
+      QC(0.36, yT + 0.36, 0.48, yT + 0.28);
+      LN(0.56, yT + 0.20);
+      LN(0.50, yT + 0.08);
+      LN(-0.46, yT + 0.08);
+      ctx.closePath();
+    };
+    /* 车轮：轮胎 + 五辐铝合金轮毂 */
+    const wheel = (u) => {
+      const c = P(x + u, wy), R = SL(rw);
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 1;
+      const tg = ctx.createRadialGradient(c[0] - R * .3, c[1] - R * .35, R * .1, c[0], c[1], R);
+      tg.addColorStop(0, '#4a5460'); tg.addColorStop(.7, '#222932'); tg.addColorStop(1, '#0d1116');
+      ctx.fillStyle = tg; ctx.beginPath(); ctx.arc(c[0], c[1], R, 0, TAU); ctx.fill();
+      ctx.restore();
+      ctx.save();
+      const rg = ctx.createRadialGradient(c[0] - R * .3, c[1] - R * .3, R * .05, c[0], c[1], R * .62);
+      rg.addColorStop(0, '#fbfdff'); rg.addColorStop(.55, '#b9c6d2'); rg.addColorStop(1, '#6c7d8d');
+      ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(c[0], c[1], R * .62, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(24,32,42,.85)'; ctx.lineWidth = 1.1;
+      for (let i = 0; i < 5; i++) {
+        const an = i * TAU / 5 + 0.3;
+        ctx.beginPath();
+        ctx.moveTo(c[0] + Math.cos(an) * R * .16, c[1] + Math.sin(an) * R * .16);
+        ctx.lineTo(c[0] + Math.cos(an) * R * .58, c[1] + Math.sin(an) * R * .58);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#39434f'; ctx.beginPath(); ctx.arc(c[0], c[1], R * .19, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#dfe8f1'; ctx.beginPath(); ctx.arc(c[0] - R * .05, c[1] - R * .05, R * .07, 0, TAU); ctx.fill();
+      ctx.restore();
+    };
+    wheel(-0.35); wheel(0.35);                      // 先画轮，车体压上（轮眉遮住上半）
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 7; ctx.shadowOffsetY = 2;
+    body();
+    const bg = ctx.createLinearGradient(0, P(0, yT + 0.51)[1], 0, P(0, yT + 0.08)[1]);
+    bg.addColorStop(0, '#fff3b0'); bg.addColorStop(.26, '#f9d93f');
+    bg.addColorStop(.60, '#dcae12'); bg.addColorStop(1, '#8a6504');
+    ctx.fillStyle = bg; ctx.fill();
+    ctx.restore();
+    /* 深色玻璃舱（斜向反光） */
+    const gTop = P(x, yT + 0.49), gBot = P(x + 0.30, yT + 0.27);
+    const gg = ctx.createLinearGradient(gTop[0], gTop[1], gBot[0], gBot[1]);
+    gg.addColorStop(0, '#3d5468'); gg.addColorStop(.45, '#16232f'); gg.addColorStop(1, '#0b131b');
+    ctx.beginPath();
+    MV(-0.05, yT + 0.45);
+    QC(0.05, yT + 0.49, 0.19, yT + 0.43);
+    LN(0.32, yT + 0.31);
+    QC(0.11, yT + 0.29, -0.01, yT + 0.32);
+    ctx.closePath();
+    ctx.fillStyle = gg; ctx.fill();
+    ctx.save();                                      // 玻璃反光斜条
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(196,226,248,.42)'; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(gBot[0] - 4, gBot[1] + 12); ctx.lineTo(gBot[0] + 16, gBot[1] - 10); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(gBot[0] + 10, gBot[1] + 14); ctx.lineTo(gBot[0] + 30, gBot[1] - 8); ctx.stroke();
+    ctx.restore();
+    /* 车身腰线亮条 + 侧裙暗条 */
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,250,205,.55)'; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+    ctx.beginPath(); MV(-0.50, yT + 0.21); QC(-0.10, yT + 0.25, 0.46, yT + 0.20); ctx.stroke();
+    ctx.strokeStyle = 'rgba(40,28,6,.75)'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); MV(-0.42, yT + 0.09); LN(0.46, yT + 0.09); ctx.stroke();
+    ctx.restore();
+    /* 前大灯 / 尾灯 */
+    const lp = P(x - 0.52, yT + 0.24), tp = P(x + 0.53, yT + 0.22);
+    ctx.save();
+    ctx.fillStyle = '#fff6cf'; ctx.shadowColor = 'rgba(255,236,160,.9)'; ctx.shadowBlur = 7;
+    ctx.beginPath(); ctx.ellipse(lp[0], lp[1], SL(0.055), SL(0.032), -0.2, 0, TAU); ctx.fill();
+    ctx.shadowColor = 'rgba(255,90,80,.9)';
+    ctx.fillStyle = '#ff7a6e';
+    ctx.beginPath(); ctx.ellipse(tp[0], tp[1], SL(0.045), SL(0.030), 0.2, 0, TAU); ctx.fill();
+    ctx.restore();
+    /* 尾翼小压风板 */
+    const w0 = P(x + 0.40, yT + 0.36), w1 = P(x + 0.58, yT + 0.36);
+    ctx.save();
+    ctx.strokeStyle = '#2b3440'; ctx.lineWidth = SL(0.045); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(w0[0], w0[1]); ctx.lineTo(w1[0], w1[1]); ctx.stroke();
+    ctx.strokeStyle = '#f2cf35'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(w0[0], w0[1] - 1); ctx.lineTo(w1[0], w1[1] - 1); ctx.stroke();
+    ctx.restore();
+  },
+  /* 小船：传统木船（长艏 + 竹篷 + 艄公撑篙），艏柱尖即绳的系缆点 */
+  drawBoat(x) {
+    const MV = (u, v) => { const q = P(x + u, v); ctx.moveTo(q[0], q[1]); };
+    const LN = (u, v) => { const q = P(x + u, v); ctx.lineTo(q[0], q[1]); };
+    const QC = (au, av, bu, bv) => {
+      const c = P(x + au, av), q = P(x + bu, bv); ctx.quadraticCurveTo(c[0], c[1], q[0], q[1]);
+    };
+    const E = (u, v, rx, ry, rot) => {
+      const c = P(x + u, v);
+      ctx.beginPath(); ctx.ellipse(c[0], c[1], SL(rx), SL(ry), rot || 0, 0, TAU);
+    };
+    /* 船体轮廓：艏柱尖在 (0, 0.06)（= 绳的系缆点），船身向右延伸 */
+    const hull = () => {
+      ctx.beginPath();
+      MV(0, 0.06);
+      QC(0.26, 0.29, 0.62, 0.32);
+      QC(1.02, 0.35, 1.40, 0.40);
+      LN(1.47, 0.32);
+      QC(1.30, 0.00, 0.92, -0.13);
+      QC(0.44, -0.21, 0.02, 0.00);
+      ctx.closePath();
+    };
+    /* 竹篷（半圆拱） */
+    const canopy = () => {
+      ctx.beginPath();
+      MV(0.66, 0.30);
+      QC(0.98, 0.74, 1.30, 0.32);
+      LN(1.30, 0.30);
+      LN(0.66, 0.30);
+      ctx.closePath();
+    };
+    /* ---- 水中倒影（船体 + 竹篷） ---- */
+    ctx.save();
+    const yw = P(0, 0)[1];
+    ctx.translate(0, 2 * yw); ctx.scale(1, -1);
+    ctx.globalAlpha = 0.22; ctx.fillStyle = '#6d86a2';
+    hull(); ctx.fill(); canopy(); ctx.fill();
+    ctx.restore();
+
+    /* ---- 船体 ---- */
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 7; ctx.shadowOffsetY = 2;
+    hull();
+    const hg = ctx.createLinearGradient(0, P(0, 0.40)[1], 0, P(0, -0.18)[1]);
+    hg.addColorStop(0, '#cfa171'); hg.addColorStop(.42, '#9c6a3c');
+    hg.addColorStop(.82, '#6b4423'); hg.addColorStop(1, '#3f2712');
+    ctx.fillStyle = hg; ctx.fill();
+    ctx.restore();
+    /* 舷顶亮条（木船压条） */
+    ctx.save();
+    ctx.strokeStyle = '#eccf9b'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); MV(0.02, 0.08); QC(0.30, 0.31, 0.64, 0.34); QC(1.04, 0.37, 1.40, 0.42); ctx.stroke();
+    /* 木板线 */
+    ctx.strokeStyle = 'rgba(72,44,20,.45)'; ctx.lineWidth = 1;
+    for (let i = 1; i <= 2; i++) {
+      ctx.beginPath();
+      MV(0.10, 0.02 - i * 0.06);
+      QC(0.50, -0.10 - i * 0.05, 0.94, -0.08 - i * 0.05);
+      LN(1.34, 0.02 - i * 0.05);
+      ctx.stroke();
+    }
+    /* 吃水线 */
+    ctx.strokeStyle = 'rgba(26,52,80,.55)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); MV(0.12, -0.01); LN(1.36, -0.01); ctx.stroke();
+    ctx.restore();
+    /* 前甲板青布（照参考图的蓝绿布） */
+    ctx.save();
+    ctx.beginPath();
+    MV(0.06, 0.10);
+    QC(0.12, 0.26, 0.20, 0.31);
+    LN(0.62, 0.32);
+    QC(0.50, 0.22, 0.34, 0.10);
+    ctx.closePath();
+    const cg2 = ctx.createLinearGradient(0, P(0, 0.32)[1], 0, P(0, 0.08)[1]);
+    cg2.addColorStop(0, '#7fd3c2'); cg2.addColorStop(1, '#2f8878');
+    ctx.fillStyle = cg2; ctx.fill();
+    ctx.strokeStyle = 'rgba(230,250,248,.45)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+
+    /* ---- 竹篷 ---- */
+    ctx.save();
+    canopy();
+    const pg = ctx.createLinearGradient(P(x + 0.66, 0)[0], P(x + 0.66, 0.74)[1],
+                                        P(x + 1.30, 0)[0], P(x + 1.30, 0.32)[1]);
+    pg.addColorStop(0, '#8d8060'); pg.addColorStop(.45, '#d5c8a4'); pg.addColorStop(1, '#a89a74');
+    ctx.fillStyle = pg; ctx.fill();
+    ctx.clip();
+    /* 篷面竹条 */
+    ctx.strokeStyle = 'rgba(88,74,48,.42)'; ctx.lineWidth = 1;
+    for (let u = 0.70; u < 1.30; u += 0.055) { ctx.beginPath(); MV(u, 0.28); LN(u, 0.72); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,250,225,.5)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); MV(0.68, 0.52); QC(0.98, 0.66, 1.28, 0.52); ctx.stroke();
+    ctx.restore();
+    /* 篷脊竹竿 + 篷口（参考图左端的圆形开口） */
+    ctx.save();
+    ctx.strokeStyle = '#6f6042'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+    ctx.beginPath(); MV(0.64, 0.31); QC(0.98, 0.76, 1.32, 0.33); ctx.stroke();
+    E(0.70, 0.30, 0.045, 0.16, 0);
+    const og = ctx.createLinearGradient(0, P(0, 0.46)[1], 0, P(0, 0.14)[1]);
+    og.addColorStop(0, 'rgba(38,28,16,.92)'); og.addColorStop(1, 'rgba(96,76,46,.85)');
+    ctx.fillStyle = og; ctx.fill();
+    ctx.strokeStyle = 'rgba(226,214,180,.5)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+
+    /* ---- 艄公：斗笠 + 绿衣 + 竹篙 ---- */
+    ctx.save();
+    /* 竹篙（斜插入水，穿过篷前） */
+    const pA = P(x + 1.24, -0.02), pB = P(x + 1.56, 1.28);
+    ctx.strokeStyle = '#3f2f16'; ctx.lineWidth = SL(0.030); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(pA[0], pA[1]); ctx.lineTo(pB[0], pB[1]); ctx.stroke();
+    ctx.strokeStyle = '#c9a05a'; ctx.lineWidth = SL(0.016);
+    ctx.beginPath(); ctx.moveTo(pA[0], pA[1]); ctx.lineTo(pB[0], pB[1]); ctx.stroke();
+    /* 腿 */
+    ctx.strokeStyle = '#c8a044'; ctx.lineWidth = SL(0.055); ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(P(x + 1.32, 0.34)[0], P(x + 1.32, 0.34)[1]);
+    ctx.lineTo(P(x + 1.32, 0.55)[0], P(x + 1.32, 0.55)[1]);
+    ctx.stroke();
+    /* 身（绿衣） */
+    const b0 = P(x + 1.255, 0.52), b1 = P(x + 1.395, 0.80);
+    const bgd = ctx.createLinearGradient(b0[0], b0[1], b1[0], b1[1]);
+    bgd.addColorStop(0, '#4fb98d'); bgd.addColorStop(.55, '#2f8f6b'); bgd.addColorStop(1, '#1f6b50');
+    ctx.fillStyle = bgd;
+    if (ctx.roundRect) ctx.roundRect(b0[0], b0[1], b1[0] - b0[0], b1[1] - b0[1], SL(0.05));
+    else ctx.rect(b0[0], b0[1], b1[0] - b0[0], b1[1] - b0[1]);
+    ctx.fill();
+    /* 手臂（握篙） */
+    ctx.strokeStyle = '#2f8f6b'; ctx.lineWidth = SL(0.045); ctx.lineCap = 'round';
+    ctx.beginPath(); MV(1.34, 0.74); LN(1.40, 0.66); ctx.stroke();
+    /* 头 + 斗笠 */
+    const hd = P(x + 1.325, 0.845);
+    ctx.fillStyle = '#e9c79c'; ctx.beginPath(); ctx.arc(hd[0], hd[1], SL(0.048), 0, TAU); ctx.fill();
+    ctx.beginPath();
+    MV(1.19, 0.875);
+    QC(1.325, 0.93, 1.46, 0.875);
+    QC(1.325, 1.005, 1.19, 0.875);
+    ctx.closePath();
+    const hg2 = ctx.createLinearGradient(0, P(0, 1.00)[1], 0, P(0, 0.87)[1]);
+    hg2.addColorStop(0, '#f0d489'); hg2.addColorStop(1, '#b98f34');
+    ctx.fillStyle = hg2; ctx.fill();
+    ctx.strokeStyle = 'rgba(90,64,20,.55)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+
+    /* ---- 艏部破浪 + 艉迹 ---- */
+    ctx.save();
+    ctx.strokeStyle = 'rgba(226,244,255,.78)'; ctx.lineWidth = 1.7; ctx.lineCap = 'round';
+    const s0 = P(x + 0.02, 0.02);
+    ctx.beginPath(); ctx.arc(s0[0] + SL(0.06), s0[1], SL(0.20), Math.PI * 1.02, Math.PI * 1.70); ctx.stroke();
+    ctx.strokeStyle = 'rgba(190,230,255,.34)'; ctx.lineWidth = 1.3;
+    for (let i = 1; i <= 2; i++) {
+      const q = P(x + 1.48 + i * 0.26, 0);
+      ctx.beginPath();
+      ctx.moveTo(q[0], q[1]);
+      ctx.quadraticCurveTo(q[0] + SL(0.20), q[1] - SL(0.05) * i, q[0] + SL(0.40), q[1] - SL(0.02) * i);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+  readout() {
+    const { a, vB, along, perp } = this.parts();
+    const f = n => n.toFixed(3);
+    return '' +
+      '<div class="ro">α<b>' + (a / D2R).toFixed(1) + '°</b></div>' +
+      '<div class="ro">拉绳速度 v<b class="warm">' + f(this.V0) + '</b></div>' +
+      '<div class="ro">船速 v船<b class="warm">' + f(vB) + '</b></div>' +
+      '<div class="ro">v船 = v / cos α<b class="warm">' + f(1 / Math.cos(a)) + '</b></div>' +
+      '<div class="ro">沿绳分量 v船cos α<b class="grn">' + f(along) + '</b></div>' +
+      '<div class="ro">垂直绳分量 v船sin α<b class="pur">' + f(perp) + '</b></div>';
+  },
+  know: '' +
+    '<div class="k"><b class="t">核心规律</b><br>' +
+    '绳不可伸长 ⇒ <b>两端沿绳方向的分速度相等</b>。<br>' +
+    '船的真实速度 <code>v船</code> 是<b>合速度</b>，将其分解为「沿绳」与「垂直绳」两个方向：<br>' +
+    '<code>v船·cos α = v</code> ⇒ <code>v船 = v / cos α</code></div>' +
+    '<div class="k"><b class="t">高考重点</b><br>' +
+    '<span class="hi">"车拉船""绳拉物体靠岸"</span>：必须分解<b>物体的实际速度</b>，' +
+    '沿绳分量 = 绳被拉走的速度，垂直分量只使绳绕滑轮转动，不改变绳长。</div>' +
+    '<div class="k"><b class="t">易错警示</b><br>' +
+    '<span class="warn">✗ 认为 v船 = v·cos α</span>：把绳速当合速度、把船速当分速度。' +
+    '合速度必须是物体的真实速度。船被斜着拉，故 <b>v船 恒大于 v</b>（α→90° 时 v船 急剧增大）。</div>'
+};
+
+/* ================= 模型 2：轻杆关联 ================= */
+const M2 = {
+  id: 2, name: '轻杆关联', title: '② 轻杆关联 · 杆两端沿杆方向分速度相等',
+  hint: '杆长不变 ⇒ v_A·cos α = v_B·cos β',
+  view: [-1.5, 7.0, -1.3, 4.6],
+  L: 3.6, A0: 20 * D2R, A1: 70 * D2R, VA: 1.0,
+  init() { this.a = this.A0; },
+  step(dt) {
+    const da = this.VA / (this.L * Math.sin(this.a));
+    this.a += da * dt * state.dir;
+    if (this.a > this.A1) { this.a = this.A1; state.dir = -1; }
+    if (this.a < this.A0) { this.a = this.A0; state.dir = 1; }
+  },
+  parts() {
+    const a = this.a, L = this.L;
+    const yA = L * Math.cos(a), xB = L * Math.sin(a);
+    const b = Math.PI / 2 - a;                       // β = 90° − α
+    const vB = this.VA / Math.tan(a);
+    return { a, b, yA, xB, vB, alongA: this.VA * Math.cos(a), perpA: this.VA * Math.sin(a),
+             alongB: vB * Math.sin(a), perpB: vB * Math.cos(a) };
+  },
+  draw() {
+    const { a, b, yA, xB, vB, alongA, perpA, alongB, perpB } = this.parts();
+    const L = this.L;
+    setView.apply(null, this.view);
+    /* 墙角 */
+    wallV(0, -0.9, 4.4);
+    groundBand(0, -0.5, 6.8);
+
+    /* 轨迹 */
+    if (state.show.trail) {
+      seg(0, this.L * Math.cos(this.A0), 0, yA, 'rgba(95,208,200,.35)', 1.6, [5, 5]);
+      seg(0, 0, xB, 0, 'rgba(95,208,200,.35)', 1.6, [5, 5]);
+    }
+    /* 杆（金属杆） */
+    seg(0, yA, xB, 0, 'rgba(20,30,44,.95)', 6);
+    const g = P(0, yA), g2 = P(xB, 0);
+    const lg = ctx.createLinearGradient(g[0], g[1], g2[0], g2[1]);
+    lg.addColorStop(0, C.metal1); lg.addColorStop(.5, C.metal2); lg.addColorStop(1, C.metal3);
+    ctx.save(); ctx.strokeStyle = lg; ctx.lineWidth = 3.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(g[0], g[1]); ctx.lineTo(g2[0], g2[1]); ctx.stroke(); ctx.restore();
+
+    /* 两球 */
+    ball(0, yA, 0.17, '#bfe6ff', '#3f8fc8');
+    ball(xB, 0, 0.17, '#bfe6ff', '#3f8fc8');
+
+    /* 速度分解辅助方向 */
+    const eA = [Math.sin(a), -Math.cos(a)];          // 沿杆 A→B
+    const eAperp = [-Math.cos(a), -Math.sin(a)];     // 垂直杆（左下）
+    const eB = [-Math.sin(a), Math.cos(a)];          // 沿杆 B→A
+    const eBperp = [Math.cos(a), Math.sin(a)];       // 垂直杆（右上）
+    const k = 0.72;
+
+    if (state.show.dec) {
+      /* A 端：竖直向下 vA = 沿杆分量 + 垂直杆分量 */
+      const oA = [0, yA];
+      arrow(oA[0], oA[1] - 0.02, oA[0], oA[1] - k * this.VA, C.vel, 2.7, 11);
+      if (state.show.cmp) {
+        const c1 = k * alongA, c2 = k * perpA;
+        arrow(oA[0], oA[1], oA[0] + c1 * eA[0], oA[1] + c1 * eA[1], C.eq, 2.4, 9);
+        arrow(oA[0], oA[1], oA[0] + c2 * eAperp[0], oA[1] + c2 * eAperp[1], C.perp, 2.3, 9);
+        para(oA, eA, eAperp, c1, c2, 'rgba(160,200,235,.5)');
+      }
+      if (state.show.lab) {
+        tag('v_A', oA[0] - 0.30, oA[1] - k * this.VA - 0.2, C.vel, '700 13.5px "Cambria Math",Georgia,serif');
+        if (state.show.cmp) {
+          tag('v_A∥', oA[0] + k * alongA * eA[0] * .72 + 0.34, oA[1] + k * alongA * eA[1] * .72 - 0.06, C.eq,
+              '700 12.5px "Cambria Math",Georgia,serif');
+          tag('v_A⊥', oA[0] + k * perpA * eAperp[0] * .78 - 0.34, oA[1] + k * perpA * eAperp[1] * .78 - 0.12, C.perp,
+              '700 12.5px "Cambria Math",Georgia,serif');
+        }
+      }
+      /* B 端：水平向右 vB = 沿杆分量 + 垂直杆分量 */
+      const oB = [xB, 0];
+      arrow(oB[0], oB[1], oB[0] + k * vB, oB[1], C.vel, 2.7, 11);
+      if (state.show.cmp) {
+        const d1 = k * alongB, d2 = k * perpB;
+        arrow(oB[0], oB[1], oB[0] + d1 * eA[0], oB[1] + d1 * eA[1], C.eq, 2.4, 9);
+        arrow(oB[0], oB[1], oB[0] + d2 * eBperp[0], oB[1] + d2 * eBperp[1], C.perp, 2.3, 9);
+        para(oB, eA, eBperp, d1, d2, 'rgba(160,200,235,.5)');
+      }
+      if (state.show.lab) {
+        /* 用“最小半径”保证三个标签在 v_B 很小时也互不粘连 */
+        const dB = Math.max(k * vB, 0.66);
+        tag('v_B', oB[0] + dB + 0.30, oB[1] + 0.36, C.vel, '700 13.5px "Cambria Math",Georgia,serif');
+        if (state.show.cmp) {
+          const dp1 = Math.max(k * alongB, 0.66);
+          tag('v_B∥', oB[0] + dp1 * eA[0] + 0.34, oB[1] + dp1 * eA[1] - 0.02, C.eq,
+              '700 12.5px "Cambria Math",Georgia,serif');
+          const dp2 = Math.max(k * perpB, 0.66);
+          tag('v_B⊥', oB[0] + dp2 * eBperp[0] + 0.26, oB[1] + dp2 * eBperp[1] + 0.34, C.perp,
+              '700 12.5px "Cambria Math",Georgia,serif');
+        }
+      }
+    }
+    /* 角度：α 在 A 处（竖直方向与杆），β 在 B 处（水平方向与杆） */
+    arcAng(0, yA, 0.85, -Math.PI / 2, -Math.PI / 2 + a, 'rgba(255,181,103,.95)', state.show.lab ? 'α' : '');
+    arcAng(xB, 0, 0.85, Math.PI - b, Math.PI, 'rgba(95,208,200,.95)', state.show.lab ? 'β' : '');
+    if (state.show.lab) {
+      tag('A', -0.34, yA + 0.34, '#cfe0f2', '700 13px "Microsoft YaHei",sans-serif');
+      tag('B', xB + 0.06, 0.40, '#cfe0f2', '700 13px "Microsoft YaHei",sans-serif');
+    }
+    watermark();
+  },
+  readout() {
+    const { a, b, vB, alongA, alongB } = this.parts();
+    const f = n => n.toFixed(3);
+    return '' +
+      '<div class="ro">α（杆与竖直）<b>' + (a / D2R).toFixed(1) + '°</b></div>' +
+      '<div class="ro">β = 90°−α<b>' + (b / D2R).toFixed(1) + '°</b></div>' +
+      '<div class="ro">v_A（A 竖直）<b class="warm">' + f(this.VA) + '</b></div>' +
+      '<div class="ro">v_B = v_A/tan α<b class="warm">' + f(vB) + '</b></div>' +
+      '<div class="ro">v_A·cos α<b class="grn">' + f(alongA) + '</b></div>' +
+      '<div class="ro">v_B·cos β<b class="grn">' + f(alongB) + '</b></div>';
+  },
+  know: '' +
+    '<div class="k"><b class="t">核心规律</b><br>' +
+    '轻杆不可伸缩 ⇒ <b>两端沿杆方向的分速度相等</b>：<br>' +
+    '<code>v_A·cos α = v_B·cos β</code>，其中 α、β 分别为两端速度与杆的夹角，且 <code>α + β = 90°</code><br>' +
+    '由此 <code>v_B = v_A / tan α</code>（v_A 竖直、v_B 水平时）。</div>' +
+    '<div class="k"><b class="t">高考重点</b><br>' +
+    '<span class="hi">墙角"杆两端小球"、杆连接的两物体</span>：' +
+    '杆比绳多了「能沿轴向传递力」的特点，但<b>沿杆分速度相等</b>这一约束与绳完全一致；' +
+    '垂直杆的分量体现两端绕杆的转动。</div>' +
+    '<div class="k"><b class="t">易错警示</b><br>' +
+    '<span class="warn">✗ 认为 v_A = v_B</span>（只有 α=45° 时才恰好相等）。<br>' +
+    '<span class="warn">✗ 把"沿杆分量相等"错记成"沿速度方向投影"</span>：投影必须投到<b>杆</b>的方向上，' +
+    '角要取速度与杆的夹角。α→0 时杆近乎竖直，v_B 会急剧增大。</div>'
+};
+
+/* ================= 模型 3：接触关联 ================= */
+const M3 = {
+  id: 3, name: '接触关联', title: '③ 接触关联 · 竖直杆压半圆（法线方向分量相等）',
+  hint: '接触点法线方向分速度相等：v_A·sin θ = v_B·cos θ',
+  view: [-1.0, 4.2, -0.7, 4.9],
+  R: 1.6, T0: 75 * D2R, T1: 15 * D2R, VA: 1.0, ROD: 2.6,
+  init() { this.th = this.T0; },
+  step(dt) {
+    const dth = -this.VA / (this.R * Math.cos(this.th));
+    this.th += dth * dt * state.dir;
+    if (this.th < this.T1) { this.th = this.T1; state.dir = -1; }
+    if (this.th > this.T0) { this.th = this.T0; state.dir = 1; }
+  },
+  parts() {
+    const th = this.th, R = this.R;
+    const xO = R * Math.cos(th);          // 半圆圆心（贴地）
+    const yP = R * Math.sin(th);          // 杆下端（接触点高度）
+    const vB = this.VA * Math.tan(th);
+    return { th, xO, yP, vB, nA: this.VA * Math.sin(th), nB: vB * Math.cos(th) };
+  },
+  draw() {
+    const { th, xO, yP, vB, nA, nB } = this.parts();
+    const R = this.R, rod = this.ROD;
+    setView.apply(null, this.view);
+    groundBand(0, -0.9, 4.0);
+
+    /* 轨迹：半圆水平移动 · 杆下端竖直下降 */
+    if (state.show.trail) {
+      seg(this.R * Math.cos(this.T0), -0.16, xO, -0.16, 'rgba(95,208,200,.4)', 1.6, [5, 5]);
+      seg(-0.42, this.R * Math.sin(this.T0), -0.42, yP, 'rgba(255,181,103,.4)', 1.6, [5, 5]);
+    }
+    /* 半圆（贴地的半圆盘） */
+    const oc = P(xO, 0), rr = SL(R);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(oc[0], oc[1], rr, Math.PI, TAU, false); ctx.closePath();
+    const hg = ctx.createRadialGradient(oc[0] - rr * .4, oc[1] - rr * .55, rr * .1, oc[0], oc[1], rr * 1.05);
+    hg.addColorStop(0, 'rgba(244,248,252,.97)'); hg.addColorStop(.55, 'rgba(190,200,212,.95)');
+    hg.addColorStop(1, 'rgba(96,106,118,.95)');
+    ctx.fillStyle = hg; ctx.fill();
+    ctx.strokeStyle = 'rgba(150,165,180,.9)'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.restore();
+    /* 圆心 */
+    keydot(xO, 0, C.gold);
+
+    /* 半径（法线）虚线 */
+    seg(xO, 0, 0, yP, 'rgba(255,210,77,.75)', 1.5, [5, 4]);
+    /* 导轨（固定在支架上，杆在其内滑动） */
+    [2.2, 2.7].forEach(yy => {
+      const gp = P(-0.46, yy + 0.10);
+      rrect(gp[0], gp[1], SL(0.92), SL(0.20), 3, 'rgba(96,108,122,.95)', 'rgba(176,188,202,.6)', 1);
+      const q = P(0, yy);
+      ctx.save(); ctx.strokeStyle = 'rgba(200,210,222,.55)'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = -3; i < 4; i++) {
+        ctx.moveTo(q[0] + i * SL(0.14) - SL(0.05), q[1] + SL(0.10));
+        ctx.lineTo(q[0] + i * SL(0.14) + SL(0.05), q[1] - SL(0.10));
+      }
+      ctx.stroke(); ctx.restore();
+    });
+    /* 竖直杆（与半圆同为银灰金属色） */
+    const pTop = P(0, yP + rod), pBot = P(0, yP);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(36,46,58,.95)'; ctx.lineWidth = SL(0.24); ctx.lineCap = 'butt';
+    ctx.beginPath(); ctx.moveTo(pBot[0], pBot[1]); ctx.lineTo(pTop[0], pTop[1]); ctx.stroke();
+    const rg = ctx.createLinearGradient(pTop[0] - SL(0.09), 0, pTop[0] + SL(0.09), 0);
+    rg.addColorStop(0, 'rgba(238,243,248,.97)'); rg.addColorStop(.35, 'rgba(172,184,198,.96)'); rg.addColorStop(1, 'rgba(94,105,118,.97)');
+    ctx.strokeStyle = rg; ctx.lineWidth = SL(0.17);
+    ctx.beginPath(); ctx.moveTo(pBot[0], pBot[1]); ctx.lineTo(pTop[0], pTop[1]); ctx.stroke();
+    ctx.restore();
+    /* 顶部滑块 A */
+    const sp = P(-0.47, yP + rod + 0.46);
+    rrect(sp[0], sp[1], SL(0.94), SL(0.42), 4, 'rgba(216,226,236,.95)', 'rgba(146,160,176,.9)', 1.2);
+    if (state.show.lab) tag('A', 0, yP + rod + 0.67, 'rgba(26,38,52,.96)', '700 13px "Microsoft YaHei",sans-serif');
+
+    /* 接触点 */
+    keydot(0, yP, C.mark);
+
+    const k = 0.62;                              // 整体缩放（动态平行四边形）
+    if (state.show.dec) {
+      const n = [Math.cos(th), -Math.sin(th)];   // 接触面法线（指向盘内，右下）
+      const t = [Math.sin(th), Math.cos(th)];    // 接触面切向（与 n 垂直）
+
+      /* ===== 分解图 ①：v_A（竖直杆速度）置于杆最下端 (0, yP) ===== */
+      const La = k * this.VA, lnA = La * Math.sin(th), ltA = La * Math.cos(th);
+      const oA = [0, yP], vA = [0, -La];
+      const nA = [n[0] * lnA, n[1] * lnA];                 // 法向分量 v_A·sinθ（红）
+      const tA = [-t[0] * ltA, -t[1] * ltA];               // 切向分量 v_A·cosθ（灰，朝下左）
+      decomp(oA, vA, nA, tA, C.vel);
+      keydot(0, yP, C.mark);
+      if (state.show.lab) {
+        tag('v_A', 0.34, yP + 0.22, C.vel, '700 13.5px "Cambria Math",Georgia,serif');
+        if (state.show.cmp) {
+          tag('v∥', oA[0] + nA[0] + 0.18, oA[1] + nA[1] - 0.12, C.eq, '700 12.5px "Cambria Math",Georgia,serif');
+          tag('v⊥', oA[0] + tA[0] - 0.34, oA[1] + tA[1] - 0.12, '#9fb4cc', '700 12.5px "Cambria Math",Georgia,serif');
+        }
+      }
+
+      /* ===== 分解图 ②：v_B（半圆速度）置于圆心 O (xO, 0) ===== */
+      const Lb = k * vB, lnB = Lb * Math.cos(th), ltB = Lb * Math.sin(th);
+      const oB = [xO, 0], vBv = [Lb, 0];
+      const nB = [n[0] * lnB, n[1] * lnB];                 // 法向分量 v_B·cosθ（红，与 lnA 等长）
+      const tB = [t[0] * ltB, t[1] * ltB];                 // 切向分量 v_B·sinθ（灰，朝上右）
+      decomp(oB, vBv, nB, tB, C.vel);
+      keydot(xO, 0, C.gold);                              // 圆心（叠在白盘上）
+      if (state.show.lab) {
+        tag('O', xO - 0.36, -0.28, C.gold, '700 13px "Cambria Math",Georgia,serif');
+        tag('v_B', xO + Lb + 0.30, 0.06, C.vel, '700 13.5px "Cambria Math",Georgia,serif');
+        if (state.show.cmp) {
+          tag('v∥', oB[0] + nB[0] + 0.18, oB[1] + nB[1] - 0.12, C.eq, '700 12.5px "Cambria Math",Georgia,serif');
+          tag('v⊥', oB[0] + tB[0] + 0.18, oB[1] + tB[1] + 0.12, '#9fb4cc', '700 12.5px "Cambria Math",Georgia,serif');
+        }
+      }
+
+      /* 法向分量相等（红）—— 两图同色等长，直观呈现核心规律 */
+      if (state.show.cmp && state.show.lab) {
+        tag('v_A·sin θ = v_B·cos θ', 1.55, 4.32, C.eq,
+            '700 13px "Microsoft YaHei",sans-serif', 'center');
+      }
+    }
+    /* θ 角（在 O 处，从向左水平到半径） */
+    arcAng(xO, 0, 0.62, Math.PI - th, Math.PI, 'rgba(255,181,103,.95)', state.show.lab ? 'θ' : '');
+    watermark();
+  },
+  readout() {
+    const { th, vB, nA, nB } = this.parts();
+    const f = n => n.toFixed(3);
+    return '' +
+      '<div class="ro">θ<b>' + (th / D2R).toFixed(1) + '°</b></div>' +
+      '<div class="ro">杆速度 v_A<b class="warm">' + f(this.VA) + '</b></div>' +
+      '<div class="ro">v_B = v_A·tan θ<b class="warm">' + f(vB) + '</b></div>' +
+      '<div class="ro">v_A·sin θ<b class="grn">' + f(nA) + '</b></div>' +
+      '<div class="ro">v_B·cos θ<b class="grn">' + f(nB) + '</b></div>' +
+      '<div class="ro">放大倍数<span style="color:#ffb567">' + f(Math.tan(th)) + '×</span></div>';
+  },
+  know: '' +
+    '<div class="k"><b class="t">核心规律</b><br>' +
+    '两物体<b>始终接触</b>（不分离、不嵌入）⇒ 接触点处沿<b>接触面法线</b>方向的分速度相等：<br>' +
+    '<code>v_A·sin θ = v_B·cos θ</code> ⇒ <code>v_B = v_A·tan θ</code></div>' +
+    '<div class="k"><b class="t">高考重点</b><br>' +
+    '<span class="hi">"直杆压半圆""斜劈推物块""曲面接触"</span>类：法线方向由<b>接触面的几何</b>确定' +
+    '（这里是半径方向）；切向允许相对滑动，因此<b>只比较法向分量</b>。</div>' +
+    '<div class="k"><b class="t">易错警示</b><br>' +
+    '<span class="warn">✗ 沿接触面切向比较分量</span>：切向正是两者相对滑动的方向，分量并不相等。<br>' +
+    '<span class="warn">✗ θ 取错</span>：θ 是半径与<b>水平方向</b>的夹角；若取成与竖直方向的夹角，' +
+    '得到的 <code>tan θ</code> 会变成 <code>cot θ</code>，结论正好颠倒。' +
+    'θ→90°（杆接触半圆最左端）时 v_B→∞，接触即将脱离。</div>'
+};
+
+/* ================= 模型 4：光线转动关联 ================= */
+const M4 = {
+  id: 4, name: '光线转动关联', title: '④ 光线转动关联 · 光斑在竖直面上的速度',
+  hint: '光斑位置 y = L·tan θ ⇒ v = ωL / cos²θ',
+  view: [-0.85, 3.35, -4.25, 4.25],
+  L: 2.4, OM: 0.5, TH0: -50 * D2R, TH1: 50 * D2R,
+  init() { this.th = 0; },
+  step(dt) {
+    this.th += this.OM * dt * state.dir;
+    if (this.th > this.TH1) { this.th = this.TH1; state.dir = -1; }
+    if (this.th < this.TH0) { this.th = this.TH0; state.dir = 1; }
+  },
+  parts() {
+    const th = this.th;
+    const y = this.L * Math.tan(th);
+    const ratio = 1 / Math.pow(Math.cos(th), 2);
+    return { th, y, ratio, v: this.OM * this.L * ratio };
+  },
+  draw() {
+    const { th, y, ratio, v } = this.parts();
+    const L = this.L, sgn = state.dir >= 0 ? 1 : -1;
+    /* 左区（光路）局部视图 */
+    const availW = CW * 0.70;
+    const s = Math.min(availW / (this.view[1] - this.view[0]), CH / (this.view[3] - this.view[2]));
+    V.s = s;
+    V.ox = availW / 2 - (this.view[0] + this.view[1]) / 2 * s;
+    V.oy = CH / 2 + (this.view[2] + this.view[3]) / 2 * s;
+
+    /* 竖直墙面（有厚度） */
+    const wTop = P(L, this.view[3] + 0.3), wBot = P(L, this.view[2] - 0.3);
+    const thick = SL(0.36);
+    const wg = ctx.createLinearGradient(wTop[0], 0, wTop[0] + thick, 0);
+    wg.addColorStop(0, '#46536a'); wg.addColorStop(.28, '#1d2739'); wg.addColorStop(1, '#0c1320');
+    ctx.save();
+    ctx.fillStyle = wg; ctx.fillRect(wTop[0], wTop[1], thick, wBot[1] - wTop[1]);
+    ctx.fillStyle = 'rgba(150,195,235,.16)'; ctx.fillRect(wTop[0], wTop[1], thick * 0.2, wBot[1] - wTop[1]);
+    ctx.restore();
+
+    /* 光斑轨迹（墙上留下的亮痕） */
+    if (state.show.trail) seg(L + 0.18, 0, L + 0.18, y, 'rgba(255,224,122,.5)', 3.4);
+
+    /* 光线（紫红色） */
+    const sc = P(0, 0), pp = P(L, y);
+    const lightCol = 'rgba(216,74,191,.95)';
+    ctx.save();
+    ctx.strokeStyle = lightCol; ctx.lineWidth = 1.9; ctx.lineCap = 'round';
+    ctx.shadowColor = 'rgba(216,74,191,.55)'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.moveTo(sc[0], sc[1]); ctx.lineTo(pp[0], pp[1]); ctx.stroke();
+    ctx.restore();
+
+    /* 光源（紫红色光） */
+    ctx.save();
+    const sg = ctx.createRadialGradient(sc[0], sc[1], 0, sc[0], sc[1], SL(0.62));
+    sg.addColorStop(0, 'rgba(255,225,250,.95)'); sg.addColorStop(.38, 'rgba(216,74,191,.5)');
+    sg.addColorStop(1, 'rgba(216,74,191,0)');
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sc[0], sc[1], SL(0.62), 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffe9fb'; ctx.beginPath(); ctx.arc(sc[0], sc[1], 4.6, 0, TAU); ctx.fill();
+    ctx.restore();
+
+    /* 光斑（清除光晕，仅留清晰亮斑） */
+    ctx.save();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(pp[0], pp[1], 4.0, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(216,74,191,.9)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(pp[0], pp[1], 4.0, 0, TAU); ctx.stroke();
+    ctx.restore();
+
+    if (state.show.dec) {
+      /* 光斑速度（沿墙面竖直方向）分解为「平行光线」与「垂直光线」两个分量 */
+      const k4 = 0.34, Vn = sgn * k4 * v;            // 合速度（竖直，沿墙）
+      const er = [Math.cos(th), Math.sin(th)];        // 光线方向单位矢量（源 → 光斑）
+      const np = [-Math.sin(th), Math.cos(th)];       // 垂直光线单位矢量
+      const o = [L, y];
+      const nMag = Vn * Math.sin(th), tMag = Vn * Math.cos(th);
+      const nRay = [nMag * er[0], nMag * er[1]];      // 平行光线分量（红，沿光线）
+      const tRay = [tMag * np[0], tMag * np[1]];      // 垂直光线分量（灰虚线）
+      decomp(o, [0, Vn], nRay, tRay, C.vel);
+      if (state.show.lab) {
+        const vside = Vn >= 0 ? -0.30 : 0.30;        // 实际速度标签置于竖直箭头反向，避开分量扇形
+        tag('v', o[0] + 0.06, o[1] + vside, C.vel, '700 14px "Cambria Math",Georgia,serif');
+        if (state.show.cmp) {
+          const off = 0.60, sgnS = Math.sin(th) >= 0 ? 1 : -1;  // 分量标签向各自"外侧"避让，避免两标靠拢
+          if (Math.abs(nMag) > 0.06)
+            tag('v∥', o[0] + nRay[0] - np[0] * off, o[1] + nRay[1] - np[1] * off, C.eq,
+                '700 12.5px "Cambria Math",Georgia,serif');
+          if (Math.abs(tMag) > 0.06)
+            tag('v⊥', o[0] + tRay[0] - sgnS * er[0] * off, o[1] + tRay[1] - sgnS * er[1] * off, '#cdd8e6',
+                '700 12.5px "Cambria Math",Georgia,serif');
+        }
+      }
+    }
+    /* θ 角 + 转动角速度 ω */
+    arcAng(0, 0, 0.95, Math.min(0, th), Math.max(0, th), 'rgba(255,181,103,.95)',
+           state.show.lab ? 'θ' : '');
+    if (state.show.cmp) {
+      arcAng(0, 0, 1.42, -0.42, 0.42, 'rgba(95,208,200,.75)', '');
+      const ap = P(1.42 * Math.cos(0.42), 1.42 * Math.sin(0.42));
+      ctx.save(); ctx.fillStyle = 'rgba(95,208,200,.9)';
+      ctx.beginPath();
+      ctx.moveTo(ap[0], ap[1] - 5); ctx.lineTo(ap[0] - 8, ap[1] + 3); ctx.lineTo(ap[0] + 5, ap[1] + 4);
+      ctx.closePath(); ctx.fill(); ctx.restore();
+      if (state.show.lab) tag('ω', 0, 1.86, 'rgba(95,208,200,.95)', '700 13.5px "Cambria Math",Georgia,serif');
+    }
+    if (state.show.lab) {
+      tag('S', -0.30, -0.34, '#ffe9a0', '700 13px "Cambria Math",Georgia,serif');
+      ptag('y = L·tan θ', 18, 25, 'rgba(255,224,122,.95)', '700 12.5px "Microsoft YaHei",sans-serif');
+    }
+
+    /* ---- 右区：v/(ωL) – θ 关系曲线 ---- */
+    const px0 = CW * 0.645, pw = CW - px0 - 12, py0 = CH * 0.09, ph = CH * 0.82;
+    card(px0, py0, pw, ph);
+    ptag('光斑速度放大 v / (ωL) = 1 / cos²θ', px0 + 13, py0 + 17, '#5fd0c8',
+         '700 12px "Microsoft YaHei",sans-serif');
+    const gx0 = px0 + 30, gx1 = px0 + pw - 14, gy1 = py0 + ph - 30, gy0 = py0 + 42;
+    const tMax = 60 * D2R, vMax = 4.5;
+    const X = t => gx0 + (t + tMax) / (2 * tMax) * (gx1 - gx0);
+    const Y = vv => gy1 - Math.min(vv, vMax) / vMax * (gy1 - gy0);
+    ctx.save();
+    /* 网格 */
+    ctx.strokeStyle = 'rgba(88,140,190,.14)'; ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const yy = gy1 - i / 4 * (gy1 - gy0);
+      ctx.beginPath(); ctx.moveTo(gx0, yy); ctx.lineTo(gx1, yy); ctx.stroke();
+    }
+    for (let i = -60; i <= 60; i += 30) {
+      const xx = X(i * D2R);
+      ctx.beginPath(); ctx.moveTo(xx, gy0); ctx.lineTo(xx, gy1); ctx.stroke();
+    }
+    /* 轴 */
+    ctx.strokeStyle = 'rgba(150,190,225,.55)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(gx0, gy1); ctx.lineTo(gx1, gy1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx0, gy0 - 6); ctx.lineTo(gx0, gy1); ctx.stroke();
+    /* 曲线 */
+    ctx.strokeStyle = 'rgba(255,181,103,.95)'; ctx.lineWidth = 2.2;
+    ctx.shadowColor = 'rgba(255,181,103,.6)'; ctx.shadowBlur = 6;
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i <= 200; i++) {
+      const t = -tMax + 2 * tMax * i / 200;
+      const r = 1 / Math.pow(Math.cos(t), 2);
+      if (r > vMax + 0.6) { started = false; continue; }
+      const xx = X(t), yy = Y(r);
+      started ? ctx.lineTo(xx, yy) : (ctx.moveTo(xx, yy), started = true);
+    }
+    ctx.stroke(); ctx.shadowBlur = 0;
+    /* 当前点 */
+    const cxp = X(th), cyp = Y(ratio);
+    ctx.fillStyle = '#fff2c8';
+    ctx.beginPath(); ctx.arc(cxp, cyp, 4.2, 0, TAU); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,181,103,.8)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(cxp, cyp); ctx.lineTo(cxp, gy1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx0, cyp); ctx.lineTo(cxp, cyp); ctx.stroke();
+    ctx.restore();
+    ptag('0', gx0 - 8, gy1, '#93aac2', '600 11px "Microsoft YaHei",sans-serif', 'right');
+    ptag('0°', gx0, gy1 + 11, '#93aac2', '600 11px "Microsoft YaHei",sans-serif', 'center');
+    ptag('θ', gx1, gy1 + 11, '#93aac2', '600 11px "Microsoft YaHei",sans-serif', 'center');
+    ptag('v/ωL', gx0 - 6, gy0 - 12, '#93aac2', '600 11px "Microsoft YaHei",sans-serif', 'right');
+    ptag('当前 ' + ratio.toFixed(2) + ' 倍', cxp + (th >= 0 ? -8 : 8), cyp - 14,
+         '#ffb567', '700 12px "Microsoft YaHei",sans-serif', th >= 0 ? 'right' : 'left');
+    watermark();
+  },
+  readout() {
+    const { th, ratio, v } = this.parts();
+    const f = n => n.toFixed(3);
+    return '' +
+      '<div class="ro">θ<b>' + (th / D2R).toFixed(1) + '°</b></div>' +
+      '<div class="ro">角速度 ω<b>' + f(this.OM) + ' rad/s</b></div>' +
+      '<div class="ro">光源距墙 L<b>' + f(this.L) + '</b></div>' +
+      '<div class="ro">放大 1/cos²θ<b class="warm">' + f(ratio) + '×</b></div>' +
+      '<div class="ro">光斑速度 v<b class="warm">' + f(v) + '</b></div>' +
+      '<div class="ro">v = ωL/cos²θ<b class="warm">' + f(this.OM * this.L * ratio) + '</b></div>';
+  },
+  know: '' +
+    '<div class="k"><b class="t">核心规律</b><br>' +
+    '光斑位置 <code>y = L·tan θ</code>（θ 为光线与水平方向的夹角），' +
+    '而光线匀速转动 <code>dθ/dt = ω</code>，由链式法则：<br>' +
+    '<code>v = dy/dt = L·ω/cos²θ</code></div>' +
+    '<div class="k"><b class="t">高考重点</b><br>' +
+    '<span class="hi">"光斑速度""转镜扫光""探照灯扫墙"</span>：把位置写成角度的函数再对时间求导，' +
+    '是处理"转动—平动关联"的通用套路。<b>θ = 0 时 v = ωL 最小</b>，θ 越大 v 增长越快。</div>' +
+    '<div class="k"><b class="t">易错警示</b><br>' +
+    '<span class="warn">✗ 直接用 v = ωL</span>：这只在 θ = 0（光线垂直射向墙面）时才成立，' +
+    '一般情形必须除以 cos²θ。<br>' +
+    '<span class="warn">✗ 误用 v = ωL/cos θ</span>：位置是 tan θ，求导后分母是 <b>cos²θ</b>（不是 cos θ）。<br>' +
+    'θ→90° 时 v→∞ —— 光线几乎平行于墙面，光斑扫过的速度急剧增大（趋于"光追上墙"的极限）。</div>'
+};
+
+/* ================= 模型注册 ================= */
+const MODELS = [M1, M2, M3, M4];
+const BADGE = [
+  () => state.dir > 0 ? 'α 增大 → 船被拉向滑轮，v船 随之增大' : 'α 减小 → 船远离滑轮，v船 随之减小',
+  () => state.dir > 0 ? 'α 增大 → A 端下降、B 端右移' : 'α 减小 → A 端上升、B 端左移',
+  () => state.dir > 0 ? 'θ 减小 → 杆下降、半圆右移' : 'θ 增大 → 杆上升、半圆左移',
+  () => state.dir > 0 ? 'θ 增大 → 光斑上移，速度按 1/cos²θ 放大' : 'θ 减小 → 光斑下移，速度放大倍数回落'
+];
+const KEYS = ['dec', 'cmp', 'trail', 'lab'];
+
+/* ================= UI ================= */
+function buildSeg() {
+  const seg = $('seg');
+  seg.innerHTML = '';
+  MODELS.forEach((m, i) => {
+    const b = document.createElement('button');
+    b.textContent = (i + 1) + '. ' + m.name;
+    b.addEventListener('click', () => setModel(i));
+    seg.appendChild(b);
+  });
+}
+function setModel(i) {
+  state.model = i; state.t = 0; state.dir = 1;
+  MODELS[i].init();
+  Array.prototype.forEach.call($('seg').children || [], (b, k) => b.classList.toggle('on', k === i));
+  $('mTitle').textContent = MODELS[i].title;
+  $('mHint').textContent = MODELS[i].hint;
+  $('know').innerHTML = MODELS[i].know;
+  refreshReadout();
+  draw();
+}
+function refreshReadout() {
+  $('ro').innerHTML = MODELS[state.model].readout();
+  $('badge').textContent = '· ' + BADGE[state.model]();
+}
+function hidpi() {
+  const r = cv.getBoundingClientRect();
+  CW = Math.max(360, Math.round(r.width));
+  CH = Math.max(260, Math.round(r.height));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function draw() {
+  ctx.setTransform(Math.min(2, window.devicePixelRatio || 1), 0, 0, Math.min(2, window.devicePixelRatio || 1), 0, 0);
+  gridBG();
+  MODELS[state.model].draw();
+}
+
+/* ================= 主循环 ================= */
+state.last = 0;
+let roTimer = 0;
+function frame(now) {
+  if (!state.last) state.last = now;
+  const dt = Math.min(0.05, Math.max(0, (now - state.last) / 1000));
+  state.last = now;
+  if (state.running) {
+    state.t += dt;
+    MODELS[state.model].step(dt * state.speed * RATE[state.model + 1]);
+  }
+  draw();
+  if (now - roTimer > 100) { roTimer = now; refreshReadout(); }
+  requestAnimationFrame(frame);
+}
+
+/* ================= 绑定 ================= */
+$('play').addEventListener('click', () => {
+  state.running = !state.running;
+  $('play').textContent = state.running ? '暂停' : '继续';
+});
+$('reset').addEventListener('click', () => {
+  state.t = 0; state.dir = 1; MODELS[state.model].init(); refreshReadout(); draw();
+});
+$('sp').addEventListener('input', e => {
+  state.speed = e.target.value / 100;
+  $('spv').textContent = state.speed.toFixed(1) + '×';
+});
+['tDec', 'tCmp', 'tTrl', 'tLab'].forEach((id, k) => {
+  $(id).addEventListener('change', e => { state.show[KEYS[k]] = e.target.checked; draw(); });
+});
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); $('play').click(); }
+  else if (e.code === 'ArrowRight') { setModel((state.model + 1) % MODELS.length); }
+  else if (e.code === 'ArrowLeft') { setModel((state.model + MODELS.length - 1) % MODELS.length); }
+});
+window.addEventListener('resize', () => { hidpi(); draw(); });
+
+hidpi();
+buildSeg();
+setModel(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
