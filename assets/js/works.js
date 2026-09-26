@@ -3763,6 +3763,12 @@ const WORKS = [
       desc:"关联速度五模型（绳拉/轻杆/接触/光线转动/投影）交互动画：动态矢量平行四边形展示沿约束方向分量相等与合速度分解，并含点光源下小球影子在墙上运动的投影关联。",
       icon:"🎬", cover:"assets/img/related-velocity-cover.png", link:"animations/related-velocity.html", date:"2026-09-26", tag:"关联速度"
     }
+,
+      {
+      type:"animation", title:"晾衣架模型 · 平衡与张力",
+      desc:"光滑挂钩挂在绳上，两段绳张力大小相等、且与等效重力方向夹角相等；拖动左右挂点或施加水平风力，实时观察绳张力与两绳夹角的变化。",
+      icon:"🎬", cover:"assets/img/clothes-rack-cover.png", link:"animations/clothes-rack.html", date:"2026-09-26", tag:"力学"
+    }
 ];
 
 
