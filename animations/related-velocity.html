@@ -194,14 +194,14 @@ function decomp(o, v, n, t, colV) {
   const N = [o[0] + n[0], o[1] + n[1]];
   const T = [o[0] + t[0], o[1] + t[1]];
   ctx.save();
-  ctx.strokeStyle = 'rgba(228,242,255,.88)'; ctx.lineWidth = 1.4;
+  ctx.strokeStyle = 'rgba(150,172,205,.55)'; ctx.lineWidth = 1.4;
   seg(V[0], V[1], N[0], N[1]);                         // 完成边：速度末端 → 法向末端（平行切向）
   seg(V[0], V[1], T[0], T[1]);                         // 完成边：速度末端 → 切向末端（平行法向）
   ctx.restore();
   arrowH(o[0], o[1], V[0], V[1], colV, 2.8, 12);       // 合速度（橙，对角线）
   if (state.show.cmp) {
     arrowH(o[0], o[1], N[0], N[1], C.eq, 2.6, 10);     // 法向分量（红）
-    seg(o[0], o[1], T[0], T[1], 'rgba(216,234,250,.96)', 1.6);  // 切向分量（浅色实线）
+    seg(o[0], o[1], T[0], T[1], 'rgba(120,165,215,.92)', 1.6);  // 切向分量（钢蓝实线）
   }
 }
 function tag(s, x, y, col, font, align, base) {
@@ -1216,7 +1216,7 @@ const M4 = {
       const o = [L, y];
       const nMag = Vn * Math.sin(th), tMag = Vn * Math.cos(th);
       const nRay = [nMag * er[0], nMag * er[1]];      // 平行光线分量（红，沿光线）
-      const tRay = [tMag * np[0], tMag * np[1]];      // 垂直光线分量（灰虚线）
+      const tRay = [tMag * np[0], tMag * np[1]];      // 垂直光线分量（灰实线）
       decomp(o, [0, Vn], nRay, tRay, C.vel);
       if (state.show.lab) {
         const vside = Vn >= 0 ? -0.30 : 0.30;        // 实际速度标签置于竖直箭头反向，避开分量扇形
