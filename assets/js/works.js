@@ -3759,8 +3759,8 @@ const WORKS = [
     }
 ,
       {
-      type:"animation", title:"关联速度 · 四模型交互演示",
-      desc:"关联速度四模型（绳拉/轻杆/接触/光线转动）交互动画，动态矢量平行四边形展示沿约束方向分量相等与合速度分解。",
+      type:"animation", title:"关联速度 · 五模型交互演示",
+      desc:"关联速度五模型（绳拉/轻杆/接触/光线转动/投影）交互动画：动态矢量平行四边形展示沿约束方向分量相等与合速度分解，并含点光源下小球影子在墙上运动的投影关联。",
       icon:"🎬", cover:"assets/img/related-velocity-cover.png", link:"animations/related-velocity.html", date:"2026-09-26", tag:"关联速度"
     }
 ];
