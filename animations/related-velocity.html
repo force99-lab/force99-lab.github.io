@@ -1352,7 +1352,7 @@ const M5 = {
     const { y, v, S, vS } = this.parts();
     const XW = this.XW, XB = this.XB, WALL = this.WALL, k = 0.30;
     const yApex = this.V0 * this.V0 / (2 * this.G);
-    const rayCol = 'rgba(255,214,110,.95)';
+    const rayCol = 'rgba(70,235,120,.92)';  // 绿色激光
     setView.apply(null, this.view);
 
     /* 地面（水平面，点光源所在） */
@@ -1373,52 +1373,71 @@ const M5 = {
     /* 轨迹：球的竖直路径（虚线） + 影子沿墙扫过的亮痕 */
     if (state.show.trail) {
       seg(XB, 0, XB, yApex, 'rgba(255,181,103,.26)', 1.3, [5, 5]);
-      seg(XW + 0.20, 0, XW + 0.20, S, 'rgba(255,214,110,.55)', 3.2);
+      seg(XW + 0.20, 0, XW + 0.20, S, 'rgba(70,235,120,.5)', 3.2);
     }
 
     /* 光线：点光源 → 球 → 墙（三点共线） */
     const so = P(0, 0), wp = P(XW, S);
     ctx.save();
     ctx.strokeStyle = rayCol; ctx.lineWidth = 1.9; ctx.lineCap = 'round';
-    ctx.shadowColor = 'rgba(255,214,110,.55)'; ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(70,235,120,.5)'; ctx.shadowBlur = 10;
     ctx.beginPath(); ctx.moveTo(so[0], so[1]); ctx.lineTo(wp[0], wp[1]); ctx.stroke();
     ctx.restore();
 
-    /* 点光源（暖金光） */
+    /* 点光源（绿色激光源，光斑缩小至 1/3） */
     ctx.save();
-    const sg = ctx.createRadialGradient(so[0], so[1], 0, so[0], so[1], SL(0.66));
-    sg.addColorStop(0, 'rgba(255,248,225,.98)'); sg.addColorStop(.36, 'rgba(255,214,110,.55)');
-    sg.addColorStop(1, 'rgba(255,214,110,0)');
-    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(so[0], so[1], SL(0.66), 0, TAU); ctx.fill();
-    ctx.fillStyle = '#fff7e0'; ctx.beginPath(); ctx.arc(so[0], so[1], 4.4, 0, TAU); ctx.fill();
+    const sg = ctx.createRadialGradient(so[0], so[1], 0, so[0], so[1], SL(0.22));
+    sg.addColorStop(0, 'rgba(235,255,240,.98)'); sg.addColorStop(.36, 'rgba(70,235,120,.55)');
+    sg.addColorStop(1, 'rgba(70,235,120,0)');
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(so[0], so[1], SL(0.22), 0, TAU); ctx.fill();
+    ctx.fillStyle = '#dfffeb'; ctx.beginPath(); ctx.arc(so[0], so[1], 1.6, 0, TAU); ctx.fill();
     ctx.restore();
 
-    /* 小球 */
-    ball(XB, y, 0.135, '#c7e8ff', '#4f9fd6');
+    /* 小球（红色立体小球，半径缩小至 1/3） */
+    ball(XB, y, 0.045, '#ff9d8f', '#9e1b1b');
 
-    /* 影子（墙上暗斑 + 金环） */
+    /* 影子（墙上暗斑 + 绿环，尺寸随球缩小至 1/3） */
     ctx.save();
-    ctx.shadowColor = 'rgba(255,214,110,.6)'; ctx.shadowBlur = 9;
+    ctx.shadowColor = 'rgba(70,235,120,.5)'; ctx.shadowBlur = 7;
     ctx.fillStyle = 'rgba(9,13,22,.96)';
-    ctx.beginPath(); ctx.ellipse(wp[0], wp[1], SL(0.13), SL(0.25), 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(wp[0], wp[1], SL(0.043), SL(0.083), 0, 0, TAU); ctx.fill();
     ctx.restore();
     ctx.save();
     ctx.strokeStyle = rayCol; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(wp[0], wp[1], SL(0.13), SL(0.25), 0, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(wp[0], wp[1], SL(0.043), SL(0.083), 0, 0, TAU); ctx.stroke();
     ctx.restore();
 
-    /* 速度矢量（橙）：球速 v 与影速 v影 = 2v（影恒为球的 2 倍） */
-    if (state.show.dec && Math.abs(v) > 0.08) {
-      arrow(XB, y, XB, y + k * v, C.vel, 2.8, 11);
-      arrow(XW, S, XW, S + k * vS, C.vel, 2.8, 11);
+    /* 速度矢量（橙）：球速 v 与影速 v影 = 2v；乘 state.dir 使箭头与屏幕实际运动同向 */
+    const vD = v * state.dir, vSD = vS * state.dir;
+    if (state.show.dec && Math.abs(vD) > 0.08) {
+      arrow(XB, y, XB, y + k * vD, C.vel, 2.8, 11);
+      arrow(XW, S, XW, S + k * vSD, C.vel, 2.8, 11);
       if (state.show.lab) {
-        tag('v', XB - 0.34, y + k * v * 0.5, C.vel, '700 14px "Cambria Math",Georgia,serif');
-        tag('v影 = 2v', XW - 0.46, S + k * vS * 0.5, C.vel, '700 12.5px "Microsoft YaHei",sans-serif');
+        tag('v', XB - 0.34, y + k * vD * 0.5, C.vel, '700 14px "Cambria Math",Georgia,serif');
+        tag('v影 = 2v', XW - 0.46, S + k * vSD * 0.5, C.vel, '700 12.5px "Microsoft YaHei",sans-serif');
       }
     }
 
-    /* 高度尺寸线：球高 y、影高 S = 2y（相似三角形 1:2） */
+    /* 相似三角形 + 高度尺寸线：△O-(XB,0)-球 ∽ △O-(XW,0)-影，S/XW = y/XB = 1/2 */
     if (state.show.cmp) {
+      const oP = P(0, 0), bxP = P(XB, 0), byP = P(XB, y), wxP = P(XW, 0), wyP = P(XW, S);
+      ctx.save();
+      /* 大三角形（墙侧） */
+      ctx.fillStyle = 'rgba(95,170,255,.10)';
+      ctx.beginPath(); ctx.moveTo(oP[0], oP[1]); ctx.lineTo(wxP[0], wxP[1]); ctx.lineTo(wyP[0], wyP[1]); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(95,170,255,.6)'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(oP[0], oP[1]); ctx.lineTo(wxP[0], wxP[1]); ctx.lineTo(wyP[0], wyP[1]); ctx.closePath(); ctx.stroke();
+      /* 小三角形（球侧） */
+      ctx.fillStyle = 'rgba(95,227,168,.14)';
+      ctx.beginPath(); ctx.moveTo(oP[0], oP[1]); ctx.lineTo(bxP[0], bxP[1]); ctx.lineTo(byP[0], byP[1]); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(95,227,168,.7)';
+      ctx.beginPath(); ctx.moveTo(oP[0], oP[1]); ctx.lineTo(bxP[0], bxP[1]); ctx.lineTo(byP[0], byP[1]); ctx.closePath(); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+      if (state.show.lab) {
+        tag('∽', 0.62, 0.52, '#bfe3ff', '700 17px "Cambria Math",Georgia,serif');
+        tag('S / XW = y / XB = 1/2', (XB + XW) / 2, -0.44, '#bfe3ff', '700 12.5px "Microsoft YaHei",sans-serif');
+      }
       if (y > 0.06) {
         seg(XB - 0.42, 0, XB - 0.42, y, 'rgba(95,208,200,.9)', 1.4);
         seg(XB - 0.50, 0, XB - 0.34, 0, 'rgba(95,208,200,.9)', 1.4);
@@ -1435,9 +1454,9 @@ const M5 = {
 
     /* 文字标注 */
     if (state.show.lab) {
-      tag('点光源', 0, -0.46, '#ffe9a0', '700 12.5px "Microsoft YaHei",sans-serif');
-      tag('小球', XB, -0.46, '#cfe0f2', '700 12.5px "Microsoft YaHei",sans-serif');
-      tag('影', XW + 0.54, S, '#ffe9a0', '700 12.5px "Microsoft YaHei",sans-serif');
+      tag('点光源', 0, -0.46, '#9be8b0', '700 12.5px "Microsoft YaHei",sans-serif');
+      tag('小球', XB, -0.46, '#ffb3a7', '700 12.5px "Microsoft YaHei",sans-serif');
+      tag('影', XW + 0.54, S, '#9be8b0', '700 12.5px "Microsoft YaHei",sans-serif');
     }
     watermark();
   },
