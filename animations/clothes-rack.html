@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>晾衣架模型 · 平衡与张力交互演示</title>
+<style>
+:root{
+  --bg:#070b14; --panel:#0e1626; --line:rgba(88,140,190,.22);
+  --teal:#5fd0c8; --blue:#4a9fd8; --vel:#ffb567; --comp:#5ee3a8; --perp:#b18cff;
+  --text:#dce8f5; --sub:#93aac2; --red:#ff7b7b; --gold:#ffd24d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+#wrap{display:flex;gap:12px;max-width:1420px;margin:0 auto;padding:10px 14px 14px;align-items:stretch}
+#left{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+#right{flex:0 0 372px;display:flex;flex-direction:column;gap:10px}
+#wrap,#left{min-width:0}
+.stageTitle{font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--teal);
+  padding:1px 2px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stageTitle::before{content:"";width:5px;height:13px;border-radius:2px;
+  background:linear-gradient(180deg,var(--teal),var(--blue))}
+.stageTitle small{color:var(--sub);font-weight:400;font-size:11.5px;letter-spacing:0}
+#statusline{min-height:17px;display:flex;align-items:center;gap:7px;
+  padding:0 2px;font-size:11px;color:var(--sub)}
+#badge{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+canvas{width:100%;display:block;border-radius:13px}
+#cv{height:488px}
+.card{background:linear-gradient(180deg,#101b2d,#0c1424);border:1px solid var(--line);
+  border-radius:13px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.panel{padding:11px 12px}
+.panel h3{font-size:12.5px;color:var(--teal);letter-spacing:.5px;margin:0 0 8px;
+  display:flex;align-items:center;gap:6px;font-weight:700}
+.panel h3::before{content:"";width:4px;height:11px;border-radius:2px;background:var(--teal)}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0}
+button.ctl{padding:5px 12px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(20,34,54,.75);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit}
+button.ctl:hover{border-color:rgba(95,208,200,.5)}
+button.primary{background:linear-gradient(180deg,#2f7fa8,#245f86);border-color:#3d93bd;font-weight:700}
+input[type=range]{flex:1 1 auto;min-width:0;accent-color:var(--teal);height:4px}
+.lbl{font-size:11.5px;color:var(--sub);flex:0 0 70px}
+.val{font-size:11.5px;color:var(--gold);flex:0 0 50px;text-align:right;font-variant-numeric:tabular-nums}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin:9px 0 4px;
+  font-size:11.5px;color:var(--sub)}
+.toggles label{display:flex;align-items:center;gap:5px;cursor:pointer}
+input[type=checkbox]{accent-color:var(--teal)}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin-top:9px;
+  padding-top:9px;border-top:1px dashed rgba(120,160,200,.22)}
+.ro{font-size:11.5px;color:var(--sub);display:flex;justify-content:space-between;
+  align-items:baseline;gap:4px;min-width:0}
+.ro b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ro b.warm{color:var(--vel)}
+.ro b.grn{color:var(--comp)}
+.ro b.pur{color:var(--perp)}
+.ro b.red{color:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 11px;margin-top:8px;
+  border-top:1px dashed rgba(120,160,200,.22);padding-top:8px}
+.lg{font-size:10.5px;color:var(--sub);display:flex;align-items:center;gap:4px}
+.bar{width:14px;height:3px;border-radius:2px;display:inline-block}
+.dotb{width:9px;height:9px;border-radius:50%;display:inline-block}
+.know{font-size:11.5px;line-height:1.62;color:#cbd8e6}
+.know .k{margin-bottom:9px}
+.know .k:last-child{margin-bottom:0}
+.know .t{color:var(--teal);font-size:11.5px}
+.know .hi{color:var(--red);font-weight:700}
+.know .warn{color:var(--vel)}
+.know code{font-family:"Cambria Math",Georgia,serif;font-size:12.5px;color:#ffe0b0;
+  background:rgba(255,181,103,.09);padding:0 3px;border-radius:3px}
+@media (max-width:1080px){#wrap{flex-direction:column}#right{flex:1 1 auto}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div class="stageTitle"><span id="mTitle">晾衣架模型 · 平衡与张力</span><small id="mHint"></small></div>
+    <div id="statusline"><small id="badge"></small></div>
+    <canvas id="cv" class="card"></canvas>
+  </div>
+  <div id="right">
+    <div class="panel card">
+      <h3>晾衣架 · 交互控制</h3>
+      <div class="row"><span class="lbl">左挂点高 yA</span><input type="range" id="yA" min="3.0" max="4.6" step="0.05" value="3.6"><span class="val" id="yAv">3.60</span></div>
+      <div class="row"><span class="lbl">右挂点高 yB</span><input type="range" id="yB" min="3.0" max="4.6" step="0.05" value="3.6"><span class="val" id="yBv">3.60</span></div>
+      <div class="row"><span class="lbl">水平间距 d</span><input type="range" id="d" min="3.0" max="4.6" step="0.05" value="3.8"><span class="val" id="dv">3.80</span></div>
+      <div class="row"><span class="lbl">绳长 L</span><input type="range" id="L" min="4.9" max="5.8" step="0.05" value="5.0"><span class="val" id="Lv">5.00</span></div>
+      <div class="row"><span class="lbl">风力 F</span><input type="range" id="F" min="-6" max="6" step="0.1" value="0"><span class="val" id="Fv">0.0</span></div>
+      <div class="row"><span class="lbl">衣物重 G</span><input type="range" id="G" min="6" max="14" step="0.5" value="10"><span class="val" id="Gv">10.0</span></div>
+      <div class="row">
+        <button id="play" class="ctl primary">暂停</button>
+        <button id="reset" class="ctl">重置</button>
+        <span style="font-size:10.5px;color:var(--sub);margin-left:auto">空格 暂停</span>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tT" checked>张力矢量 T</label>
+        <label><input type="checkbox" id="tLoad" checked>等效重力</label>
+        <label><input type="checkbox" id="tArc" checked>角度弧</label>
+        <label><input type="checkbox" id="tLab" checked>标注</label>
+        <label><input type="checkbox" id="tEll" checked>椭圆约束</label>
+        <label><input type="checkbox" id="tWind" checked>风效</label>
+      </div>
+      <div class="readout" id="ro"></div>
+      <div class="legend">
+        <span class="lg"><i class="bar" style="background:#ff4d4d"></i>绳张力 T（两沿绳，等长）</span>
+        <span class="lg"><i class="bar" style="background:#ffd24d"></i>等效重力 G+F（作用于 C，向上延长=两绳平分线）</span>
+        <span class="lg"><i class="bar" style="background:#5fd0c8"></i>绳段张开角 θ张</span>
+      </div>
+    </div>
+    <div class="panel card know" id="know"></div>
+  </div>
+</div>
+<script>
+"use strict";
+/* ================= 基础 ================= */
+const D2R = Math.PI / 180, TAU = Math.PI * 2;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let CW = 820, CH = 488;
+let gCloth = [0, 0];   // 衣物挂点（drawClothes 写入，供读数/箭头引用）
+const $ = id => document.getElementById(id);
+
+const C = {
+  grid: 'rgba(88,140,190,.09)',
+  ink: '#cfe0f2', sub: '#93aac2', line: 'rgba(150,190,225,.85)',
+  metal1: '#e8eef4', metal2: '#98a4b0', metal3: '#5d6672',
+  vel: '#ffb567', comp: '#5ee3a8', perp: '#b18cff',
+  eq: '#ff4d4d', eqDim: 'rgba(255,77,77,.85)',
+  gold: '#ffd24d', teal: '#5fd0c8', blue: '#4a9fd8'
+};
+
+/* ================= 视图（等比自适应 + 留白放标注） ================= */
+const V = { s: 1, ox: 0, oy: 0, x0: 0, x1: 1, y0: 0, y1: 1 };
+function setView(x0, x1, y0, y1) {
+  V.x0 = x0; V.x1 = x1; V.y0 = y0; V.y1 = y1;
+  const s = Math.min(CW / (x1 - x0), CH / (y1 - y0));
+  V.s = s;
+  V.ox = CW / 2 - (x0 + x1) / 2 * s;
+  V.oy = CH / 2 + (y0 + y1) / 2 * s;
+}
+function P(x, y) { return [V.ox + x * V.s, V.oy - y * V.s]; }
+function SL(v) { return v * V.s; }
+function WS(px) { return px / V.s; }
+
+/* ================= 通用绘制原语 ================= */
+function seg(x0, y0, x1, y1, col, w, dash) {
+  const a = P(x0, y0), b = P(x1, y1);
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w || 1.4; ctx.lineCap = 'round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.restore();
+}
+const PAD = 9;
+function clampSeg(a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  let t = 1;
+  if (dx > 0.001) t = Math.min(t, (CW - PAD - a[0]) / dx);
+  if (dx < -0.001) t = Math.min(t, (PAD - a[0]) / dx);
+  if (dy > 0.001) t = Math.min(t, (CH - PAD - a[1]) / dy);
+  if (dy < -0.001) t = Math.min(t, (PAD - a[1]) / dy);
+  t = Math.max(0, Math.min(1, t));
+  return [a[0] + dx * t, a[1] + dy * t];
+}
+function arrow(x0, y0, x1, y1, col, w, head) {
+  const a = P(x0, y0), b = clampSeg(a, P(x1, y1));
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+  if (len < 1.2) return;
+  const ux = dx / len, uy = dy / len;
+  const h = Math.min(head || 9, len * 0.5);
+  const bx = b[0] - ux * h * 0.86, by = b[1] - uy * h * 0.86;
+  ctx.save();
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w || 2; ctx.lineCap = 'round';
+  ctx.shadowColor = col; ctx.shadowBlur = 5;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(bx, by); ctx.stroke();
+  const hw = h * 0.40;
+  ctx.beginPath();
+  ctx.moveTo(b[0], b[1]);
+  ctx.lineTo(bx - uy * hw, by + ux * hw);
+  ctx.lineTo(bx + uy * hw, by - ux * hw);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function arrowH(x0, y0, x1, y1, col, w, head) { arrow(x0, y0, x1, y1, col, w, head); }
+function tag(s, x, y, col, font, align, base) {
+  const p = P(x, y);
+  ctx.save();
+  ctx.font = font || '700 13px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = col; ctx.textAlign = align || 'center';
+  ctx.textBaseline = base || 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.4;
+  ctx.strokeStyle = 'rgba(6,11,20,.82)';
+  const tw = ctx.measureText(s).width, al = align || 'center';
+  let px = p[0];
+  if (al === 'center') px = Math.min(Math.max(px, PAD + tw / 2), CW - PAD - tw / 2);
+  else if (al === 'left') px = Math.min(Math.max(px, PAD), CW - PAD - tw);
+  else px = Math.min(Math.max(px, PAD + tw), CW - PAD);
+  const py = Math.min(Math.max(p[1], PAD + 7), CH - PAD - 7);
+  ctx.strokeText(s, px, py);
+  ctx.fillText(s, px, py);
+  ctx.restore();
+}
+function keydot(x, y, col) {
+  const p = P(x, y);
+  ctx.save(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.arc(p[0], p[1], 3.6, 0, TAU); ctx.fill(); ctx.restore();
+}
+function arcAng(cx, cy, r, a0, a1, col, txt) {
+  const c = P(cx, cy);
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(c[0], c[1], SL(r), -a1, -a0, false); ctx.stroke(); ctx.restore();
+  if (txt) {
+    const am = (a0 + a1) / 2, rr = r * 1.34;
+    tag(txt, cx + rr * Math.cos(am), cy + rr * Math.sin(am), col, '700 14px "Cambria Math",Georgia,serif');
+  }
+}
+function rrect(x, y, w, h, r, fill, stroke, lw) {
+  ctx.save(); ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else { ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); }
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+  ctx.restore();
+}
+function gridBG() {
+  const g = ctx.createRadialGradient(CW * .42, CH * .38, 30, CW * .5, CH * .5, Math.max(CW, CH) * .8);
+  g.addColorStop(0, '#111d31'); g.addColorStop(1, '#070b14');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+  ctx.save(); ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  const step = SL(0.5);
+  if (step > 8) {
+    for (let x = 0; x < CW; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke(); }
+    for (let y = 0; y < CH; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+/* 麻绳：暗描边 + 亮芯 + 麻花斜纹 */
+function rope(x0, y0, x1, y1) {
+  const a = P(x0, y0), b = P(x1, y1);
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy);
+  if (L < 0.5) return;
+  const ux = dx / L, uy = dy / L;
+  ctx.save(); ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(58,42,22,.9)'; ctx.lineWidth = 3.9;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  ctx.strokeStyle = '#e8d6ac'; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  ctx.strokeStyle = 'rgba(126,98,56,.5)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let t = 5; t < L - 3; t += 7.5) {
+    const px = a[0] + ux * t, py = a[1] + uy * t;
+    ctx.moveTo(px - uy * 1.7, py + ux * 1.7); ctx.lineTo(px + uy * 1.7, py - ux * 1.7);
+  }
+  ctx.stroke(); ctx.restore();
+}
+function watermark() {
+  ctx.save();
+  ctx.font = '700 11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(140,175,205,.45)';
+  ctx.fillText('force99', CW - 12, CH - 9);
+  ctx.restore();
+}
+
+/* ================= 物理内核（已数值核验 PASS 318 / FAIL 0） =================
+   光滑挂钩(活结)：绳两端固定于 A、B，绳长 L；衣物重 G(竖直向下)经挂钩悬挂；
+   水平风力 F(+x 向右)。平衡 ⇒ 两绳张力相等 T，且 T(e1+e2)+ (F,−G)=0，
+   其中 e1=(A−C)/|AC|、e2=(B−C)/|BC|（均指向固定端）。 */
+function solve(A, B, L, G, F) {
+  const D = [B[0] - A[0], B[1] - A[1]], Dm = Math.hypot(D[0], D[1]);
+  if (!(L > Dm + 1e-6)) return null;
+  const O = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+  const a = L / 2, b = Math.sqrt(Math.max(1e-12, a * a - (Dm / 2) * (Dm / 2)));
+  const ep = [D[0] / Dm, D[1] / Dm], eq = [ep[1], -ep[0]];
+  const CP = t => [O[0] + a * Math.cos(t) * ep[0] + b * Math.sin(t) * eq[0],
+                   O[1] + a * Math.cos(t) * ep[1] + b * Math.sin(t) * eq[1]];
+  function st(t) {
+    const C0 = CP(t);
+    const l1 = Math.hypot(A[0] - C0[0], A[1] - C0[1]), l2 = Math.hypot(B[0] - C0[0], B[1] - C0[1]);
+    const e1 = [(A[0] - C0[0]) / l1, (A[1] - C0[1]) / l1];
+    const e2 = [(B[0] - C0[0]) / l2, (B[1] - C0[1]) / l2];
+    const den = e1[1] + e2[1];
+    if (!(den > 1e-9)) return null;
+    const T = G / den;
+    return { t, C: C0, l1, l2, e1, e2, T, R: T * (e1[0] + e2[0]) + F,
+             th1: Math.atan2(-e1[0], e1[1]), th2: Math.atan2(e2[0], e2[1]),
+             U: G * C0[1] - F * C0[0] };
+  }
+  const N = 400, t0 = 1e-4, t1 = Math.PI - 1e-4;
+  let lo = null, hi = null, prev = st(t0);
+  for (let i = 1; i <= N; i++) {
+    const t = t0 + (t1 - t0) * i / N, s = st(t);
+    if (!s) { prev = s; continue; }
+    if (prev && prev.R < 0 && s.R >= 0) { lo = t - (t1 - t0) / N; hi = t; break; }
+    prev = s;
+  }
+  if (lo === null) return null;
+  for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2, s = st(m); if (s.R < 0) lo = m; else hi = m; }
+  const r = st((lo + hi) / 2);
+  if (r) {
+    const h = 1e-4, A1 = st(r.t - h), B1 = st(r.t), C1 = st(r.t + h);
+    r.d2U = A1 && C1 ? (C1.U - 2 * B1.U + A1.U) / (h * h) : NaN;
+  }
+  return r;
+}
+
+/* ================= 场景：固定端挂点 ================= */
+/* 挂点滑套：夹在固定立柱上、可沿杆上下滑动的卡扣；绳由此挂出 */
+function mount(x, y) {
+  const p = P(x, y), w = SL(0.058), R = SL(0.17);
+  // 滑套座（盖在立柱上）
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 7; ctx.shadowOffsetY = 2;
+  rrect(p[0] - R * 0.95, p[1] - R * 0.7, R * 1.9, R * 1.4, R * 0.32,
+        'rgba(30,42,60,.97)', 'rgba(150,190,220,.75)', 1.5);
+  ctx.restore();
+  // 立柱穿过滑套的中段（重画杆色带，体现"套在杆上可滑动"）
+  ctx.save();
+  const g = ctx.createLinearGradient(p[0] - w, 0, p[0] + w, 0);
+  g.addColorStop(0, '#28333f'); g.addColorStop(.5, '#b3c4d6'); g.addColorStop(1, '#222c37');
+  ctx.fillStyle = g; ctx.fillRect(p[0] - w, p[1] - R * 0.7, 2 * w, R * 1.4);
+  ctx.restore();
+  // 锚环（穿绳孔，绳由此挂出）
+  ctx.save();
+  ctx.fillStyle = '#cfe0f2'; ctx.beginPath(); ctx.arc(p[0], p[1], R * 0.40, 0, TAU); ctx.fill();
+  ctx.fillStyle = '#0e1626'; ctx.beginPath(); ctx.arc(p[0], p[1], R * 0.19, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+/* 竖直立柱（固定长度）：从地面到固定顶端 POST_TOP；A/B 挂点滑套沿杆上下移动 */
+const POST_TOP = 5.05;   // 立柱固定顶端（高于挂点最高位 4.6）
+function post(x) {
+  const pB = P(x, -0.42), pT = P(x, POST_TOP);   // 屏幕坐标：杆底 / 杆顶（固定）
+  const w = SL(0.058);                            // 半宽（像素）
+  const bx0 = pB[0] - w, bx1 = pB[0] + w, tx0 = pT[0] - w, tx1 = pT[0] + w;
+  // 杆身（金属圆柱渐变，沿杆宽方向高光）
+  ctx.save();
+  const g = ctx.createLinearGradient(bx0, 0, bx1, 0);
+  g.addColorStop(0, '#28333f'); g.addColorStop(.34, '#6f8aa3');
+  g.addColorStop(.5, '#b3c4d6'); g.addColorStop(.66, '#6f8aa3'); g.addColorStop(1, '#222c37');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(bx0, pB[1]); ctx.lineTo(tx0, pT[1]);
+  ctx.lineTo(tx1, pT[1]); ctx.lineTo(bx1, pB[1]);
+  ctx.closePath(); ctx.fill();
+  // 顶端封帽
+  rrect(tx0, pT[1] - SL(0.07), 2 * w, SL(0.07), 2, '#9fb3c8', null, 0);
+  ctx.restore();
+  // 椭圆底座（落地感）
+  ctx.save();
+  ctx.fillStyle = 'rgba(18,30,46,.95)'; ctx.strokeStyle = 'rgba(125,155,185,.55)'; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.ellipse(pB[0], pB[1], w * 2.6, SL(0.12), 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+/* 衣物：光滑挂钩活结环 + 单根悬挂绳（沿等效重力方向）+ T 恤。
+   单绳悬挂最能体现"等效重力方向"——悬挂绳即沿 (F,−G) 合力方向。 */
+function drawClothes(cx, cy) {
+  const mag = Math.hypot(cfg.F, cfg.G) || 1;
+  const ux = cfg.F / mag, uy = -cfg.G / mag;   // 等效重力方向（向下偏风）
+  const h = Math.max(0.12, Math.min(1.0, cy - 0.46));  // 悬挂绳长（自适应，保证衣物不触地）
+  const px = cx + ux * h, py = cy + uy * h;   // 衣物挂点（绳下端）
+  gCloth = [px, py];
+
+  // 活结环（两主绳汇合于 C）
+  const c = P(cx, cy), r = SL(0.085);
+  ctx.save();
+  ctx.fillStyle = '#0e1626'; ctx.strokeStyle = '#dbe6f1'; ctx.lineWidth = Math.max(1.8, SL(0.034));
+  ctx.beginPath(); ctx.arc(c[0], c[1], r, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // 单根悬挂绳（沿等效重力方向，最能体现等效重力方向）
+  rope(cx, cy, px, py);
+
+  // 衣物挂环（绳下端小钩）
+  const p = P(px, py), hr = SL(0.06);
+  ctx.save();
+  ctx.strokeStyle = '#cdd9e6'; ctx.lineWidth = Math.max(1.6, SL(0.024)); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1] - hr * 1.0);
+  ctx.quadraticCurveTo(p[0] - hr * 0.9, p[1] + hr * 1.2, p[0] - hr * 1.6, p[1] + hr * 0.4);
+  ctx.stroke();
+  ctx.restore();
+
+  // 衣架（金属丝三角）
+  const bw = SL(0.30), shY = p[1] + SL(0.18), botY = p[1] + SL(0.80);
+  ctx.save();
+  ctx.strokeStyle = '#c3cfdc'; ctx.lineWidth = Math.max(1.6, SL(0.026));
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(p[0], p[1] + hr * 0.3);
+  ctx.lineTo(p[0], shY - SL(0.16));
+  ctx.lineTo(p[0] - bw * 0.72, shY + SL(0.02));
+  ctx.moveTo(p[0], shY - SL(0.16));
+  ctx.lineTo(p[0] + bw * 0.72, shY + SL(0.02));
+  ctx.stroke();
+  ctx.restore();
+
+  // 衣服（T 恤：领口 + 短袖 + 波浪下摆）
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.4)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+  const sg = ctx.createLinearGradient(0, shY, 0, botY);
+  sg.addColorStop(0, '#d3f0ff'); sg.addColorStop(.45, '#8ccdf1'); sg.addColorStop(1, '#4f9fd0');
+  ctx.fillStyle = sg; ctx.strokeStyle = 'rgba(16,38,58,.6)'; ctx.lineWidth = 1.1;
+  ctx.beginPath();
+  ctx.moveTo(p[0] - bw, shY);
+  ctx.lineTo(p[0] - SL(0.11), shY);
+  ctx.quadraticCurveTo(p[0], shY + SL(0.13), p[0] + SL(0.11), shY);
+  ctx.lineTo(p[0] + bw, shY);
+  ctx.lineTo(p[0] + bw * 1.22, shY + SL(0.26));
+  ctx.lineTo(p[0] + bw * 0.90, shY + SL(0.38));
+  ctx.lineTo(p[0] + bw * 0.90, botY - SL(0.10));
+  const n = 6;
+  for (let i = 0; i <= n; i++) {
+    const xx = p[0] + bw * 0.90 - 2 * bw * 0.90 * (i / n);
+    const yy = botY - SL(0.10) + (i % 2 === 0 ? 0 : SL(0.065));
+    ctx.lineTo(xx, yy);
+  }
+  ctx.lineTo(p[0] - bw * 0.90, shY + SL(0.38));
+  ctx.lineTo(p[0] - bw * 1.22, shY + SL(0.26));
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // 等效重力金箭头已移至 C 点绘制（见 draw() 中 state.show.load 段）
+}
+
+/* 椭圆约束（以 A、B 为焦点，绳长 L）：C 落其上 */
+function drawEllipse(A, B, L) {
+  const O = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2];
+  const Dm = Math.hypot(B[0] - A[0], B[1] - A[1]);
+  const a = L / 2, b = Math.sqrt(Math.max(1e-9, a * a - (Dm / 2) * (Dm / 2)));
+  const ep = [Math.cos(Math.atan2(B[1] - A[1], B[0] - A[0])), Math.sin(Math.atan2(B[1] - A[1], B[0] - A[0]))];
+  const eq = [ep[1], -ep[0]];
+  ctx.save(); ctx.strokeStyle = 'rgba(95,208,200,.22)'; ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 5]);
+  ctx.beginPath();
+  for (let i = 0; i <= 120; i++) {
+    const t = i / 120 * TAU;
+    const x = O[0] + a * Math.cos(t) * ep[0] + b * Math.sin(t) * eq[0];
+    const y = O[1] + a * Math.cos(t) * ep[1] + b * Math.sin(t) * eq[1];
+    const q = P(x, y); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]);
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+/* 风效：随风飘动的短条纹 */
+function windStreaks(cx, cy, F, t) {
+  if (Math.abs(F) < 0.05 || !state.running) return;
+  const dir = Math.sign(F), sp = 0.5 + Math.abs(F) * 0.10;
+  ctx.save(); ctx.strokeStyle = 'rgba(120,220,210,.42)'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    const yy = cy + 0.32 - i * 0.155;
+    const span = 1.7;
+    const off = ((t * sp + i * 0.27) % 1) * span;
+    const x = cx - dir * span / 2 + dir * off;
+    const a = P(x, yy), b = P(x + dir * 0.22, yy);
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ================= 状态 ================= */
+const state = {
+  t: 0, running: true, speed: 1,
+  show: { T: true, load: true, arc: true, lab: true, ell: true, wind: true }
+};
+/* 几何参数 */
+const cfg = { Ax: 0.8, yA: 3.6, yB: 3.6, d: 3.8, L: 5.0, G: 10, F: 0 };
+
+function Apt() { return [cfg.Ax, cfg.yA]; }
+function Bpt() { return [cfg.Ax + cfg.d, cfg.yB]; }
+
+/* ================= 绘制 ================= */
+function draw() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  gridBG();
+  setView(-0.5, 6.1, -0.5, 5.5);
+
+  const A = Apt(), B = Bpt();
+  const sol = solve(A, B, cfg.L, cfg.G, cfg.F);
+
+  // 地面参考线（淡）
+  seg(-0.3, -0.42, 6.0, -0.42, 'rgba(120,150,180,.22)', 1.4);
+
+  // 两根竖直支撑杆（先画，作为场景底；挂点随之上下/左右移动）
+  post(A[0]);
+  post(B[0]);
+
+  // 椭圆约束（先画，置于底层）
+  if (state.show.ell) drawEllipse(A, B, cfg.L);
+
+  // 固定端连线（淡淡参考）
+  seg(A[0], A[1], B[0], B[1], 'rgba(150,180,210,.18)', 1, [3, 4]);
+
+  if (sol) {
+    const Cx = sol.C[0], Cy = sol.C[1];
+    const e1 = sol.e1, e2 = sol.e2, T = sol.T;
+
+    // 两段麻绳
+    rope(A[0], A[1], Cx, Cy);
+    rope(B[0], B[1], Cx, Cy);
+
+    // 竖直参考（看绳与竖直夹角）
+    if (state.show.lab) seg(Cx, Cy, Cx, Cy + 1.0, 'rgba(150,180,210,.26)', 1, [4, 4]);
+
+    // 张开角弧（两绳之间）
+    if (state.show.arc) {
+      const a1 = Math.atan2(e1[1], e1[0]), a2 = Math.atan2(e2[1], e2[0]);
+      const Ns = 44, rr = 0.46;
+      ctx.save(); ctx.strokeStyle = C.teal; ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      for (let i = 0; i <= Ns; i++) {
+        const ang = a2 + (a1 - a2) * i / Ns;
+        const q = P(Cx + rr * Math.cos(ang), Cy + rr * Math.sin(ang));
+        i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]);
+      }
+      ctx.stroke(); ctx.restore();
+    }
+
+    // 等效重力：作用点移至 C 点（金箭头沿 (F,−G) 向下）；其向上延长虚线即两绳夹角的平分线
+    if (state.show.load) {
+      const mag = Math.hypot(cfg.F, cfg.G) || 1;
+      const u = [cfg.F / mag, -cfg.G / mag];        // 等效重力方向（向下偏风）
+      const bis = [-cfg.F / mag, cfg.G / mag];      // 向上延长线方向 = 两绳角平分线
+      // 金箭头（作用于 C，向下）；长度受悬挂绳长限制，保证箭头不被衣物遮挡
+      const hCloth = Math.max(0.12, Math.min(1.0, Cy - 0.46));
+      let len = Math.min(1.6, Math.max(0.5, 1.3 * mag / 10));
+      len = Math.min(len, Math.max(0.34, hCloth * 0.84));
+      arrow(Cx, Cy, Cx + u[0] * len, Cy + u[1] * len, C.gold, 3, 11);
+      // 向上延长虚线（角平分线）：从 C 沿 bis 向上延伸，止于挂点下方
+      const topY = Math.min(A[1], B[1]) - 0.15;
+      let Lup = (topY - Cy) / (bis[1] || 1e-6);
+      Lup = Math.max(0.25, Math.min(1.6, Lup));
+      const ex = Cx + bis[0] * Lup, ey = Cy + bis[1] * Lup;
+      seg(Cx, Cy, ex, ey, 'rgba(255,210,77,.72)', 1.4, [5, 5]);
+      // 两等角弧（平分线 ↔ 各绳）：直观体现"与两绳夹角相等"
+      const rr2 = 0.34, angB = Math.atan2(bis[1], bis[0]);
+      const ang1 = Math.atan2(e1[1], e1[0]), ang2 = Math.atan2(e2[1], e2[0]);
+      ctx.save(); ctx.strokeStyle = 'rgba(255,210,77,.85)'; ctx.lineWidth = 1.8;
+      for (const pr of [[angB, ang1], [angB, ang2]]) {
+        ctx.beginPath(); const Ns = 22;
+        for (let i = 0; i <= Ns; i++) {
+          const ang = pr[0] + (pr[1] - pr[0]) * i / Ns;
+          const q = P(Cx + rr2 * Math.cos(ang), Cy + rr2 * Math.sin(ang));
+          i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+      if (state.show.lab) {
+        tag('等效重力', Cx + u[0] * len + u[0] * 0.16, Cy + u[1] * len + u[1] * 0.16 - 0.04,
+          C.gold, '700 11.5px "Microsoft YaHei",sans-serif');
+        const m1 = angB + (ang1 - angB) * 0.5, m2 = angB + (ang2 - angB) * 0.5, rl = rr2 + 0.10;
+        tag('α', Cx + rl * Math.cos(m1), Cy + rl * Math.sin(m1), C.gold, 'italic 700 12px Georgia,serif');
+        tag('α', Cx + rl * Math.cos(m2), Cy + rl * Math.sin(m2), C.gold, 'italic 700 12px Georgia,serif');
+      }
+    }
+
+    // 两绳张力（等长红箭头，沿绳指向固定端）
+    if (state.show.T) {
+      const len = Math.min(2.3, Math.max(0.5, 1.5 * T / cfg.G));
+      arrow(Cx, Cy, Cx + e1[0] * len, Cy + e1[1] * len, C.eq, 2.8, 10);
+      arrow(Cx, Cy, Cx + e2[0] * len, Cy + e2[1] * len, C.eq, 2.8, 10);
+      if (state.show.lab) {
+        tag('T', Cx + e1[0] * len + e1[0] * 0.16, Cy + e1[1] * len + e1[1] * 0.16, C.eq,
+          '700 12.5px "Cambria Math",Georgia,serif');
+        tag('T', Cx + e2[0] * len + e2[0] * 0.16, Cy + e2[1] * len + e2[1] * 0.16, C.eq,
+          '700 12.5px "Cambria Math",Georgia,serif');
+      }
+    }
+
+    // 衣物
+    drawClothes(Cx, Cy);
+    windStreaks(Cx, Cy, cfg.F, state.t);
+
+    // 标注 C
+    if (state.show.lab) {
+      tag('C', Cx + 0.30, Cy - 0.06, '#cfe0f2', '700 12.5px "Microsoft YaHei",sans-serif');
+    }
+  } else {
+    if (state.show.lab) tag('绳长不足，无法悬挂', (A[0] + B[0]) / 2, (A[1] + B[1]) / 2, C.red,
+      '700 13px "Microsoft YaHei",sans-serif');
+  }
+
+  // 固定端挂点（画在最上层）
+  mount(A[0], A[1]);
+  mount(B[0], B[1]);
+  tag('A', A[0], A[1] + 0.42, '#cfe0f2', '700 13px "Microsoft YaHei",sans-serif');
+  tag('B', B[0], B[1] + 0.42, '#cfe0f2', '700 13px "Microsoft YaHei",sans-serif');
+  if (state.show.lab) {
+    tag('↕ 上下移', A[0], A[1] + 0.68, 'rgba(147,170,194,.85)', '600 10.5px "Microsoft YaHei",sans-serif');
+    tag('↔↕ 左右 / 上下移', B[0], B[1] + 0.68, 'rgba(147,170,194,.85)', '600 10.5px "Microsoft YaHei",sans-serif');
+  }
+
+  watermark();
+  refreshReadout(sol);
+}
+
+/* ================= 读数 + 状态条 ================= */
+function refreshReadout(sol) {
+  const A = Apt(), B = Bpt();
+  let html = '';
+  const ro = (k, v, cls) => `<div class="ro"><span>${k}</span><b class="${cls || ''}">${v}</b></div>`;
+  html += ro('左挂点 A', `(${A[0].toFixed(2)}, ${A[1].toFixed(2)})`);
+  html += ro('右挂点 B', `(${B[0].toFixed(2)}, ${B[1].toFixed(2)})`);
+  html += ro('水平间距 d', cfg.d.toFixed(2));
+  html += ro('绳长 L', cfg.L.toFixed(2));
+  if (sol) {
+    const th1 = sol.th1 * 180 / Math.PI, th2 = sol.th2 * 180 / Math.PI;
+    html += ro('绳AC与竖直 θ₁', th1.toFixed(1) + '°', 'pur');
+    html += ro('绳BC与竖直 θ₂', th2.toFixed(1) + '°', 'pur');
+    html += ro('两段张开角 θ张', (th1 + th2).toFixed(1) + '°', 'grn');
+    const mag2 = Math.hypot(cfg.F, cfg.G) || 1, ugx = -cfg.F / mag2, ugy = cfg.G / mag2;
+    const a1 = Math.acos(Math.max(-1, Math.min(1, sol.e1[0] * ugx + sol.e1[1] * ugy))) * 180 / Math.PI;
+    const a2 = Math.acos(Math.max(-1, Math.min(1, sol.e2[0] * ugx + sol.e2[1] * ugy))) * 180 / Math.PI;
+    html += ro('两绳与等效重力夹角', a1.toFixed(1) + '° = ' + a2.toFixed(1) + '°', 'red');
+    html += ro('绳张力 T', sol.T.toFixed(2) + ' N', 'red');
+    html += ro('T / G', (sol.T / cfg.G).toFixed(3), 'red');
+    html += ro('挂点 C 位置', `(${sol.C[0].toFixed(2)}, ${sol.C[1].toFixed(2)})`);
+    html += ro('稳定平衡', sol.d2U > 0 ? '是' : '否', sol.d2U > 0 ? 'grn' : 'red');
+  } else {
+    html += ro('平衡', '无解（绳太短）', 'red');
+  }
+  $('ro').innerHTML = html;
+
+  let badge = '';
+  if (sol) {
+    const th = Math.asin(Math.min(0.999, cfg.d / cfg.L)) * 180 / Math.PI;
+    if (cfg.F === 0) badge = `无风：θ=asin(d/L)=${th.toFixed(1)}°，T=G/(2cosθ) 随 d 增大而增大`;
+    else badge = `有风 F=${cfg.F.toFixed(1)}N：挂钩偏移向背风侧，θ₁/θ₂ 重新分配，T 可增可减`;
+  } else badge = '当前参数无法悬挂（请增大绳长 L）';
+  $('badge').textContent = '· ' + badge;
+}
+
+/* ================= 知识面板 ================= */
+$('know').innerHTML = `
+<div class="k"><span class="t">模型</span>：绳两端固定于 A、B（可上下/左右移动），光滑挂钩（活结）挂衣物；
+  绳长 L 不变。衣物受重力 G（竖直向下）与水平风力 F。平衡时 <b>两侧绳张力相等</b> T，
+  两张力合力与「风力+重力」平衡。<b>衣物等效重力</b> = 重力 G 与风力 F 的合力，方向即图中悬挂绳（金箭头）方向。</div>
+<div class="k"><span class="hi">红 · 关键几何（务必记牢）</span>：光滑挂钩（活结）无摩擦 ⇒
+  <b>两侧绳张力大小相等</b> T_A = T_B = T；衣物所受「等效重力」（G+F 合力）<b>作用于 C 点</b>，方向沿悬挂绳（金箭头）。
+  由平衡方程 T(ê₁+ê₂) = (F,−G) 可知，<b>等效重力的向上延长线恰为两绳夹角的平分线</b>，故两绳与该线的夹角恒相等（图中两个 α 相等）。
+  无风时等效重力竖直向下，两绳完全对称、张角相等。</div>
+<div class="k"><span class="t">无风</span>：绳与竖直夹角 <code>θ = asin(d/L)</code>，张力 <code>T = G/(2cosθ)</code>，两段张开角 = 2θ。</div>
+<div class="k"><span class="hi">红 · 核心结论（高考常考易错）</span>：<b>上下移动悬挂点</b>（改变 yA、yB）
+  → θ 与 T <b>严格不变</b>！只改变衣物悬挂高度 <code>yC = (yA+yB−L·cosθ)/2</code>。
+  极容易误以为「挂高一点张力就变小」——这是错的。</div>
+<div class="k"><span class="warn">橙 · 易错</span>：<b>左右移动悬挂点</b>（改变间距 d）→ d↑ → 绳越平（θ↑）→ 张力 T 越大；
+  极端 d→L 时 T→∞。并非「挂远一点更省力」。</div>
+<div class="k"><span class="warn">风的影响</span>：风力 F 只改变两段夹角分配（迎风段更平、背风段更陡），
+  整体张力 T <b>可增可减</b>（约 0.56~1.26 倍），<b>不能笼统说「风越大张力越大」</b>；挂钩随风移向背风侧。</div>
+`;
+
+/* ================= 主循环 ================= */
+state.last = 0;
+function frame(now) {
+  if (!state.last) state.last = now;
+  const dt = Math.min(0.05, Math.max(0, (now - state.last) / 1000));
+  state.last = now;
+  if (state.running) state.t += dt * state.speed;
+  draw();
+  requestAnimationFrame(frame);
+}
+
+/* ================= 绑定 ================= */
+function bindSlider(id, key, fmt) {
+  const el = $(id), out = $(id + 'v');
+  el.addEventListener('input', () => {
+    cfg[key] = parseFloat(el.value);
+    out.textContent = fmt(cfg[key]);
+    draw();
+  });
+  out.textContent = fmt(cfg[key]);
+}
+bindSlider('yA', 'yA', v => v.toFixed(2));
+bindSlider('yB', 'yB', v => v.toFixed(2));
+bindSlider('d', 'd', v => v.toFixed(2));
+bindSlider('L', 'L', v => v.toFixed(2));
+bindSlider('F', 'F', v => v.toFixed(1));
+bindSlider('G', 'G', v => v.toFixed(1));
+
+$('play').addEventListener('click', () => {
+  state.running = !state.running;
+  $('play').textContent = state.running ? '暂停' : '继续';
+});
+$('reset').addEventListener('click', () => {
+  const def = { yA: 3.6, yB: 3.6, d: 3.8, L: 5.0, F: 0, G: 10 };
+  for (const k in def) {
+    cfg[k] = def[k];
+    const el = $(k); if (el) el.value = def[k];
+    const out = $(k + 'v'); if (out) out.textContent = (k === 'F' || k === 'G') ? def[k].toFixed(1) : def[k].toFixed(2);
+  }
+  state.t = 0; draw();
+});
+[['tT', 'T'], ['tLoad', 'load'], ['tArc', 'arc'], ['tLab', 'lab'], ['tEll', 'ell'], ['tWind', 'wind']]
+  .forEach(([id, k]) => $(id).addEventListener('change', e => { state.show[k] = e.target.checked; draw(); }));
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); $('play').click(); }
+});
+
+/* ================= 高清适配 ================= */
+function hidpi() {
+  const r = cv.getBoundingClientRect();
+  CW = Math.max(360, Math.round(r.width));
+  CH = Math.max(260, Math.round(r.height));
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => { hidpi(); draw(); });
+
+hidpi();
+draw();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
