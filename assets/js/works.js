@@ -3769,6 +3769,12 @@ const WORKS = [
       desc:"光滑挂钩挂在绳上，两段绳张力大小相等、且与等效重力方向夹角相等；拖动左右挂点或施加水平风力，实时观察绳张力与两绳夹角的变化。",
       icon:"🎬", cover:"assets/img/clothes-rack-cover.png", link:"animations/clothes-rack.html", date:"2026-09-26", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"传送带与长木板 · 多过程动力学",
+      desc:"传送带+长木板多过程动力学综合题：滑块沿传送带两段加速后滑上长木板，二者共速再一起减速停下，含零JS动画与折叠解题。",
+      icon:"📐", cover:"assets/img/conveyor-plank-cover.png", link:"solutions/conveyor-plank-solve.html", date:"2026-09-27", tag:"力学"
+    }
 ];
 
 
