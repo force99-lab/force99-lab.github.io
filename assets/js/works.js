@@ -3781,6 +3781,12 @@ const WORKS = [
       desc:"传送带+长木板 v-t 动态图像：滑块与木板速度随时间变化的动态曲线，标出落地、共速与停下关键帧，面积直观对应相对滑动位移。",
       icon:"📐", cover:"assets/img/conveyor-plank-vt-cover.png", link:"solutions/conveyor-plank-vt.html", date:"2026-09-27", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"细管类碰撞模型 · 三球弹性碰撞",
+      desc:"细管类碰撞模型：小球 C 与光滑细管弹性碰撞后，A、B 沿管壁滑动并再次相遇，用动量与动能守恒求管速、管位移与 A 的最大速度位置，含零JS动画与折叠解题。",
+      icon:"📐", cover:"assets/img/thin-tube-collision-cover.png", link:"solutions/thin-tube-collision.html", date:"2026-09-27", tag:"动量"
+    }
 ];
 
 
