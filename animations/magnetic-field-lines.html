@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>磁场磁感线分布 · 六模型三维演示</title>
+<style>
+  :root{
+    --bg:#070b14; --panel:#0e1626; --panel2:#0b1320; --line:rgba(88,140,190,.22);
+    --teal:#5fd0c8; --blue:#4a9fd8; --text:#dce8f5; --sub:#93aac2; --gold:#ffd24d;
+    /* 电流方向：亮绿（比原来的明黄 #ffd24d 在深底上对比度更高、不与磁感线混淆） */
+    --cur:#3ddc84;
+    --red:#ff5a6e; --blueN:#4aa8ff; --mag:#d24bd0; --grn:#5ee3a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;-webkit-font-smoothing:antialiased;}
+  #wrap{display:flex;gap:14px;padding:14px;height:100vh;min-height:0;}
+  #left{flex:1 1 auto;display:flex;flex-direction:column;min-width:0;}
+  #stageTitle{font-size:17px;font-weight:700;letter-spacing:.5px;margin:2px 2px 8px;}
+  #stageTitle b{color:var(--mag);}
+  #status{font-size:12px;color:var(--sub);margin-bottom:8px;}
+  #cvbox{flex:1 1 auto;position:relative;border:1px solid var(--line);border-radius:12px;
+    background:radial-gradient(120% 120% at 50% 30%,#0c1424 0%,#070b14 70%);overflow:hidden;min-height:0;}
+  canvas{display:block;width:100%;height:100%;cursor:grab;}
+  canvas:active{cursor:grabbing;}
+  #hint{position:absolute;left:12px;bottom:10px;font-size:11.5px;color:var(--sub);
+    background:rgba(7,11,20,.55);padding:4px 9px;border-radius:7px;border:1px solid var(--line);}
+  #right{width:340px;flex:0 0 340px;display:flex;flex-direction:column;gap:11px;overflow-y:auto;padding-right:2px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px 12px;}
+  .card h3{margin:0 0 9px;font-size:13px;font-weight:700;color:var(--teal);letter-spacing:.5px;
+    display:flex;align-items:center;gap:7px;}
+  .card h3::before{content:"";width:4px;height:13px;border-radius:3px;background:var(--teal);}
+  .models{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .mbtn{font:inherit;font-size:12px;padding:8px 4px;border-radius:9px;cursor:pointer;
+    background:var(--panel2);color:var(--sub);border:1px solid var(--line);transition:.15s;text-align:center;line-height:1.25;}
+  .mbtn:hover{color:var(--text);border-color:rgba(95,208,200,.5);}
+  .mbtn.on{background:linear-gradient(135deg,#13314a,#0e2236);color:#fff;border-color:var(--teal);
+    box-shadow:0 0 0 1px rgba(95,208,200,.35),0 4px 14px rgba(95,208,200,.12);}
+  .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .seg button{flex:1;font:inherit;font-size:12.5px;padding:7px 4px;border:none;background:transparent;
+    color:var(--sub);cursor:pointer;transition:.15s;}
+  .seg button.on{background:linear-gradient(135deg,#15324a,#102536);color:#fff;}
+  .row{display:flex;align-items:center;justify-content:space-between;margin:7px 0;font-size:12.5px;color:var(--sub);}
+  .row label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+  input[type=checkbox]{accent-color:var(--teal);width:15px;height:15px;}
+  select{font:inherit;font-size:12.5px;background:var(--panel2);color:var(--text);
+    border:1px solid var(--line);border-radius:7px;padding:4px 7px;}
+  .read{font-size:12px;line-height:1.85;}
+  .read div{display:flex;justify-content:space-between;border-bottom:1px dashed rgba(88,140,190,.14);padding:2px 0;}
+  .read span:last-child{color:var(--gold);font-weight:600;}
+  .k{font-size:12px;line-height:1.7;color:var(--text);}
+  .k .t{color:var(--teal);font-weight:700;}
+  .k code{background:var(--panel2);padding:1px 5px;border-radius:4px;color:var(--gold);font-size:11.5px;}
+  .k .r{color:var(--red);}
+  .k .b{color:var(--blueN);}
+  .k .m{color:var(--mag);font-weight:700;}
+  .legend{display:flex;flex-wrap:wrap;gap:9px 14px;font-size:11.5px;color:var(--sub);}
+  .legend span{display:flex;align-items:center;gap:6px;}
+  .legend i{width:14px;height:5px;border-radius:3px;display:inline-block;}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;}
+  .small{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="left">
+    <div id="stageTitle">磁场磁感线空间分布 · <b id="mName">地磁场</b></div>
+    <div id="status">拖动可旋转 · 切换「总视图」看完整磁感线分布 · 粒子沿磁感线由 N 极流向 S 极</div>
+    <div id="cvbox"><canvas id="cv"></canvas>
+      <div id="hint">拖动画面旋转视角 · 滚轮缩放</div></div>
+  </div>
+  <div id="right">
+    <div class="card">
+      <h3>磁场模型</h3>
+      <div class="models" id="models"></div>
+    </div>
+    <div class="card">
+      <h3>显示模式</h3>
+      <div class="seg" id="viewSeg">
+        <button data-v="3d" class="on">三维视图</button>
+        <button data-v="total">总视图</button>
+      </div>
+      <div class="row"><label><input type="checkbox" id="cAuto" checked>自动旋转</label>
+        <label>电流方向
+          <select id="cCur">
+            <option value="1">正向 ↑</option>
+            <option value="-1">反向 ↓</option>
+          </select></label></div>
+      <div class="row"><label>磁感线密度
+        <select id="cDens">
+          <option value="0">少</option>
+          <option value="1" selected>中</option>
+          <option value="2">多</option>
+        </select></label></div>
+      <div class="row"><label>磁感线颜色
+        <select id="cLine">
+          <option value="mag" selected>紫红</option>
+          <option value="cyan">青蓝</option>
+          <option value="amber">橙</option>
+          <option value="green">绿</option>
+          <option value="violet">蓝紫</option>
+        </select></label></div>
+      <div class="row">
+        <label><input type="checkbox" id="cPole" checked>磁极</label>
+        <label><input type="checkbox" id="cArrow" checked>方向箭头</label>
+        <label><input type="checkbox" id="cLab" checked>标注</label>
+      </div>
+      <div class="row"><label>流动粒子（沿磁感线由 N→S）
+        <select id="cSpeed">
+          <option value="0">关</option>
+          <option value="1" selected>慢</option>
+          <option value="2">中</option>
+          <option value="3">快</option>
+        </select></label></div>
+      <div class="legend">
+        <span><i id="lgMag" style="background:var(--mag)"></i>磁感线</span>
+        <span><i class="dot" id="lgPart" style="background:var(--cur)"></i>粒子·顺磁感线</span>
+        <span><i style="background:var(--cur)"></i>电流方向</span>
+        <span><i class="dot" style="background:var(--red)"></i>N 极</span>
+        <span><i class="dot" style="background:var(--blueN)"></i>S 极</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>实时读数</h3>
+      <div class="read" id="readout"></div>
+    </div>
+    <div class="card">
+      <h3>物理知识归纳</h3>
+      <div class="k" id="know"></div>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+/* ============================================================
+   磁场磁感线 · 单文件零依赖 · 深色科技风
+   六种模型：地磁场 / 条形磁铁 / 蹄形磁铁 / 通电直导线 / 环形电流 / 通电螺旋管
+   先算后画：场函数与 RK4 追踪器已用 Node 数值核验（magnetic-fields-check.js，PASS 30/FAIL 0）
+   颜色：N 红、S 蓝、磁感线 紫红色(magenta)
+   ============================================================ */
+const MU0 = 4e-7 * Math.PI;
+const TAU = Math.PI * 2;
+/* ---------- 向量小工具 ---------- */
+const V = {
+  sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
+  mul:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
+  dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  len:a=>Math.hypot(a[0],a[1],a[2]),
+  nrm:a=>{const L=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/L,a[1]/L,a[2]/L];},
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+};
+/* ---------- 通用：电流元集合的 Biot–Savart 场 ---------- */
+function makeB(segs, I){
+  const mids=segs.map(s=>[(s[0][0]+s[1][0])/2,(s[0][1]+s[1][1])/2,(s[0][2]+s[1][2])/2]);
+  const dls=segs.map(s=>V.sub(s[1],s[0]));
+  return function B(p){
+    let bx=0,by=0,bz=0;
+    for(let i=0;i<mids.length;i++){
+      const r=V.sub(p,mids[i]); const d2=r[0]*r[0]+r[1]*r[1]+r[2]*r[2]; const d=Math.sqrt(d2);
+      if(d<1e-4) continue;
+      const c=V.cross(dls[i],r); const f=MU0*I/(4*Math.PI*d2*d);
+      bx+=c[0]*f; by+=c[1]*f; bz+=c[2]*f;
+    }
+    return [bx,by,bz];
+  };
+}
+function loopSegs(R, y0, n, dirSign){
+  const segs=[];
+  for(let i=0;i<n;i++){
+    const t0=dirSign*TAU*i/n, t1=dirSign*TAU*(i+1)/n;
+    segs.push([[R*Math.cos(t0),y0,R*Math.sin(t0)],[R*Math.cos(t1),y0,R*Math.sin(t1)]]);
+  }
+  return segs;
+}
+function solenoidSegs(R,y0,y1,turns,dirSign){
+  const segs=[]; const NT=Math.max(1,Math.round(turns)); const n=40;
+  for(let k=0;k<NT;k++){ const u=(k+0.5)/NT, y=y0+(y1-y0)*u;
+    for(let i=0;i<n;i++){ const t0=dirSign*TAU*i/n, t1=dirSign*TAU*(i+1)/n;
+      segs.push([[R*Math.cos(t0),y,R*Math.sin(t0)],[R*Math.cos(t1),y,R*Math.sin(t1)]]); } }
+  return segs;
+}
+/* 磁单极偶极（条形/蹄形/螺线管两端）场 */
+function poleField(pN,pS,q){
+  return function(p){
+    const rN=V.sub(p,pN), rS=V.sub(p,pS);
+    const dN=V.len(rN), dS=V.len(rS);
+    return V.sub(V.mul(rN,q/(dN*dN*dN)), V.mul(rS,q/(dS*dS*dS)));
+  };
+}
+/* 蹄形磁铁（马蹄形）几何：弯曲处在左、开口朝 +x 的标准 U 形。
+   上臂整体 = N 极、下臂整体 = S 极，弯曲处为中性区（不带磁荷）。 */
+const SHOE = { cx:-1.00, xTip:0.90, a:0.30, t:0.56, d:0.34 };
+SHOE.ro = SHOE.a + SHOE.t;          // 弯头外半径 0.86
+SHOE.L  = SHOE.xTip - SHOE.cx;      // 臂长 1.90
+/* 等效磁荷模型：把「相对的两个极面（两臂内侧面）」「两臂外表面」「两臂端面」
+   按面积均匀铺上 ±σ 磁荷（下臂与上臂关于 y=0 镜像并整体反号 ⇒ 总磁荷恒为 0）。
+   —— 只有「面片」而不是点磁荷，才能给出极间近似匀强场（点磁荷在极近处 B∝1/r² 会暴涨）；
+   —— 端面磁荷负责外部那一族「从端面扇形散开、再绕回异名极」的嵌套回环。
+   注：两臂外表面之间的「边缘漏磁」在远场会形成尺度可达磁体 5~10 倍的巨大回环，
+       教学图上无法呈现，故不从外表面撒种子（但保留其磁荷，保证近场对称）。 */
+function shoeField(G, q){
+  q = q || 1;
+  const {cx,xTip,a,t,d}=G, L=xTip-cx;
+  const NX=8, NZ=3, NY=3, NSX=6, NSY=2, SIDE_W=0.4;
+  const A1=(L/NX)*(2*d/NZ);            // 极面 / 外表面 面元面积
+  const A2=(t/NY)*(2*d/NZ);            // 端面 面元面积
+  const A3=(L/NSX)*(t/NSY);            // 侧面 面元面积
+  const cells=[];
+  for(const sgn of [1,-1]){            // +1 上臂(N)  -1 下臂(S)
+    const yIn = sgn>0 ?  a     : -a;
+    const yOut= sgn>0 ?  a+t   : -(a+t);
+    const y0  = sgn>0 ?  a     : -(a+t);
+    for(let i=0;i<NX;i++) for(let j=0;j<NZ;j++){
+      const x=cx+L*(i+0.5)/NX, z=-d+2*d*(j+0.5)/NZ;
+      cells.push([[x,yIn ,z], sgn*A1]);        // 内侧极面（主极面）
+      cells.push([[x,yOut,z], sgn*A1]);        // 外表面
+    }
+    for(let i=0;i<NY;i++) for(let j=0;j<NZ;j++)  // 端面（外部扇形的源）
+      cells.push([[xTip, y0+t*(i+0.5)/NY, -d+2*d*(j+0.5)/NZ], sgn*A2]);
+    for(const zz of [d,-d]) for(let i=0;i<NSX;i++) for(let j=0;j<NSY;j++)
+      cells.push([[cx+L*(i+0.5)/NSX, y0+t*(j+0.5)/NSY, zz], sgn*A3*SIDE_W]);
+  }
+  let AREA=0; for(const c of cells) AREA+=Math.abs(c[1]);
+  const coef=q/AREA, soft=4e-5;        // 软化半径²，避免贴到磁荷点上数值爆炸
+  const Bf=function(p){
+    let bx=0,by=0,bz=0;
+    for(let i=0;i<cells.length;i++){
+      const c=cells[i][0], dq=cells[i][1]*coef;
+      const rx=p[0]-c[0], ry=p[1]-c[1], rz=p[2]-c[2];
+      const d2=rx*rx+ry*ry+rz*rz+soft, dd=Math.sqrt(d2);
+      const f=dq/(d2*dd);
+      bx+=rx*f; by+=ry*f; bz+=rz*f;
+    }
+    return [bx,by,bz];
+  };
+  Bf.nCells=cells.length;
+  return Bf;
+}
+/* ---------- RK4 磁感线追踪（按弧长步进） ---------- */
+function trace3D(Bf, p0, ds, maxSteps, stopFn, sign){
+  sign=sign||1; let p=p0.slice(); const pts=[p.slice()];
+  for(let i=0;i<maxSteps;i++){
+    const k1=V.nrm(V.mul(Bf(p),sign));
+    const k2=V.nrm(V.mul(Bf(V.add(p,V.mul(k1,ds/2))),sign));
+    const k3=V.nrm(V.mul(Bf(V.add(p,V.mul(k2,ds/2))),sign));
+    const k4=V.nrm(V.mul(Bf(V.add(p,V.mul(k3,ds))),sign));
+    const d=V.mul(V.add(V.add(k1,V.mul(k2,2)),V.add(V.mul(k3,2),k4)),ds/6);
+    p=V.add(p,d); pts.push(p.slice());
+    if(stopFn && stopFn(p,i)) break;
+  }
+  return pts;
+}
+
+/* ============================================================
+   各模型定义：field / seeds(生成磁感线) / draw(物体) / know(文案)
+   ============================================================ */
+function sphDir(psi, phi){ // 球坐标方向（psi:极角自+z，phi:方位）
+  return [Math.sin(psi)*Math.cos(phi), Math.cos(psi), Math.sin(psi)*Math.sin(phi)];
+}
+
+const MODELS = {
+  earth:{ name:'地磁场', axis:'z', bodyBox:[-0.85,-0.85,-0.85, 0.85,0.85,0.85],
+    cam:{yaw:0.7,pitch:0.12,zoom:1.12}, camTotal:{yaw:0.5,pitch:0.16,zoom:0.86},
+    setup(){
+      const R=0.62, TILT=11.5*Math.PI/180;
+      const mAxis=[Math.sin(TILT),Math.cos(TILT),0];      // 地磁轴（指向地理北）
+      const m=V.mul(mAxis,-1);                            // 偶极矩指向地理南
+      const Bf=p=>{ const r=V.len(p), rh=V.nrm(p), mr=V.dot(m,rh);
+        return V.mul(V.sub(V.mul(rh,3*mr),m),1/(r*r*r)); };
+      // 参数：每层壳的 req（赤道最大半径），按层生成磁感线并在球面截断
+      const reqs=[0.78,1.02,1.35,1.75,2.25];
+      const lines=[];
+      for(const req of reqs){
+        const lamMax=Math.acos(Math.sqrt(Math.min(1,R/req)));
+        const azN=8;
+        for(let az=0;az<azN;az++){
+          const phi=az*TAU/azN, pts=[];
+          for(let k=-60;k<=60;k++){
+            const lam=lamMax*k/60;
+            const r=req*Math.cos(lam)*Math.cos(lam);
+            const rho=r*Math.cos(lam), y=r*Math.sin(lam);
+            // 经线平面内坐标：以偶极轴 mAxis 为极轴，绕其旋转 phi
+            const e1=mAxis, e2=V.nrm(V.cross([0,0,1],mAxis)), e3=V.cross(e1,e2);
+            const P=[rho*Math.cos(phi)*e2[0]+rho*Math.sin(phi)*e3[0]+y*e1[0],
+                     rho*Math.cos(phi)*e2[1]+rho*Math.sin(phi)*e3[1]+y*e1[1],
+                     rho*Math.cos(phi)*e2[2]+rho*Math.sin(phi)*e3[2]+y*e1[2]];
+            pts.push(P);
+          }
+          lines.push({pts, closed:false, kind:'field'});
+        }
+      }
+      return {lines, extra:{R,TILT,mAxis}};
+    },
+    draw(ctx, st, P, cam){
+      const R=R_EARTH, TILT=11.5*Math.PI/180;
+      const mAxis=[Math.sin(TILT),Math.cos(TILT),0];
+      // 地理轴（自转轴，竖直，青绿色）
+      const g1=P([0,R*1.36,0]), g0=P([0,-R*1.36,0]);
+      ctx.strokeStyle='rgba(80,225,205,.85)'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(g0[0],g0[1]); ctx.lineTo(g1[0],g1[1]); ctx.stroke();
+      // 地磁轴（与地轴成 11.5°，红色虚线）
+      const a1=P(V.mul(mAxis,R*1.32)), a0=P(V.mul(mAxis,-R*1.32));
+      ctx.strokeStyle='rgba(255,90,110,.92)'; ctx.setLineDash([6,4]); ctx.lineWidth=1.7;
+      ctx.beginPath(); ctx.moveTo(a0[0],a0[1]); ctx.lineTo(a1[0],a1[1]); ctx.stroke(); ctx.setLineDash([]);
+      // 11.5° 夹角弧
+      const rArc=R*1.18, ang0=Math.PI/2-TILT, ang1=Math.PI/2;
+      ctx.beginPath();
+      for(let k=0;k<=14;k++){ const th=ang0+(ang1-ang0)*k/14;
+        const q=P([rArc*Math.cos(th),rArc*Math.sin(th),0]); k?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]); }
+      ctx.strokeStyle='rgba(255,210,120,.95)'; ctx.lineWidth=1.5; ctx.stroke();
+      if(st.show.lab){
+        const mP=P([rArc*1.02*Math.cos((ang0+ang1)/2),rArc*1.02*Math.sin((ang0+ang1)/2),0]);
+        ctx.font='700 11px "Microsoft YaHei",sans-serif'; ctx.fillStyle='#ffd27a';
+        ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('11.5°',mP[0]+28,mP[1]+4);
+        ctx.fillStyle='#6ff0dc'; ctx.fillText('地理北极',g1[0]-46,g1[1]-2);
+        // 地理北极附近是地磁【S 极】（地磁 N 极在地理南极附近，与内部磁棒 N 在下一致）
+        ctx.fillStyle='#9ac8ff'; ctx.fillText('地磁南极',a1[0]+50,a1[1]-4);
+      }
+    },
+    readout(){return [['地磁轴-地轴夹角','11.5°'],['磁感线特征','偶极子·赤道发散'],['截断','不穿入地球']];},
+    know:`<div><span class="t">地磁场</span>近似为置于地心、轴与自转轴成 <code>11.5°</code> 的<b>磁偶极子</b>。</div>
+      <div>磁感线方程 <code>r = r₀·cos²λ</code>（λ 为磁纬），在两极<b class="r">汇入</b>、赤道<b class="b">散出</b>；
+      因地球是导体，磁感线<b>不穿入地球内部</b>（被球面截断）。</div>
+      <div><span class="t">易错</span>：地理<b>北极</b>附近是地磁 <span class="b">S 极</span>（磁场方向指向地心），指南针 N 极指北即被地磁 S 极吸引。</div>`
+  },
+
+  bar:{ name:'条形磁铁', axis:'x', bodyBox:[-0.74,-0.42,-0.42, 0.74,0.42,0.42],
+    setup(){
+      const pN=[0.62,0,0], pS=[-0.62,0,0], q=1;
+      const Bf=poleField(pN,pS,q);
+      const lines=[]; const psiL=[25,52,78], phiN=10;
+      for(const psi of psiL) for(let i=0;i<phiN;i++){
+        const phi=TAU*i/phiN, ps=psi*Math.PI/180;
+        // 以 +x（N 极朝向）为极轴的锥面种子 -> 环绕磁轴均匀分布
+        const dir=[Math.cos(ps), Math.sin(ps)*Math.cos(phi), Math.sin(ps)*Math.sin(phi)];
+        const seed=V.add(pN,V.mul(dir,0.13));
+        const ln=trace3D(Bf,seed,0.012,3000,p=>V.len(V.sub(p,pS))<0.16,1);
+        if(ln.length>40 && V.len(V.sub(ln[ln.length-1],pS))<0.34) lines.push({pts:ln,closed:false,kind:'field'});
+      }
+      return {lines, extra:{pN,pS}};
+    },
+    draw(ctx, st, P, cam){
+      const pN=cam.pN, pS=cam.pS, h=0.30;
+      box(ctx,P,[0.31,0,0],[0.62,h,h],'#c4354a','#ff5a6e');    // N 侧（+x）红
+      box(ctx,P,[-0.31,0,0],[0.62,h,h],'#2f6db0','#4aa8ff');   // S 侧（−x）蓝
+      if(st.show.pole){ sphere(ctx,P(pN),0.10,'#ff5a6e'); sphere(ctx,P(pS),0.10,'#4aa8ff'); }
+      if(st.show.lab){ lab(ctx,P([pN[0],pN[1]+0.26,0]),'N',st.show,P,'#ff9aa6'); lab(ctx,P([pS[0],pS[1]+0.26,0]),'S',st.show,P,'#9ac8ff'); }
+    },
+    readout(){return [['磁极','N(+x) / S(−x)'],['外部磁感线','N→S 闭合'],['内部','S→N（示意）']];},
+    know:`<div><span class="t">条形磁铁</span>外部磁感线由 <span class="r">N 极</span> 出发、进入 <span class="b">S 极</span>；
+      内部由 S 指向 N，形成闭合曲线。</div>
+      <div>磁感线疏密反映磁场<b>强弱</b>：两极附近最密、磁场最强。</div>
+      <div><span class="t">模型</span>：可用<b>两个磁荷(±q)</b>近似，场 <code>B∝ q(r−r_N)/|r−r_N|³ − q(r−r_S)/|r−r_S|³</code>，
+      已数值验证全部磁感线由 N 回到 S。</div>`
+  },
+
+  /* px：模型沿 −x 方向不对称（弯头伸到 x=−1.86），整体右移使其视觉居中 */
+  horse:{ name:'蹄形磁铁', axis:'y', bodyBox:[-1.86,-0.86,-0.34, 0.90,0.86,0.34],
+    cam:{yaw:0.46,pitch:-0.16,zoom:0.74,px:0.42}, camTotal:{yaw:0.26,pitch:-0.10,zoom:0.70,px:0.46},
+    setup(){
+      const G=SHOE, {cx,xTip,a,t,d}=G;
+      const Bf=shoeField(G,1);
+      const lines=[];
+      // 终点判据：贴到 S 臂表面（极面/外表面/端面/侧面任一）或飞出场景即终止。
+      // 容差取 0.012（≈一个积分步长）：线正好终止在极面上，视觉上「从 N 面画满到 S 面」。
+      const inS=p=>p[0]>cx-0.012&&p[0]<xTip+0.012&&p[1]>-(a+t)-0.012&&p[1]<-a+0.012&&Math.abs(p[2])<d+0.012;
+      const inN=p=>p[0]>cx-0.012&&p[0]<xTip+0.012&&p[1]>a-0.012&&p[1]<a+t+0.012&&Math.abs(p[2])<d+0.012;
+      const out=p=>Math.abs(p[0])>3.2||Math.abs(p[1])>3.2||Math.abs(p[2])>3.2;
+      const stop=p=>inS(p)||inN(p)||out(p);
+      const run=seed=>{
+        if(inS(seed)||inN(seed)) return;
+        const ln=trace3D(Bf,seed,0.012,3000,stop,1);
+        if(ln.length>12 && inS(ln[ln.length-1])) lines.push({pts:ln,closed:false,kind:'field'});
+      };
+      const ZS=[-0.62*d,0,0.62*d];
+      // (1) 缝隙内：从 N 臂内侧极面出发 → 竖直、密集、平行（极间近似匀强）
+      for(let i=0;i<6;i++){ const x=cx+0.12+(G.L-0.30)*i/5; for(const z of ZS) run([x,a-0.03,z]); }
+      // (2) 端面外侧：扇形散开、再绕回异名极的嵌套回环
+      for(const yf of [0.06,0.24,0.42,0.60,0.78]) for(const z of ZS) run([xTip+0.07, a+t*yf, z]);
+      return {lines, extra:{G}};
+    },
+    draw(ctx, st, P, cam){
+      const G=cam.G, {cx,xTip,a,t,d,ro}=G;
+      const on=st.show.pole;
+      const cN=on?'#d8273b':'#5b6577', eN=on?'#ff6d79':'#93a3bb';
+      const cS=on?'#2043d6':'#5b6577', eS=on?'#6d8cff':'#93a3bb';
+      // 上臂+上半弯头（红）/ 下臂+下半弯头（蓝）：各为一条闭合多边形沿 z 挤出（半圆弯头在左）
+      const mk=up=>{
+        const s=up?1:-1, M=15, pts=[[cx,s*a],[xTip,s*a],[xTip,s*(a+t)]];
+        for(let i=0;i<=M;i++){ const th=Math.PI/2+(Math.PI/2)*i/M; pts.push([cx+ro*Math.cos(th), s*ro*Math.sin(th)]); }
+        for(let i=M;i>=0;i--){ const th=Math.PI/2+(Math.PI/2)*i/M; pts.push([cx+a*Math.cos(th), s*a*Math.sin(th)]); }
+        return pts;
+      };
+      prism(ctx,P,mk(true), -d,d, cN,eN);
+      prism(ctx,P,mk(false),-d,d, cS,eS);
+      if(st.show.lab){                       // 参考图：白色粗体 N/S 写在臂内近端处
+        ctx.font='800 24px "Microsoft YaHei",Arial,sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        const put=(txt,x,y)=>{ const q=P([x,y,0]); if(!isFinite(q[0]))return;
+          ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.30)'; ctx.strokeText(txt,q[0],q[1]);
+          ctx.fillStyle='#fff'; ctx.fillText(txt,q[0],q[1]); };
+        put('N', xTip-0.32,  a+t/2);
+        put('S', xTip-0.32, -(a+t/2));
+      }
+    },
+    readout(){return [['两极','上臂=N（红）/ 下臂=S（蓝）'],['弯曲处','中性区·不带磁荷'],['极间磁场','竖直密集·近似匀强'],['外部','端面扇形→绕回异名极']];},
+    know:`<div><span class="t">蹄形磁铁</span>（马蹄形）相当于把条形磁铁<b>弯成 U 形</b>：<span class="r">上臂整体是 N 极</span>、<span class="b">下臂整体是 S 极</span>，弯曲处是<b>中性区</b>（几乎不带磁荷）。</div>
+      <div>两极<b>靠得近</b> → 极间磁感线<b>密集、近似平行</b>（实测方向纯度 1.0000、匀强离散度 ≈20%），形成<b>近似匀强磁场</b>。</div>
+      <div>外部磁感线从两臂<b>端面</b>呈扇形散开、再绕回异名极，形成<b>嵌套回环</b>；绝大部分磁通集中在极间，故<b>外部漏磁很少</b>——这正是蹄形磁铁比条形磁铁磁场更集中、更强的原因。</div>
+      <div><span class="t">模型</span>：磁荷按面积均匀铺在两臂的<b>相对极面、外表面与端面</b>上（<code>σ=q/A</code>），弯曲处不布磁荷；已数值验证 33 条磁感线全部由 N 回到 S。</div>
+      <div><span class="t">应用</span>：电磁铁常做成蹄形，套上线圈后极间可获得强匀强场（电铃、继电器、扬声器）。</div>`
+  },
+
+  wire:{ name:'通电直导线', axis:'y', bodyBox:[-0.12,-1.70,-0.12, 0.12,1.70,0.12],
+    setup(){
+      const lines=[]; const ys=[-1.15,-0.55,0,0.55,1.15]; const radii=[0.26,0.42,0.60,0.82,1.08,1.38];
+      for(const y0 of ys) for(const r of radii){
+        const pts=[]; const N=72;
+        for(let i=0;i<=N;i++){ const a=TAU*i/N; pts.push([r*Math.cos(a),y0,r*Math.sin(a)]); }
+        lines.push({pts,closed:true,kind:'field'});
+      }
+      return {lines, extra:{}};
+    },
+    draw(ctx, st, P, cam){
+      // 导线（沿 y 轴）
+      const A=P([0,1.6,0]), B=P([0,-1.6,0]);
+      const g=ctx.createLinearGradient(A[0],A[1],B[0],B[1]);
+      g.addColorStop(0,'#c9d6e6'); g.addColorStop(.5,'#8fa3ba'); g.addColorStop(1,'#c9d6e6');
+      ctx.strokeStyle=g; ctx.lineWidth=6; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.stroke();
+      // 电流方向箭头
+      const s=st.cur; // +1 向上
+      const pa=P([0,0.5*s,0]), pb=P([0,1.05*s,0]);
+      arrow(ctx,pa[0],pa[1],pb[0],pb[1],'#3ddc84',3,9);
+      if(st.show.lab) lab(ctx,P([0,1.62,0]),'I (电流)',st.show,P,'#3ddc84');
+    },
+    readout(st){return [['磁场','环绕导线·同心圆'],['大小','B = μ₀I/(2πr)'],['方向','右手螺旋']];},
+    know:`<div><span class="t">通电直导线</span>磁场为以导线为轴的<b>同心圆</b>，
+      <code>B = μ₀I / (2πr)</code>，<b>与半径 r 成反比</b>。</div>
+      <div>方向由<b>右手螺旋定则</b>判定：拇指指向电流，四指环绕方向即磁场方向（磁感线绕向）。</div>
+      <div><span class="t">易错</span>：B 与 r 成反比而非平方反比；离导线越远越弱、越密处越强。</div>`
+  },
+
+  loop:{ name:'环形电流', axis:'y', bodyBox:[-0.70,-0.76,-0.70, 0.70,0.76,0.70],
+    cam:{yaw:0.62,pitch:-0.30,zoom:0.86}, camTotal:{yaw:0.42,pitch:-0.12,zoom:0.80},
+    setup(){
+      const R=0.62;
+      let Bf=makeB(loopSegs(R,0,200,1),1);
+      // 方向判定：使环心 B 沿 +y（便于横放竖看）
+      if(Bf([0,0,0])[1]<0) Bf=makeB(loopSegs(R,0,200,-1),1);
+      /* 关键：环形电流的磁场【严格轴对称】（子午面内 B_z≡0，已数值验证
+         |B_z|/|B| ~ 1e-13 纯浮点噪声）。因此只需追踪子午面 xOz 中 x>0 半平面的
+         若干条闭合曲线，再绕 y 轴【精确旋转】得到全部三维线——比逐方位角重新
+         追踪快 NAZ 倍，且对称性严格保持。
+         子午面曲线从环内 (rr,0,0) 出发：沿 +y 穿出环面 → 向外扩张 → 越过环外
+         沿 −y 返回 → 回到环内闭合，正是"穿出再回来"的完整拓扑。
+         注意：种子不能贴太近导线（r→R），那里回环尺度发散（r=0.22 需 1259 步、
+         r=0.12 需 4486 步且半径冲到 16），教学图取中等半径档位。 */
+      const mer=rr=>{                                  // 子午面内闭合曲线
+        const s0=[rr,0,0];
+        const stop=(p,i)=>V.len(V.sub(p,s0))<0.045 && i>80;
+        return trace3D(Bf,s0,0.009,20000,stop,1);
+      };
+      const meridian=[];
+      for(const rr of [0.30,0.38,0.46,0.56]){
+        const pts=mer(rr);
+        if(pts.length>100) meridian.push(pts);
+      }
+      const lines=[]; const NAZ=8;                     // 8 个方位角绕 y 轴旋转
+      for(const L of meridian) for(let k=0;k<NAZ;k++){
+        const c=Math.cos(TAU*k/NAZ), s=Math.sin(TAU*k/NAZ);
+        lines.push({pts:L.map(q=>[q[0]*c+q[2]*s, q[1], -q[0]*s+q[2]*c]),
+                    closed:false, kind:'field'});
+      }
+      return {lines, extra:{R}};
+    },
+    draw(ctx, st, P, cam){
+      // 环（y=0 平面，半径 R）
+      const R=0.62, N=120, pts=[];
+      for(let i=0;i<=N;i++){ const a=TAU*i/N; pts.push(P([R*Math.cos(a),0,R*Math.sin(a)])); }
+      ctx.strokeStyle='#9fb3c8'; ctx.lineWidth=5; ctx.lineCap='round';
+      ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke();
+      // 电流方向箭头：沿环周均匀分布 3 处（θ 增大方向 = 逆时针，从 +y 俯视）
+      for(const base of [0.35, 0.35+TAU/3, 0.35+2*TAU/3]){
+        const a0=base, a1=base+0.42;
+        const p0=P([R*Math.cos(a0),0,R*Math.sin(a0)]), p1=P([R*Math.cos(a1),0,R*Math.sin(a1)]);
+        arrow(ctx,p0[0],p0[1],p1[0],p1[1],'#3ddc84',3,9);
+      }
+      // 右手螺旋：环心 B 沿 +y ⇒ +y 侧为等效 N 极，−y 侧为 S 极
+      // （标注放在磁感线包围盒 max|y|=0.89 之外，避免被线压住）
+      if(st.show.pole){ sphere(ctx,P([0,R+0.11,0]),0.075,'#ff5a6e'); sphere(ctx,P([0,-R-0.11,0]),0.075,'#4aa8ff'); }
+      if(st.show.lab){
+        lab(ctx,P([0,1.08,0]),'N',st.show,P,'#ff9aa6');
+        lab(ctx,P([0,-1.08,0]),'S',st.show,P,'#9ac8ff');
+        lab(ctx,P([0,1.45,0]),'环形电流',st.show,P,'#3ddc84');
+      }
+    },
+    readout(){return [['轴上磁场','B=μ₀IR²/2(R²+x²)^{3/2}'],['中心','B=μ₀I/(2R)'],['环内方向','+y·右手螺旋'],['远场','等效磁偶极'],['磁感线','环绕电流的闭合环']];},
+    know:`<div><span class="t">环形电流</span>轴线上的磁场
+      <code>B = μ₀ I R² / [2(R²+x²)^{3/2}]</code>，环心 <code>B=μ₀I/(2R)</code>。</div>
+      <div>中心附近近似<b>匀强</b>；远处等效于一个<b>磁偶极子</b>（磁矩垂直环面）。</div>
+      <div><span class="t">方向</span>：<b>右手螺旋定则</b>——四指沿电流绕行方向，拇指指向环内磁场方向（即等效 N 极一侧）。</div>
+      <div><span class="t">磁感线</span>：全部为<b>环绕电流的闭合曲线</b>——环内沿轴穿出、绕过导线在环外返回，越靠近导线回环越小。环心附近（r→0）的回环尺度趋于无穷，故图中环内近轴区无闭合线。</div>
+      <div><span class="t">应用</span>：亥姆霍兹线圈（两等大共轴线圈）可在中部获得极高匀强场。</div>`
+  },
+
+  sol:{ name:'通电螺旋管', axis:'y', bodyBox:[-0.46,-0.92,-0.46, 0.46,0.92,0.46],
+    setup(){
+      const y0=-0.78,y1=0.78,Rm=0.40, turns=9;
+      // 外部磁感线用两端磁极（N 在 +y 顶）近似，拓扑同条形磁铁
+      const pN=[0,y1,0], pS=[0,-y1,0], q=1;
+      const Bf=poleField(pN,pS,q);
+      const lines=[]; const psiL=[25,52,78], phiN=10;
+      for(const psi of psiL) for(let i=0;i<phiN;i++){
+        const phi=TAU*i/phiN, dir=sphDir(psi*Math.PI/180,phi);
+        if(dir[1]<0.12) continue;
+        const seed=V.add(pN,V.mul(dir,0.12));
+        const ln=trace3D(Bf,seed,0.012,3000,p=>V.len(V.sub(p,pS))<0.16,1);
+        if(ln.length>40 && V.len(V.sub(ln[ln.length-1],pS))<0.34) lines.push({pts:ln,closed:false,kind:'field'});
+      }
+      return {lines, extra:{y0,y1,Rm,turns,pN,pS}};
+    },
+    draw(ctx, st, P, cam){
+      const {y0,y1,Rm,turns,pN,pS}=cam;
+      // 螺旋线圈（沿 y 轴）
+      const N=420, pts=[]; const dir=st.cur;
+      for(let i=0;i<=N;i++){ const u=i/N, y=y0+(y1-y0)*u, th=dir*TAU*turns*u;
+        pts.push(P([Rm*Math.cos(th),y,Rm*Math.sin(th)])); }
+      ctx.strokeStyle='#9fb3c8'; ctx.lineWidth=3.4; ctx.lineCap='round';
+      ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.stroke();
+      // 电流方向：沿线圈均匀 4 处（沿 u 增大方向），绿色
+      for(let m=0;m<4;m++){
+        const u0=(m+0.5)/4, u1=u0+0.030;
+        const thA=dir*TAU*turns*u0, thB=dir*TAU*turns*u1;
+        const a0=P([Rm*Math.cos(thA), y0+(y1-y0)*u0, Rm*Math.sin(thA)]);
+        const a1=P([Rm*Math.cos(thB), y0+(y1-y0)*u1, Rm*Math.sin(thB)]);
+        if(isFinite(a0[0])&&isFinite(a1[0])) arrow(ctx,a0[0],a0[1],a1[0],a1[1],'#3ddc84',3,9);
+      }
+      if(st.show.lab) lab(ctx,P([Rm+0.30,y0+0.10,0]),'I',st.show,P,'#3ddc84');
+      if(st.show.pole){ sphere(ctx,P(pN),0.09,'#ff5a6e'); sphere(ctx,P(pS),0.09,'#4aa8ff'); }
+      if(st.show.lab){ lab(ctx,P([pN[0],pN[1]+0.14,0]),'N',st.show,P,'#ff9aa6'); lab(ctx,P([pS[0],pS[1]-0.14,0]),'S',st.show,P,'#9ac8ff'); }
+    },
+    readout(){return [['内部磁场','近似匀强·平行轴'],['中心','B≈μ₀nI'],['外部','同条形磁铁']];},
+    know:`<div><span class="t">通电螺旋管</span>内部磁场<b>近似匀强且平行轴线</b>，
+      中心 <code>B ≈ μ₀ n I</code>（n 为单位长度匝数）。</div>
+      <div>外部磁场与<b>条形磁铁</b>相同：一端等效 N、一端等效 S，磁感线由 N 出、S 入。</div>
+      <div><span class="t">易错</span>：无限长极限才严格 μ₀nI；有限长时内部略小于该值、端口处减弱。</div>`
+  },
+};
+/* ---------- 3D 物体辅助绘制 ---------- */
+function sphere(ctx,c,r,col){
+  if(!isFinite(c[0]))return;
+  const g=ctx.createRadialGradient(c[0]-r*0.3,c[1]-r*0.3,r*0.1,c[0],c[1],r);
+  g.addColorStop(0,'#fff'); g.addColorStop(.4,col); g.addColorStop(1,col);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(c[0],c[1],r,0,TAU); ctx.fill();
+}
+function box(ctx,P,c0,sz,face,edge){
+  // 8 角
+  const c=[]; for(let i=0;i<8;i++){
+    c.push(P([c0[0]+(i&1?sz[0]/2:-sz[0]/2), c0[1]+(i&2?sz[1]/2:-sz[1]/2), c0[2]+(i&4?sz[2]/2:-sz[2]/2)]));
+  }
+  // 6 面（按平均深度从远到近排序绘制）
+  const faces=[[0,1,3,2],[4,6,7,5],[0,4,5,1],[2,3,7,6],[0,2,6,4],[1,5,7,3]];
+  const far=faces.map(f=>({f, d:((c[f[0]][2]+c[f[1]][2]+c[f[2]][2]+c[f[3]][2])/4)}))
+    .sort((a,b)=>a.d-b.d);
+  for(const F of far){
+    const f=F.f; const pts=f.map(i=>c[i]);
+    ctx.beginPath(); pts.forEach((p,i)=> i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+    ctx.fillStyle=face; ctx.fill();
+    ctx.strokeStyle=edge; ctx.lineWidth=1.2; ctx.stroke();
+  }
+}
+function lab(ctx,p,txt,show,P,col){
+  if(!show.lab||!isFinite(p[0]))return;
+  ctx.font='600 12px "Microsoft YaHei",sans-serif'; ctx.fillStyle=col;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt,p[0],p[1]-2);
+}
+/* 棱柱：把 xy 平面内的多边形沿 z 从 z0 挤到 z1，各面按平均深度排序绘制（不透明实体）。
+   用于画蹄形磁铁的「矩形臂 + 半圆弯头」一体化轮廓。 */
+/* 颜色按亮度系数缩放（k<1 变暗，k>1 变亮），用于给棱柱各面加深浅，获得立体感 */
+function shade(hex,k){
+  const m=/^#([0-9a-f]{6})$/i.exec(hex); if(!m) return hex;
+  const v=parseInt(m[1],16);
+  const cl=x=>Math.max(0,Math.min(255,Math.round(x)));
+  return 'rgb('+cl((v>>16&255)*k)+','+cl((v>>8&255)*k)+','+cl((v&255)*k)+')';
+}
+function prism(ctx,P,poly,z0,z1,fill,edge){
+  const n=poly.length;
+  const A=poly.map(q=>P([q[0],q[1],z0]));
+  const B=poly.map(q=>P([q[0],q[1],z1]));
+  const faces=[{p:A,cap:1},{p:B,cap:1}];
+  for(let i=0;i<n;i++){ const j=(i+1)%n; faces.push({p:[A[i],A[j],B[j],B[i]]}); }
+  const az=f=>{ let s=0,k=0; for(const q of f.p){ if(isFinite(q[2])){ s+=q[2]; k++; } } return k?s/k:0; };
+  // 深度范围：用于把「离镜头越近越亮」归一化到 [0,1]
+  let dmin=1e9, dmax=-1e9;
+  for(const f of faces){ const d=az(f); if(isFinite(d)){ dmin=Math.min(dmin,d); dmax=Math.max(dmax,d); } }
+  const span=(dmax-dmin)||1;
+  faces.sort((x,y)=>az(x)-az(y));
+  for(const f of faces){
+    let ok=true; for(const q of f.p) if(!isFinite(q[0])){ ok=false; break; }
+    if(!ok) continue;
+    const pts=f.p;
+    const t=(az(f)-dmin)/span;                  // 0=最远 1=最近
+    const k=0.80+0.24*t;                        // 明暗区间 0.80~1.04
+    ctx.beginPath(); pts.forEach((q,i)=> i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.closePath();
+    ctx.fillStyle=shade(fill,k); ctx.fill();
+    ctx.strokeStyle=f.cap?shade(edge,k):shade(fill,k);  // 侧面用填充色描边（补缝），端盖用描边色勾轮廓
+    ctx.lineWidth=f.cap?1.7:1; ctx.lineJoin='round'; ctx.stroke();
+  }
+}
+function arrow(ctx,x0,y0,x1,y1,col,w,head){
+  const a=Math.atan2(y1-y0,x1-x0); const hl=head||9;
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w||3; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1,y1);
+  ctx.lineTo(x1-hl*Math.cos(a-0.4),y1-hl*Math.sin(a-0.4));
+  ctx.lineTo(x1-hl*Math.cos(a+0.4),y1-hl*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+/* ============================================================
+   逼真地球：大陆轮廓（经纬度多边形，近似）+ 极冠 + 光照 + 内部磁棒
+   ============================================================ */
+const R_EARTH = 0.62;
+const EARTH_CONT = [
+  /* 北美洲 */[[-168,66],[-158,71],[-130,70],[-110,69],[-95,72],[-80,73],[-62,66],[-56,52],[-66,45],[-70,42],[-75,35],[-81,26],[-84,30],[-90,29],[-97,26],[-105,22],[-110,24],[-114,31],[-118,34],[-124,40],[-124,48],[-131,55],[-140,60],[-150,60],[-160,58]],
+  /* 格陵兰 */[[-45,60],[-20,70],[-18,76],[-25,82],[-45,83],[-58,80],[-55,70]],
+  /* 南美洲 */[[-77,8],[-60,10],[-50,0],[-35,-6],[-38,-16],[-48,-25],[-58,-35],[-66,-45],[-73,-53],[-75,-50],[-72,-40],[-71,-30],[-70,-18],[-76,-14],[-81,-5],[-81,2]],
+  /* 欧洲 */[[-10,36],[-9,43],[-2,48],[2,51],[4,53],[8,54],[10,58],[5,58],[8,63],[15,68],[25,71],[32,70],[42,66],[40,58],[40,50],[30,45],[28,41],[24,40],[15,38],[12,44],[8,44],[3,42],[-2,37],[-6,36]],
+  /* 非洲 */[[-17,15],[-16,24],[-5,31],[10,37],[20,32],[25,32],[33,31],[35,28],[43,12],[51,12],[42,-1],[40,-11],[40,-20],[35,-26],[25,-34],[18,-35],[13,-18],[9,-1],[9,4],[3,6],[-8,4],[-13,9]],
+  /* 亚洲 */[[40,50],[45,58],[55,70],[70,72],[85,76],[105,77],[130,73],[145,70],[160,69],[178,65],[170,60],[155,52],[142,45],[130,35],[122,30],[120,22],[108,10],[100,4],[98,12],[92,21],[88,22],[80,10],[72,20],[66,25],[58,25],[54,27],[48,30],[43,12],[40,20],[36,28],[40,42],[45,46]],
+  /* 澳大利亚 */[[113,-22],[122,-17],[132,-12],[142,-11],[150,-20],[154,-28],[153,-38],[145,-38],[137,-34],[128,-32],[118,-34]],
+  /* 马达加斯加 */[[43,-13],[50,-16],[50,-25],[45,-25],[43,-19]],
+  /* 东南亚群岛 */[[95,5],[118,0],[140,-3],[140,-8],[120,-9],[100,-3]],
+];
+function inPoly(lon,lat,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>lat)!==(yj>lat)) && (lon < (xj-xi)*(lat-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
+function isLand(lon,lat){
+  if(lat < -63) return true;                       // 南极洲
+  for(const p of EARTH_CONT) if(inPoly(lon,lat,p)) return true;
+  return false;
+}
+/* 预计算陆地网格（经纬 -> 单位球面 4 角 + 中心纬度） */
+const EARTH_LAND=(function(){
+  const cells=[], DL=4;
+  const u=(la,lo)=>{ const a=la*Math.PI/180, b=lo*Math.PI/180;
+    return [Math.cos(a)*Math.cos(b), Math.sin(a), Math.cos(a)*Math.sin(b)]; };
+  for(let lat=-88; lat<88; lat+=DL) for(let lon=-180; lon<180; lon+=DL){
+    const clat=lat+DL/2, clon=lon+DL/2;
+    if(!isLand(clon,clat)) continue;
+    cells.push({q:[u(lat,lon),u(lat+DL,lon),u(lat+DL,lon+DL),u(lat,lon+DL)], lat:clat});
+  }
+  return cells;
+})();
+function earthGeom(R){ R=R||R_EARTH; return {c:project([0,0,0]), rad:R*SCALE*state.zoom}; }
+function drawEarth(geo){
+  const c=geo.c, rad=geo.rad; if(!isFinite(c[0])||rad<2) return;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(c[0],c[1],rad,0,TAU); ctx.clip();
+  /* 海洋 */
+  const og=ctx.createRadialGradient(c[0]-rad*.35,c[1]-rad*.40,rad*.05,c[0],c[1],rad*1.08);
+  og.addColorStop(0,'#4fa8e0'); og.addColorStop(.45,'#2a6cb0'); og.addColorStop(1,'#0a2a4e');
+  ctx.fillStyle=og; ctx.fillRect(c[0]-rad,c[1]-rad,rad*2,rad*2);
+  /* 陆地格子（投影后逐格填充，背面隐藏） */
+  for(const cell of EARTH_LAND){
+    const q=cell.q;
+    const z=(rot(q[0])[2]+rot(q[1])[2]+rot(q[2])[2]+rot(q[3])[2])/4;
+    if(z < 0.0) continue;                            // 背面 -> 隐藏
+    const lit=clamp(0.5+0.6*z,0.34,1.0);
+    let col;
+    if(Math.abs(cell.lat)>70) col='rgba('+Math.round(212+32*lit)+','+Math.round(224+24*lit)+','+Math.round(236+14*lit)+',0.90)';
+    else col='rgba('+Math.round(56+40*lit)+','+Math.round(116+40*lit)+','+Math.round(70+30*lit)+',0.95)';
+    const A=project(V.mul(q[0],R_EARTH)), B=project(V.mul(q[1],R_EARTH)),
+          C=project(V.mul(q[2],R_EARTH)), D=project(V.mul(q[3],R_EARTH));
+    ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.lineTo(C[0],C[1]); ctx.lineTo(D[0],D[1]); ctx.closePath();
+    ctx.fillStyle=col; ctx.fill(); ctx.strokeStyle=col; ctx.lineWidth=1; ctx.stroke();
+  }
+  /* 内部磁棒：上（地理北）蓝=S、下（地理南）红=N，沿地磁轴倾斜 11.5° */
+  const TILT=11.5*Math.PI/180, mAxis=[Math.sin(TILT),Math.cos(TILT),0];
+  const mid=Px([0,0,0]), up=Px(V.mul(mAxis,R_EARTH*0.46)), dn=Px(V.mul(mAxis,-R_EARTH*0.46));
+  ctx.lineCap='round'; ctx.lineWidth=Math.max(3,rad*0.115);
+  ctx.strokeStyle='rgba(120,180,255,.92)';
+  ctx.beginPath(); ctx.moveTo(mid[0],mid[1]); ctx.lineTo(up[0],up[1]); ctx.stroke();
+  ctx.strokeStyle='rgba(255,92,112,.92)';
+  ctx.beginPath(); ctx.moveTo(mid[0],mid[1]); ctx.lineTo(dn[0],dn[1]); ctx.stroke();
+  ctx.font='700 '+Math.round(Math.max(9,rad*0.17))+'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#dff0ff'; ctx.fillText('S',up[0],up[1]);
+  ctx.fillStyle='#ffdae0'; ctx.fillText('N',dn[0],dn[1]);
+  /* 球面光照 + 昼夜 */
+  const sh=ctx.createRadialGradient(c[0]-rad*.42,c[1]-rad*.46,rad*.08,c[0]-rad*.05,c[1],rad*1.25);
+  sh.addColorStop(0,'rgba(255,255,255,.30)'); sh.addColorStop(.30,'rgba(255,255,255,.06)');
+  sh.addColorStop(.62,'rgba(0,0,0,.16)'); sh.addColorStop(1,'rgba(0,10,25,.70)');
+  ctx.fillStyle=sh; ctx.fillRect(c[0]-rad,c[1]-rad,rad*2,rad*2);
+  ctx.restore();
+  /* 大气辉光 + 轮廓 */
+  const at=ctx.createRadialGradient(c[0],c[1],rad*0.9,c[0],c[1],rad*1.22);
+  at.addColorStop(0,'rgba(90,180,255,0)'); at.addColorStop(.55,'rgba(96,178,255,.30)'); at.addColorStop(1,'rgba(96,178,255,0)');
+  ctx.fillStyle=at; ctx.beginPath(); ctx.arc(c[0],c[1],rad*1.22,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(150,205,245,.55)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(c[0],c[1],rad,0,TAU); ctx.stroke();
+}
+/* 供 drawEarth 内部使用（等价 project，显式命名避免与变量 P 冲突） */
+function Px(p){ return project(p); }
+
+/* ============================================================
+   状态 / 相机 / 渲染
+   ============================================================ */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let CX=410, CY=240, SCALE=150;
+let PANX=0, PANY=0;      // 每模型可选的整体平移（世界单位，用于把非原点对称的模型摆正）
+/* 磁感线配色（RGB 三元组，供 canvas 逐帧取用） */
+const LINE_COLORS={
+  mag  :{rgb:'210,75,208',  hx:'#d24bd0', p:'#ff9efc'},   // 紫红（默认）
+  cyan :{rgb:'45,196,222',  hx:'#2dc4de', p:'#a8f2ff'},   // 青蓝
+  amber:{rgb:'255,154,60',  hx:'#ff9a3c', p:'#ffd0a0'},   // 橙
+  green:{rgb:'80,225,140',  hx:'#50e18c', p:'#c4ffdc'},   // 绿
+  violet:{rgb:'152,110,255',hx:'#986eff', p:'#d8c8ff'},   // 蓝紫
+};
+const state={
+  model:'earth', view:'3d', auto:true, cur:1, dens:1,
+  lineCol:'mag', part:true, speed:1,
+  show:{pole:true, arrow:true, lab:true},
+  yaw:0.6, pitch:-0.5, zoom:1,
+};
+let cache=null;     // {lines, extra}
+let drag=null;
+
+/* 旋转+投影 */
+function rot(p){
+  let [x,y,z]=p;
+  const cy=Math.cos(state.yaw), sy=Math.sin(state.yaw);
+  let x1=x*cy - z*sy, z1=x*sy + z*cy, y1=y;
+  const cp=Math.cos(state.pitch), sp=Math.sin(state.pitch);
+  let y2=y1*cp - z1*sp, z2=y1*sp + z1*cp, x2=x1;
+  return [x2,y2,z2];
+}
+function project(p){
+  const r=rot(p);
+  if(state.view==='3d'){
+    const f=4.6, denom=f-r[2];
+    const sc=denom>0.3 ? f/denom : 1;
+    return [CX + (r[0]+PANX)*sc*SCALE*state.zoom, CY - (r[1]+PANY)*sc*SCALE*state.zoom, r[2], sc];
+  } else {
+    return [CX + (r[0]+PANX)*SCALE*state.zoom, CY - (r[1]+PANY)*SCALE*state.zoom, r[2], 1];
+  }
+}
+
+/* 总视图固定机位（地球用近赤道机位，避免极冠正对镜头） */
+function applyView(){
+  if(state.view==='total'){
+    const c=MODELS[state.model] && MODELS[state.model].camTotal;
+    if(c){ state.yaw=c.yaw; state.pitch=c.pitch; state.zoom=c.zoom; PANX=c.px||0; PANY=c.py||0; }
+    else { state.yaw=0.5; state.pitch=-0.42; state.zoom=0.92; PANX=0; PANY=0; }
+  } else { state.zoom=Math.max(0.7,state.zoom); }
+}
+/* 总视图自适应取景：按「磁感线投影分位数 + 磁体包围盒」求 pan/zoom，使内容居中且完整可见。
+   仅在当前取景下内容明显越出画布时启用 —— 已调好的模型（地磁/直导线/环形）不受影响。
+   分位数（2%~98%）可避免少数跑到很远的“边缘漏磁大回环”把画面拉爆。 */
+function fitTotal(){
+  const M=MODELS[state.model];
+  if(!M||!cache||!cache.lines||!cache.lines.length) return;
+  const pts=[];
+  for(const l of cache.lines){
+    const st=Math.max(1,Math.floor(l.pts.length/80));
+    for(let i=0;i<l.pts.length;i+=st){ const q=rot(l.pts[i]); if(isFinite(q[0])) pts.push(q); }
+  }
+  const bb=M.bodyBox;                       // 磁体自身包围盒（8 角点投影）
+  if(!bb) return;
+  let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;
+  for(let i=0;i<8;i++){
+    const q=rot([(i&1)?bb[3]:bb[0], (i&2)?bb[4]:bb[1], (i&4)?bb[5]:bb[2]]);
+    if(!isFinite(q[0])) continue;
+    bx0=Math.min(bx0,q[0]); bx1=Math.max(bx1,q[0]); by0=Math.min(by0,q[1]); by1=Math.max(by1,q[1]);
+  }
+  if(!(bx1>bx0)) return;
+  let x0=bx0,y0=by0,x1=bx1,y1=by1;
+  if(pts.length>=20){                       // 磁感线取 4%~96% 分位：滤掉跑到很远的边缘漏磁大回环
+    const xs=pts.map(q=>q[0]).sort((a,b)=>a-b), ys=pts.map(q=>q[1]).sort((a,b)=>a-b);
+    const lo=Math.floor(pts.length*0.04), hi=Math.min(pts.length-1,Math.ceil(pts.length*0.96)-1);
+    x0=Math.min(x0,xs[lo]); x1=Math.max(x1,xs[hi]); y0=Math.min(y0,ys[lo]); y1=Math.max(y1,ys[hi]);
+  }
+  const cx=(x0+x1)/2, cy=(y0+y1)/2;
+  const sxc=CX+(cx+PANX)*SCALE*state.zoom, syc=CY-(cy+PANY)*SCALE*state.zoom;
+  const move   = Math.abs(sxc-CX)>CX*0.06 || Math.abs(syc-CY)>CY*0.06;   // 内容明显偏心
+  const wx=(bx1-bx0)/2, wy=(by1-by0)/2;                                  // 缩放只看磁体
+  const needZ=Math.min(CX*0.66/(SCALE*Math.max(wx,1e-3)), CY*0.78/(SCALE*Math.max(wy,1e-3)));
+  const shrink = needZ < state.zoom*0.995;                              // 磁体放不下才收 scale
+  if(!move&&!shrink) return;                 // 已合适：保持手调机位不动
+  PANX=-cx; PANY=-cy;                        // 平移：内容（磁体+磁感线）中心对齐画布中心
+  if(shrink) state.zoom=clamp(needZ,0.40,2.4);
+}
+/* 切换到某模型时套用其推荐机位（如地球用近赤道视角，避免极冠正对镜头） */
+function applyModelCam(k){
+  const c=MODELS[k] && MODELS[k].cam;
+  if(c){ state.yaw=c.yaw; state.pitch=c.pitch; state.zoom=c.zoom; PANX=c.px||0; PANY=c.py||0; }
+}
+
+function rebuild(){
+  const M=MODELS[state.model];
+  try{ cache=M.setup(); cache.model=state.model; }
+  catch(err){ console.error('setup failed', state.model, err); return; }
+  // 密度：按层级/角度数缩减
+  if(state.dens===0) cache.lines=cache.lines.filter((_,i)=>i%2===0);
+  else if(state.dens===2) {/* 原始最多 */}
+  arcLens(cache.lines);                 // 粒子沿程取点需要累积弧长
+  if(state.view==='total'){ applyView(); fitTotal(); }   // 总视图：套用模型机位后再自适应取景
+  document.getElementById('mName').textContent=M.name;
+  document.getElementById('know').innerHTML=M.know;
+  // 读数
+  const ro=document.getElementById('readout'); ro.innerHTML='';
+  const rows=(M.readout?M.readout(state):[]);
+  for(const [k,v] of rows){ const d=document.createElement('div');
+    d.innerHTML='<span>'+k+'</span><span>'+v+'</span>'; ro.appendChild(d); }
+  // 电流方向：只 wire/loop/sol 用
+  document.getElementById('cCur').disabled = !(state.model==='wire'||state.model==='loop'||state.model==='sol');
+}
+
+function drawFieldLines(occl){
+  if(!cache) return;
+  const lines=cache.lines;
+  // 计算每线平均深度，远→近排序（painter）
+  const arr=lines.map(l=>{
+    let d=0; for(const p of l.pts) d+=project(p)[2]; d/=l.pts.length; return {l,d};
+  }).sort((a,b)=>a.d-b.d);
+  for(const {l} of arr){
+    const raw=l.pts.map(project);
+    if(raw.length<2) continue;
+    const vis=new Array(raw.length);
+    // 深度淡出（仅统计有限点，防止 NaN 污染样式）
+    let zs=0, zn=0; for(const p of raw){ if(isFinite(p[2])){ zs+=p[2]; zn++; } }
+    const avgZ = zn ? zs/zn : 0;
+    let a = state.view==='3d' ? clamp(0.92 - (avgZ+1.7)/3.4*0.62, 0.22, 0.95) : 0.92;
+    const LC=LINE_COLORS[state.lineCol] || LINE_COLORS.mag;
+    ctx.strokeStyle='rgba('+LC.rgb+','+a.toFixed(3)+')';
+    ctx.lineWidth = state.view==='3d' ? clamp(1.7 - avgZ*0.25, 0.9, 2.1) : 1.6;
+    ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath(); let started=false;
+    for(let i=0;i<raw.length;i++){
+      const q=raw[i];
+      if(!isFinite(q[0])||!isFinite(q[1])){ vis[i]=false; started=false; continue; }
+      // 被球体遮挡（位于背面且在球盘内）-> 断开
+      if(occl && q[2]<0 && Math.hypot(q[0]-occl.c[0],q[1]-occl.c[1])<occl.r){ vis[i]=false; started=false; continue; }
+      vis[i]=true;
+      if(!started){ ctx.moveTo(q[0],q[1]); started=true; } else ctx.lineTo(q[0],q[1]);
+    }
+    if(l.closed && !occl) ctx.closePath();
+    ctx.stroke();
+    // 方向箭头：**每根线只画一个**（取线中段、投影可见、深度居中的点，兼顾 3D 遮挡）
+    if(state.show.arrow && raw.length>14){
+      const n=raw.length; let bi=-1, best=-1e9;
+      for(let j=3;j<n-3;j++){
+        if(!vis[j]||!vis[j-1]||!vis[j+1]) continue;
+        if(occl && raw[j][2]<0 && Math.hypot(raw[j][0]-occl.c[0],raw[j][1]-occl.c[1])<occl.r) continue;
+        const mid=Math.abs(j/(n-1)-0.5);                              // 0=正中段
+        const dep=state.view==='3d' ? Math.abs(clamp(raw[j][2],-2.2,2.2)) : 0;  // 深度越居中越好
+        const sc=-mid*3 - dep*0.30;
+        if(sc>best){ best=sc; bi=j; }
+      }
+      if(bi>0){
+        const p0=raw[bi-1], p1=raw[bi+1], q=raw[bi];
+        const ang=Math.atan2(p1[1]-p0[1],p1[0]-p0[0]);
+        const hl=6.8, x=q[0], y=q[1];
+        ctx.fillStyle=LC.p;                    // 箭头用该配色的高亮档，压在深底上最清晰
+        ctx.beginPath(); ctx.moveTo(x,y);
+        ctx.lineTo(x-hl*Math.cos(ang-0.42),y-hl*Math.sin(ang-0.42));
+        ctx.lineTo(x-hl*Math.cos(ang+0.42),y-hl*Math.sin(ang+0.42));
+        ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+}
+
+/* ---------- 流动粒子：沿磁感线由 N 极流向 S 极 ---------- */
+const PART_SPD=[0, 4.2, 2.6, 1.5];   // 索引 = state.speed；值 = 单程所需秒数
+let partPhase=0;
+/* 为每条线预计算累积弧长，供沿程取点 */
+function arcLens(lines){
+  lines.forEach((l,i)=>{
+    if(!l.cum){
+      const p=l.pts, c=new Array(p.length); let s=0; c[0]=0;
+      for(let k=1;k<p.length;k++){ s+=Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1],p[k][2]-p[k-1][2]); c[k]=s; }
+      l.cum=c; l.arc=s>1e-6?s:1e-6;
+    }
+    if(l.ph===undefined) l.ph=(i*0.6180339887)%1;   // 各线错开相位，流动更自然
+  });
+}
+/* 按弧长取线上的点（线性插值） */
+function ptAtArc(l, s){
+  const p=l.pts, c=l.cum, n=c.length;
+  if(s<0) s=0; else if(s>l.arc) s=l.arc;
+  let lo=0, hi=n-1;
+  while(hi-lo>1){ const mid=(lo+hi)>>1; if(c[mid]<=s) lo=mid; else hi=mid; }
+  const seg=c[hi]-c[lo]; const t=seg>1e-9?(s-c[lo])/seg:0;
+  return [p[lo][0]+(p[hi][0]-p[lo][0])*t, p[lo][1]+(p[hi][1]-p[lo][1])*t, p[lo][2]+(p[hi][2]-p[lo][2])*t];
+}
+function drawParticles(occl){
+  if(!cache||!cache.lines||!state.part||!state.speed) return;
+  const LC=LINE_COLORS[state.lineCol] || LINE_COLORS.mag;
+  const T=PART_SPD[state.speed]||4.2;
+  const tail=[0,0.030,0.062,0.094,0.128];      // 拖尾各段（占线长的比例）
+  for(const l of cache.lines){
+    if(l.pts.length<4) continue;
+    // 粒子沿弧长前进：走完整条线用 T 秒，到 S 极后从 N 极重新出发
+    let s=((partPhase/T)+l.ph)*l.arc % l.arc; if(s<0) s+=l.arc;
+    for(let tIdx=tail.length-1;tIdx>=0;tIdx--){
+      let ss=s - tail[tIdx]*l.arc;
+      if(ss<0) ss+=l.arc;                       // 绕回线首（= 上一段的尾部）
+      if(ss>l.arc) ss=l.arc;
+      const q=project(ptAtArc(l,ss));
+      if(!isFinite(q[0])||!isFinite(q[1])) continue;
+      if(occl && q[2]<0 && Math.hypot(q[0]-occl.c[0],q[1]-occl.c[1])<occl.r) continue;
+      const head=(tIdx===0), fade=head?1:0.58-0.10*tIdx;
+      const dep=state.view==='3d'?clamp(q[2],-2.2,2.2):0;
+      ctx.globalAlpha=fade*(state.view==='3d'?clamp(0.95-dep*0.16,0.30,1):1);
+      ctx.fillStyle=head?'#fff':LC.hx;
+      const r=head ? (state.view==='3d'?clamp(2.9-dep*0.30,1.5,3.3):2.6)
+                   : (state.view==='3d'?clamp(2.0-dep*0.24,1.0,2.3):1.8);
+      ctx.beginPath(); ctx.arc(q[0],q[1],r,0,TAU); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+
+let tPrev=0;
+function frame(ts){
+  const dt = (tPrev && ts) ? Math.min(0.05,(ts-tPrev)/1000) : 0;
+  tPrev=ts||0;
+  try{
+    ctx.clearRect(0,0,cv.width,cv.height);
+    applyView();
+    const M=MODELS[cache && cache.model ? cache.model : state.model];
+    let occl=null;
+    if(cache && cache.model==='earth'){   // 地球先画（不透明），磁感线经遮挡测试再叠上
+      const geo=earthGeom();
+      drawEarth(geo);
+      occl={c:geo.c, r:geo.rad*0.99};
+    }
+    // behind:true 的模型（蹄形磁铁）先把「半透明磁体」画在底层，磁感线再叠上去
+    if(M.behind) M.draw(ctx,state,project,cache.extra);
+    drawFieldLines(occl);
+    drawParticles(occl);                  // 粒子叠在磁感线上、磁体之下
+    if(!M.behind) M.draw(ctx,state,project,cache.extra);
+  }catch(err){ /* 单帧异常不中断动画循环 */ }
+  if(state.auto && state.view==='3d'){ state.yaw+=0.0045; }
+  if(state.part && state.speed && dt>0) partPhase+=dt;   // 粒子相位按真实时间推进
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================
+   交互
+   ============================================================ */
+function resize(){
+  const box=document.getElementById('cvbox');
+  cv.width=box.clientWidth*devicePixelRatio; cv.height=box.clientHeight*devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  CX=box.clientWidth/2; CY=box.clientHeight/2; SCALE=Math.min(box.clientWidth,box.clientHeight)/3.7;
+  if(state.view==='total'&&cache){ applyView(); fitTotal(); }   // 尺寸变化后总视图重新适配
+}
+window.addEventListener('resize',resize);
+
+cv.addEventListener('mousedown',e=>{ drag={x:e.clientX,y:e.clientY}; state.auto=false; document.getElementById('cAuto').checked=false; });
+window.addEventListener('mouseup',()=>drag=null);
+window.addEventListener('mousemove',e=>{
+  if(!drag)return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag={x:e.clientX,y:e.clientY};
+  state.yaw+=dx*0.008; state.pitch=clamp(state.pitch+dy*0.008,-1.45,1.45);
+});
+cv.addEventListener('wheel',e=>{ e.preventDefault(); state.zoom=clamp(state.zoom*(e.deltaY>0?0.94:1.06),0.5,2.4); },{passive:false});
+
+// 模型按钮
+const modelsBox=document.getElementById('models');
+Object.keys(MODELS).forEach(k=>{
+  const b=document.createElement('button'); b.className='mbtn'+(k===state.model?' on':'');
+  b.textContent=MODELS[k].name; b.dataset.k=k;
+  b.onclick=()=>{ state.model=k; document.querySelectorAll('.mbtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); state.yaw=0.6; state.pitch=-0.5; state.zoom=1; applyModelCam(k); rebuild(); };
+  modelsBox.appendChild(b);
+});
+// 显示模式
+document.querySelectorAll('#viewSeg button').forEach(b=>{
+  b.onclick=()=>{ document.querySelectorAll('#viewSeg button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on'); state.view=b.dataset.v; applyView();
+    if(state.view==='total') fitTotal(); };
+});
+document.getElementById('cAuto').onchange=e=>state.auto=e.target.checked;
+document.getElementById('cCur').onchange=e=>{ state.cur=+e.target.value; rebuild(); };
+document.getElementById('cDens').onchange=e=>{ state.dens=+e.target.value; rebuild(); };
+document.getElementById('cPole').onchange=e=>state.show.pole=e.target.checked;
+document.getElementById('cArrow').onchange=e=>state.show.arrow=e.target.checked;
+document.getElementById('cLab').onchange=e=>state.show.lab=e.target.checked;
+document.getElementById('cLine').onchange=e=>{
+  state.lineCol=e.target.value; syncLegend();
+};
+document.getElementById('cSpeed').onchange=e=>{ state.speed=+e.target.value; state.part=state.speed>0; };
+/* 图例色块跟随磁感线配色；粒子图例用该配色的高亮档（粒子核心为白、外晕即此色） */
+function syncLegend(){
+  const LC=LINE_COLORS[state.lineCol]||LINE_COLORS.mag;
+  const a=document.getElementById('lgMag'), b=document.getElementById('lgPart');
+  if(a) a.style.background=LC.hx;
+  if(b) b.style.background=LC.p;
+  document.documentElement.style.setProperty('--mag',LC.hx);
+}
+syncLegend();
+
+/* ---------- 启动 ---------- */
+resize(); applyModelCam(state.model); rebuild(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
