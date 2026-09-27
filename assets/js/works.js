@@ -3787,6 +3787,12 @@ const WORKS = [
       desc:"细管类碰撞模型：小球 C 与光滑细管弹性碰撞后，A、B 沿管壁滑动并再次相遇，用动量与动能守恒求管速、管位移与 A 的最大速度位置，含零JS动画与折叠解题。",
       icon:"📐", cover:"assets/img/thin-tube-collision-cover.png", link:"solutions/thin-tube-collision.html", date:"2026-09-27", tag:"动量"
     }
+,
+      {
+      type:"solve", title:"斜传送带与货架板块 · 平抛衔接多过程",
+      desc:"平抛衔接斜传送带与双货架板块模型：由「刚好无碰撞」反推平抛初速度，再求物块到达带底 C 的动能，最后用摩擦力供需关系判定货架 D、E 静止与否并求 E 的最小长度，含零JS四面板动画（平抛 / 斜带 / 货架 / v-t）与折叠解题。",
+      icon:"📐", cover:"assets/img/incline-conveyor-shelf-cover.png", link:"solutions/incline-conveyor-shelf-solve.html", date:"2026-09-27", tag:"力学"
+    }
 ];
 
 
