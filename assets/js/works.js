@@ -3793,6 +3793,12 @@ const WORKS = [
       desc:"2027 届南京零模 T15：平抛衔接斜传送带与双货架板块模型——由「刚好无碰撞」反推平抛初速度，再求物块到达带底 C 的动能，最后用摩擦力供需关系判定货架 D、E 静止与否并求 E 的最小长度，含零JS四面板动画（平抛 / 斜带 / 货架 / v-t）与折叠解题。",
       icon:"📐", cover:"assets/img/incline-conveyor-shelf-cover.png", link:"solutions/incline-conveyor-shelf-solve.html", date:"2026-09-27", tag:"力学"
     }
+,
+      {
+      type:"animation", title:"磁场磁感线空间分布（六模型 3D）",
+      desc:"地磁场、条形磁铁、蹄形磁铁、通电直导线、环形电流、通电螺旋管六种磁场的三维磁感线分布：可拖动旋转、滚轮缩放，三维视图与总视图一键切换，磁感线按弧长流动的粒子由 N 极流向 S 极，N 极红 / S 极蓝 / 磁感线配色与电流方向（绿）可调，右侧同步归纳物理规律与易错点。",
+      icon:"🧲", cover:"assets/img/magnetic-field-lines-cover.png", link:"animations/magnetic-field-lines.html", date:"2026-09-27", tag:"磁场"
+    }
 ];
 
 
