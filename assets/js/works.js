@@ -3775,6 +3775,12 @@ const WORKS = [
       desc:"传送带+长木板多过程动力学综合题：滑块沿传送带两段加速后滑上长木板，二者共速再一起减速停下，含零JS动画与折叠解题。",
       icon:"📐", cover:"assets/img/conveyor-plank-cover.png", link:"solutions/conveyor-plank-solve.html", date:"2026-09-27", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"传送带+长木板 v-t 动态图像",
+      desc:"传送带+长木板 v-t 动态图像：滑块与木板速度随时间变化的动态曲线，标出落地、共速与停下关键帧，面积直观对应相对滑动位移。",
+      icon:"📐", cover:"assets/img/conveyor-plank-vt-cover.png", link:"solutions/conveyor-plank-vt.html", date:"2026-09-27", tag:"力学"
+    }
 ];
 
 
