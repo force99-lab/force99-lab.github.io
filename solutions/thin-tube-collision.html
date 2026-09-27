@@ -323,15 +323,23 @@ details.step[open]>summary::before{content:'\25BC'}
           细管对地速度为 u，R = 1（长度与速度同单位）：<br>
           v<sub>A</sub> = (u − w<sub>A</sub> sinθ, w<sub>A</sub> cosθ)，&nbsp;
           v<sub>B</sub> = (u + w<sub>B</sub> sinθ, −w<sub>B</sub> cosθ)。<br>
-          <b>① 两个守恒式。</b>水平动量：3u + (w<sub>B</sub> − w<sub>A</sub>) sinθ = 2v₀ …(i)；
-          动能：u² + |v<sub>A</sub>|² + |v<sub>B</sub>|² = 4v₀²/9 …(ii)。<br>
-          <b>② 极值条件。</b>|v<sub>A</sub>| 取极值时 v<sub>A</sub>·a<sub>A</sub> = 0，代入约束解得
-          <span class="res">u = 0</span>（细管瞬时静止）。此时 (i) 给出
-          (w<sub>B</sub> − w<sub>A</sub>) sinθ = 2v₀/3；(ii) 给出 w<sub>A</sub>² + w<sub>B</sub>² = 4v₀²/9，
-          联立得 w<sub>A</sub> = −w<sub>B</sub> = −v₀/(3 sinθ)。<br>
-          <b>③ 定位置。</b>由 w<sub>A</sub>² ≤ 4v₀²/9 得 sinθ ≥ 1/2；A 沿管逆时针滑动，第一次到达
-          sinθ = √2/2 处即 θ = 135°，<span class="res">即 A 位于管内与 O′O 成 45° 的位置</span>，
-          此时 |v<sub>A</sub>| = |w<sub>A</sub>| = <span class="res">√2/3 v₀</span>（管速为零，管位移同时达到最大）。<br>
+          <b>① 两个守恒式（系统 = 管 + A + B）。</b>C 反弹后带走动量 (m/2)(−v₀/3) = −mv₀/6，
+          本系统动量不是 m₀v₀，而是 m₀v₀ − p<sub>C</sub> = 2mv₀/3：<br>
+          &nbsp;&nbsp;水平动量：3u + (w<sub>B</sub> − w<sub>A</sub>) sinθ = <span class="res">2v₀/3</span> …(i)；<br>
+          &nbsp;&nbsp;动能：u² + |v<sub>A</sub>|² + |v<sub>B</sub>|² = 4v₀²/9 …(ii)。<br>
+          <b>② 对称性与一条恒等式。</b>A、B 始终关于 O′O 轴对称（B 位于 −θ 处），故
+          <span class="res">w<sub>B</sub> = −w<sub>A</sub></span>，于是 |v<sub>A</sub>|² = |v<sub>B</sub>|² = u² + w<sub>A</sub>² − 2u w<sub>A</sub> sinθ。
+          代回 (ii) 立刻得到沿轨迹恒成立的关系式<br>
+          &nbsp;&nbsp;<span class="res">|v<sub>A</sub>|² + ½u² = 2v₀²/9</span><br>
+          ⟹ <b>|v<sub>A</sub>| 最大 ⟺ 管速 u = 0</b>（细管瞬时静止，管位移同时取极值），
+          <span class="res">u = 0</span>。<br>
+          <b>③ 定位置。</b>u = 0 时 (i) 化为 −2w<sub>A</sub> sinθ = 2v₀/3，即
+          w<sub>A</sub> = −v₀/(3 sinθ)，且此时 |v<sub>A</sub>| = |w<sub>A</sub>|；
+          再由恒等式 |v<sub>A</sub>|² = 2v₀²/9 得 v₀²/(9 sin²θ) = 2v₀²/9 ⟹
+          sin²θ = 1/2 ⟹ sinθ = √2/2。<br>
+          A 沿管逆时针滑动（θ 由 90° 增大），第一次到达 sinθ = √2/2 即 θ = 135°，
+          <span class="res">即 A 位于管内与 O′O 成 45° 的位置</span>，
+          此时 |v<sub>A</sub>| = <span class="res">√2/3 v₀</span>（管速为零，管位移同时达到最大）。<br>
           <b>④ 之后每次经过该位置。</b>仍在 θ = 135°（sinθ = √2/2）处，由 (i)(ii) 同样解得
           w<sub>A</sub> = −w<sub>B</sub> = ±√2/3 v₀，故
           |v<sub>A</sub>|² = u² ∓ (2/3)u v₀ + 2v₀²/9。结合管速在 u ∈ [−2v₀/9, 2v₀/3] 间摆动：<br>
@@ -355,6 +363,16 @@ details.step[open]>summary::before{content:'\25BC'}
       <details class="coll"><summary>⚠️ 易错点3：把"经过 45° 位置"当成"速度最大"</summary>
         <div class="coll-body">A 每次经过与 O′O 成 45° 的位置时速率并不相同（奇数次 √10/9 v₀、偶数次 √2/3 v₀），
         只有 <i>第一次真正达到速度极大</i> 的那一次（u = 0）才取 √2/3 v₀。混淆二者会误答 √10/9 v₀。</div></details>
+      <details class="coll"><summary>⚠️ 易错点4：把"管+A+B"的动量当成 m₀v₀</summary>
+        <div class="coll-body">C 反弹时带走动量 (m/2)(−v₀/3) = −mv₀/6，所以碰后"管+A+B"系统的动量是
+        m₀v₀ − p<sub>C</sub> = mv₀/2 + mv₀/6 = <b>2mv₀/3</b>，而不是 m₀v₀ = mv₀/2。
+        写成 3u + (w<sub>B</sub> − w<sub>A</sub>)sinθ = 2v₀（漏了 /3）时，(i)(ii) 联立<b>无实数解</b>：
+        判别式 Δ &lt; 0，且 u = 0 会要求 sin²θ ≥ 4.5 &gt; 1。</div></details>
+      <details class="coll"><summary>⚠️ 易错点5：漏掉 w_B = −w_A，把极值做成"流形上取最大"</summary>
+        <div class="coll-body">A、B 始终关于 O′O 轴对称（B 在 −θ 处），故 w<sub>B</sub> = −w<sub>A</sub>，
+        由此才得到恒等式 |v<sub>A</sub>|² + ½u² = 2v₀²/9。若把 w<sub>A</sub>、w<sub>B</sub> 当独立变量、
+        直接在 (i)(ii) 的约束流形上求 |v<sub>A</sub>| 的最大值，会得到 2v₀/3（落在 w<sub>B</sub> = 0 的边界上），
+        那是一个动力学<b>永远到不了</b>的状态，比真实最大值 √2/3 v₀ 大了 41%。</div></details>
       <details class="coll"><summary>💡 总结1：本模型两条主线</summary>
         <div class="coll-body">①<b>碰撞</b>：单层弹性碰撞（m₀ : m）直接给出管速 2v₀/3 与 C 的 −v₀/3；
         ②<b>碰撞后</b>：管 + A + B 组成的系统<b>水平动量守恒、动能守恒</b>，
@@ -363,6 +381,12 @@ details.step[open]>summary::before{content:'\25BC'}
         <div class="coll-body">数值积分显示 u 在 [−2v₀/9, 2v₀/3] 间往复摆动，u<sub>max</sub> 恰为碰后瞬间的 2v₀/3，
         u = 0 出现在 A 第一次速度最大的时刻，此时管位移也达到最大 x<sub>max</sub> = 1.6239 R。
         系统动能恒为 (2/9)m v₀²，可随时作为校验。</div></details>
+      <details class="coll"><summary>💡 总结3：一条恒等式顶半个动力学</summary>
+        <div class="coll-body">由对称性 w<sub>B</sub> = −w<sub>A</sub> ⟹ |v<sub>A</sub>| = |v<sub>B</sub>|，
+        动能守恒式 (ii) 立刻化为 <b>|v<sub>A</sub>|² + ½u² = 2v₀²/9</b>（沿轨迹恒成立）。
+        它一步给出三个结论：①|v<sub>A</sub>| 最大 ⟺ u = 0（管速为零、管位移最大同时发生）；
+        ②|v<sub>A</sub>|<sub>max</sub> = √(2/9)v₀ = √2/3 v₀；③初态 u = 2v₀/3 时 |v<sub>A</sub>| = 0（A、B 确在管中静止）。
+        讲课时用它替代"v·a = 0"的隐晦极值条件，学生更容易接受。</div></details>
     </div>
   </div>
 </section>
