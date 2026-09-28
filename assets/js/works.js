@@ -3799,6 +3799,12 @@ const WORKS = [
       desc:"地磁场、条形磁铁、蹄形磁铁、通电直导线、环形电流、通电螺旋管六种磁场的三维磁感线分布：可拖动旋转、滚轮缩放，三维视图与总视图一键切换，磁感线按弧长流动的粒子由 N 极流向 S 极，N 极红 / S 极蓝 / 磁感线配色与电流方向（绿）可调，右侧同步归纳物理规律与易错点。",
       icon:"🧲", cover:"assets/img/magnetic-field-lines-cover.png", link:"animations/magnetic-field-lines.html", date:"2026-09-27", tag:"磁场"
     }
+,
+      {
+      type:"animation", title:"关联速度 02 · 四模型交互演示",
+      desc:"关联速度四模型（悬线抽动 / 双圆环交点 / 剪叉伸缩机构 / 斜抛影子投影）交互动画：匀速拉动下各点速度的矢量分解与线性分配，附 v–x 直线图与 Y–t 影子图佐证。",
+      icon:"🎬", cover:"assets/img/related-velocity-02-cover.png", link:"animations/related-velocity-02.html", date:"2026-09-28", tag:"关联速度"
+    }
 ];
 
 
