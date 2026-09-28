@@ -1,0 +1,1479 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>关联速度 02 · 光盘带动悬线 &amp; 两圆环交点 &amp; 剪叉伸缩机构 &amp; 墙上影子</title>
+<style>
+:root{
+  --bg:#0a0e1a; --line:rgba(74,159,216,.24); --txt:#dce8f5; --sub:#93aac2;
+  --blue:#4a9fd8; --cyan:#5fd0c8; --orange:#ffb567;
+  --red:#ff5a6e; --violet:#b18cff; --gold:#ffd24d;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:
+    radial-gradient(1100px 640px at 14% -12%,rgba(74,159,216,.16),transparent 62%),
+    radial-gradient(900px 560px at 102% 0%,rgba(95,208,200,.09),transparent 58%),
+    var(--bg);
+  color:var(--txt); min-height:100vh;
+  font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+header{max-width:1600px;margin:0 auto;padding:13px 18px 4px}
+header h1{margin:0;font-size:19px;letter-spacing:.3px;font-weight:700}
+header h1 span{color:var(--cyan)}
+header p{margin:3px 0 0;font-size:13px;color:var(--sub)}
+main{max-width:1600px;margin:0 auto;padding:6px 16px 18px;display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+/* 每一行 = 左侧动画区 + 右侧（控制交互 + 物理知识归纳） */
+.arow{display:grid;grid-template-columns:1.58fr 1fr;gap:14px;align-items:start;min-width:0}
+@media (max-width:1180px){.arow{grid-template-columns:1.36fr 1fr}}
+@media (max-width:1000px){.arow{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card{background:linear-gradient(180deg,rgba(16,26,42,.88),rgba(11,18,30,.93));
+      border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.30)}
+.stage{padding:9px 12px 9px}
+.cap{font-size:13px;color:var(--sub);margin:0 0 5px 2px}
+.cap b{color:var(--cyan);font-size:14px;margin-right:7px}
+canvas{display:block;width:100%;height:clamp(276px,38vh,412px);border-radius:10px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 8px;font-size:12.5px;color:var(--sub)}
+button{font:inherit;font-size:12.5px;color:var(--txt);cursor:pointer;padding:4px 12px;border-radius:8px;
+  background:rgba(74,159,216,.13);border:1px solid rgba(74,159,216,.38);transition:.16s}
+button:hover{background:rgba(74,159,216,.24);border-color:rgba(74,159,216,.72)}
+button.on{background:rgba(95,208,200,.20);border-color:rgba(95,208,200,.75);color:#bff5ee}
+label.chk{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
+input[type=checkbox]{accent-color:#4a9fd8;width:14px;height:14px;cursor:pointer;margin:0}
+input[type=range]{width:96px;accent-color:#5fd0c8;cursor:pointer;vertical-align:middle;margin:0}
+.know{padding:10px 13px 12px;font-size:12.5px;line-height:1.6}
+.know h2{margin:0 0 6px;font-size:14px;color:var(--cyan)}
+.know p{margin:2.5px 0}
+.know .k{color:var(--gold)} .know .hl{color:#fff;font-weight:600}
+.box{margin:7px 0 0;padding:7px 10px;border-radius:9px;border-left:3px solid}
+.box b{color:#fff}
+.box.key{background:rgba(255,181,103,.08);border-color:var(--orange)}
+.box.warn{background:rgba(255,90,110,.09);border-color:var(--red)}
+table.ro{width:100%;border-collapse:collapse;margin-top:7px;font-size:12.5px}
+table.ro td{padding:2.5px 0;border-bottom:1px dashed rgba(74,159,216,.16)}
+table.ro td:last-child{text-align:right;color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+.mono{font-family:Consolas,"SF Mono",Menlo,monospace}
+
+/* ---------- 动画 3：左侧「机构图 + v–x 直线图」并排 ---------- */
+.duo{display:grid;grid-template-columns:1.62fr 1fr;gap:10px}
+.duo canvas{height:clamp(288px,42vh,414px)}
+@media (max-width:1000px){
+  .duo{grid-template-columns:1fr}
+  .duo canvas{height:clamp(232px,34vh,320px)}
+}
+/* ---------- 动画 4：左侧「情景图 + Y–t 图」上下排布 ---------- */
+.a4pair{display:grid;gap:10px}
+.a4pair #cv4{height:clamp(292px,44vh,430px)}
+.a4pair #cv4g{height:clamp(150px,20vh,206px)}
+.a4lg{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 0;font-size:11.8px;color:var(--sub)}
+.a4lg b{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.a4lg i{width:9px;height:9px;border-radius:50%;display:inline-block}
+#ctrls4{display:grid;gap:7px;margin:2px 0 0}
+#ctrls4 .row{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;font-size:12.5px;color:var(--sub)}
+#ctrls4 label{white-space:nowrap}
+#ctrls4 input[type=range]{width:100%;min-width:92px}
+#ctrls4 .val{color:#fff;font-weight:600;font-variant-numeric:tabular-nums;min-width:64px;text-align:right}
+#ro4 td.hl{color:var(--cyan);font-weight:700}
+#ro4 td.hlo{color:var(--gold);font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <h1>关联速度 · <span>02</span></h1>
+  <p>动画 1　光盘带动悬线 —— 铁球的速度　｜　动画 2　两圆环分离 —— 交点的速度　｜　动画 3　剪叉式伸缩机构 —— 各铰接点的速度　｜　动画 4　点光源斜抛 —— 墙上影子的速度</p>
+</header>
+
+<main>
+  <!-- ============ 动画1 ============ -->
+  <div class="arow">
+    <div class="card stage">
+      <div class="cap"><b>动画 1</b>手推光盘在桌面上平移，悬线紧贴桌子边缘被「抽」动</div>
+      <canvas id="cv1"></canvas>
+    </div>
+    <div class="card know">
+      <div class="bar">
+        <button id="b1p" class="on">暂停</button>
+        <button id="b1r">重置</button>
+        <label class="chk"><input type="checkbox" id="c1d" checked>速度分解</label>
+        <label class="chk"><input type="checkbox" id="c1b" checked>标出终点 B</label>
+        <label class="chk">速率<input type="range" id="r1v" min="0.5" max="1.8" step="0.05" value="1"></label>
+      </div>
+      <h2>动画 1 · 光盘带动悬线（铁球的速度）</h2>
+      <p><span class="hl">研究对象</span>：细线与光盘的<span class="k">接触点</span>（盘孔处那一点）——
+        它的真实运动就是光盘的运动，速度 <span class="mono">v</span> 水平。</p>
+      <p>把 <span class="mono">v</span> 按「<span class="k">沿绳</span> ＋ <span class="k">垂直绳</span>」正交分解：</p>
+      <p>· 沿绳分量 <span class="mono">v<sub>∥</sub> = v·sin θ</span>　← 使悬线沿自身方向被抽长</p>
+      <p>· 垂直绳分量 <span class="mono">v<sub>⊥</sub> = v·cos θ</span>　← 只改变悬线的方向</p>
+      <p>悬线不可伸长：<span class="hl">沿绳方向的速度＝铁球上升的速度</span>，即 <span class="mono">v<sub>球y</sub> = v·sin θ</span>。</p>
+      <p>铁球同时随光盘一起水平移动（绳下段始终竖直、始终在盘孔正下方），故 <span class="mono">v<sub>球x</sub> = v</span>。</p>
+      <p>合速度：<span class="mono">v′ = √(v² + (v·sin θ)²)</span>，方向斜向右上方。</p>
+      <div class="box key"><b>高考通法</b>　凡「绳／杆连着物体」的关联速度题，都以<b>接触点（绳的折点）</b>为研究对象，
+        把它的实际运动按<b>沿绳方向＋垂直绳方向</b>分解，再抓住「沿绳方向的速度＝绳的伸缩速率」这一步。</div>
+      <div class="box warn">
+        <b>易错</b><br>
+        ✗ 认为铁球速度就是 v —— 那是接触点（盘）的速度，不是球的速度。<br>
+        ✗ 认为铁球只竖直上升、水平不动 —— 铁球随光盘一起水平移动，<span class="mono">v<sub>球x</sub> = v</span>。<br>
+        ✗ sin θ 与 cos θ 用反 —— 沿绳分量必须由 <span class="mono">v</span> 沿绳方向投影得到，θ 是悬线与竖直方向的夹角。
+      </div>
+      <table class="ro">
+        <tr><td>悬线与竖直夹角 θ</td><td id="o1t">—</td></tr>
+        <tr><td>铁球竖直速度 v<sub>球y</sub> = v·sin θ</td><td id="o1y">—</td></tr>
+        <tr><td>铁球水平速度 v<sub>球x</sub> = v</td><td id="o1x">—</td></tr>
+        <tr><td>铁球相对地面速度 v′</td><td id="o1v">—</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ 动画2 ============ -->
+  <div class="arow">
+    <div class="card stage">
+      <div class="cap"><b>动画 2</b>两圆环由重合处分别向左、向右运动 —— 交点的速度</div>
+      <canvas id="cv2"></canvas>
+    </div>
+    <div class="card know">
+      <div class="bar">
+        <button id="b2p" class="on">暂停</button>
+        <button id="b2r">重置</button>
+        <label class="chk"><input type="checkbox" id="c2v" checked>交点速度矢量</label>
+        <label class="chk"><input type="checkbox" id="c2a" checked>半径与 α 角</label>
+        <label class="chk">速率<input type="range" id="r2v" min="0.5" max="1.8" step="0.05" value="1"></label>
+      </div>
+      <h2>动画 2 · 两圆环分离（交点的速度）</h2>
+      <p>两等圆半径 <span class="mono">R</span>，圆心 <span class="mono">C₁(−x,0)</span>、<span class="mono">C₂(+x,0)</span>
+        以相同速率 <span class="mono">v</span> 反向分离。由对称性，交点 <span class="mono">P(0, ±y)</span> 恒在
+        <span class="k">两圆心连线的中垂线</span>上。</p>
+      <p><span class="hl">约束法（推荐）</span>：P 同时在两圆上 →
+        <span class="mono">(P−C₁)·v<sub>P</sub> = (P−C₁)·v<sub>C₁</sub></span>，
+        <span class="mono">(P−C₂)·v<sub>P</sub> = (P−C₂)·v<sub>C₂</sub></span>。两式相减得
+        <span class="mono">v<sub>Px</sub> = 0</span>，代回得</p>
+      <p><span class="mono">v<sub>P</sub> = v·x / y = v·cot α</span>　（α ＝ 半径 C₁P 与运动方向的夹角）</p>
+      <p>方向：<span class="k">沿中垂线</span>（垂直于两圆心连线）。分离时上交点向下、下交点向上 ——
+        <span class="hl">两交点相互靠近</span>。</p>
+      <div class="box key"><b>极限与定性</b>　刚重合时 <span class="mono">x→0</span>，
+        <span class="mono">v<sub>P</sub>→0</span>（交点从静止起步）；濒临分离时 <span class="mono">y→0</span>，
+        <span class="mono">v<sub>P</sub>→∞</span>（交点速度急剧增大）。所以交点绝非匀速运动。</div>
+      <div class="box warn">
+        <b>易错</b><br>
+        ✗ 认为交点随两圆一起水平移动 —— 由对称性，交点速度的<b>水平分量恒为 0</b>。<br>
+        ✗ 认为交点做匀速运动 —— 它随两圆分离而加速。<br>
+        ✗ α 抓错 —— α 是半径与<b>运动方向</b>（水平）的夹角，不是与竖直方向的夹角。
+      </div>
+      <table class="ro">
+        <tr><td>圆心到中垂线距离 x</td><td id="o2x">—</td></tr>
+        <tr><td>交点纵坐标 y = √(R²−x²)</td><td id="o2y">—</td></tr>
+        <tr><td>半径与运动方向夹角 α</td><td id="o2a">—</td></tr>
+        <tr><td>圆心速率 v</td><td id="o2v">—</td></tr>
+        <tr><td>交点速度 v<sub>P</sub> = v·cot α</td><td id="o2p">—</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ 动画3 ============ -->
+  <div class="arow">
+    <div class="card stage">
+      <div class="cap"><b>动画 3</b>向右以速度 V 拉动三单元剪叉式伸缩机构 —— 各铰接点的速度</div>
+      <div class="duo">
+        <canvas id="cv3"></canvas>
+        <canvas id="cv3g"></canvas>
+      </div>
+    </div>
+    <div class="card know">
+      <div class="bar">
+        <button id="b3p" class="on">暂停</button>
+        <button id="b3r">重置</button>
+        <label class="chk"><input type="checkbox" id="c3x" checked>水平速度分量</label>
+        <label class="chk"><input type="checkbox" id="c3y">竖直速度分量</label>
+        <label class="chk"><input type="checkbox" id="c3n" checked>速度数值标注</label>
+        <label class="chk"><input type="checkbox" id="c3r" checked>均分标尺</label>
+        <label class="chk">速率<input type="range" id="r3v" min="0.4" max="1.8" step="0.05" value="1"></label>
+      </div>
+      <h2>动画 3 · 剪叉式伸缩机构（各铰接点的速度）</h2>
+      <p>三单元剪叉机构由 <span class="hl">6 根等长杆</span>交叉铰接而成（杆长 2L、菱形边长 L）。
+        左端下铰点 <span class="mono">O</span> 固定、上铰点 <span class="mono">A</span> 沿竖直导轨滑动；
+        右端以速度 <span class="mono">V</span> 水平向右拉出。杆与水平的夹角记为 θ（菱形内角 α = 2θ）。</p>
+      <p><span class="hl">核心规律</span>：所有单元同步张合，<span class="k">相邻铰点的水平间距恒相等</span>（都是 L·cos θ），
+        所以总伸长 <span class="mono">ΔX = 6L·cos θ = 6L·cos(α/2)</span> 被 <span class="hl">均分成 6 段</span>、
+        每段伸长相同 ⇒</p>
+      <p><span class="mono">v<sub>x</sub>(铰点) = (x / ΔX) · V</span>　—— 每个铰点的<b>水平速度与它到固定端 O 的水平距离成正比</b>，
+        整条机构像橡皮筋一样被「<span class="k">均匀拉伸</span>」。</p>
+      <p>从固定端到末端，各铰点的水平速度依次为
+        <span class="mono">0、V/6、V/3、V/2、2V/3、5V/6、V</span>（相邻两档差恒为 V/6；正中间 C₂ 恰为 V/2）。</p>
+      <p><span class="hl">竖直方向</span>：拉出时 θ 变小，机构同时被「压扁」——上排铰点以
+        <span class="mono">v<sub>y</sub> = (V/3)·cot θ</span> <b>向下</b>、交叉点 <span class="mono">(V/6)cot θ</span> 向下、下排不动，
+        即 <span class="mono">v<sub>y</sub> ∝ y</span>。</p>
+      <div class="box key"><b>高考重点</b>　剪叉（伸缩）机构属于「关联速度」里的<b>均分型</b>：
+        机构没有固定形状，各点速度按「<b>到固定端的距离</b>」线性分配，而且水平与竖直<b>两个方向同时按坐标比例分配</b>
+        （水平均匀拉长 + 竖直均匀压扁）。判别口诀：<b>先找不动的点（O），再看相邻铰点间距是否相等</b>。</div>
+      <div class="box warn">
+        <b>易错</b><br>
+        ✗ 认为「末端是 V，各铰点也就接近 V」——靠近固定端只有 V/6，越靠末端越快。<br>
+        ✗ 认为「越靠末端越慢」——方向记反了，这是最常见的错。<br>
+        ✗ 把 A 点（上排左端）当成固定点——只有下排左端 O 固定，A 在竖直导轨上滑动。<br>
+        ✗ 只顾水平、忘了竖直——拉出时机构整体「压扁」，上下排还各有竖直速度。
+      </div>
+      <table class="ro">
+        <tr><td>杆与水平夹角 θ（菱形内角 α = 2θ）</td><td id="o3t">—</td></tr>
+        <tr><td>总跨度 ΔX = 6L·cos θ</td><td id="o3x">—</td></tr>
+        <tr><td>末端拉动速度 V</td><td id="o3v">—</td></tr>
+        <tr><td>O（固定端）水平速度</td><td>0</td></tr>
+        <tr><td>C₁ / C₂ / C₃（交叉点）水平速度</td><td>V/6 · V/2 · 5V/6</td></tr>
+        <tr><td>第① / 第② 档上下铰点 水平速度</td><td>V/3 · 2V/3</td></tr>
+        <tr><td>末端 B₃ / T₃ 水平速度</td><td>V</td></tr>
+        <tr><td>上排铰点竖直速度（向下）</td><td id="o3y">—</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ 动画4 ============ -->
+  <div class="arow">
+    <div class="card stage">
+      <div class="cap"><b>动画 4</b>地面点光源距竖直墙 L，小球自光源处以 v₀、仰角 θ 斜抛 —— 墙上影子的运动特征</div>
+      <div class="a4pair">
+        <canvas id="cv4"></canvas>
+        <canvas id="cv4g"></canvas>
+      </div>
+      <div class="a4lg">
+        <b><i style="background:#5fd0c8"></i>影子高度 Y–t（青，直线）</b>
+        <b><i style="background:#ffb567"></i>小球高度 y–t（橙，抛物线）</b>
+        <b><i style="background:#ffd24d"></i>等时刻采样点</b>
+      </div>
+    </div>
+    <div class="card know">
+      <div class="bar">
+        <button id="b4p">⏸ 暂停</button>
+        <button id="b4r">⟲ 重置</button>
+        <label class="chk"><input type="checkbox" id="c4ray" checked>光路</label>
+        <label class="chk"><input type="checkbox" id="c4mk" checked>等时标记</label>
+        <label class="chk"><input type="checkbox" id="c4vc" checked>速度矢量</label>
+        <label class="chk"><input type="checkbox" id="c4yg">叠加 y–t</label>
+      </div>
+      <div id="ctrls4"></div>
+      <table class="ro"><tbody id="ro4"></tbody></table>
+
+      <h2 style="margin-top:11px">动画 4 · 点光源斜抛 —— 墙上影子的运动</h2>
+      <p><span class="hl">核心关系</span>：相似三角形 <span class="mono">Y/L = y/x</span> ⇒ <span class="mono">Y = L·y/x</span>；
+        代入 <span class="mono">x = v₀cosθ·t</span>、<span class="mono">y = v₀sinθ·t − ½gt²</span> 得</p>
+      <p><span class="mono">Y = L·tanθ − (gL / 2v₀cosθ) · t</span>　—— Y 是 t 的<span class="k">一次函数</span>。</p>
+      <p>所以影子做<span class="hl">匀速直线运动</span>（竖直向下），速度
+        <span class="mono">v<sub>影</sub> = gL / (2v₀cosθ)</span> 恒定 —— 与"球是否在变速"无关。</p>
+      <p><span class="hl">三个必记端点</span>：① t→0⁺ 影子已在最高处 <span class="mono">h₀ = L·tanθ</span>
+        （正是初速度方向延长线交墙之点）；② 球到最高点（t = T/2）时，影子恰在半高处
+        <span class="mono">Y = h₀/2</span>；③ 球落地（t = T）瞬间，影子同时落到墙脚 <span class="mono">Y = 0</span>。</p>
+      <div class="box key"><b>高考重点</b>　命题落在「判断影子运动性质 + 写出 v<sub>影</sub> 表达式」。
+        直觉上"球变速 ⇒ 影子变速"，这里必须顶住 —— 对 <span class="mono">Y = L·y/x</span> 求导，匀速是硬结论。
+        等时标记 Δt 相同 ⇒ 位移相同，图上倾斜直线是最直观的证据。</div>
+      <div class="box warn">
+        <b>易错</b><br>
+        ✗ 认为影子做变速运动 —— 错在把"球的运动"当成"影的运动"，必须对 Y = L·y/x 求<b>全导数</b>。<br>
+        ✗ 只用 <span class="mono">v<sub>影</sub> = v<sub>y</sub>·(L/x)</span> —— 漏掉"比值 y/x 自身在变"引出的第二项
+        <span class="mono">−L·y·v<sub>x</sub>/x²</span>（两项合并才恒定）。<br>
+        ✗ 以为球到最高点时影子也最高 —— 影子起点即最高点，全程单向下降。<br>
+        ✗ 忽略放大率陷阱 —— 投影放大率 <span class="mono">L/x</span> 全程变化很大，是 y 的变化恰好补偿才匀速。
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+const TAU = Math.PI*2;
+const $ = function(id){ return document.getElementById(id); };
+
+/* ---------------- 通用绘图原语 ---------------- */
+function arrow(G,x0,y0,x1,y1,col,w,head){
+  const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy);
+  if(L<1.4) return;
+  const hh=Math.min(head, L*0.62);          // 短矢量自动缩小箭头，避免"箭头比杆长"
+  const ux=dx/L, uy=dy/L, bx=x1-ux*hh, by=y1-uy*hh;
+  G.strokeStyle=col; G.lineWidth=w; G.lineCap='round';
+  G.beginPath(); G.moveTo(x0,y0); G.lineTo(bx,by); G.stroke();
+  G.fillStyle=col;
+  G.beginPath(); G.moveTo(x1,y1);
+  G.lineTo(bx-uy*hh*0.44, by+ux*hh*0.44);
+  G.lineTo(bx+uy*hh*0.44, by-ux*hh*0.44);
+  G.closePath(); G.fill();
+}
+function arrowH(G,x0,y0,x1,y1,col,w,head){
+  arrow(G,x0,y0,x1,y1,'rgba(255,255,255,.90)',w+4.0,head);
+  arrow(G,x0,y0,x1,y1,col,w,head);
+}
+function seg(G,x0,y0,x1,y1,col,w,dash){
+  G.save();
+  if(dash){ G.setLineDash(dash); }
+  G.strokeStyle=col; G.lineWidth=w; G.lineCap='round';
+  G.beginPath(); G.moveTo(x0,y0); G.lineTo(x1,y1); G.stroke();
+  G.restore();
+}
+function txt(G,s,x,y,col,font,align,base){
+  G.fillStyle=col; G.font=font||'12px "Microsoft YaHei",sans-serif';
+  G.textAlign=align||'left'; G.textBaseline=base||'middle';
+  G.fillText(s,x,y);
+}
+function dot(G,x,y,r,fill,stroke,lw){
+  G.beginPath(); G.arc(x,y,r,0,TAU);
+  if(fill){ G.fillStyle=fill; G.fill(); }
+  if(stroke){ G.strokeStyle=stroke; G.lineWidth=lw||1.2; G.stroke(); }
+}
+function wm(G,W,H){
+  G.save(); G.globalAlpha=.52;
+  G.fillStyle='rgba(225,242,240,.92)';
+  G.font='700 13px "Microsoft YaHei",sans-serif';
+  G.textAlign='right'; G.textBaseline='bottom';
+  G.fillText('force99', W-11, H-9);
+  G.restore();
+}
+// 沿「anchor→tip」方向再外推 k 像素：标签永远落在箭头尖端外侧，回放（方向反转）时同样成立
+function tipOff(tip,anchor,k){
+  const dx=tip[0]-anchor[0], dy=tip[1]-anchor[1], L=Math.hypot(dx,dy)||1;
+  return [tip[0]+dx/L*k, tip[1]+dy/L*k];
+}
+
+/* ================== 动画 1：光盘带动悬线 ================== */
+const A1 = {
+  H:2.4, L:3.8, x0:0.06, x1:2.55,       // 悬点高度 / 绳长 / 盘孔行程
+  KZ:[0.60,0.36],                        // 斜投影：深度方向在屏幕上的分量
+  DESK:{x0:-0.9, x1:5.4, z1:2.0, th:0.10, legY:-1.32, legIn:0.30},
+  x:0.06, dir:1, v:1.0, run:true, decomp:true, showB:true, hold:0
+};
+const V1 = { s:1, ox:0, oy:0 };
+let G1=null, W1=0, H1=0;
+
+function pj1(x,y,z){ return [x+z*A1.KZ[0], y+z*A1.KZ[1]]; }
+function setView1(){
+  const wx0=-1.05, wx1=6.80, wy0=-2.00, wy1=2.98;
+  const s=Math.min(W1/(wx1-wx0), H1/(wy1-wy0));
+  V1.s=s;
+  V1.ox=W1/2-(wx0+wx1)/2*s;
+  V1.oy=H1/2+(wy0+wy1)/2*s;
+}
+function P1(x,y,z){ const p=pj1(x,y,z); return [V1.ox+p[0]*V1.s, V1.oy-p[1]*V1.s]; }
+function st1(){
+  const x=A1.x, H=A1.H;
+  const OQ=Math.hypot(x,H), th=Math.atan2(x,H);
+  return { x:x, OQ:OQ, th:th, d:A1.L-OQ, cy:-(A1.L-OQ) };
+}
+
+function drawDesk(G){
+  const D=A1.DESK;
+  const top=[[D.x0,0,0],[D.x1,0,0],[D.x1,0,D.z1],[D.x0,0,D.z1]];
+  // 后腿（先画）
+  const legs=[[D.x0+D.legIn,D.z1-D.legIn],[D.x1-D.legIn,D.z1-D.legIn],
+              [D.x0+D.legIn,D.legIn],[D.x1-D.legIn,D.legIn]];
+  function leg(x,z){
+    const a=P1(x,0,z), b=P1(x,D.legY,z), w=Math.max(2.6,V1.s*0.075);
+    G.fillStyle='rgba(24,38,58,.96)'; G.strokeStyle='rgba(74,159,216,.32)'; G.lineWidth=1;
+    G.beginPath();
+    G.moveTo(a[0]-w,a[1]); G.lineTo(a[0]+w,a[1]);
+    G.lineTo(b[0]+w*0.85,b[1]); G.lineTo(b[0]-w*0.85,b[1]);
+    G.closePath(); G.fill(); G.stroke();
+    G.beginPath(); G.ellipse(b[0],b[1],w*1.5,w*0.62,0,0,TAU);
+    G.fillStyle='rgba(18,28,44,.95)'; G.fill(); G.stroke();
+  }
+  leg(legs[0][0],legs[0][1]); leg(legs[1][0],legs[1][1]);
+  // 桌面
+  G.beginPath();
+  top.forEach(function(p,i){ const q=P1(p[0],p[1],p[2]); i?G.lineTo(q[0],q[1]):G.moveTo(q[0],q[1]); });
+  G.closePath();
+  const qA=P1(D.x0,0,0), qB=P1(D.x1,0,D.z1);
+  const grd=G.createLinearGradient(qA[0],qA[1],qB[0],qB[1]);
+  grd.addColorStop(0,'rgba(34,53,78,.97)'); grd.addColorStop(.55,'rgba(26,42,64,.97)');
+  grd.addColorStop(1,'rgba(18,30,48,.97)');
+  G.fillStyle=grd; G.fill();
+  G.strokeStyle='rgba(74,159,216,.46)'; G.lineWidth=1.3; G.stroke();
+  // 前侧板（厚度）
+  const fA=P1(D.x0,0,0), fB=P1(D.x1,0,0), fC=P1(D.x1,-D.th,0), fD=P1(D.x0,-D.th,0);
+  G.beginPath();
+  G.moveTo(fA[0],fA[1]); G.lineTo(fB[0],fB[1]); G.lineTo(fC[0],fC[1]); G.lineTo(fD[0],fD[1]);
+  G.closePath(); G.fillStyle='rgba(14,24,38,.97)'; G.fill();
+  G.strokeStyle='rgba(74,159,216,.34)'; G.lineWidth=1.1; G.stroke();
+  // 前边缘高亮（"桌子的边缘"）
+  seg(G,fA[0],fA[1],fB[0],fB[1],'rgba(120,205,255,.85)',2.0);
+  // 前腿（后画）
+  leg(legs[2][0],legs[2][1]); leg(legs[3][0],legs[3][1]);
+}
+
+function drawCeil(G){
+  const y=A1.H, x0=-0.75, x1=5.3;
+  const a=P1(x0,y,0), b=P1(x1,y,0);
+  seg(G,a[0],a[1],b[0],b[1],'rgba(150,178,208,.55)',3.0);
+  // 斜纹（天花板示意）
+  G.save(); G.strokeStyle='rgba(150,178,208,.34)'; G.lineWidth=1.1;
+  for(let x=x0; x<x1; x+=0.26){
+    const p=P1(x,y,0), q=P1(x-0.13,y+0.16,0);
+    G.beginPath(); G.moveTo(p[0],p[1]); G.lineTo(q[0],q[1]); G.stroke();
+  }
+  G.restore();
+  const o=P1(0,y,0);
+  dot(G,o[0],o[1],4.4,'#0d1420','#cfe6ff',1.5);
+  txt(G,'天花板悬点',o[0]+9,o[1]-11,'rgba(190,214,236,.92)','12px "Microsoft YaHei",sans-serif','left','middle');
+}
+
+function discPath(G,x,rad,zoff,dash){
+  G.save();
+  if(dash) G.setLineDash([5,4]);
+  G.beginPath();
+  for(let i=0;i<=72;i++){
+    const a=TAU*i/72, p=P1(x+rad*Math.cos(a), 0+(zoff||0), rad*Math.sin(a));
+    i?G.lineTo(p[0],p[1]):G.moveTo(p[0],p[1]);
+  }
+  G.closePath();
+  return G;
+}
+function drawDisc(G,x,ghost){
+  const R=0.36, rIn=0.10;
+  G.lineCap='round';
+  // 盘体：外椭圆环
+  discPath(G,x,R,0,ghost);
+  if(ghost){
+    G.fillStyle='rgba(95,208,200,.07)';
+    G.strokeStyle='rgba(95,208,200,.72)'; G.lineWidth=1.6; G.stroke();
+  }else{
+    const c=P1(x,0,0);
+    G.strokeStyle='#c9d8e6'; G.lineWidth=2.2; G.stroke();
+    const g2=G.createRadialGradient(c[0]-R*V1.s*.4,c[1]-R*V1.s*.4,R*V1.s*.1,c[0],c[1],R*V1.s);
+    g2.addColorStop(0,'rgba(238,246,255,.96)');
+    g2.addColorStop(.45,'rgba(186,205,224,.94)');
+    g2.addColorStop(.82,'rgba(120,146,172,.94)');
+    g2.addColorStop(1,'rgba(72,94,118,.94)');
+    discPath(G,x,R,0,false); G.fillStyle=g2; G.fill();
+    G.strokeStyle='rgba(255,255,255,.62)'; G.lineWidth=1.2; G.stroke();
+    // 孔
+    discPath(G,x,rIn,0,false);
+    G.fillStyle='rgba(12,20,32,.96)'; G.fill();
+    G.strokeStyle='rgba(190,215,240,.55)'; G.lineWidth=1.1; G.stroke();
+  }
+  G.restore();
+}
+
+function drawBall(G,cx,cy,rad,ghost){
+  if(ghost){
+    G.save(); G.setLineDash([4,4]);
+    G.strokeStyle='rgba(255,206,120,.72)'; G.lineWidth=1.5;
+    G.beginPath(); G.arc(cx,cy,rad,0,TAU); G.stroke(); G.restore(); return;
+  }
+  G.save();
+  G.shadowColor='rgba(0,0,0,.45)'; G.shadowBlur=8; G.shadowOffsetY=2;
+  const g=G.createRadialGradient(cx-rad*.36,cy-rad*.38,rad*.12,cx,cy,rad);
+  g.addColorStop(0,'#fff0cc'); g.addColorStop(.34,'#ffcf6e');
+  g.addColorStop(.76,'#e09a26'); g.addColorStop(1,'#8c5308');
+  G.fillStyle=g; G.beginPath(); G.arc(cx,cy,rad,0,TAU); G.fill();
+  G.restore();
+  G.fillStyle='rgba(255,255,255,.55)';
+  G.beginPath(); G.ellipse(cx-rad*.32,cy-rad*.36,rad*.26,rad*.16,-0.62,0,TAU); G.fill();
+}
+
+function draw1(){
+  const G=G1; if(!G) return;
+  G.clearRect(0,0,W1,H1);
+  const s=st1(), th=s.th, x=s.x, dir=A1.dir;
+  const kvv=1.05;                           // 速度矢量长度（世界单位）：固定值，不随速率滑块变化
+  const vD=dir;                             // 矢量方向由运动方向决定（回放时反向），长度恒定
+
+  drawCeil(G);
+  drawDesk(G);
+
+  const O=P1(0,A1.H,0), Q=P1(x,0,0), B=P1(x,s.cy,0);
+
+  // —— 绳（O→Q 斜段）
+  seg(G,O[0],O[1],Q[0],Q[1],'rgba(232,222,196,.95)',2.0);
+  // —— 终点 B 的虚影
+  if(A1.showB && A1.x1-x>0.03){
+    const xb=A1.x1, OQb=Math.hypot(xb,A1.H), db=A1.L-OQb;
+    const Qb=P1(xb,0,0), Bb=P1(xb,-db,0), Ob=O;
+    seg(G,Ob[0],Ob[1],Qb[0],Qb[1],'rgba(160,190,220,.34)',1.4,[5,5]);
+    seg(G,Qb[0],Qb[1],Bb[0],Bb[1],'rgba(160,190,220,.34)',1.4,[5,5]);
+    drawDisc(G,xb,true);
+    drawBall(G,Bb[0],Bb[1],Math.max(5,V1.s*0.13),true);
+    txt(G,'B',Qb[0]+V1.s*0.44,Qb[1]-V1.s*0.10,'rgba(150,215,205,.92)','600 13px "Microsoft YaHei",sans-serif','left','middle');
+  }
+  // —— 盘 A（当前）
+  drawDisc(G,x,false);
+  txt(G,'A',Q[0]-V1.s*0.52,Q[1]-V1.s*0.06,'rgba(210,232,250,.92)','600 13px "Microsoft YaHei",sans-serif','left','middle');
+  // —— 绳（Q→球 竖直段，紧贴桌子边缘）
+  seg(G,Q[0],Q[1],B[0],B[1],'rgba(232,222,196,.95)',2.0);
+  // —— 铁球
+  const RB=Math.max(6,V1.s*0.13);
+  drawBall(G,B[0],B[1],RB,false);
+  dot(G,Q[0],Q[1],3.2,'#fff','rgba(74,159,216,.9)',1.4);
+
+  // —— θ 角（在悬点处：竖直方向 ↔ 悬线）
+  if(th>0.03){
+    const rArc=V1.s*0.82;
+    const aV=Math.atan2(P1(0,1.4,0)[1]-O[1], P1(0,1.4,0)[0]-O[0]);  // 竖直向下（屏幕角）
+    const aL=Math.atan2(Q[1]-O[1], Q[0]-O[0]);
+    seg(G,O[0],O[1],O[0]+Math.cos(aV)*rArc*1.18,O[1]+Math.sin(aV)*rArc*1.18,'rgba(178,205,232,.72)',1.4,[5,5]);
+    G.save();
+    G.strokeStyle='rgba(255,210,77,.95)'; G.lineWidth=1.8;
+    G.beginPath();
+    const st_=Math.min(aV,aL), en_=Math.max(aV,aL);
+    G.arc(O[0],O[1],rArc,st_,en_); G.stroke();
+    G.restore();
+    const am=(aV+aL)/2;
+    txt(G,'θ',O[0]+Math.cos(am)*(rArc+13),O[1]+Math.sin(am)*(rArc+13),'#ffd24d','700 15px "Microsoft YaHei",sans-serif','center','middle');
+  }
+
+  // —— 接触点处的速度分解
+  if(A1.decomp && th>0.05){
+    const u2x=Math.sin(th), u2y=-Math.cos(th);    // 沿绳方向（Q 远离 O 的一侧）
+    const nx=Math.cos(th),  ny=Math.sin(th);      // 垂直绳方向
+    const Vx=kvv*vD, Vy=0;                        // 合速度（接触点=盘）
+    const Ax=kvv*vD*Math.sin(th)*u2x, Ay=kvv*vD*Math.sin(th)*u2y;   // 沿绳分量
+    const Bx=kvv*vD*Math.cos(th)*nx,  By=kvv*vD*Math.cos(th)*ny;    // 垂直绳分量
+    function WV(dx,dy){ return [Q[0]+dx*V1.s, Q[1]-dy*V1.s]; }
+    const pV=WV(Vx,Vy), pA=WV(Ax,Ay), pB=WV(Bx,By);
+    // 平行四边形完成虚线
+    seg(G,pV[0],pV[1],pA[0],pA[1],'rgba(228,242,255,.86)',1.3,[5,4]);
+    seg(G,pV[0],pV[1],pB[0],pB[1],'rgba(228,242,255,.86)',1.3,[5,4]);
+    // 两个分量都从接触点 Q 起画：Q→pA 为 v∥（红）、Q→pB 为 v⊥（紫），Q→pV 为合速度 v（橙）
+    arrow(G,Q[0],Q[1],pB[0],pB[1],'#b18cff',3.2,12);     // 垂直绳分量 v⊥（紫）
+    arrow(G,Q[0],Q[1],pA[0],pA[1],'#ff5a6e',3.2,12);     // 沿绳分量 v∥（红，与球竖直分量等长同色）
+    arrow(G,Q[0],Q[1],pV[0],pV[1],'#ffb567',3.6,13);     // 合速度 v（橙）
+    // 标签：接触点用「短符号」，公式留在知识面板；置于各自箭头尖端外侧（方向自适应，回放同样成立）
+    const tV=tipOff(pV,Q,16), tA=tipOff(pA,Q,16), tB=tipOff(pB,Q,16);
+    txt(G,'v',tV[0],tV[1],'#ffb567','700 14px "Microsoft YaHei",sans-serif','center','middle');
+    txt(G,'v∥',tA[0],tA[1],'#ff5a6e','700 13.5px "Microsoft YaHei",sans-serif','center','middle');
+    txt(G,'v⊥',tB[0],tB[1],'#b18cff','700 13.5px "Microsoft YaHei",sans-serif','center','middle');
+  }
+
+  // —— 铁球的速度矢量
+  if(A1.decomp && th>0.05){
+    const Hx=kvv*vD, Hy=0;
+    const Sx=0,     Sy=kvv*vD*Math.sin(th);
+    const Cx=Hx+Sx, Cy=Hy+Sy;
+    function BV(dx,dy){ return [B[0]+dx*V1.s, B[1]-dy*V1.s]; }
+    const pH=BV(Hx,Hy), pS=BV(Sx,Sy), pC=BV(Cx,Cy);
+    seg(G,pC[0],pC[1],pH[0],pH[1],'rgba(228,242,255,.86)',1.3,[5,4]);
+    seg(G,pC[0],pC[1],pS[0],pS[1],'rgba(228,242,255,.86)',1.3,[5,4]);
+    arrow(G,B[0],B[1],pS[0],pS[1],'#ff5a6e',3.2,12);            // 竖直分量 v·sinθ（红）
+    arrow(G,B[0],B[1],pH[0],pH[1],'#ffb567',3.2,12);            // 水平分量 v（橙）
+    arrow(G,B[0],B[1],pC[0],pC[1],'#5fd0c8',3.5,13);            // 合速度（青）
+    const tS=tipOff(pS,B,15), tC=tipOff(pC,B,17);
+    txt(G,'v·sin θ',tS[0],tS[1],'#ff5a6e','600 12.5px "Microsoft YaHei",sans-serif','center','middle');
+    txt(G,"v′",tC[0],tC[1],'#5fd0c8','700 14px "Microsoft YaHei",sans-serif','center','middle');
+  }
+
+  wm(G,W1,H1);
+}
+
+function update1(dt){
+  if(!A1.run) return;
+  if(A1.hold>0){ A1.hold-=dt; return; }
+  A1.x += A1.dir*A1.v*dt;
+  if(A1.x>=A1.x1){ A1.x=A1.x1; A1.dir=-1; A1.hold=0.5; }
+  if(A1.x<=A1.x0){ A1.x=A1.x0; A1.dir= 1; A1.hold=0.5; }
+}
+
+/* ================== 动画 2：两圆环交点 ================== */
+const A2 = { R:1.0, x0:0.0, x1:0.90, x:0.02, dir:1, v:0.46, run:true, showV:true, showA:true, hold:0 };
+const V2 = { s:1, ox:0, oy:0 };
+let G2=null, W2=0, H2=0;
+
+function setView2(){
+  const wx0=-2.52, wx1=2.52, wy0=-1.58, wy1=1.58;
+  const s=Math.min(W2/(wx1-wx0), H2/(wy1-wy0));
+  V2.s=s;
+  V2.ox=W2/2-(wx0+wx1)/2*s;
+  V2.oy=H2/2+(wy0+wy1)/2*s;
+}
+function P2(x,y){ return [V2.ox+x*V2.s, V2.oy-y*V2.s]; }
+
+function ring(G,cx,cy,R,col,fill){
+  const a=P2(cx,cy), r=R*V2.s;
+  G.save();
+  G.beginPath(); G.arc(a[0],a[1],r,0,TAU);
+  if(fill){ G.fillStyle=fill; G.fill(); }
+  G.strokeStyle=col; G.lineWidth=3.0; G.stroke();
+  G.strokeStyle='rgba(255,255,255,.30)'; G.lineWidth=1.1; G.stroke();
+  G.restore();
+}
+
+function draw2(){
+  const G=G2; if(!G) return;
+  G.clearRect(0,0,W2,H2);
+  const R=A2.R, x=A2.x, y=Math.sqrt(Math.max(0,R*R-x*x));
+  const dir=A2.dir, vD=A2.v*dir;
+
+  // 中垂线（交点运动所在直线）
+  const mT=P2(0,1.52), mB=P2(0,-1.52);
+  seg(G,mT[0],mT[1],mB[0],mB[1],'rgba(177,140,255,.88)',1.7,[8,6]);   // 中垂线（紫）：交点运动所在直线
+  // 两圆心连线
+  const cA=P2(-x,0), cB=P2(x,0);
+  seg(G,cA[0],cA[1],cB[0],cB[1],'rgba(147,170,194,.42)',1.4,[7,6]);
+  // 两圆
+  ring(G,-x,0,R,'rgba(74,159,216,.95)','rgba(74,159,216,.075)');
+  ring(G, x,0,R,'rgba(95,208,200,.95)','rgba(95,208,200,.075)');
+  // 圆心
+  dot(G,cA[0],cA[1],4.2,'#4a9fd8','rgba(255,255,255,.85)',1.2);
+  dot(G,cB[0],cB[1],4.2,'#5fd0c8','rgba(255,255,255,.85)',1.2);
+  txt(G,'C₁',cA[0]-4,cA[1]+13,'rgba(160,205,240,.95)','600 12.5px "Microsoft YaHei",sans-serif','center','middle');
+  txt(G,'C₂',cB[0]+4,cB[1]+13,'rgba(160,235,225,.95)','600 12.5px "Microsoft YaHei",sans-serif','center','middle');
+
+  // 圆心速度（左右分离）
+  if(A2.showV){
+    const L=0.62;                                   // 圆心速度矢量长度（世界单位）：固定值，不随速率滑块变化
+    arrow(G,cA[0],cA[1],cA[0]-L*V2.s*dir,cA[1],'#4a9fd8',3.2,11);
+    arrow(G,cB[0],cB[1],cB[0]+L*V2.s*dir,cB[1],'#5fd0c8',3.2,11);
+    txt(G,'v',cA[0]-L*V2.s*dir-10,cA[1]-11,'#8ec6ec','700 13px "Microsoft YaHei",sans-serif','center','middle');
+    txt(G,'v',cB[0]+L*V2.s*dir+10,cB[1]-11,'#a8ecdf','700 13px "Microsoft YaHei",sans-serif','center','middle');
+  }
+
+  // 半径 C₁→P₁ 与 α 角
+  if(A2.showA && x>0.06){
+    const p=P2(0,y);
+    seg(G,cA[0],cA[1],p[0],p[1],'rgba(255,255,255,.62)',1.3,[5,4]);
+    const rArc=Math.min(V2.s*0.42, V2.s*x*0.9);
+    if(rArc>9){
+      const aL=Math.atan2(p[1]-cA[1], p[0]-cA[0]);       // 半径方向（屏幕角）
+      const aH=Math.atan2(0,1);                          // 水平向右
+      G.save();
+      G.strokeStyle='rgba(255,210,77,.95)'; G.lineWidth=1.7;
+      G.beginPath(); G.arc(cA[0],cA[1],rArc,Math.min(aL,aH),Math.max(aL,aH)); G.stroke();
+      G.restore();
+      const am=(aL+aH)/2;
+      txt(G,'α',cA[0]+Math.cos(am)*(rArc+14),cA[1]+Math.sin(am)*(rArc+14),'#ffd24d','700 14px "Microsoft YaHei",sans-serif','center','middle');
+    }
+  }
+
+  // 交点 + 交点速度矢量
+  const vP=Math.abs(x)<1e-6 ? 0 : x/y;   // 只取几何比 x/y（= cot α）；矢量长度不再随速率滑块变化
+  const vPd=vP*dir;                      // 有向（分离→上交点向下）
+  const pUp=P2(0,y), pDn=P2(0,-y);
+  if(A2.showV){
+    const k=0.72;
+    // 有向位移（屏幕坐标：+向下）。分离时 vPd>0：上交点↓、下交点↑；回放 vPd<0 方向取反
+    const sUp=k*vPd*V2.s, sDn=-k*vPd*V2.s;
+    const clampS=function(sv){
+      if(Math.abs(sv)<0.05) return 0;
+      return (sv>=0?1:-1)*Math.min(Math.abs(sv), V2.s*0.92);
+    };
+    const lenU=clampS(sUp), lenD=clampS(sDn);
+    if(lenU!==0) arrow(G,pUp[0],pUp[1],pUp[0],pUp[1]+lenU,'#ff5a6e',3.4,12);
+    if(lenD!==0) arrow(G,pDn[0],pDn[1],pDn[0],pDn[1]+lenD,'#ff5a6e',3.4,12);
+    if(lenU!==0) txt(G,'v',pUp[0]+13,pUp[1]+lenU*0.5,'#ff8e9c','700 14px "Microsoft YaHei",sans-serif','left','middle');
+    if(lenD!==0) txt(G,'v',pDn[0]+13,pDn[1]+lenD*0.5,'#ff8e9c','700 14px "Microsoft YaHei",sans-serif','left','middle');
+  }
+  dot(G,pUp[0],pUp[1],5.0,'#fff','rgba(255,90,110,.95)',1.6);
+  dot(G,pDn[0],pDn[1],5.0,'#fff','rgba(255,90,110,.95)',1.6);
+  txt(G,'P₁',pUp[0]-16,pUp[1]-9,'#ffffff','700 13px "Microsoft YaHei",sans-serif','center','middle');
+  txt(G,'P₂',pDn[0]-16,pDn[1]+10,'#ffffff','700 13px "Microsoft YaHei",sans-serif','center','middle');
+
+  // 标注：r 与 y
+  const o=P2(0,0);
+  dot(G,o[0],o[1],3.0,'rgba(255,255,255,.75)','rgba(255,255,255,.35)',1);
+  txt(G,'交点沿中垂线运动（水平分量恒为 0）',14,H2-14,'rgba(147,170,194,.9)','12px "Microsoft YaHei",sans-serif','left','middle');
+  wm(G,W2,H2);
+}
+
+function update2(dt){
+  if(!A2.run) return;
+  if(A2.hold>0){ A2.hold-=dt; return; }
+  A2.x += A2.dir*A2.v*dt;
+  if(A2.x>=A2.x1){ A2.x=A2.x1; A2.dir=-1; A2.hold=0.9; }
+  if(A2.x<=A2.x0){ A2.x=A2.x0; A2.dir= 1; A2.hold=0.9; }
+}
+
+/* ================== 动画 3：剪叉式伸缩机构 ================== */
+/* 三单元剪叉：杆长 2L、菱形边长 L；左下铰点 O 固定，上左铰点 A 沿竖直导轨滑动，
+   右端以速度 V 水平向右拉出。所有铰点的水平速度 ∝ 到 O 的水平距离，
+   竖直速度 ∝ 高度（机构被「均匀拉伸 + 均匀压扁」）。
+   物理已由 _sc_check.js 核验：PASS 14 / FAIL 0。 */
+const A3 = {
+  L:1.0, N:3, TH0:62*Math.PI/180, TH1:30*Math.PI/180, th:62*Math.PI/180,
+  v:1.0, dir:1, run:true, hold:0.5,
+  showX:true, showY:false, showN:true, showR:true
+};
+const V3  = { s:1, ox:0, oy:0 };
+const V3g = { s:1, ox:0, oy:0 };
+let G3=null, W3=0, H3=0, G3g=null, W3g=0, H3g=0;
+
+function rr(G,x,y,w,h,r){
+  G.beginPath();
+  G.moveTo(x+r,y);
+  G.lineTo(x+w-r,y); G.quadraticCurveTo(x+w,y,x+w,y+r);
+  G.lineTo(x+w,y+h-r); G.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  G.lineTo(x+r,y+h); G.quadraticCurveTo(x,y+h,x,y+h-r);
+  G.lineTo(x,y+r); G.quadraticCurveTo(x,y,x+r,y);
+  G.closePath();
+}
+function setView3(){
+  const wx0=-1.12, wx1=7.18, wy0=-1.36, wy1=2.90;
+  const s=Math.min(W3/(wx1-wx0), H3/(wy1-wy0));
+  V3.s=s; V3.ox=W3/2-(wx0+wx1)/2*s; V3.oy=H3/2+(wy0+wy1)/2*s;
+}
+function P3(x,y){ return [V3.ox+x*V3.s, V3.oy-y*V3.s]; }
+function setView3g(){
+  const wx0=-0.24, wx1=1.26, wy0=-0.26, wy1=1.26;
+  const s=Math.min(W3g/(wx1-wx0), H3g/(wy1-wy0));
+  V3g.s=s; V3g.ox=W3g/2-(wx0+wx1)/2*s; V3g.oy=H3g/2+(wy0+wy1)/2*s;
+}
+function P3g(x,y){ return [V3g.ox+x*V3g.s, V3g.oy-y*V3g.s]; }
+
+function geom3(){
+  const L=A3.L, N=A3.N, th=A3.th, c=Math.cos(th), s=Math.sin(th), h=L*s;
+  const bot=[], top=[], mid=[];
+  for(let k=0;k<=N;k++){ bot.push([2*k*L*c,0]); top.push([2*k*L*c,2*h]); }
+  for(let k=1;k<=N;k++){ mid.push([(2*k-1)*L*c,h]); }
+  const bars=[];
+  for(let i=0;i<N;i++){ bars.push([bot[i],top[i+1]]); bars.push([top[i],bot[i+1]]); }
+  return { c:c, s:s, h:h, L:L, N:N, X:2*N*L*c, bot:bot, top:top, mid:mid, bars:bars };
+}
+function cot3(){ const s=Math.sin(A3.th); return s>1e-6 ? Math.cos(A3.th)/s : 0; }
+function velOf3(G,p,V){ const m=G.h>1e-9?p[1]/G.h:0;
+  return { x:(p[0]/G.X)*V, y:-(V/(2*G.N))*cot3()*m }; }
+
+const VS3 = 1.02;            // 速度矢量比例：1 单位速率 → 世界长度
+
+function draw3(){
+  const g=G3; if(!g) return;
+  g.clearRect(0,0,W3,H3);
+  const G=geom3(), V=A3.v*A3.dir, aV=Math.abs(V);
+
+  /* ---- 地面 ---- */
+  const gL=P3(-1.12,0), gR=P3(7.18,0);
+  seg(g,gL[0],gL[1],gR[0],gR[1],'rgba(150,178,208,.52)',2.4);
+  g.save(); g.strokeStyle='rgba(150,178,208,.26)'; g.lineWidth=1.1;
+  for(let x=-1.08;x<7.1;x+=0.22){
+    const a=P3(x,0), b=P3(x-0.11,-0.12);
+    g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.stroke();
+  }
+  g.restore();
+
+  /* ---- 左端竖直导轨 ---- */
+  const rT=P3(0,2.46), rB=P3(0,-0.14);
+  seg(g,rT[0],rT[1],rB[0],rB[1],'rgba(16,26,42,.98)',9.6);
+  seg(g,rT[0],rT[1],rB[0],rB[1],'rgba(120,146,176,.96)',6.4);
+  seg(g,rT[0],rT[1],rB[0],rB[1],'rgba(224,240,255,.50)',1.4);
+  g.save(); g.strokeStyle='rgba(200,220,240,.42)'; g.lineWidth=1.1;
+  for(let y=0.2;y<=2.4;y+=0.4){
+    const a=P3(0.11,y), b=P3(0.31,y);
+    g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.stroke();
+  }
+  g.restore();
+
+  /* ---- 末端板（负载） ---- */
+  const eb=P3(G.bot[G.N][0],G.bot[G.N][1]), et=P3(G.top[G.N][0],G.top[G.N][1]);
+  seg(g,eb[0],eb[1],et[0],et[1],'rgba(255,181,103,.26)',13.0);
+  seg(g,eb[0],eb[1],et[0],et[1],'rgba(255,181,103,.88)',4.6);
+
+  /* ---- 6 根杆 ---- */
+  G.bars.forEach(function(br){
+    const a=P3(br[0][0],br[0][1]), b=P3(br[1][0],br[1][1]);
+    seg(g,a[0],a[1],b[0],b[1],'rgba(9,16,28,.96)',8.4);
+    seg(g,a[0],a[1],b[0],b[1],'rgba(116,148,182,.98)',5.6);
+    seg(g,a[0],a[1],b[0],b[1],'rgba(236,246,255,.78)',1.5);
+  });
+
+  /* ---- 各铰点速度矢量 ---- */
+  const items=[];
+  G.bot.forEach(function(p,k){ items.push(p); });
+  G.top.forEach(function(p,k){ items.push(p); });
+  G.mid.forEach(function(p,k){ items.push(p); });
+  if(A3.showX || A3.showY){
+    items.forEach(function(p){
+      const v=velOf3(G,p,V), q=P3(p[0],p[1]);
+      if(A3.showY && Math.abs(v.y)>1e-6){
+        arrowH(g,q[0],q[1],q[0],q[1]-v.y*VS3*V3.s,'#b18cff',2.2,8);
+      }
+      if(A3.showX && Math.abs(v.x)>1e-6){
+        arrowH(g,q[0],q[1],q[0]+v.x*VS3*V3.s,q[1],'#5fd0c8',2.5,9);
+      }
+    });
+  }
+
+  /* ---- 末端拉动速度 V（橙） ---- */
+  if(aV>1e-6){
+    const hx=G.X+0.18, hA=P3(hx,G.h), hB=P3(hx+aV*VS3,G.h);
+    arrowH(g,hA[0],hA[1],hB[0],hB[1],'#ffb567',2.9,11);
+    txt(g,'V',(hA[0]+hB[0])/2,hA[1]-15,'#ffb567','700 14px "Microsoft YaHei",sans-serif','center','middle');
+  }
+
+  /* ---- 铰点 ---- */
+  function hinge(p,kind){
+    const q=P3(p[0],p[1]);
+    if(kind==='fix'){
+      dot(g,q[0],q[1],6.8,'#ffd24d','rgba(255,255,255,.92)',1.9);
+      dot(g,q[0],q[1],2.5,'rgba(74,48,0,.95)',null,0);
+    } else if(kind==='slide'){
+      const w=Math.max(8,V3.s*0.155), hh=Math.max(7,V3.s*0.125);
+      g.save();
+      g.fillStyle='rgba(95,208,200,.95)';
+      g.strokeStyle='rgba(255,255,255,.88)'; g.lineWidth=1.5;
+      rr(g,q[0]-w,q[1]-hh,w*2,hh*2,4.5); g.fill(); g.stroke();
+      g.restore();
+    } else {
+      dot(g,q[0],q[1],5.0,'#0d1420','rgba(214,238,255,.95)',1.6);
+      dot(g,q[0],q[1],2.1,'rgba(196,228,255,.95)',null,0);
+    }
+    return q;
+  }
+  hinge(G.bot[0],'fix');
+  hinge(G.top[0],'slide');
+  G.bot.forEach(function(p,k){ if(k>0) hinge(p,'n'); });
+  G.top.forEach(function(p,k){ if(k>0) hinge(p,'n'); });
+  G.mid.forEach(function(p){ hinge(p,'n'); });
+
+  /* ---- 标注 ---- */
+  const fsT = W3<430 ? 10.6 : 12.5;
+  const o0=P3(0,0);
+  txt(g,'O（固定）',o0[0]-9,o0[1]+18,'#ffd24d','700 '+fsT+'px "Microsoft YaHei",sans-serif','right','middle');
+  const a0=P3(0,G.h*2);
+  txt(g,'A（滑块）',a0[0]+12,a0[1]-12,'#5fd0c8','700 '+fsT+'px "Microsoft YaHei",sans-serif','left','middle');
+  G.mid.forEach(function(p,k){
+    const q=P3(p[0],p[1]);
+    txt(g,'C'+(k+1),q[0],q[1]-Math.max(13,V3.s*0.19),'rgba(214,238,255,.96)','700 '+fsT+'px "Microsoft YaHei",sans-serif','center','middle');
+  });
+
+  /* ---- 速度数值（7 档） ---- */
+  if(A3.showN){
+    const lab=['0','V/6','V/3','V/2','2V/3','5V/6','V'];
+    const fsN = W3<430 ? 9.6 : 11.5;
+    for(let k=0;k<=6;k++){
+      const q=P3(k*G.L*G.c,-0.30);
+      txt(g,lab[k],q[0],q[1],(k===0?'rgba(255,210,77,.96)':'rgba(95,208,200,.98)'),
+        '700 '+fsN+'px "Microsoft YaHei",sans-serif','center','middle');
+    }
+  }
+
+  /* ---- 均分标尺：ΔX 均分 6 份 ---- */
+  if(A3.showR){
+    const yb=-0.70, a=P3(0,yb), b=P3(G.X,yb);
+    seg(g,a[0],a[1],b[0],b[1],'rgba(255,210,77,.58)',2.0);
+    for(let k=0;k<=6;k++){
+      const q=P3(k*G.L*G.c,yb);
+      seg(g,q[0],q[1]-6,q[0],q[1]+6,'rgba(255,210,77,.85)',1.8);
+    }
+    const m0=P3(0.5*G.L*G.c,yb);
+    txt(g,'1/6',m0[0],m0[1]+16,'rgba(255,210,77,.85)','600 10.5px "Microsoft YaHei",sans-serif','center','middle');
+    const cp=P3(-1.10,-1.08);
+    txt(g,'ΔX 均分 6 份 ⇒ v 按 0、1/6、…、1 线性分配',cp[0],cp[1],
+      'rgba(147,170,194,.95)',(W3<430?9.6:11.5)+'px "Microsoft YaHei",sans-serif','left','middle');
+  }
+
+  /* ---- 图例 ---- */
+  const lg=P3(-1.10,2.68);
+  txt(g,'青：铰点水平速度　　橙：末端拉动速度 V',lg[0],lg[1],
+    'rgba(147,170,194,.92)',(W3<430?9.8:11.5)+'px "Microsoft YaHei",sans-serif','left','middle');
+
+  wm(g,W3,H3);
+}
+
+function draw3g(){
+  const g=G3g; if(!g) return;
+  g.clearRect(0,0,W3g,H3g);
+  const O=P3g(0,0), Ax=P3g(1.17,0), Ay=P3g(0,1.13);
+  const nar = W3g<320;
+
+  /* 网格 */
+  g.save(); g.strokeStyle='rgba(74,159,216,.16)'; g.lineWidth=1;
+  for(let k=1;k<=6;k++){
+    const p=P3g(k/6,0), q=P3g(k/6,1);
+    g.beginPath(); g.moveTo(p[0],p[1]); g.lineTo(q[0],q[1]); g.stroke();
+    const r=P3g(0,k/6), t=P3g(1,k/6);
+    g.beginPath(); g.moveTo(r[0],r[1]); g.lineTo(t[0],t[1]); g.stroke();
+  }
+  g.restore();
+
+  /* 坐标轴 */
+  arrowH(g,O[0],O[1],Ax[0],Ax[1],'rgba(147,170,194,.95)',1.7,9);
+  arrowH(g,O[0],O[1],Ay[0],Ay[1],'rgba(147,170,194,.95)',1.7,9);
+  txt(g,'x（到固定端 O 的距离）',(O[0]+Ax[0])/2,Ax[1]+16,'rgba(147,170,194,.95)',(nar?9.4:11)+'px "Microsoft YaHei",sans-serif','center','middle');
+  txt(g,'v',Ay[0]-13,Ay[1]+9,'rgba(147,170,194,.95)','700 12px "Microsoft YaHei",sans-serif','center','middle');
+
+  /* 直线 v = (V/ΔX)·x */
+  const p0=P3g(0,0), p1=P3g(1,1);
+  seg(g,p0[0],p0[1],p1[0],p1[1],'rgba(95,208,200,.26)',6.2);
+  seg(g,p0[0],p0[1],p1[0],p1[1],'#5fd0c8',2.4);
+
+  /* 7 个铰点数据（相邻标签上下交错，避免挤在一起） */
+  const lab=['0','V/6','V/3','V/2','2V/3','5V/6','V'];
+  for(let k=0;k<=6;k++){
+    const q=P3g(k/6,k/6);
+    dot(g,q[0],q[1],4.4,'#ffd24d','rgba(255,255,255,.85)',1.3);
+    if(k===6){
+      txt(g,lab[k],q[0],q[1]-14,'#ffd24d','700 '+(nar?9.6:11)+'px "Microsoft YaHei",sans-serif','center','middle');
+    } else {
+      const up = (k%2===0);
+      txt(g,lab[k],q[0]+9,q[1]+(up?-11:12),'#ffd24d','700 '+(nar?9.4:10.6)+'px "Microsoft YaHei",sans-serif','left','middle');
+    }
+  }
+
+  txt(g,'v = (V / ΔX) · x',P3g(0.04,1.07)[0],P3g(0.04,1.07)[1],'#5fd0c8','700 13px "Microsoft YaHei",sans-serif','left','middle');
+  txt(g,'速度与位置成正比（过原点直线）',P3g(0.04,0.98)[0],P3g(0.04,0.98)[1],'rgba(147,170,194,.92)',(nar?9.4:10.8)+'px "Microsoft YaHei",sans-serif','left','middle');
+
+  wm(g,W3g,H3g);
+}
+
+function update3(dt){
+  if(!A3.run) return;
+  if(A3.hold>0){ A3.hold-=dt; if(A3.hold>0) return; }
+  A3.th += A3.dir * (-A3.v/(2*A3.N*A3.L*Math.max(0.18,Math.sin(A3.th)))) * dt;
+  if(A3.th<=A3.TH1){ A3.th=A3.TH1; A3.dir=-1; A3.hold=0.95; }
+  else if(A3.th>=A3.TH0){ A3.th=A3.TH0; A3.dir=1; A3.hold=0.55; }
+}
+
+/* ================== 读数刷新 ================== */
+let fN=0;
+function refresh(){
+  const s=st1(), th=s.th;
+  const v=A1.v;
+  $('o1t').textContent=(th*180/Math.PI).toFixed(1)+'°';
+  $('o1y').textContent=(v*Math.sin(th)).toFixed(3)+' v';
+  $('o1x').textContent=v.toFixed(3)+' v';
+  $('o1v').textContent=(v*Math.sqrt(1+Math.sin(th)*Math.sin(th))).toFixed(3)+' v';
+
+  const R=A2.R, x=A2.x, y=Math.sqrt(Math.max(0,R*R-x*x));
+  const al=Math.atan2(y,x)*180/Math.PI;
+  const vP=x/y*A2.v;
+  $('o2x').textContent=x.toFixed(3)+' R';
+  $('o2y').textContent=y.toFixed(3)+' R';
+  $('o2a').textContent=al.toFixed(1)+'°';
+  $('o2v').textContent=A2.v.toFixed(3)+' v';
+  $('o2p').textContent=vP.toFixed(3)+' v  ('+(x/y).toFixed(2)+'×v)';
+
+  const th3=A3.th;
+  $('o3t').textContent=(th3*180/Math.PI).toFixed(1)+'°　（α = '+(2*th3*180/Math.PI).toFixed(1)+'°）';
+  $('o3x').textContent=(6*A3.L*Math.cos(th3)).toFixed(3)+' L';
+  $('o3v').textContent=A3.v.toFixed(2)+'（世界单位 / 秒）';
+  $('o3y').textContent=(A3.v/3*cot3()).toFixed(3)+'　（= V/3·cot θ）';
+}
+
+/* ================== 尺寸 / 启动 ================== */
+function resizeAll(){
+  [['cv1',1],['cv2',2],['cv3',3],['cv3g',3]].forEach(function(it){
+    const cv=$(it[0]); if(!cv) return;
+    const dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+    const w=Math.max(120,cv.clientWidth), h=Math.max(120,cv.clientHeight);
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+    const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    if(it[1]===1){ G1=g; W1=w; H1=h; setView1(); }
+    else if(it[1]===2){ G2=g; W2=w; H2=h; setView2(); }
+    else if(it[0]==='cv3'){ G3=g; W3=w; H3=h; setView3(); }
+    else { G3g=g; W3g=w; H3g=h; setView3g(); }
+  });
+}
+
+function bindUI(){
+  $('b1p').onclick=function(){ A1.run=!A1.run; this.textContent=A1.run?'暂停':'继续'; this.classList.toggle('on',A1.run); };
+  $('b1r').onclick=function(){ A1.x=A1.x0; A1.dir=1; A1.hold=0.35; };
+  $('c1d').onchange=function(){ A1.decomp=this.checked; };
+  $('c1b').onchange=function(){ A1.showB=this.checked; };
+  $('r1v').oninput=function(){ A1.v=parseFloat(this.value); };
+
+  $('b2p').onclick=function(){ A2.run=!A2.run; this.textContent=A2.run?'暂停':'继续'; this.classList.toggle('on',A2.run); };
+  $('b2r').onclick=function(){ A2.x=A2.x0; A2.dir=1; A2.hold=0.35; };
+  $('c2v').onchange=function(){ A2.showV=this.checked; };
+  $('c2a').onchange=function(){ A2.showA=this.checked; };
+  $('r2v').oninput=function(){ A2.v=parseFloat(this.value)*0.46; };
+
+  $('b3p').onclick=function(){ A3.run=!A3.run; this.textContent=A3.run?'暂停':'继续'; this.classList.toggle('on',A3.run); };
+  $('b3r').onclick=function(){ A3.th=A3.TH0; A3.dir=1; A3.hold=0.5; };
+  $('c3x').onchange=function(){ A3.showX=this.checked; };
+  $('c3y').onchange=function(){ A3.showY=this.checked; };
+  $('c3n').onchange=function(){ A3.showN=this.checked; };
+  $('c3r').onchange=function(){ A3.showR=this.checked; };
+  $('r3v').oninput=function(){ A3.v=parseFloat(this.value); };
+
+  window.addEventListener('keydown',function(e){
+    if(e.code==='Space'){ e.preventDefault(); $('b1p').click(); $('b2p').click(); $('b3p').click(); }
+    if(e.key==='r'||e.key==='R'){ $('b1r').click(); $('b2r').click(); $('b3r').click(); }
+  });
+}
+
+let last=0;
+function frame(ts){
+  const dt=last?Math.min(0.045,(ts-last)/1000):0;
+  last=ts;
+  try{
+    update1(dt); draw1();
+    update2(dt); draw2();
+    update3(dt); draw3(); draw3g();
+  }catch(err){ /* 单帧异常不中断 */ }
+  if((fN++ % 4)===0){ try{ refresh(); }catch(e2){} }
+  requestAnimationFrame(frame);
+}
+
+resizeAll();
+bindUI();
+refresh();
+window.addEventListener('resize',function(){ resizeAll(); });
+requestAnimationFrame(frame);
+})();
+</script>
+<script>
+
+(function(){
+'use strict';
+const G = 9.8;                     // m/s²
+const TAU = Math.PI * 2;
+
+/* ============ 状态 ============ */
+const st = {
+  v0: 8.0, th: 30, L: 8.0, rate: 0.45,
+  run: true, t: 0, hold: 0,
+  showRay: true, showMark: true, showVec: true, showBallCurve: false
+};
+let D = {};                        // 派生量
+
+function v0max(){ return Math.sqrt(0.92 * G * st.L / Math.sin(2 * st.th * Math.PI / 180)); }
+function recalc(){
+  if (st.v0 > v0max()) st.v0 = v0max();
+  const th = st.th * Math.PI / 180;
+  D.th = th;
+  D.vx = st.v0 * Math.cos(th);
+  D.vy0 = st.v0 * Math.sin(th);
+  D.T = 2 * D.vy0 / G;
+  D.range = D.vx * D.T;
+  D.apex = D.vy0 * D.vy0 / (2 * G);
+  D.Y0 = st.L * Math.tan(th);
+  D.vsh = -G * st.L / (2 * D.vx);           // 影子速度（负 = 向下）
+  if (st.t > D.T) st.t = D.T;
+}
+const Yat = t => st.L * (D.vy0 - 0.5 * G * t) / D.vx;
+const xat = t => D.vx * t;
+const yat = t => D.vy0 * t - 0.5 * G * t * t;
+
+/* ============ 画布 ============ */
+const scv = document.getElementById('cv4'), gcv = document.getElementById('cv4g');
+const gs = scv.getContext('2d'), gg = gcv.getContext('2d');
+function hidpi(cv){
+  const r = cv.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cv.__w = w; cv.__h = h;
+}
+function resizeAll(){ hidpi(scv); hidpi(gcv); }
+
+/* ============ 视图（世界米 → 屏幕像素） ============ */
+const V = { s: 40, ox: 0, oy: 0, x0: -1.1, x1: 9.1, y0: -1.0, y1: 6 };
+function setView(){
+  V.x0 = -1.15; V.x1 = st.L + 1.30;
+  V.y0 = -1.05;
+  V.y1 = Math.max(D.Y0, D.apex * 1.7) * 1.13 + 0.45;
+  const CW = scv.__w, CH = scv.__h;
+  V.s = Math.min(CW / (V.x1 - V.x0), CH / (V.y1 - V.y0));
+  V.ox = CW / 2 - (V.x0 + V.x1) / 2 * V.s;
+  V.oy = CH / 2 + (V.y0 + V.y1) / 2 * V.s;
+}
+function P(x, y){ return [V.ox + x * V.s, V.oy - y * V.s]; }
+
+/* ============ 绘图原语 ============ */
+function txt(g, s, x, y, col, font, align, base){
+  g.save(); g.fillStyle = col; g.font = font;
+  g.textAlign = align || 'left'; g.textBaseline = base || 'middle';
+  g.fillText(s, x, y); g.restore();
+}
+function arrow(g, x0, y0, x1, y1, col, w, head, halo){
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+  if (L < 1.2) return;
+  const hh = Math.min(head, L * 0.62);
+  const ux = dx / L, uy = dy / L, bx = x1 - ux * hh, by = y1 - uy * hh;
+  g.save(); g.lineCap = 'round';
+  if (halo){ g.strokeStyle = halo; g.lineWidth = w + 4.5; g.beginPath(); g.moveTo(x0, y0); g.lineTo(bx, by); g.stroke(); }
+  g.strokeStyle = col; g.lineWidth = w;
+  g.beginPath(); g.moveTo(x0, y0); g.lineTo(bx, by); g.stroke();
+  g.fillStyle = col;
+  g.beginPath(); g.moveTo(x1, y1);
+  g.lineTo(bx - uy * hh * 0.44, by + ux * hh * 0.44);
+  g.lineTo(bx + uy * hh * 0.44, by - ux * hh * 0.44);
+  g.closePath(); g.fill(); g.restore();
+}
+const HALO = 'rgba(6,12,22,.85)';
+function arrowH(g, x0, y0, x1, y1, col, w, head){ arrow(g, x0, y0, x1, y1, HALO, w + 4, head); arrow(g, x0, y0, x1, y1, col, w, head); }
+function seg(g, a, b, col, w, dash){
+  const p = P(a[0], a[1]), q = P(b[0], b[1]);
+  g.save();
+  if (dash) g.setLineDash(dash);
+  g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round';
+  g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke();
+  g.restore();
+}
+function poly(g, pts, col, w, dash){
+  g.save(); if (dash) g.setLineDash(dash);
+  g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round';
+  g.beginPath();
+  for (let i = 0; i < pts.length; i++){ const p = P(pts[i][0], pts[i][1]); i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }
+  g.stroke(); g.restore();
+}
+function disc(g, c, r, c0, c1){
+  const p = P(c[0], c[1]);
+  const gr = g.createRadialGradient(p[0] - r * .36, p[1] - r * .36, r * .12, p[0], p[1], r);
+  gr.addColorStop(0, c0); gr.addColorStop(1, c1);
+  g.fillStyle = gr; g.beginPath(); g.arc(p[0], p[1], r, 0, TAU); g.fill();
+}
+function wm(g, W, H){
+  g.save(); g.globalAlpha = .55; txt(g, 'force99', W - 11, H - 9, 'rgba(225,242,240,.92)',
+    '700 13px "Microsoft YaHei",sans-serif', 'right', 'bottom'); g.restore();
+}
+
+/* ============ 情景绘制 ============ */
+function drawScene(){
+  const g = gs, CW = scv.__w, CH = scv.__h;
+  g.clearRect(0, 0, CW, CH);
+  setView();
+
+  const t = st.t, L = st.L;
+  const bx = xat(t), by = yat(t), Ycur = Yat(t);
+  const yTop = V.y1, grY = 0;
+
+  // —— 背景
+  const bg = g.createLinearGradient(0, 0, 0, CH);
+  bg.addColorStop(0, '#0c1526'); bg.addColorStop(.62, '#0a1120'); bg.addColorStop(1, '#070c16');
+  g.fillStyle = bg; g.fillRect(0, 0, CW, CH);
+
+  // —— 地面（以下：暗土层 + 斜纹）
+  const gp = P(V.x0, grY), gq = P(V.x1, grY);
+  const gr2 = g.createLinearGradient(0, gp[1], 0, CH);
+  gr2.addColorStop(0, 'rgba(38,58,80,.55)'); gr2.addColorStop(1, 'rgba(16,26,40,.15)');
+  g.fillStyle = gr2; g.fillRect(0, gp[1], CW, CH - gp[1]);
+  g.save(); g.strokeStyle = 'rgba(110,150,185,.16)'; g.lineWidth = 1;
+  for (let x = V.x0; x < V.x1; x += .42){ const a = P(x, grY), b = P(x + .22, V.y0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+  g.restore();
+  seg(g, [V.x0, grY], [V.x1, grY], 'rgba(150,190,220,.55)', 1.6);
+
+  // —— 竖直墙
+  const wt = P(L, 0), wtop = P(L, yTop);
+  const ww = Math.max(9, Math.min(20, 0.30 * V.s));            // 墙体可视厚度
+  const wgr = g.createLinearGradient(wt[0], 0, wt[0] + ww, 0);
+  wgr.addColorStop(0, 'rgba(58,86,116,.95)'); wgr.addColorStop(.45, 'rgba(34,54,80,.95)'); wgr.addColorStop(1, 'rgba(20,33,52,.95)');
+  g.fillStyle = wgr; g.fillRect(wt[0], wtop[1], ww, wt[1] - wtop[1]);
+  g.strokeStyle = 'rgba(190,220,245,.62)'; g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(wt[0] + .8, wt[1]); g.lineTo(wt[0] + .8, wtop[1]); g.stroke();
+  // 墙高刻度（每 1 m）
+  g.save(); g.font = '10.5px "Microsoft YaHei",sans-serif'; g.textAlign = 'left'; g.textBaseline = 'middle';
+  for (let h = 1; h <= yTop; h++){
+    const p = P(L, h);
+    g.strokeStyle = 'rgba(170,205,235,.26)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[0] + ww * .55, p[1]); g.stroke();
+    if (h % 2 === 0){ txt(g, h + ' m', p[0] + ww * .62, p[1], 'rgba(147,170,194,.62)', '10.5px "Microsoft YaHei",sans-serif', 'left', 'middle'); }
+  }
+  g.restore();
+
+  // —— 点光源的氛围光线（很淡）
+  if (st.showRay){
+    g.save();
+    for (const ph of [12, 28, 44, 62, 80]){
+      const a = ph * Math.PI / 180, tanp = Math.tan(a);
+      let ex, ey;
+      if (L * tanp <= yTop){ ex = L; ey = L * tanp; } else { ey = yTop; ex = yTop / tanp; }
+      const p = P(0, 0), q = P(ex, ey);
+      g.strokeStyle = 'rgba(255,196,120,.07)'; g.lineWidth = 1.1;
+      g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke();
+    }
+    g.restore();
+  }
+
+  // —— 墙距 L 标注
+  {
+    const yb = -0.52, a = P(0, yb), b = P(L, yb);
+    seg(g, [0, yb], [L, yb], 'rgba(150,190,220,.42)', 1.1, [5, 4]);
+    seg(g, [0, yb - .12], [0, yb + .12], 'rgba(150,190,220,.42)', 1.1);
+    seg(g, [L, yb - .12], [L, yb + .12], 'rgba(150,190,220,.42)', 1.1);
+    arrow(g, a[0] + 2, a[1], Math.min(a[0] + 16, (a[0] + b[0]) / 2 - 24), a[1], 'rgba(150,190,220,.65)', 1.2, 6);
+    arrow(g, b[0] - 2, b[1], Math.max(b[0] - 16, (a[0] + b[0]) / 2 + 24), b[1], 'rgba(150,190,220,.65)', 1.2, 6);
+    txt(g, 'L = ' + L.toFixed(1) + ' m', (a[0] + b[0]) / 2, a[1], 'rgba(190,215,238,.9)', '600 12px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  }
+
+  // —— 初速度方向延长线 + h₀ 起点高度
+  {
+    const p0 = P(0, 0), p1 = P(L, D.Y0);
+    seg(g, [0, 0], [L, D.Y0], 'rgba(255,196,120,.34)', 1.3, [6, 5]);
+    g.save(); g.strokeStyle = 'rgba(255,210,120,.75)'; g.lineWidth = 1.4;
+    const hh = Math.max(10, Math.min(20, 0.5 * V.s));
+    g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(p1[0] - hh, p1[1]); g.lineTo(p1[0] + ww * .8, p1[1]); g.stroke();
+    g.restore();
+    txt(g, 'h₀ = L·tanθ', p1[0] - hh - 6, p1[1] - 11, 'rgba(255,214,140,.92)', '600 12px "Microsoft YaHei",sans-serif', 'right', 'middle');
+  }
+
+  // —— 球的抛物线轨迹
+  {
+    const N = 72, pts = [];
+    for (let i = 0; i <= N; i++){ const tt = D.T * i / N; pts.push([xat(tt), yat(tt)]); }
+    poly(g, pts, 'rgba(120,165,210,.34)', 1.3, [4, 4]);
+    const done = [];
+    const Nd = Math.max(2, Math.round(N * t / D.T));
+    for (let i = 0; i <= Nd; i++){ const tt = D.T * i / N; done.push([xat(tt), yat(tt)]); }
+    poly(g, done, 'rgba(150,200,240,.62)', 1.8);
+  }
+
+  // —— 光路：S → 球 → 影子
+  const Sp = P(0, 0), Bp = P(bx, by), Pp = P(L, Ycur);
+  if (st.showRay){
+    g.save();
+    g.strokeStyle = 'rgba(255,181,103,.22)'; g.lineWidth = 7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(Sp[0], Sp[1]); g.lineTo(Pp[0], Pp[1]); g.stroke();
+    g.strokeStyle = 'rgba(255,205,150,.95)'; g.lineWidth = 1.7;
+    g.beginPath(); g.moveTo(Sp[0], Sp[1]); g.lineTo(Pp[0], Pp[1]); g.stroke();
+    g.restore();
+  }
+
+  // —— 等时标记（Δt 相同 ⇒ 间距相同）
+  if (st.showMark){
+    const N = 10;
+    for (let k = 0; k <= N; k++){
+      const Yk = Yat(D.T * k / N), p = P(L, Yk);
+      const active = (D.T * k / N) <= t + 1e-9;
+      g.strokeStyle = active ? 'rgba(255,210,77,.85)' : 'rgba(255,210,77,.28)';
+      g.lineWidth = active ? 2.2 : 1.4;
+      g.beginPath(); g.moveTo(p[0] - 9, p[1]); g.lineTo(p[0] + ww * .5, p[1]); g.stroke();
+    }
+    const pm = P(L, D.Y0);
+    txt(g, 'Δt 相同', pm[0] - 13, pm[1] + 15, 'rgba(255,210,77,.6)', '10.5px "Microsoft YaHei",sans-serif', 'right', 'middle');
+  }
+
+  // —— 点光源 S
+  {
+    const r = 7;
+    const gl = g.createRadialGradient(Sp[0], Sp[1], 0, Sp[0], Sp[1], 34);
+    gl.addColorStop(0, 'rgba(255,236,180,.55)'); gl.addColorStop(.4, 'rgba(255,196,110,.16)'); gl.addColorStop(1, 'rgba(255,196,110,0)');
+    g.fillStyle = gl; g.beginPath(); g.arc(Sp[0], Sp[1], 34, 0, TAU); g.fill();
+    disc(g, [0, 0], r, '#fff6dd', '#ffb13c');
+    txt(g, 'S', Sp[0] - 12, Sp[1] - 9, 'rgba(255,220,160,.95)', '700 13px "Microsoft YaHei",sans-serif', 'right', 'middle');
+  }
+
+  // —— 影子（墙上的暗斑 + 青色标识环）
+  {
+    const rr = 6.2;
+    const gd = g.createRadialGradient(Pp[0], Pp[1], 0, Pp[0], Pp[1], 13);
+    gd.addColorStop(0, 'rgba(95,208,200,.42)'); gd.addColorStop(1, 'rgba(95,208,200,0)');
+    g.fillStyle = gd; g.beginPath(); g.arc(Pp[0], Pp[1], 13, 0, TAU); g.fill();
+    g.fillStyle = '#0a1420'; g.beginPath(); g.ellipse(Pp[0], Pp[1], rr, rr * .92, 0, 0, TAU); g.fill();
+    g.strokeStyle = '#5fd0c8'; g.lineWidth = 2;
+    g.beginPath(); g.ellipse(Pp[0], Pp[1], rr, rr * .92, 0, 0, TAU); g.stroke();
+    txt(g, '影子 P', Pp[0] + ww * .55 + 8, Pp[1], 'rgba(150,235,225,.95)', '600 12px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  }
+
+  // —— 球
+  {
+    const br = 8;
+    g.save();
+    g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 7; g.shadowOffsetY = 2;
+    const gr = g.createRadialGradient(Bp[0] - br * .36, Bp[1] - br * .36, br * .12, Bp[0], Bp[1], br);
+    gr.addColorStop(0, '#ffd9cf'); gr.addColorStop(.35, '#ff7358'); gr.addColorStop(.78, '#e2392f'); gr.addColorStop(1, '#8f1410');
+    g.fillStyle = gr; g.beginPath(); g.arc(Bp[0], Bp[1], br, 0, TAU); g.fill();
+    g.restore();
+    g.fillStyle = 'rgba(255,255,255,.5)';
+    g.beginPath(); g.ellipse(Bp[0] - br * .32, Bp[1] - br * .36, br * .26, br * .16, -.6, 0, TAU); g.fill();
+  }
+
+  // —— 速度矢量
+  if (st.showVec){
+    const K = 0.10;                                  // 米/(米每秒)
+    const maxl = 1.25 * V.s;                         // 矢量长度上限（像素）
+    // 小球速度
+    let ux = D.vx * K * V.s, uy = (D.vy0 - G * t) * K * V.s;
+    const dl = Math.hypot(ux, uy);
+    if (dl > maxl){ ux = ux / dl * maxl; uy = uy / dl * maxl; }
+    arrowH(g, Bp[0], Bp[1], Bp[0] + ux, Bp[1] - uy, '#ffd24d', 2.4, 10);
+    txt(g, 'v球', Bp[0] + ux + 7, Bp[1] - uy - 7, 'rgba(255,224,140,.95)',
+      '700 12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+    // 影子速度：长度严格恒定（匀速的直接证据）。箭头「指向」影子点，
+    // 而非从影子点向下画 —— 这样长度不被地面截断，学生不会误读成"影子减速"。
+    let slen = Math.abs(D.vsh) * K * V.s;
+    if (slen > maxl) slen = maxl;
+    if (slen > 9){
+      arrowH(g, Pp[0], Pp[1] - slen, Pp[0], Pp[1], '#5fd0c8', 2.6, 11);
+      txt(g, 'v影', Pp[0] + 12, Pp[1] - slen * .55, 'rgba(150,235,225,.95)',
+        '700 12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+    }
+  }
+
+  // —— 当前影子高度标注
+  {
+    const midx = L * 0.5;
+    seg(g, [0, Ycur], [L, Ycur], 'rgba(95,208,200,.30)', 1.1, [5, 4]);
+    txt(g, 'Y', Pp[0] - 12, Pp[1] - 12, 'rgba(150,235,225,.9)', '600 12.5px "Microsoft YaHei",sans-serif', 'right', 'middle');
+  }
+
+  // —— 阶段提示
+  {
+    let s = '小球上升中';
+    if (st.hold > 0 || t >= D.T - 1e-9) s = '已落地 · 影子到墙脚';
+    else if (Math.abs(t - D.T / 2) < D.T * 0.035) s = '小球在最高点 · 影子恰在半高处';
+    else if (t > D.T / 2) s = '小球下落中';
+    txt(g, s, 14, 20, 'rgba(190,215,238,.85)', '600 12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  }
+
+  wm(g, CW, CH);
+}
+
+/* ============ Y–t 图 ============ */
+function niceTicks(a, b, n){
+  const span = (b - a) || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const nm = raw / mag, step = (nm < 1.5 ? 1 : nm < 3 ? 2 : nm < 7 ? 5 : 10) * mag;
+  const out = [];
+  for (let v = Math.ceil(a / step) * step; v <= b + step * 1e-9; v += step) out.push(Math.abs(v) < 1e-12 ? 0 : v);
+  return out;
+}
+function drawGraph(){
+  const g = gg, CW = gcv.__w, CH = gcv.__h;
+  g.clearRect(0, 0, CW, CH);
+  g.fillStyle = '#070c16'; g.fillRect(0, 0, CW, CH);
+
+  const PL = 52, PR = 16, PT = 20, PB = 32;
+  const pw = CW - PL - PR, ph = CH - PT - PB;
+  if (pw < 40 || ph < 30) return;
+  const Tm = Math.max(D.T, 1e-6), Ym = Math.max(D.Y0 * 1.06, 1e-6);
+  const X = tt => PL + tt / Tm * pw;
+  const YY = v => PT + (1 - v / Ym) * ph;
+
+  // 网格
+  const ty = niceTicks(0, Ym, 4), tx = niceTicks(0, Tm, 4);
+  g.save(); g.strokeStyle = 'rgba(120,160,200,.13)'; g.lineWidth = 1;
+  for (const v of ty){ const y = YY(v); g.beginPath(); g.moveTo(PL, y); g.lineTo(PL + pw, y); g.stroke(); }
+  for (const v of tx){ const x = X(v); g.beginPath(); g.moveTo(x, PT); g.lineTo(x, PT + ph); g.stroke(); }
+  g.restore();
+
+  // 轴
+  g.strokeStyle = 'rgba(160,200,230,.5)'; g.lineWidth = 1.3;
+  g.beginPath(); g.moveTo(PL, PT); g.lineTo(PL, PT + ph); g.lineTo(PL + pw, PT + ph); g.stroke();
+  // 刻度数字
+  const fm = v => (Math.abs(v) < 1e-9 ? '0' : (Math.abs(v * 10 - Math.round(v * 10)) < 1e-6 ? String(Math.round(v * 10) / 10) : v.toFixed(2)));
+  for (const v of ty) txt(g, fm(v), PL - 7, YY(v), 'rgba(147,170,194,.85)', '11px "Consolas",monospace', 'right', 'middle');
+  for (const v of tx) txt(g, fm(v), X(v), PT + ph + 11, 'rgba(147,170,194,.85)', '11px "Consolas",monospace', 'center', 'top');
+  txt(g, 't / s', PL + pw, PT + ph + 24, 'rgba(147,170,194,.7)', '11.5px "Microsoft YaHei",sans-serif', 'right', 'top');
+  txt(g, 'Y / m', PL - 44, PT - 6, 'rgba(147,170,194,.7)', '11.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  if (st.showBallCurve){
+    // 小球高度 y–t（同一纵轴）
+    const pts = [];
+    for (let i = 0; i <= 90; i++){ const tt = Tm * i / 90; pts.push([X(tt), YY(yat(tt))]); }
+    g.save(); g.strokeStyle = 'rgba(255,181,103,.85)'; g.lineWidth = 1.8; g.setLineDash([5, 4]);
+    g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); g.restore();
+  }
+
+  // 影子 Y–t：整条直线（淡）+ 已走过段（亮）
+  const A = [X(0), YY(D.Y0)], B = [X(Tm), YY(0)];
+  g.save(); g.strokeStyle = 'rgba(95,208,200,.28)'; g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(B[0], B[1]); g.stroke(); g.restore();
+  {
+    const tEnd = Math.min(st.t, Tm), c = [X(tEnd), YY(Yat(tEnd))];
+    g.strokeStyle = '#5fd0c8'; g.lineWidth = 2.6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(A[0], A[1]); g.lineTo(c[0], c[1]); g.stroke();
+  }
+
+  // 等时采样点
+  {
+    const N = 10;
+    for (let k = 0; k <= N; k++){
+      const tt = Tm * k / N, p = [X(tt), YY(Yat(tt))];
+      const active = tt <= st.t + 1e-9;
+      g.fillStyle = active ? '#ffd24d' : 'rgba(255,210,77,.35)';
+      g.beginPath(); g.arc(p[0], p[1], active ? 3.4 : 2.4, 0, TAU); g.fill();
+    }
+  }
+
+  // 当前点 + 虚线投影到轴
+  {
+    const tEnd = Math.min(st.t, Tm), Yc = Yat(tEnd), p = [X(tEnd), YY(Yc)];
+    g.save(); g.strokeStyle = 'rgba(95,208,200,.45)'; g.lineWidth = 1; g.setLineDash([4, 4]);
+    g.beginPath(); g.moveTo(PL, p[1]); g.lineTo(p[0], p[1]); g.moveTo(p[0], PT + ph); g.lineTo(p[0], p[1]); g.stroke(); g.restore();
+    g.fillStyle = '#0a1420'; g.strokeStyle = '#5fd0c8'; g.lineWidth = 2.2;
+    g.beginPath(); g.arc(p[0], p[1], 4.6, 0, TAU); g.fill(); g.stroke();
+  }
+}
+
+/* ============ 读数 ============ */
+const ro = document.getElementById('ro4');
+function refresh(){
+  const t = st.t, T = D.T;
+  const vx = D.vx, vy = D.vy0 - G * t;
+  const Yc = Yat(t), vsh = Math.abs(D.vsh);
+  const phase = (st.hold > 0 || t >= T - 1e-9) ? '已落地'
+    : Math.abs(t - T / 2) < T * 0.035 ? '最高点' : (t < T / 2 ? '上升' : '下落');
+  const avg = t > 1e-6 ? (D.Y0 - Yc) / t : vsh;
+  const rows = [
+    ['时刻 t', t.toFixed(3) + ' s　(T=' + T.toFixed(3) + ' s)'],
+    ['球位置 x / y', xat(t).toFixed(2) + ' / ' + Math.max(0, yat(t)).toFixed(2) + ' m'],
+    ['球速度 v<sub>x</sub>/v<sub>y</sub>', vx.toFixed(2) + ' / ' + vy.toFixed(2) + ' m/s'],
+    ['球合速度 |v|', Math.hypot(vx, vy).toFixed(2) + ' m/s', 1],
+    ['<b>影子高度 Y</b>', Yc.toFixed(3) + ' m', 2],
+    ['<b>影子速度 |v<sub>影</sub>|</b>', vsh.toFixed(3) + ' m/s ↓ 恒定', 2],
+    ['已用位移 h₀−Y', (D.Y0 - Yc).toFixed(3) + ' m'],
+    ['验算 (h₀−Y)/t', avg.toFixed(3) + ' m/s ＝ |v<sub>影</sub>|', 2],
+    ['剩余高度比 Y/h₀', (Yc / D.Y0 * 100).toFixed(1) + ' %'],
+    ['h₀ = L·tanθ　射程', D.Y0.toFixed(2) + ' m　' + D.range.toFixed(2) + ' m'],
+    ['运动阶段', phase, 1]
+  ];
+  ro.innerHTML = rows.map(r => '<tr><td>' + r[0] + '</td><td class="' + (r[2] === 2 ? 'hl' : r[2] === 1 ? 'hlo' : '') + '">' + r[1] + '</td></tr>').join('');
+}
+
+/* ============ 控件 ============ */
+const CTRLS = [
+  { k: 'v0', label: '初速度 v₀', min: 3, max: 12, step: .1, unit: ' m/s', dec: 1 },
+  { k: 'th', label: '抛射角 θ', min: 15, max: 50, step: 1, unit: '°', dec: 0 },
+  { k: 'L', label: '墙距 L', min: 5, max: 14, step: .5, unit: ' m', dec: 1 },
+  { k: 'rate', label: '播放速度', min: .2, max: 1.5, step: .05, unit: '×', dec: 2 }
+];
+const inputs = {}, vals = {};
+{
+  const box = document.getElementById('ctrls4');
+  CTRLS.forEach(c => {
+    const row = document.createElement('div'); row.className = 'row';
+    const lb = document.createElement('label'); lb.textContent = c.label;
+    const ip = document.createElement('input');
+    ip.type = 'range'; ip.min = c.min; ip.max = c.max; ip.step = c.step; ip.value = st[c.k];
+    const vv = document.createElement('span'); vv.className = 'val';
+    vv.textContent = Number(st[c.k]).toFixed(c.dec) + c.unit;
+    ip.addEventListener('input', () => {
+      st[c.k] = parseFloat(ip.value);
+      recalc();
+      vv.textContent = Number(st[c.k]).toFixed(c.dec) + c.unit;
+      syncMax();
+    });
+    row.appendChild(lb); row.appendChild(ip); row.appendChild(vv);
+    box.appendChild(row);
+    inputs[c.k] = ip; vals[c.k] = vv;
+  });
+}
+function syncMax(){
+  const mx = v0max().toFixed(1);
+  inputs.v0.max = mx;
+  if (st.v0 > v0max()){ st.v0 = v0max(); inputs.v0.value = st.v0; }
+  vals.v0.textContent = st.v0.toFixed(1) + ' m/s';
+  vals.th.textContent = st.th.toFixed(0) + '°';
+  vals.L.textContent = st.L.toFixed(1) + ' m';
+}
+const bPlay = document.getElementById('b4p'), bReset = document.getElementById('b4r');
+bPlay.onclick = () => { st.run = !st.run; bPlay.textContent = st.run ? '⏸ 暂停' : '▶ 播放'; };
+bReset.onclick = () => { st.t = 0; st.hold = 0; st.run = true; bPlay.textContent = '⏸ 暂停'; };
+const bind = (id, key) => { const e = document.getElementById(id); e.onchange = () => { st[key] = e.checked; }; };
+bind('c4ray', 'showRay'); bind('c4mk', 'showMark'); bind('c4vc', 'showVec'); bind('c4yg', 'showBallCurve');
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space'){ e.preventDefault(); st.run = !st.run; bPlay.textContent = st.run ? '⏸ 暂停' : '▶ 播放'; }
+  if (e.key === 'r' || e.key === 'R'){ st.t = 0; st.hold = 0; st.run = true; bPlay.textContent = '⏸ 暂停'; }
+});
+
+/* ============ 主循环 ============ */
+let last = 0, fn = 0;
+function step(dtReal){
+  if (!st.run) return;
+  if (st.hold > 0){ st.hold -= dtReal; if (st.hold <= 0){ st.t = 0; st.hold = 0; } return; }
+  st.t += dtReal * st.rate;
+  if (st.t >= D.T){ st.t = D.T; st.hold = 1.0; }
+}
+function frame(ts){
+  try{
+    const dt = last ? Math.min(0.05, (ts - last) / 1000) : 0;
+    last = ts;
+    step(dt);
+    drawScene(); drawGraph();
+    if (fn++ % 4 === 0) refresh();
+  }catch(e){ console.error(e); }
+  requestAnimationFrame(frame);
+}
+window.addEventListener('resize', resizeAll);
+resizeAll(); recalc(); syncMax(); refresh();
+requestAnimationFrame(frame);
+})();
+
+</script>
+</body>
+</html>
