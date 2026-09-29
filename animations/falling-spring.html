@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小球落体压缩弹簧 · 合力–位移 与 速度–时间</title>
+<style>
+:root{
+  --bg:#0a0e1a; --line:rgba(74,159,216,.24); --txt:#dce8f5; --sub:#93aac2;
+  --blue:#4a9fd8; --cyan:#5fd0c8; --orange:#ffb567;
+  --red:#ff5a6e; --violet:#b18cff; --gold:#ffd24d;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:
+    radial-gradient(1100px 640px at 14% -12%,rgba(74,159,216,.16),transparent 62%),
+    radial-gradient(900px 560px at 102% 0%,rgba(95,208,200,.09),transparent 58%),
+    var(--bg);
+  color:var(--txt); min-height:100vh;
+  font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,-apple-system,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+header{max-width:1600px;margin:0 auto;padding:13px 18px 4px}
+header h1{margin:0;font-size:19px;letter-spacing:.3px;font-weight:700}
+header h1 span{color:var(--cyan)}
+header p{margin:3px 0 0;font-size:13px;color:var(--sub)}
+main{max-width:1600px;margin:0 auto;padding:6px 16px 18px;display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+.arow{display:grid;grid-template-columns:0.56fr 1.1fr 0.9fr;gap:14px;align-items:start;min-width:0}
+/* 控制区始终与动画区同一高度、位于右侧（绝不掉到下方）；仅在很窄时整列堆叠 */
+@media (max-width:1180px){.arow{grid-template-columns:0.52fr 1fr 0.82fr;gap:12px}}
+@media (max-width:820px){.arow{grid-template-columns:1fr;gap:12px}.col-ctrl{order:3}}
+.col-anim{min-width:0}
+.col-graphs{min-width:0}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card{background:linear-gradient(180deg,rgba(16,26,42,.88),rgba(11,18,30,.93));
+      border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.30)}
+.stage{padding:9px 12px 9px}
+.cap{font-size:13px;color:var(--sub);margin:0 0 5px 2px}
+.cap b{color:var(--cyan);font-size:14px;margin-right:7px}
+canvas{display:block;width:100%;border-radius:10px}
+#cv{height:clamp(460px,66vh,720px)}
+.lg{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 0 2px;font-size:11.8px;color:var(--sub)}
+.lg b{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.lg i{width:16px;height:3px;border-radius:2px;display:inline-block}
+.know{padding:10px 13px 12px;font-size:12px;line-height:1.55}
+.know h2{margin:0 0 5px;font-size:14px;color:var(--cyan)}
+.know h3{margin:7px 0 2px;font-size:12.5px;color:var(--gold)}
+.know p{margin:2px 0}
+.know .k{color:var(--gold)} .know .hl{color:#fff;font-weight:600}
+.mono{font-family:Consolas,"SF Mono",Menlo,monospace}
+.box{margin:7px 0 0;padding:7px 10px;border-radius:9px;border-left:3px solid}
+.box b{color:#fff}
+.box.key{background:rgba(255,181,103,.08);border-color:var(--orange)}
+.box.warn{background:rgba(255,90,110,.09);border-color:var(--red)}
+.box.tip{background:rgba(95,208,200,.08);border-color:var(--cyan)}
+/* 图像卡 */
+.gcard{padding:8px 10px 8px}
+.gcap{font-size:12.5px;color:var(--sub);margin:0 0 5px 2px}
+.gcap b{color:var(--gold);font-size:12.5px;margin-right:6px}
+.duo{display:grid;grid-template-columns:1fr;gap:10px}
+.gcard canvas{height:clamp(220px,33vh,300px);display:block;width:100%;border-radius:10px}
+@media (max-width:1000px){.gcard canvas{height:clamp(190px,28vh,240px)}}
+/* 控制区 */
+.ctl{padding:10px 13px 11px}
+.ctl .row{display:grid;grid-template-columns:auto 150px auto;gap:8px 10px;align-items:center;font-size:12.5px;color:var(--sub);margin:5px 0}
+.ctl label{white-space:nowrap}
+.ctl input[type=range]{width:150px;min-width:0;accent-color:#5fd0c8;cursor:pointer}
+.ctl .val{color:#fff;font-weight:600;font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px}
+.chks{display:flex;flex-wrap:wrap;gap:12px;margin:2px 0 4px}
+label.chk{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;font-size:12.5px;color:var(--sub)}
+input[type=checkbox]{accent-color:#4a9fd8;width:14px;height:14px;cursor:pointer;margin:0}
+button{font:inherit;font-size:12.5px;color:var(--txt);cursor:pointer;padding:4px 12px;border-radius:8px;
+  background:rgba(74,159,216,.13);border:1px solid rgba(74,159,216,.38);transition:.16s}
+button:hover{background:rgba(74,159,216,.24);border-color:rgba(74,159,216,.72)}
+button.on{background:rgba(95,208,200,.20);border-color:rgba(95,208,200,.75);color:#bff5ee}
+/* 实时参数（右区最下面） */
+.live{padding:9px 12px 11px;
+  background:linear-gradient(180deg,rgba(9,22,32,.97),rgba(7,15,25,.99));
+  border:1px solid rgba(95,208,200,.40);
+  box-shadow:0 0 0 1px rgba(95,208,200,.08),0 14px 34px rgba(0,0,0,.45)}
+.live h2{margin:0 0 6px;font-size:13.5px;color:var(--cyan);display:flex;align-items:center;gap:7px}
+.live h2 em{width:7px;height:7px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 0 0 rgba(95,208,200,.8);animation:pl 1.6s infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(95,208,200,.55)}70%{box-shadow:0 0 0 8px rgba(95,208,200,0)}100%{box-shadow:0 0 0 0 rgba(95,208,200,0)}}
+table.ro{width:100%;border-collapse:collapse;font-size:12.5px}
+table.ro td{padding:2.5px 0;border-bottom:1px dashed rgba(74,159,216,.16)}
+table.ro td:first-child{color:var(--sub)}
+table.ro td:last-child{text-align:right;color:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+table.ro td.ph{color:var(--gold);font-weight:700}
+.bar{height:7px;border-radius:4px;background:rgba(74,159,216,.14);overflow:hidden;margin:7px 0 2px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#4a9fd8,#5fd0c8);transition:width .05s linear}
+</style>
+</head>
+<body>
+<header>
+  <h1>小球落体压缩<span>弹簧</span> · 合力–位移 与 速度–时间</h1>
+  <p>小球自空中静止下落撞击竖直弹簧后被弹回 —— 合力随位移的函数图像、速度–时间图像，以及各物理量的实时读数。</p>
+</header>
+
+<main>
+  <div class="arow">
+
+    <!-- ================= 左：弹簧动画（更长的弹簧 · 更大的运动幅度，便于观察） ================= -->
+    <div class="col col-anim">
+      <div class="card stage">
+        <div class="cap"><b>动画</b>自由下落 → 压缩弹簧 → 弹回空中，直至静止于平衡位置</div>
+        <canvas id="cv"></canvas>
+        <div class="lg">
+          <b><i style="background:#c4e0f6"></i>弹簧（线圈）</b>
+          <b><i style="background:#e5252f"></i>小球</b>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 中：两幅图像（上 F–s，下 v–t） ================= -->
+    <div class="col col-graphs">
+      <div class="card gcard">
+        <div class="gcap"><b>图 1</b>合力 F – 位移 s</div>
+        <canvas id="cvF"></canvas>
+      </div>
+      <div class="card gcard">
+        <div class="gcap"><b>图 2</b>速度 v – 时间 t</div>
+        <canvas id="cvV"></canvas>
+      </div>
+    </div>
+
+    <!-- ================= 右：控制交互 + 知识归纳 + 实时参数 ================= -->
+    <div class="col col-ctrl">
+
+      <div class="card ctl">
+        <h2 style="margin:0 0 6px;font-size:14px;color:var(--cyan)">控制交互</h2>
+        <div class="btns">
+          <button id="bPlay" class="on">暂停</button>
+          <button id="bReset">重置</button>
+          <button id="bOne">下一步 ↦</button>
+        </div>
+        <div class="chks">
+          <label class="chk"><input type="checkbox" id="cFor" checked>力矢量</label>
+          <label class="chk"><input type="checkbox" id="cVel" checked>速度矢量</label>
+          <label class="chk"><input type="checkbox" id="cDim" checked>尺寸标注</label>
+          <label class="chk"><input type="checkbox" id="cGid" checked>网格</label>
+          <label class="chk"><input type="checkbox" id="cRe" checked>自动重播</label>
+        </div>
+        <div class="row"><label>时间倍率</label>
+          <input type="range" id="rSp" min="0.15" max="1.5" step="0.05" value="1"><span class="val" id="vSp">1.00 ×</span></div>
+        <div class="row"><label>质量 m</label>
+          <input type="range" id="rM" min="0.2" max="1" step="0.05" value="0.5"><span class="val" id="vM">0.50 kg</span></div>
+        <div class="row"><label>劲度 k</label>
+          <input type="range" id="rK" min="40" max="200" step="5" value="100"><span class="val" id="vK">100 N/m</span></div>
+        <div class="row"><label>释放高度 h₀</label>
+          <input type="range" id="rH" min="0" max="0.8" step="0.02" value="0.6"><span class="val" id="vH">0.60 m</span></div>
+        <div class="row"><label>恢复系数 e</label>
+          <input type="range" id="rE" min="0.5" max="1" step="0.02" value="0.82"><span class="val" id="vE">0.82</span></div>
+        <div class="row"><label>重力 g</label>
+          <input type="range" id="rG" min="9.8" max="10" step="0.05" value="10"><span class="val" id="vG">10.0 m/s²</span></div>
+      </div>
+
+      <div class="card know">
+        <h2>物理知识归纳</h2>
+        <p>取<span class="hl">竖直向下为正方向</span>，以<span class="hl">释放点为原点</span>记位移 <span class="mono">s</span>；
+           弹簧上端自然位置在 <span class="mono">s = h₀</span>，接触后压缩量 <span class="mono">x = s − h₀</span>。</p>
+
+        <h3>① 四阶段与合力</h3>
+        <p><span class="k">自由落体</span>（s &lt; h₀）：<span class="mono">a = g</span>，<span class="mono">F = mg</span>。<br>
+           <span class="k">接触压缩</span>：<span class="mono">a = g − (k/m)x</span>，<span class="mono">F = mg − kx</span>。<br>
+           <span class="k">接触回弹</span>：同一式，x 减小，a 由负回到 g。<br>
+           <span class="k">空中弹起</span>：仅重力，<span class="mono">a = −g</span>（向上减速）。</p>
+
+        <h3>② 最大压缩 —— 最常见的错</h3>
+        <p>由能量守恒（接触过程无损）：<span class="mono">½mv₀² + mgx = ½kx²</span>，即</p>
+        <p class="mono" style="text-align:center">
+          <span class="hl">x_max = x_eq + √(A² + x_eq²)</span>，　<span class="mono">x_eq = mg/k</span>，<span class="mono">A = v₀/ω</span>
+        </p>
+        <p>其中 <span class="mono">ω = √(k/m)</span>。<span class="k">注意</span>：简谐运动的振幅 <span class="mono">A</span> 与
+           <span class="mono">x_max</span> <b>不是一回事</b> —— 简谐中心是<b>平衡位置</b> <span class="mono">x_eq</span>，
+           而不是接触点 <span class="mono">x = 0</span>。只有 <span class="mono">x_max = A</span> 才能写成 <span class="mono">v₀/ω</span>。</p>
+
+        <h3>③ 两幅图像</h3>
+        <p><span class="k">F–s 图</span>：空中段是 <span class="mono">F = mg</span> 的水平线；接触段是斜率
+           <span class="mono">−k</span> 的直线，<span class="k">与横轴交点即平衡位置</span>
+           <span class="mono">s = h₀ + x_eq</span>。<b>每次撞击都沿同一条斜线走过</b>，只是范围逐次变短。</p>
+        <p><span class="k">v–t 图</span>：三段斜率<b>都是 g</b>（自由落体正、接触段为余弦弧但单调下降、弹起段为负）；
+           每次离开弹簧速率乘 <span class="mono">e</span>，故振幅等比衰减，最终停于
+           <span class="mono">x_eq</span>。</p>
+
+        <div class="box key">
+          <b>高考要点</b>　① 最大压缩与最大弹力：<span class="mono">F_max = k·x_max</span> 常<b>远大于</b> mg
+          （默认参数下约 7.3 mg）—— 因为压缩量小但劲度大。
+          ② 全过程可用能量守恒求任意时刻速度：<span class="mono">½mv² + ½kx² + mgh = 常数</span>。
+        </div>
+        <div class="box warn">
+          <b>易错</b><br>
+          ✗ 把最大压缩写成 <span class="mono">v₀/ω</span> —— 漏了重力势能，正确答案多出 <span class="mono">x_eq</span> 一项。<br>
+          ✗ 认为最大弹力等于 mg —— 平衡位置处合力为零，但那是<b>中间时刻</b>，最大弹力在最大压缩处。<br>
+          ✗ 认为接触段 v–t 斜率仍是 g —— 接触段 <span class="mono">a = g − (k/m)x &lt; 0</span>，且随 x 增大而变陡。<br>
+          ✗ 认为小球最后停在弹簧原长处 —— 静止在<b>平衡位置</b> <span class="mono">x_eq</span>，此时合力为零。
+        </div>
+        <div class="box tip">
+          <b>模型说明</b>　弹簧质量不计；接触损耗用一个恢复系数 <span class="mono">e</span> 描述
+          （离开弹簧时速率变为 <span class="mono">e·v</span>）。<span class="mono">e = 1</span> 时能量无损、等幅弹跳。
+        </div>
+      </div>
+
+      <div class="card live">
+        <h2><em></em>实时参数</h2>
+        <table class="ro">
+          <tr><td>运动阶段</td><td id="oPh" class="ph">—</td></tr>
+          <tr><td>时间 t</td><td id="oT">—</td></tr>
+          <tr><td>位移 s（向下为正）</td><td id="oS">—</td></tr>
+          <tr><td>速度 v（向下为正）</td><td id="oV">—</td></tr>
+          <tr><td>加速度 a</td><td id="oA">—</td></tr>
+          <tr><td>合力 F</td><td id="oF">—</td></tr>
+          <tr><td>重力 mg</td><td id="oG">—</td></tr>
+          <tr><td>弹簧弹力 kx</td><td id="oSpr">—</td></tr>
+          <tr><td>压缩量 x</td><td id="oX">—</td></tr>
+          <tr><td>本次最大压缩 x_max</td><td id="oXm">—</td></tr>
+          <tr><td>动能 E_k</td><td id="oEk">—</td></tr>
+          <tr><td>弹性势能 E_p</td><td id="oEp">—</td></tr>
+          <tr><td>撞击次数 / 撞击速率</td><td id="oHit">—</td></tr>
+        </table>
+        <div class="bar"><i id="barEp" style="width:0%"></i></div>
+        <div style="font-size:11.5px;color:var(--sub)">弹性势能 E_p 占本次接触峰值的比例</div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+const TAU = Math.PI*2;
+const $ = function(id){ return document.getElementById(id); };
+
+/* ============ 绘图原语 ============ */
+function rr(G,x,y,w,h,r){
+  G.beginPath(); G.moveTo(x+r,y);
+  G.lineTo(x+w-r,y); G.quadraticCurveTo(x+w,y,x+w,y+r);
+  G.lineTo(x+w,y+h-r); G.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  G.lineTo(x+r,y+h); G.quadraticCurveTo(x,y+h,x,y+h-r);
+  G.lineTo(x,y+r); G.quadraticCurveTo(x,y,x+r,y);
+  G.closePath();
+}
+function arrow(G,x0,y0,x1,y1,col,w,head){
+  const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy);
+  if(L<1.2) return;
+  const hh=Math.min(head, L*0.66), ux=dx/L, uy=dy/L, bx=x1-ux*hh, by=y1-uy*hh;
+  G.strokeStyle=col; G.lineWidth=w; G.lineCap='round';
+  G.beginPath(); G.moveTo(x0,y0); G.lineTo(bx,by); G.stroke();
+  G.fillStyle=col;
+  G.beginPath(); G.moveTo(x1,y1);
+  G.lineTo(bx-uy*hh*0.42, by+ux*hh*0.42);
+  G.lineTo(bx+uy*hh*0.42, by-ux*hh*0.42);
+  G.closePath(); G.fill();
+}
+function seg(G,x0,y0,x1,y1,col,w,dash){
+  G.save(); if(dash) G.setLineDash(dash);
+  G.strokeStyle=col; G.lineWidth=w; G.lineCap='round';
+  G.beginPath(); G.moveTo(x0,y0); G.lineTo(x1,y1); G.stroke(); G.restore();
+}
+function txt(G,s,x,y,col,font,align,base){
+  G.fillStyle=col; G.font=font||'12px "Microsoft YaHei",sans-serif';
+  G.textAlign=align||'left'; G.textBaseline=base||'middle';
+  G.fillText(s,x,y);
+}
+function dot(G,x,y,r,fill,stroke,lw){
+  G.beginPath(); G.arc(x,y,r,0,TAU);
+  if(fill){ G.fillStyle=fill; G.fill(); }
+  if(stroke){ G.strokeStyle=stroke; G.lineWidth=lw||1.2; G.stroke(); }
+}
+function wm(G,W,H){
+  G.save(); G.globalAlpha=.5;
+  G.fillStyle='rgba(225,242,240,.92)';
+  G.font='700 13px "Microsoft YaHei",sans-serif';
+  G.textAlign='right'; G.textBaseline='bottom';
+  G.fillText('force99', W-11, H-9); G.restore();
+}
+
+/* ============ 物理状态 =========== */
+const L0 = 0.88;              // 弹簧自然长度（固定，用于画面与“触底”判据）
+const RB = 0.062;             // 小球半径（世界单位 m）
+const S = {
+  m:0.5, k:100, h0:0.6, e:0.82, g:10,
+  P:null, segs:[], idx:0, lt:0, t:0,
+  run:true, rate:1, one:false,
+  showFor:true, showVel:true, showDim:true, showGrid:true, autoRep:true,
+  hist:[], restT:-1, xref:0, fNeg:0
+};
+
+/* ============ 阻尼简谐接触段求解 ============
+   小球压在弹簧上做【阻尼】简谐运动（绕平衡位置 x_eq=mg/k），速度处处连续 → v–t 曲线无跳变。
+   位移 z=x−x_eq 满足  z''+2γ z'+ω² z=0，
+   解 z(τ)=e^{−γτ}(C·cos ω_dτ + D·sin ω_dτ)，ω_d=√(ω²−γ²)，初始 z(0)=−x_eq、z'(0)=v_in。
+   小球在 z 回到 −x_eq（即 x=0）且 z'<0（向上离开）时脱离弹簧 → 此处 v 连续过渡到空中段。
+   恢复系数 e 通过调节 γ 实现：每次接触按当前入射速率 v_in 标定 γ，使 |v_分离|/v_in = e。 */
+function dampedSolve(omega, xeq, vIn, gamma){
+  const wd = Math.sqrt(Math.max(omega*omega - gamma*gamma, 1e-9));
+  const C = -xeq, D = (vIn - gamma*xeq)/wd;
+  const T = 3*Math.PI/Math.max(wd,1e-9);
+  const N = 1400; let prevZ = C;
+  for(let i=1;i<=N;i++){
+    const tau=i/N*T, e=Math.exp(-gamma*tau), cs=Math.cos(wd*tau), sn=Math.sin(wd*tau);
+    const z=e*(C*cs+D*sn);
+    const zp=e*(-gamma*(C*cs+D*sn)+wd*(-C*sn+D*cs));
+    // 下降穿越 z=−x_eq（即 x=0，且 z'<0 → 向上脱离）：分离点
+    if(prevZ > -xeq && z <= -xeq && zp < 0){
+      let a=(i-1)/N*T, b=tau;
+      for(let it=0;it<28;it++){ const m=(a+b)/2, em=Math.exp(-gamma*m);
+        const zm=em*(C*Math.cos(wd*m)+D*Math.sin(wd*m));
+        if(zm > -xeq) a=m; else b=m; }
+      const tc=(a+b)/2, em=Math.exp(-gamma*tc);
+      const vSep=em*(-gamma*(C*Math.cos(wd*tc)+D*Math.sin(wd*tc))+wd*(-C*Math.sin(wd*tc)+D*Math.cos(wd*tc)));
+      return {tc, vSep, wd, C, D};
+    }
+    prevZ=z;
+  }
+  return null;
+}
+function gammaForE(eT, omega, xeq, vIn){
+  if(eT >= 0.999) return 0;                 // 完全弹性：无阻尼，v(t) 严格连续周期
+  let lo=0, hi=0.985*omega;
+  for(let it=0;it<28;it++){
+    const g=(lo+hi)/2, r=dampedSolve(omega,xeq,vIn,g);
+    if(!r){ hi=g; continue; }
+    const rest=-r.vSep/vIn;                 // 本次恢复系数（vSep<0）
+    if(rest > eT) lo=g; else hi=g;          // rest 随 γ 增大而减小
+  }
+  return (lo+hi)/2;
+}
+
+function buildSegs(){
+  const P = { m:S.m, k:S.k, h0:S.h0, e:S.e, g:S.g,
+              om:Math.sqrt(S.k/S.m), xeq:S.m*S.g/S.k };
+  S.P = P;
+  const segs=[]; let t=0, s=0, v=0, n=0, xm1=0, maxXmax=0;
+  while(n<40){
+    const dh = P.h0 - s;
+    // 空气段（自由落体）：仅当球在簧顶上方(dh>0)或带向上速度(可上升再回落)时存在。
+    // h0=0 且 v≈0：球静止置于簧顶 → 直接进接触段（标准阻尼简谐，不脱离），否则 dt=0 会提前 break 出空仿真。
+    if(dh > 1e-9 || v < -1e-9){
+      const disc = v*v + 2*P.g*dh;
+      if(disc<0) break;
+      const dt = (-v + Math.sqrt(disc))/P.g;
+      if(!(dt>0) || !isFinite(dt)) break;
+      segs.push({ty:'air', t0:t, t1:t+dt, s0:s, v0:v});
+      t += dt; s = P.h0; v = v + P.g*dt;
+    }
+    // 阻尼简谐接触段
+    let gamma, ds, tc, vOut, C, D, wd, noSep=false;
+    if(Math.abs(v) < 1e-3){
+      // 簧顶静止释放（h0≈0）：不脱离，做简谐振动、收敛于平衡位置。
+      // 阻尼 γ 由恢复系数 e 决定：e=1 → γ=0（无损耗、等幅振动）；e<1 → 随 e 衰减（e 越接近 1 衰减越慢）。
+      gamma = (P.e >= 0.999) ? 0 : -(P.om/Math.PI)*Math.log(P.e);
+      wd = Math.sqrt(Math.max(P.om*P.om - gamma*gamma, 1e-9));
+      C = -P.xeq; D = (-gamma*P.xeq)/wd;
+      noSep = true;
+      tc = (P.e >= 0.999) ? 6*2*Math.PI/P.om : Math.min(5/gamma, 8*2*Math.PI/P.om);
+    } else {
+      gamma = gammaForE(P.e, P.om, P.xeq, v);
+      ds = dampedSolve(P.om, P.xeq, v, gamma);
+      if(!ds){ // 极端参数兜底：理想无阻尼
+        const A=v/P.om, B=Math.hypot(A,P.xeq), phi=Math.atan2(-P.xeq,A);
+        tc=(Math.PI-2*phi)/P.om; vOut=-P.e*v; C=-P.xeq; D=v/P.om; wd=P.om; gamma=0; noSep=false;
+      } else { tc=ds.tc; vOut=ds.vSep; C=ds.C; D=ds.D; wd=ds.wd; noSep=false; }
+    }
+    // 扫描最大压缩 x_max（z 峰值）
+    let xmax=P.xeq; const M=240;
+    for(let i=0;i<=M;i++){ const tau=tc*i/M, e=Math.exp(-gamma*tau);
+      const x=P.xeq + e*(C*Math.cos(wd*tau)+D*Math.sin(wd*tau)); if(x>xmax) xmax=x; }
+    if(n===0) xm1=xmax;
+    if(xmax>maxXmax) maxXmax=xmax;
+    if(noSep){ // 脱离点速度（≈0，已衰减）—— 仅用于收尾，不会触发下次反弹
+      const e=Math.exp(-gamma*tc);
+      vOut = e*(-gamma*(C*Math.cos(wd*tc)+D*Math.sin(wd*tc)) + wd*(-C*Math.sin(wd*tc)+D*Math.cos(wd*tc)));
+    }
+    segs.push({ty:'contact', t0:t, t1:t+tc, C:C, D:D, wd:wd, gamma:gamma, tc:tc,
+               xmax:xmax, vIn:v, vOut:vOut, n:n, noSep:noSep});
+    t += tc;
+    if(noSep){ v = 0; } else { v = vOut; }
+    n++;
+    if(noSep) break;                      // 不脱离 → 直接静止于平衡位置（h0=0 标准阻尼曲线）
+    if(Math.abs(v) < 0.06){ break; }
+    if(n >= 60){ break; }                 // 上限保护
+  }
+  // 无论何种终止原因，末尾一定是静止段 —— 保证 step/stateOf 不会越界
+  if(!segs.length || segs[segs.length-1].ty !== 'rest')
+    segs.push({ty:'rest', t0:t, t1:1e9, x:P.xeq});
+  S.segs = segs;
+  // 预计算 v–t 曲线：解析采样（固定步长，与帧率无关）→ 接触段恒为光滑（阻尼）简谐，无跳变
+  S.Tend = segs.length ? segs[segs.length-1].t0 : 1;
+  const lastC = [...segs].reverse().find(s=>s.ty==='contact');
+  if(lastC) S.Tend = lastC.t1;
+  // v–t 显示窗口：约前 3 次接触，使每一段简谐清晰；播放时再随时间生长/滚动（见 drawV）
+  const NWIN = 3;
+  let wc = 0; S.tWin = S.Tend;
+  for(const sg of segs){
+    if(sg.ty === 'contact'){ wc++; if(wc === NWIN){ S.tWin = sg.t1 + 0.06; break; } }
+  }
+  S.vcurve = [];
+  const dtv = 0.005;
+  for(const sg of segs){
+    if(sg.ty==='rest') break;
+    const dur = sg.t1 - sg.t0;
+    const ns = Math.max(2, Math.ceil(dur/dtv));
+    for(let k=0;k<=ns;k++){ const t=sg.t0 + dur*k/ns; S.vcurve.push({t, v:vAt(t), ty:sg.ty}); }
+  }
+  let vp = 0; for(const pp of S.vcurve) if(Math.abs(pp.v) > vp) vp = Math.abs(pp.v); S.vPeak = vp;
+  S.xref = maxXmax;
+  S.fNeg = (P.m*P.g - P.k*Math.max(maxXmax, 1e-6)) * 1.12;   // F 轴下界
+  S.idx = 0; S.lt = 0; S.t = 0; S.restT = -1;
+  S.hist = [{t:0, v:0, s:0, F:P.m*P.g}];
+}
+function stateOf(i, lt){
+  const P = S.P, g = S.g, seg = S.segs[i];
+  if(!seg) return {s:0,x:0,v:0,F:g*S.m,ph:'—',a:g};
+  if(seg.ty==='rest')
+    return {s:P.h0+P.xeq, x:P.xeq, v:0, F:0, a:0,
+            ph:'静止于平衡位置（合力为零）'};
+  if(seg.ty==='contact'){
+    const tau = Math.min(Math.max(lt, 0), seg.tc*1.0000001);   // 夹紧在本次接触时长内，保证 x ≥ 0
+    const e = Math.exp(-seg.gamma*tau), cs = Math.cos(seg.wd*tau), sn = Math.sin(seg.wd*tau);
+    const x = P.xeq + e*(seg.C*cs + seg.D*sn);                 // 阻尼简谐位移
+    const vv = e*(-seg.gamma*(seg.C*cs+seg.D*sn) + seg.wd*(-seg.C*sn+seg.D*cs));
+    const a = g - (S.k/S.m)*x;                                 // 合力按 mg−kx（保守治疗，与 F–s 一致）
+    const ph = vv>1e-9 ? '接触 · 压缩中'
+             : (vv<-1e-9 ? '接触 · 回弹中' : '接触 · 最大压缩（v = 0）');
+    return {s:P.h0+x, x:x, v:vv, F:S.m*g - S.k*x, a:a, ph:ph, xmax:seg.xmax, n:seg.n};
+  }
+  const d = lt, s = seg.s0 + seg.v0*d + .5*g*d*d, vv = seg.v0 + g*d;
+  const x = s - P.h0;
+  const ph = i===0 ? '自由落体'
+           : (vv<0 ? '竖直上抛（弹起）' : (vv>0 ? '落回弹簧' : '准备撞击'));
+  return {s:s, x:Math.max(0,x), v:vv, F:S.m*g, a:g, ph:ph};
+}
+
+/* 任意绝对时刻 t 的瞬时速度（解析）：与帧率无关，接触段为阻尼简谐（连续无跳变）。
+   空气段线性、接触段 = e^{−γτ}(−γ(C·cos+D·sin)+ω_d(−C·sin+D·cos))、静止段为 0。
+   因接触段末端 v 与空中段起点 v 连续（均无速度跳变），v–t 曲线在分离点不再出现“突变”。 */
+function vAt(t){
+  const segs=S.segs; if(!segs.length) return 0;
+  let i=0; while(i<segs.length && t>segs[i].t1) i++;
+  if(i>=segs.length) i=segs.length-1;
+  const sg=segs[i];
+  if(sg.ty==='rest') return 0;
+  if(sg.ty==='contact'){ const tau=Math.min(Math.max(t-sg.t0,0), sg.tc);
+    const e=Math.exp(-sg.gamma*tau), cs=Math.cos(sg.wd*tau), sn=Math.sin(sg.wd*tau);
+    return e*(-sg.gamma*(sg.C*cs+sg.D*sn) + sg.wd*(-sg.C*sn+sg.D*cs)); }
+  const d=t-sg.t0; return sg.v0 + S.g*d;
+}
+
+/* 时间口径铁律：S.lt 永远是“本段内的局部时间”，取值 [0, seg.t1-seg.t0]；
+   seg.t0 / seg.t1 是绝对时间。两者绝不可直接相减 —— 否则 rem 会算错、动画卡死。*/
+function step(dt){
+  if(!S.segs.length) return;
+  let left = dt, guard = 0;
+  while(left > 1e-12 && guard++ < 400){
+    const seg = S.segs[S.idx];
+    if(!seg) break;
+    const dur = Math.max(0, seg.t1 - seg.t0);   // 本段总时长
+    const rem = dur - S.lt;                     // 本段剩余时间（同一口径）
+    if(left < rem){ S.lt += left; left = 0; }
+    else{
+      left -= rem;
+      if(seg.ty === 'contact'){
+        // 记录分离瞬间（碰撞损耗）在 v–t 上的“跳变”
+        S.hist.push({t:seg.t1, v:-seg.vIn});
+        S.hist.push({t:seg.t1, v:seg.vOut});
+      }
+      S.lt = 0; S.idx++;                        // 干净地跨入下一段
+      if(S.idx >= S.segs.length){
+        S.idx = S.segs.length - 1;
+        S.lt = Math.max(0, S.segs[S.idx].t1 - S.segs[S.idx].t0);
+        left = 0; break;
+      }
+    }
+  }
+  const seg = S.segs[S.idx];
+  if(!seg) return;
+  S.lt = Math.min(Math.max(S.lt, 0), Math.max(0, seg.t1 - seg.t0));
+  S.t = seg.t0 + S.lt;
+  const st = stateOf(S.idx, S.lt);
+  const last = S.hist[S.hist.length-1];
+  if(!last || S.t - last.t > 1e-9) S.hist.push({t:S.t, v:st.v, s:st.s, F:st.F});
+  if(S.hist.length > 9000) S.hist.splice(0, 2000);
+  if(S.segs[S.idx].ty === 'rest'){
+    if(S.restT < 0) S.restT = S.t;
+    if(S.autoRep && S.t - S.restT > 1.6){ buildSegs(); }
+  } else S.restT = -1;
+}
+
+/* ============ 视图 ============ */
+let G=null,W=0,H=0,sc=1,ox=0,oy=0,viewTop=1;
+let Gf=null,Wf=0,Hf=0, Gv=null,Wv=0,Hv=0;
+function X(xw){ return ox + xw*sc; }
+function Y(yw){ return oy - yw*sc; }
+function setView(){
+  const v0 = Math.sqrt(2*S.g*S.h0);
+  const hUp = (S.e*v0)*(S.e*v0)/(2*S.g);           // 第一次弹起的最大升高（超出弹簧顶端）
+  // 画面顶端必须容纳「地面弹簧（L0）+ 释放高度（h0）+ 弹起高度（hUp）」三者最大者
+  viewTop = L0 + Math.max(S.h0, hUp) + RB*2.2 + 0.06;
+  sc = Math.max(20, (oy - 16) / viewTop);
+}
+/* ============ 主画面 ============ */
+function springTop(){ return Math.max(0.02, L0 - Math.max(0, stateOf(S.idx,S.lt).x)); }
+function drawCoil(G,cx,yTop,yBot,amp,turns,wob){
+  const h = yBot - yTop; if(h < 4) return;
+  const n = Math.max(4, Math.round(turns*2));
+  wob = wob || 0;
+  G.save(); G.lineJoin='round'; G.lineCap='round';
+  // ---- 主线圈：先画一层亮蓝外发光（深底上足够醒目），再叠实心亮色线 ----
+  G.shadowColor='rgba(96,186,255,.55)'; G.shadowBlur=10;
+  G.strokeStyle='rgba(120,176,215,.55)'; G.lineWidth=6.2;
+  G.beginPath(); G.moveTo(cx-amp, yTop);
+  for(let i=1;i<=n;i++){
+    const y = yTop + h*i/n;
+    G.lineTo((i%2 ? cx+amp : cx-amp) + (i%2? +wob : -wob), y);
+  }
+  G.stroke();
+  G.shadowBlur=0;
+  G.strokeStyle='rgba(196,224,246,.98)'; G.lineWidth=2.8; G.stroke();
+  G.strokeStyle='rgba(255,255,255,.55)'; G.lineWidth=1.0; G.stroke();
+  // ---- 上下端板：底座与顶盘，让"弹簧"更像实物 ----
+  const pw = amp*1.45;
+  G.strokeStyle='rgba(214,234,250,.98)'; G.lineWidth=3.4; G.lineCap='round';
+  G.beginPath(); G.moveTo(cx-pw, yTop); G.lineTo(cx+pw, yTop); G.stroke();
+  G.strokeStyle='rgba(232,244,255,.98)'; G.lineWidth=3.8;
+  G.beginPath(); G.moveTo(cx-pw, yBot); G.lineTo(cx+pw, yBot); G.stroke();
+  // 底座加厚一点（固定在地面）
+  G.strokeStyle='rgba(160,196,226,.85)'; G.lineWidth=5.4;
+  G.beginPath(); G.moveTo(cx-pw*1.12, yBot+3.2); G.lineTo(cx+pw*1.12, yBot+3.2); G.stroke();
+  G.restore();
+}
+function draw(){
+  const st = stateOf(S.idx, S.lt), P = S.P;
+  G.clearRect(0,0,W,H);
+  G.fillStyle = '#0a0e1a'; G.fillRect(0,0,W,H);   // 不透明底色：确保任意浏览器合成下都可见
+  const cx = ox, gy = Y(0), rb = RB*sc;
+  // 背景网格
+  if(S.showGrid){
+    G.save(); G.strokeStyle='rgba(74,159,216,.09)'; G.lineWidth=1;
+    for(let y=0.2; y<viewTop; y+=0.2){
+      const py=Y(y); G.beginPath(); G.moveTo(0,py); G.lineTo(W,py); G.stroke();
+    }
+    G.restore();
+  }
+  // 地面
+  G.save();
+  const gg=G.createLinearGradient(0,gy,0,gy+26);
+  gg.addColorStop(0,'rgba(74,159,216,.22)'); gg.addColorStop(1,'rgba(74,159,216,0)');
+  G.fillStyle=gg; G.fillRect(0,gy,W,26); G.restore();
+  seg(G,0,gy,W,gy,'rgba(120,170,210,.75)',1.6);
+  G.save(); G.strokeStyle='rgba(120,170,210,.30)'; G.lineWidth=1;
+  for(let x=-24;x<W;x+=11){ G.beginPath(); G.moveTo(x,gy+1); G.lineTo(x-9,gy+10); G.stroke(); }
+  G.restore();
+
+  const yTopNow = springTop();
+  // 球心世界坐标（单位：米）：释放点高度 = L0 + h0，随下落位移 s 减小；接触时 s>h0 与弹簧顶端重合。
+  // 注意：rb = RB*sc 是像素半径，只用于画椭圆，绝不能加进世界坐标！
+  // 极端软簧/重物/高落差可能使压缩量 x 超过 L0（小球本应触底），此处仅裁剪“绘制位置”避免穿地，
+  // 物理读数仍按真实 x 计算（弹簧可视作被压至极限）。
+  const yBall = Math.max(RB, L0 + S.h0 - st.s);
+  const px = X(0), py = Y(yBall);
+
+  // 弹簧自然长度参考线（虚线引导，不标文字，保持画面干净）
+  seg(G, X(-0.26), Y(L0), X(0.34), Y(L0), 'rgba(140,170,200,.45)', 1.2, [6,5]);
+  // 释放点参考线（仅当确有释放高度时绘制）
+  if(S.h0>0.004){
+    seg(G, X(-0.26), Y(L0+S.h0), X(0.35), Y(L0+S.h0), 'rgba(255,181,103,.38)', 1.2, [6,5]);
+  }
+
+  // 弹簧（含接触时的细微抖动，纯视觉）
+  const wob = (st.ph.indexOf('接触')>=0) ? Math.sin(S.t*S.P.om*3.1)*Math.min(3.4, st.x/Math.max(S.xref,1e-6)*3.4) : 0;
+  // 注意：yTop 必须是"屏幕上更靠上"的一端（像素 y 更小），即弹簧顶端；yBot 是地面端。
+  drawCoil(G, X(0), Y(yTopNow), Y(0), Math.min(22, 0.058*sc), 6, wob);
+
+  // 小球：红色立体球（径向渐变模仿球面光照 + 镜面高光点 + 暗侧边缘光；接触时轻微压扁）
+  const sq = (st.ph.indexOf('接触')>=0) ? Math.min(0.30, st.x/Math.max(S.xref,1e-6)*0.16) : 0;
+  const cyB = py + sq*rb*0.5;                  // 压扁后中心（略下沉）
+  const ryB = rb*(1 - sq*0.55);                // 竖半径（压扁）
+  const rxB = rb*(1 - sq*0.08);                // 横半径（略变宽）
+  G.save();
+  G.shadowColor='rgba(255,58,72,.60)'; G.shadowBlur=18;
+  const rg=G.createRadialGradient(px-rb*0.38, cyB-rb*0.42, rb*0.05, px, cyB, rb*1.08);
+  rg.addColorStop(0.00,'#ffdada');             // 镜面高光
+  rg.addColorStop(0.13,'#ff8078');
+  rg.addColorStop(0.40,'#e5252f');             // 主体红
+  rg.addColorStop(0.72,'#b4111d');
+  rg.addColorStop(1.00,'#5c040b');             // 暗边（背光侧）
+  G.fillStyle=rg;
+  G.beginPath(); G.ellipse(px, cyB, rxB, ryB, 0, 0, TAU); G.fill();
+  G.restore();
+  // 轮廓 + 边缘反光（增强立体感）
+  G.save();
+  G.strokeStyle='rgba(255,178,168,.55)'; G.lineWidth=1.2;
+  G.beginPath(); G.ellipse(px, cyB, rxB, ryB, 0, 0, TAU); G.stroke();
+  const hg=G.createRadialGradient(px-rb*0.40, cyB-rb*0.44, 0, px-rb*0.40, cyB-rb*0.44, rb*0.46);
+  hg.addColorStop(0,'rgba(255,255,255,.95)'); hg.addColorStop(1,'rgba(255,255,255,0)');
+  G.fillStyle=hg;
+  G.beginPath(); G.ellipse(px-rb*0.38, cyB-rb*0.42, rb*0.32, rb*0.24, -0.5, 0, TAU); G.fill();
+  G.restore();
+
+  // 平衡位置参考线（虚线引导，不标文字）
+  {
+    const yEq = Y(L0 - S.P.xeq);
+    G.save(); G.setLineDash([5,4]); G.strokeStyle='rgba(95,208,200,.45)'; G.lineWidth=1.3;
+    G.beginPath(); G.moveTo(X(-0.30), yEq); G.lineTo(X(0.34), yEq); G.stroke(); G.restore();
+  }
+
+  // 运动轨迹（从释放点到当前球心）：仅当确有下落高度时绘制，避免 h0=0 时出现竖直长线
+  if(S.h0>0.004) seg(G, cx, Y(L0 + S.h0), cx, py, 'rgba(255,210,77,.20)', 1.4, [4,6]);
+
+  // 尺寸标注
+  if(S.showDim){
+    const dxl = Math.max(52, X(-0.30));
+    if(S.h0>0.004){
+      seg(G,dxl,Y(L0),dxl,Y(L0+S.h0),'rgba(255,181,103,.75)',1.2);
+      seg(G,dxl,Y(L0),X(-0.19),Y(L0),'rgba(255,181,103,.35)',1,[4,4]);
+      seg(G,dxl,Y(L0+S.h0),X(-0.19),Y(L0+S.h0),'rgba(255,181,103,.35)',1,[4,4]);
+      seg(G,dxl-4,Y(L0+S.h0*.5),dxl+4,Y(L0+S.h0*.5),'rgba(255,181,103,.75)',1.2);
+    }
+    if(st.x>0.006){
+      const yb2 = Y(yTopNow);
+      seg(G,dxl,yb2,dxl,Y(L0),'rgba(95,208,200,.85)',1.2);
+      seg(G,dxl,yb2,X(-0.19),yb2,'rgba(95,208,200,.3)',1,[4,4]);
+      seg(G,dxl,Y(L0),X(-0.19),Y(L0),'rgba(95,208,200,.3)',1,[4,4]);
+      seg(G,dxl-4,(yb2+Y(L0))/2,dxl+4,(yb2+Y(L0))/2,'rgba(95,208,200,.85)',1.2);
+    }
+    // 平衡位置
+    seg(G,X(-0.24),Y(L0-S.P.xeq),X(0.24),Y(L0-S.P.xeq),'rgba(95,208,200,.30)',1,[3,5]);
+  }
+
+  // 力矢量：移到小球【左侧】、与小球同步升降。为避免和左侧“尺寸标注线”重合，
+  // 力矢量竖线固定在标注线右侧至少 30px（仍贴近小球），不再叠在球上。
+  // 画法：合力（橙色，单一颜色，主矢量）画在 fx 列；分力 重力(红,向下)/弹力(蓝,向上)
+  // 从同一作用点出发，画在 fx2 列（再左 18px）。两列分离，中间不再出现颜色串色。
+  if(S.showFor){
+    const sF = 54/Math.max(S.k*S.xref, 1e-6);      // px per N（全帧固定，便于跨帧比较）
+    const Fs = S.k*st.x, mg = S.m*S.g;
+    const Lg = Math.max(8, mg*sF);                  // 重力：向下
+    const Lf = Math.max(0, Fs*sF);                  // 弹力：向上
+    const dimX = Math.max(52, X(-0.30));            // 左侧尺寸标注线 x
+    let fx = px - (rxB + 16);                       // 合力主列：小球左侧
+    if(fx < dimX + 30) fx = dimX + 30;              // 与标注线错开（向右偏移）
+    const fx2 = fx - 18;                            // 分力列：再靠左一点
+    const oy0 = py;                                 // 作用点取球心高度，随球同步升降
+    // 作用点连线（球心 → 分力作用点），明确“这是小球的受力”
+    seg(G, px, py, fx2, py, 'rgba(210,226,242,.30)', 1, [3,3]);
+    // 合力（主矢量，单一橙色，无中间变色）
+    const Fend = oy0 + Lg - Lf;                     // 合力末端：向下为 +，向上为 −
+    arrow(G, fx, oy0, fx, Fend, '#ffb567', 3.2, 12);
+    // 分力：红=重力(向下)、蓝=弹力(向上)，从同一作用点出发、互不重叠
+    arrow(G, fx2, oy0, fx2, oy0+Lg, '#ff5a6e', 2.0, 8);
+    if(Lf > 0.6){
+      arrow(G, fx2, oy0, fx2, oy0-Lf, '#4a9fd8', 2.0, 8);
+      txt(G, 'kx', fx2-5, oy0-Lf, '#7cc0ec', '11px "Microsoft YaHei",sans-serif', 'right', 'middle');
+    }
+    // 力的符号标注（仅符号名，不含数值，清晰而不遮挡）
+    txt(G, 'mg', fx2-5, oy0+Lg, '#ff8a98', '11px "Microsoft YaHei",sans-serif', 'right', 'middle');
+    if(Math.abs(Fend-oy0) > 2){
+      txt(G, 'F合', fx-5, Fend, '#ffb567', '11px "Microsoft YaHei",sans-serif', 'right', 'middle');
+    }
+  }
+  // 速度矢量（贴球体右缘竖直画，与力矢量错开避免共线遮挡）
+  // 比例尺用真实峰值速度 S.vPeak（h0=0 时 vPeak 为振动最大速度，不会塌陷）；最长约 56px，不越界
+  if(S.showVel && Math.abs(st.v)>0.02){
+    const vRef = Math.max(S.vPeak||0.4, 0.4);
+    const Lv = Math.max(10, Math.min(56, Math.abs(st.v)/vRef*56));
+    const dir = st.v>0 ? 1 : -1;
+    const vx = px + rxB + 10;
+    arrow(G, vx, py, vx, py + dir*Lv, '#5fd0c8', 2.8, 11);
+    txt(G, 'v', vx+6, py + dir*Lv, '#7fe3db', '11px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  }
+
+  wm(G,W,H);
+}
+
+/* ============ 图 1：F – s ============ */
+function niceStep(range, n){ const raw=range/n, p=Math.pow(10,Math.floor(Math.log10(raw)));
+  const f=raw/p; return (f<=1?1:f<=2?2:f<=5?5:10)*p; }
+function drawF(){
+  const st = stateOf(S.idx, S.lt), P = S.P;
+  Gf.clearRect(0,0,Wf,Hf);
+  const mL=52, mR=12, mT=16, mB=34;
+  const x0=mL, x1=Wf-mR, y0=mT, y1=Hf-mB;
+  const sMin = -(S.h0 + 0.06), sMax = S.h0 + S.xref + 0.05;
+  const fMax = P.m*S.g*1.45, fMin = Math.min(-Math.abs(P.m*S.g - P.k*S.xref)*1.10, -P.m*S.g*0.7);
+  const Xs = s => x0 + (s - sMin)/(sMax - sMin)*(x1-x0);
+  const Yf = f => y1 - (f - fMin)/(fMax - fMin)*(y1-y0);
+  // 小方格背景（坐标纸风格）：细格 + 每 5 格中格
+  const ds = niceStep(sMax-sMin, 5), df = niceStep(fMax-fMin, 5);
+  const gs = 19;
+  Gf.save();
+  Gf.strokeStyle='rgba(124,150,180,.12)'; Gf.lineWidth=1; Gf.beginPath();
+  for(let gx=x0; gx<=x1+0.5; gx+=gs){ Gf.moveTo(gx,y0); Gf.lineTo(gx,y1); }
+  for(let gy=y0; gy<=y1+0.5; gy+=gs){ Gf.moveTo(x0,gy); Gf.lineTo(x1,gy); }
+  Gf.stroke();
+  Gf.strokeStyle='rgba(124,150,180,.20)'; Gf.beginPath();
+  for(let gx=x0; gx<=x1+0.5; gx+=5*gs){ Gf.moveTo(gx,y0); Gf.lineTo(gx,y1); }
+  for(let gy=y0; gy<=y1+0.5; gy+=5*gs){ Gf.moveTo(x0,gy); Gf.lineTo(x1,gy); }
+  Gf.stroke();
+  Gf.restore();
+  // 横轴建立在 F=0 处（纵坐标为零）
+  const yZf = Yf(0);
+  seg(Gf,x0,y0,x1,y0,'rgba(120,170,210,.22)',1);
+  seg(Gf,x1,y0,x1,y1,'rgba(120,170,210,.22)',1);
+  seg(Gf,x0,y0,x0,y1,'rgba(120,170,210,.4)',1.1);
+  seg(Gf,x0,yZf,x1,yZf,'rgba(180,205,235,.92)',1.7);
+  // F 刻度（左竖轴）
+  for(let f=Math.ceil(fMin/df)*df; f<=fMax+1e-9; f+=df){ const py=Yf(f);
+    seg(Gf,x0,py,x0-4,py,'rgba(120,170,210,.7)',1.2);
+    txt(Gf,(Math.abs(f)<1e-9?'0':f.toFixed(df<1?1:0)), x0-6, py,'rgba(170,195,220,.98)','10.5px sans-serif','right','middle'); }
+  // s 刻度（横轴 yZf 下方）
+  for(let s=Math.ceil(sMin/ds)*ds; s<=sMax+1e-9; s+=ds){ const px=Xs(s);
+    seg(Gf,px,yZf,px,yZf+4,'rgba(120,170,210,.7)',1.2);
+    txt(Gf,s.toFixed(ds<0.1?2:1), px, yZf+13,'rgba(170,195,220,.98)','10.5px sans-serif','center','middle'); }
+  // 轴物理符号
+  txt(Gf,'s / m',x1-4,yZf+25,'rgba(195,215,240,1)','11.5px "Microsoft YaHei",sans-serif','right','middle');
+  Gf.save(); Gf.translate(13,(y0+y1)/2); Gf.rotate(-Math.PI/2);
+  txt(Gf,'F / N',0,0,'rgba(195,215,240,1)','11.5px "Microsoft YaHei",sans-serif','center','middle'); Gf.restore();
+
+  // mg 水平线
+  seg(Gf,x0,Yf(P.m*S.g),x1,Yf(P.m*S.g),'rgba(255,90,110,.55)',1.2,[6,5]);
+  txt(Gf,'mg',x1-4,Yf(P.m*S.g)-8,'rgba(255,90,110,.9)','10.5px "Microsoft YaHei",sans-serif','right','middle');
+  // 平衡位置
+  const sEq = S.h0 + P.xeq;
+  if(sEq<=sMax){
+    seg(Gf,Xs(sEq),y0,Xs(sEq),y1,'rgba(95,208,200,.45)',1.1,[3,4]);
+    txt(Gf,'平衡位置 F=0',Xs(sEq)+4,y1-9,'rgba(95,208,200,.95)','10.5px "Microsoft YaHei",sans-serif','left','middle');
+  }
+  // 曲线：空中段（水平 mg）+ 接触段（斜率 −k 的直线）
+  // 阴影 = mg 水平线与接触段直线之间的“合力变化量”
+  const sC = Math.min(sMax, S.h0 + S.xref);
+  const fEnd = Math.max(fMin, P.m*S.g - S.k*(sC - S.h0));
+  Gf.save();
+  Gf.beginPath();
+  Gf.moveTo(Xs(S.h0), Yf(P.m*S.g));
+  Gf.lineTo(Xs(sC), Yf(fEnd));
+  Gf.lineTo(Xs(sC), Yf(P.m*S.g));
+  Gf.closePath();
+  Gf.fillStyle='rgba(95,208,200,.13)'; Gf.fill();
+  Gf.beginPath();
+  Gf.moveTo(Xs(sMin), Yf(P.m*S.g));
+  Gf.lineTo(Xs(S.h0), Yf(P.m*S.g));
+  Gf.lineTo(Xs(sC), Yf(fEnd));
+  for(let s=sC; s>=sMin; s-=(sMax-sMin)/160) Gf.lineTo(Xs(s), Yf(P.m*S.g));
+  Gf.closePath();
+  Gf.strokeStyle='rgba(95,208,200,.95)'; Gf.lineWidth=2.2; Gf.lineJoin='round'; Gf.stroke();
+  Gf.restore();
+  // 已走过的部分高亮
+  const sNow = st.s;
+  Gf.save();
+  Gf.strokeStyle='rgba(255,181,103,.95)'; Gf.lineWidth=3.4;
+  Gf.beginPath();
+  Gf.moveTo(Xs(Math.min(sNow,sMax)), Yf(sNow<=S.h0? P.m*S.g : P.m*S.g-S.k*Math.max(0,sNow-S.h0)));
+  Gf.lineTo(Xs(Math.min(sMax,sNow)), Yf(sNow<=S.h0? P.m*S.g : P.m*S.g-S.k*Math.max(0,sNow-S.h0)));
+  Gf.stroke(); Gf.restore();
+
+  // 当前点
+  const fx = Xs(sNow), fy = Yf(st.F);
+  dot(Gf,fx,fy,4.6,'#ffb567','rgba(255,255,255,.85)',1.4);
+  seg(Gf,fx,fy,fx,y1,'rgba(255,181,103,.45)',1,[3,3]);
+  seg(Gf,x0,fy,fx,fy,'rgba(255,181,103,.45)',1,[3,3]);
+  txt(Gf,'F='+(st.F>=0?'+':'')+st.F.toFixed(2)+'N', Math.min(fx+8, x1-58), Math.max(fy-11,y0+8),
+      '#ffb567','600 11px "Microsoft YaHei",sans-serif','left','middle');
+  txt(Gf,'接触段斜率 −k = −'+S.k.toFixed(0),x0+8,y1-10,'rgba(95,208,200,.9)','10.5px "Microsoft YaHei",sans-serif','left','middle');
+  wm(Gf,Wf,Hf);
+}
+
+/* ============ 图 2：v – t ============ */
+function drawV(){
+  const st = stateOf(S.idx, S.lt), P = S.P;
+  Gv.clearRect(0,0,Wv,Hv);
+  const mL=46, mR=12, mT=16, mB=32;
+  const x0=mL, x1=Wv-mR, y0=mT, y1=Hv-mB;
+  // v 轴范围取真实峰值（含接触段简谐峰值），避免曲线被钳平（上下平头）
+  const vAmax = Math.max((S.vPeak||0.4)*1.16, 0.4);
+  const Yv = v => (y0+y1)/2 - v/vAmax*((y1-y0)/2);
+  // v–t 随时间“生长”：窗口宽度 = S.tWin（约前 3 次接触）。当前时刻 S.t 为右缘：
+  // 早期从左向右逐段绘出（生长），播放超过窗口后窗口自动左移滚动，始终显示最近的清晰简谐段。
+  const WIN = S.tWin || 2;
+  const tNow = S.t;
+  const tStart = Math.max(0, tNow - WIN);
+  const tMax = tStart + WIN;
+  const Xt = t => x0 + (t - tStart)/(tMax - tStart)*(x1-x0);
+  const dt2 = niceStep(WIN, 5), dv = niceStep(vAmax*2, 6);
+  // 小方格背景（坐标纸风格）：细格 + 每 5 格中格
+  const gsv = 19;
+  Gv.save();
+  Gv.strokeStyle='rgba(124,150,180,.12)'; Gv.lineWidth=1; Gv.beginPath();
+  for(let gx=x0; gx<=x1+0.5; gx+=gsv){ Gv.moveTo(gx,y0); Gv.lineTo(gx,y1); }
+  for(let gy=y0; gy<=y1+0.5; gy+=gsv){ Gv.moveTo(x0,gy); Gv.lineTo(x1,gy); }
+  Gv.stroke();
+  Gv.strokeStyle='rgba(124,150,180,.20)'; Gv.beginPath();
+  for(let gx=x0; gx<=x1+0.5; gx+=5*gsv){ Gv.moveTo(gx,y0); Gv.lineTo(gx,y1); }
+  for(let gy=y0; gy<=y1+0.5; gy+=5*gsv){ Gv.moveTo(x0,gy); Gv.lineTo(x1,gy); }
+  Gv.stroke();
+  Gv.restore();
+  // 横轴建立在 v=0 处（纵坐标为零）
+  const yZv = Yv(0);
+  seg(Gv,x0,y0,x1,y0,'rgba(120,170,210,.22)',1);
+  seg(Gv,x1,y0,x1,y1,'rgba(120,170,210,.22)',1);
+  seg(Gv,x0,y0,x0,y1,'rgba(120,170,210,.4)',1.1);
+  seg(Gv,x0,yZv,x1,yZv,'rgba(180,205,235,.92)',1.7);
+  // v 刻度（左竖轴）
+  for(let v=-Math.floor(vAmax/dv)*dv; v<=vAmax+1e-9; v+=dv){ const py=Yv(v);
+    seg(Gv,x0,py,x0-4,py,'rgba(120,170,210,.7)',1.2);
+    txt(Gv,v.toFixed(dv<1?1:0),x0-6,py,'rgba(170,195,220,.98)','10.5px sans-serif','right','middle'); }
+  // t 刻度（横轴 yZv 下方）
+  for(let tk=Math.ceil(tStart/dt2-1e-9)*dt2; tk<=tMax+1e-9; tk+=dt2){ const px=Xt(tk);
+    seg(Gv,px,yZv,px,yZv+4,'rgba(120,170,210,.7)',1.2);
+    txt(Gv,tk.toFixed(dt2<1?1:0),px,yZv+13,'rgba(170,195,220,.98)','10.5px sans-serif','center','middle'); }
+  // 轴物理符号
+  txt(Gv,'t / s',x1-4,yZv+25,'rgba(195,215,240,1)','11.5px "Microsoft YaHei",sans-serif','right','middle');
+  Gv.save(); Gv.translate(12,(y0+y1)/2); Gv.rotate(-Math.PI/2);
+  txt(Gv,'v / (m·s⁻¹)',0,0,'rgba(195,215,240,1)','11.5px "Microsoft YaHei",sans-serif','center','middle'); Gv.restore();
+  txt(Gv,'↓ 为正',x1-4,y0+9,'rgba(147,170,194,.8)','10px "Microsoft YaHei",sans-serif','right','middle');
+
+  // 轨迹：解析 v(t) 曲线（阻尼简谐，连续无跳变；与帧率无关）
+  Gv.save(); Gv.beginPath(); Gv.rect(x0,y0,x1-x0,y1-y0); Gv.clip();
+  Gv.lineJoin='round';
+  // 轨迹：按「是否接触弹簧」分段着色
+  //   空中（未接触弹簧）＝蓝  rgba(108,168,255)
+  //   接触弹簧（含静止于簧上）＝青绿  rgba(82,212,200)
+  const clampV = v => Math.max(-vAmax, Math.min(vAmax, v));
+  const vcol = (ty,a) => ((ty==='contact'||ty==='rest') ? `rgba(188,120,255,${a})` : `rgba(108,168,255,${a})`);
+  function segTypeAt(t){ const segs=S.segs; if(!segs.length) return 'air';
+    let i=0; while(i<segs.length && t>segs[i].t1) i++; if(i>=segs.length) i=segs.length-1; return segs[i].ty; }
+  // 绘制一段彩色 v(t)（到 tLimit 为止）；遇分段类型变化即换色（交界处续接，保持连续）
+  function strokeV(tLimit, alpha, lw){
+    Gv.lineWidth=lw; let cur=null, started=false;
+    for(let i=0;i<S.vcurve.length;i++){
+      const p=S.vcurve[i];
+      if(p.t<tStart-1e-9 || p.t>tMax+1e-9) continue;
+      if(p.t>tLimit+1e-9) break;
+      const px=Xt(p.t), py=Yv(clampV(p.v));
+      if(p.ty!==cur){
+        if(started) Gv.stroke();
+        Gv.beginPath(); Gv.moveTo(px,py); Gv.strokeStyle=vcol(p.ty,alpha); cur=p.ty; started=true;
+      } else Gv.lineTo(px,py);
+    }
+    if(started){
+      const tgt=Math.min(tLimit,tMax), px=Xt(tgt), py=Yv(clampV(vAt(tgt)));
+      Gv.strokeStyle=vcol(segTypeAt(tgt),alpha); Gv.lineTo(px,py); Gv.stroke();
+    }
+  }
+  strokeV(tMax, .26, 1.5);          // 窗口内完整曲线（淡）
+  strokeV(tNow, .98, 2.1);          // 已播放部分（亮，随时间生长）
+  // 接触时刻标记（红）：仅窗口内，标示碰撞/触簧瞬间
+  Gv.strokeStyle='rgba(255,90,110,.38)'; Gv.lineWidth=1;
+  for(let i=0;i<S.segs.length;i++){
+    const sg=S.segs[i]; if(sg.ty!=='contact') continue;
+    if(sg.t0<tStart-1e-9 || sg.t0>tMax+1e-9) continue;
+    const px=Xt(sg.t0);
+    Gv.beginPath(); Gv.moveTo(px,y0); Gv.lineTo(px,y1); Gv.stroke();
+  }
+  // 图例：空中(蓝) / 接触弹簧(青绿)
+  const lx=x0+10, ly=y0+10, lw2=18;
+  Gv.lineWidth=3.2; Gv.strokeStyle=vcol('air',1); Gv.beginPath(); Gv.moveTo(lx,ly); Gv.lineTo(lx+lw2,ly); Gv.stroke();
+  txt(Gv,'空中（未接触）',lx+lw2+8,ly,'rgba(170,205,255,.98)','10.5px "Microsoft YaHei",sans-serif','left','middle');
+  const ly2=ly+16;
+  Gv.lineWidth=3.2; Gv.strokeStyle=vcol('contact',1); Gv.beginPath(); Gv.moveTo(lx,ly2); Gv.lineTo(lx+lw2,ly2); Gv.stroke();
+  txt(Gv,'接触弹簧',lx+lw2+8,ly2,'rgba(205,160,255,.98)','10.5px "Microsoft YaHei",sans-serif','left','middle');
+  // 简谐运动标注（首个接触段中点）
+  const fc = S.segs.find(s=>s.ty==='contact');
+  if(fc){
+    const mx = Xt((fc.t0+fc.t1)/2);
+    txt(Gv,'接触段＝简谐运动', mx, y0+12, 'rgba(188,120,255,.95)',
+        '10.5px "Microsoft YaHei",sans-serif','center','middle');
+  }
+  Gv.restore();
+  // 当前点
+  const cxp = Xt(tNow), cyp = Yv(Math.max(-vAmax,Math.min(vAmax,vAt(tNow))));
+  dot(Gv,cxp,cyp,4.6,'#ffb567','rgba(255,255,255,.85)',1.4);
+  seg(Gv,cxp,cyp,cxp,y1,'rgba(255,181,103,.4)',1,[3,3]);
+  seg(Gv,x0,cyp,cxp,cyp,'rgba(255,181,103,.4)',1,[3,3]);
+  txt(Gv,'v='+(vAt(tNow)>=0?'+':'')+vAt(tNow).toFixed(2),Math.min(cxp+7,x1-40),Math.max(cyp-11,y0+8),
+      '#ffb567','600 11px "Microsoft YaHei",sans-serif','left','middle');
+  wm(Gv,Wv,Hv);
+}
+
+/* ============ 读数 ============ */
+function refresh(){
+  const st = stateOf(S.idx, S.lt), P = S.P;
+  const mg = S.m*S.g, Ep = .5*S.k*st.x*st.x;
+  const EpM = .5*S.k*Math.max(S.xref,1e-9)*Math.max(S.xref,1e-9);
+  $('oPh').textContent = st.ph;
+  $('oT').textContent = S.t.toFixed(3)+' s';
+  $('oS').textContent = st.s.toFixed(4)+' m';
+  $('oV').textContent = (st.v>=0?'+':'')+st.v.toFixed(3)+' m/s';
+  $('oA').textContent = st.a.toFixed(2)+' m/s²';
+  $('oF').textContent = (st.F>=0?'+':'')+st.F.toFixed(3)+' N';
+  $('oG').textContent = mg.toFixed(3)+' N';
+  $('oSpr').textContent = (S.k*st.x).toFixed(3)+' N';
+  $('oX').textContent = st.x.toFixed(4)+' m';
+  const cSeg = S.segs[S.idx];
+  $('oXm').textContent = ((cSeg && cSeg.ty==='contact') ? cSeg.xmax : S.xref).toFixed(4)+' m';
+  $('oEk').textContent = (.5*S.m*st.v*st.v).toFixed(4)+' J';
+  $('oEp').textContent = Ep.toFixed(4)+' J';
+  const hit = Math.max(0, S.segs.filter(s=>s.ty==='contact').length - 1);
+  $('oHit').textContent = '第 '+(hit+1)+' 次';
+  $('barEp').style.width = Math.min(100, Ep/Math.max(EpM,1e-9)*100).toFixed(1)+'%';
+}
+
+/* ============ 循环 ============ */
+function frame(ts){
+  try{
+    if(lastTs===0) lastTs = ts;
+    let dt = (ts - lastTs)/1000; lastTs = ts;
+    if(dt>0.06) dt = 0.06;
+    if(dt<0) dt = 0;
+    if(S.run || S.one){
+      const k = S.one ? 1/90 : dt*S.rate;
+      step(k);
+      S.one = false;
+    }
+    setView(); draw(); drawF(); drawV(); refresh();
+  }catch(e){ }
+  requestAnimationFrame(frame);
+}
+
+/* ============ 初始化 ============ */
+function resizeAll(){
+  const cv = $('cv');
+  if(cv){
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+    W = Math.max(150, cv.clientWidth); H = Math.max(150, cv.clientHeight);
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+    G = cv.getContext('2d'); G.setTransform(dpr,0,0,dpr,0,0);
+    oy = H - Math.max(18, H*0.055);
+    ox = Math.round(W*0.40);
+    sc = Math.max(20, (oy-16)/1.6);
+    setView();
+  }
+  [['cvF','F'],['cvV','V']].forEach(function(p){
+    const c = $(p[0]); if(!c) return;
+    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+    const w = Math.max(140, c.clientWidth), h = Math.max(120, c.clientHeight);
+    c.width = Math.round(w*dpr); c.height = Math.round(h*dpr);
+    const g = c.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+    if(p[1]==='F'){ Gf=g; Wf=w; Hf=h; } else { Gv=g; Wv=w; Hv=h; }
+  });
+}
+
+function bindUI(){
+  const bind = function(id, fn){ const el=$(id); if(el) el.addEventListener('input', fn); };
+  bind('rSp', function(){ S.rate = +this.value; $('vSp').textContent = S.rate.toFixed(2)+' ×'; });
+  bind('rM', function(){ S.m = +this.value; $('vM').textContent = this.value+' kg'; rebuild(); });
+  bind('rK', function(){ S.k = +this.value; $('vK').textContent = this.value+' N/m'; rebuild(); });
+  bind('rH', function(){ S.h0 = +this.value; $('vH').textContent = (+this.value).toFixed(2)+' m'; rebuild(); });
+  bind('rE', function(){ S.e = +this.value; $('vE').textContent = this.value; rebuild(); });
+  bind('rG', function(){ S.g = +this.value; $('vG').textContent = (+this.value).toFixed(2)+' m/s²'; rebuild(); });
+  $('bPlay').addEventListener('click', function(){
+    S.run = !S.run;
+    this.textContent = S.run ? '暂停' : '继续';
+    this.className = S.run ? 'on' : '';
+  });
+  $('bReset').addEventListener('click', function(){ buildSegs(); });
+  $('bOne').addEventListener('click', function(){ S.run=false; $('bPlay').textContent='继续'; $('bPlay').className=''; S.one = true; });
+  const ck = function(id, key){ const el=$(id); if(el) el.addEventListener('change', function(){ S[key] = el.checked; }); };
+  ck('cFor','showFor'); ck('cVel','showVel'); ck('cDim','showDim');
+  ck('cGid','showGrid'); ck('cRe','autoRep');
+  window.addEventListener('keydown', function(e){
+    if(e.code==='Space'){ e.preventDefault(); $('bPlay').click(); }
+    if(e.key==='r'||e.key==='R'){ buildSegs(); }
+  });
+}
+function rebuild(){ buildSegs(); }
+
+let lastTs = 0;
+buildSegs();
+resizeAll();
+bindUI();
+window.addEventListener('resize', resizeAll);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
