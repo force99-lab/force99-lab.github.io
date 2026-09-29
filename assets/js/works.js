@@ -3805,6 +3805,12 @@ const WORKS = [
       desc:"关联速度四模型（悬线抽动 / 双圆环交点 / 剪叉伸缩机构 / 斜抛影子投影）交互动画：匀速拉动下各点速度的矢量分解与线性分配，附 v–x 直线图与 Y–t 影子图佐证。",
       icon:"🎬", cover:"assets/img/related-velocity-02-cover.png", link:"animations/related-velocity-02.html", date:"2026-09-28", tag:"关联速度"
     }
+,
+      {
+      type:"animation", title:"小球落体压缩弹簧",
+      desc:"小球自空中静止下落、撞击竖直弹簧后弹回：实时动画配合合力–位移与速度–时间图像，含阻尼简谐接触模型与参数实时读数。",
+      icon:"🎬", cover:"assets/img/falling-spring-cover.png", link:"animations/falling-spring.html", date:"2026-09-29", tag:"力学"
+    }
 ];
 
 
