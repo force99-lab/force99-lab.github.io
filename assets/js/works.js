@@ -3811,6 +3811,12 @@ const WORKS = [
       desc:"小球自空中静止下落、撞击竖直弹簧后弹回：实时动画配合合力–位移与速度–时间图像，含阻尼简谐接触模型与参数实时读数。",
       icon:"🎬", cover:"assets/img/falling-spring-cover.png", link:"animations/falling-spring.html", date:"2026-09-29", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"2026年1月浙江选考·第18题 俄歇电子能谱",
+      desc:"俄歇电子能谱（AES）中 KLM 俄歇过程的能级守恒分析与动能计算。",
+      icon:"📐", cover:"assets/img/aes18-cover.png", link:"solutions/aes18_threepage.html", date:"2026-10-01", tag:"原子物理"
+    }
 ];
 
 
