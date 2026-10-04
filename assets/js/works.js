@@ -3823,6 +3823,12 @@ const WORKS = [
       desc:"双线沙摆沿纵深方向做简谐运动，沙粒竖直漏下落在匀速或加速运动的纯白木板上，在运动参考系中留下正弦轨迹曲线；摆动周期越长，双线摆摆长越长。",
       icon:"🎬", cover:"assets/img/sand-pendulum-cover.png", link:"animations/sand-pendulum.html", date:"2026-10-04", tag:"力学"
     }
+,
+      {
+      type:"animation", title:"斜面抛体运动 · 动态矢量分解",
+      desc:"斜面上的抛体运动动态演示：可切换平抛 / 斜抛，实时分解位移与速度矢量（水平 / 竖直、平行 / 垂直斜面、初速 / 重力三种基），落回斜面后自动归纳物理公式。",
+      icon:"🎬", cover:"assets/img/projectile-slope-cover.png", link:"animations/projectile-slope.html", date:"2026-10-04", tag:"力学"
+    }
 ];
 
 
