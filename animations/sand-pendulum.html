@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>双线沙摆 · 木板运动轨迹演示（3D）</title>
+<style>
+  :root{
+    --bg0:#05070d; --bg1:#0a0e18; --bg2:#0e1424;
+    --ink:#e6eefc; --sub:#9fb3d6; --line:rgba(120,150,200,.18);
+    --cyan:#3fd0ff; --gold:#ffcf5a; --orange:#ff8a3d; --green:#56e08a;
+    --red:#ff6b7a; --white:#f3f7ff;
+    --panel:rgba(16,28,54,.72); --panelb:rgba(120,160,230,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 18% -10%, rgba(60,110,200,.16), transparent 60%),
+      linear-gradient(160deg,var(--bg0),var(--bg1) 55%,var(--bg2));
+    color:var(--ink); min-height:100%;
+    -webkit-user-select:none; user-select:none;
+  }
+  canvas{ -webkit-user-drag:none; user-select:none; }
+  header{display:flex;align-items:center;gap:12px;padding:9px 16px;
+    border-bottom:1px solid var(--panelb);
+    background:linear-gradient(90deg,rgba(20,34,64,.6),rgba(20,34,64,.15));}
+  header .brand{display:flex;align-items:center;gap:9px;padding-right:14px;margin-right:2px;border-right:1px solid var(--panelb)}
+  header .brand-mark{width:30px;height:30px;border-radius:9px;flex:0 0 auto;position:relative;
+    background:conic-gradient(from 210deg,#39e0ff,#7b6bff,#ff5e7a,#39e0ff);
+    box-shadow:0 0 16px rgba(80,160,255,.5)}
+  header .brand-mark::after{content:"";position:absolute;inset:7px;border-radius:5px;background:linear-gradient(160deg,#0d1830,#11203f)}
+  header .brand-txt{font-size:17px;font-weight:800;letter-spacing:.4px;color:var(--white);font-family:"Segoe UI","Microsoft YaHei",sans-serif;line-height:1}
+  header .brand-txt .n{background:linear-gradient(90deg,#39e0ff,#7b6bff,#ff5e7a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+  header .t{color:var(--sub);font-size:12px;margin-left:auto}
+  .wrap{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(232px,.62fr);gap:12px;padding:12px}
+  @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--panelb);border-radius:14px;
+    padding:9px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .anim{position:relative;overflow:hidden;background:#04060c;border-radius:10px}
+  #cv{width:100%;aspect-ratio:920/720;height:auto;display:block}
+  .basis{display:flex;gap:6px;margin-bottom:9px}
+  .basis button{flex:1;padding:7px 6px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--panelb);background:rgba(12,22,44,.6);color:var(--sub);
+    font-size:12px;font-weight:600;transition:.18s}
+  .basis button.on{background:linear-gradient(180deg,rgba(63,208,255,.22),rgba(63,208,255,.06));
+    color:var(--white);border-color:rgba(63,208,255,.6);box-shadow:0 0 14px rgba(63,208,255,.25)}
+  .ctl{margin:6px 0}
+  .ctl label{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:4px}
+  .ctl label b{color:var(--cyan);font-weight:700;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:#39e0ff;cursor:pointer}
+  .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .row button{flex:1;min-width:80px;padding:7px 6px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--panelb);background:rgba(12,22,44,.7);color:var(--ink);font-size:12px;font-weight:600}
+  .row button.primary{background:linear-gradient(180deg,#2a8cff,#1d63d6);border-color:#3a9bff}
+  .row button:hover{filter:brightness(1.12)}
+  .board{margin-top:10px;border-radius:11px;padding:9px 11px;min-height:170px;
+    background:linear-gradient(180deg,#0c1a12,#0a140d);border:1px solid rgba(120,200,140,.28);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.5)}
+  .board h3{margin:0 0 6px;font-size:12px;color:#bfe9c8;letter-spacing:.5px;font-weight:700}
+  .board h3::before{content:"✎ ";color:#7fe0a0}
+  .eq{font-size:12.5px;line-height:1.7;color:#eafff0;opacity:0;transform:translateY(6px);
+    transition:.45s;font-family:"Cambria Math","Latin Modern Math",serif}
+  .eq.show{opacity:1;transform:none;white-space:pre-wrap}
+  .eq .v{color:var(--cyan)} .eq .g{color:var(--gold)} .eq .r{color:#ff9aa6}
+  .eq .res{color:#9dffb6;font-weight:700}
+  .eq.hl{border-left:3px solid #7fe0a0;padding-left:9px;margin:4px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:9px;font-size:11px;color:var(--sub)}
+  .legend i{display:inline-block;width:13px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+  .hint{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.5}
+  .read{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--sub)}
+  .read b{color:var(--gold);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="brand-mark"></div><div class="brand-txt">force<span class="n">99</span></div></div>
+  <h1>双线沙摆 · 木板运动轨迹演示</h1>
+  <div class="t">3D · 黑底　·　沙摆沿纵深摆动漏沙　·　木板沿水平方向（左→右）匀速 / 加速运动</div>
+</header>
+
+<div class="wrap">
+  <!-- 左：3D 动画区 -->
+  <div class="card anim">
+    <canvas id="cv"></canvas>
+  </div>
+
+  <!-- 右：控制 + 图例 + 物理归纳 -->
+  <div class="card">
+    <div class="basis" id="modeTabs">
+      <button data-m="0" class="on">匀速直线（左→右）</button>
+      <button data-m="1">加速直线（左→右）</button>
+    </div>
+
+    <div class="ctl">
+      <label>摆动周期 T <b><span id="Tpv">1.5</span> s</b></label>
+      <input id="Tp" type="range" min="0.7" max="2.4" step="0.05" value="1.5">
+    </div>
+    <div class="ctl">
+      <label>摆幅 A <b><span id="Av">0.60</span> m</b></label>
+      <input id="Amp" type="range" min="20" max="60" step="2" value="60">
+    </div>
+    <div class="ctl" id="spCtl">
+      <label><span id="spLbl">木板速度 v</span> <b><span id="spv">1.25</span> <span id="spu">m/s</span></b></label>
+      <input id="sp" type="range" min="90" max="300" step="5" value="125">
+    </div>
+
+    <div class="ctl">
+      <label>沙粒颜色 <b><span id="gcv">#ffb000</span></b></label>
+      <input id="gcol" type="color" value="#ffb000" style="width:100%;height:30px;cursor:pointer;background:rgba(12,22,44,.6);border:1px solid var(--panelb);border-radius:8px">
+    </div>
+
+    <div class="row">
+      <button id="play" class="primary">⏸ 暂停</button>
+      <button id="reset">↺ 重播</button>
+    </div>
+    <div class="ctl" style="margin-top:10px">
+      <label>播放速度 <b><span id="spsv">1.0</span>×</b></label>
+      <input id="sps" type="range" min="0.25" max="2" step="0.25" value="1">
+    </div>
+    <div class="ctl">
+      <label>时间轴 t = <b><span id="tv">0.00</span> s</b></label>
+      <input id="tl" type="range" min="0" max="1" step="0.001" value="0">
+    </div>
+
+    <div class="read">
+      <span>木板位移 s = <b><span id="sv">0.00</span></b> m</span>
+      <span>摆动位移 x = <b><span id="xv">0.00</span></b> m</span>
+      <span>摆长 L = <b><span id="Lv">0.56</span></b> m</span>
+    </div>
+
+    <div class="legend">
+      <span><i id="legSand" style="background:#ffb000"></i>沙粒 / 轨迹（颜色可调）</span>
+      <span><i style="background:#cfd6e2"></i>顶横梁</span>
+      <span><i style="background:#6b4423"></i>摆线（深棕）</span>
+      <span><i style="background:#50e678"></i>坐标横轴（绿）</span>
+      <span><i style="background:#ffffff"></i>纯白木板</span>
+    </div>
+
+    <div class="board" id="board">
+      <h3>物理知识与求解</h3>
+      <div id="eqbox"></div>
+    </div>
+    <div class="hint">双线沙摆约束摆球只沿垂直于木板运动方向的水平方向（纵深）做简谐运动；沙粒竖直漏下落在纯白木板上，形成金黄色轨迹曲线。木板沿水平方向自左向右匀速 / 加速运动，沙粒在板上留下的横向位置随木板位移 s 变化：匀速 → 等幅等距正弦曲线；加速 → 波长随 s 增大而变长（先密后疏）。<b style="color:#ffc24a">摆动周期 T 越长，双线摆悬线摆长 L 越长（L∝T²，由 T=2π√(L/g) 决定），动画中摆线随之变长。</b><b style="color:#ffc24a">拖拽画面可旋转 3D 视角，滚轮缩放。</b></div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const cv=document.getElementById('cv');
+const G=cv.getContext('2d');
+const W=920,H=720;
+let cx=W*0.50, cy=H*0.52;
+// ---------- 真实 3D 相机（可拖拽旋转 / 滚轮缩放） ----------
+let yaw=32*Math.PI/180, pitch=26*Math.PI/180, camD=2400, camF=2200;
+let dragging=false, lastX=0, lastY=0;
+function rotY(p,c,s){ return {x:p.x*c+p.z*s, y:p.y, z:-p.x*s+p.z*c}; }
+function rotX(p,c,s){ return {x:p.x, y:p.y*c-p.z*s, z:p.y*s+p.z*c}; }
+function proj(X,Y,Z){
+  let p=rotY({x:X,y:Y,z:Z}, Math.cos(yaw), Math.sin(yaw));
+  p=rotX(p, Math.cos(pitch), Math.sin(pitch));
+  const den=camD+p.z;
+  if(den<=1) return {ok:false, sx:cx, sy:cy, sc:0, z:p.z};
+  const sc=camF/den;
+  return {sx:cx+p.x*sc, sy:cy-p.y*sc, sc, ok:true, z:p.z};
+}
+
+// ---------- 场景世界坐标 ----------
+//  x = 木板运动方向（左→右，横向铺开，可见周期更多）；z = 摆动方向（纵深）；y 朝上
+const U=100;                              // 100 世界单位 = 1 m
+const ZH=135, BOARD_Y=0, BOARD_TH=7.3;   // ZH：木板在摆动方向(纵深)半宽（已减半）；BOARD_TH 减至约1/3（原22）
+const BOARD_HALF=2200;                   // 白板在运动方向绘制半长（极大 → 视觉上“长度不受限制”）
+const FUN_H=44, TOP_R=28, NOZ_R=5;       // 漏斗
+const GAP=78/4;                          // 沙漏底↔白板间距 缩小至1/4（原间距 78 世界单位）
+const BOB_Y=BOARD_Y+GAP+FUN_H/2;         // 漏斗中心高度：贴近白板（≈41.5）
+const G_ACC=9.8, VIS=3.15;              // 重力加速度、摆长视觉放大系数（与实际长度同比例放大，便于观察）
+function Lphys(T){ return G_ACC*T*T/(4*Math.PI*Math.PI); }   // 双线摆物理摆长(米)：T=2π√(L/g) → L=gT²/4π²
+const T_REF=1.5;
+let PEND=Lphys(T_REF)*U*VIS, TOP_Y=BOB_Y+PEND;   // 默认 T=1.5s 摆长≈176；摆长随周期平方变化（L∝T²）
+function recalcPend(){ PEND=Lphys(S.Tp)*U*VIS; TOP_Y=BOB_Y+PEND; }   // 周期越长 → 摆越长
+function recalcCamForPend(){                       // 长摆时自动拉远相机，保证枢轴始终入镜
+  const needD=TOP_Y*camF/(cy-40);
+  camD=Math.max(2400, needD);
+}
+const POST_X=30;                         // 顶横梁沿 x 分布双悬点
+const TRAV=960;                          // 木板总行程（= 原 Z0）
+const XF=-340;                           // 漏斗固定世界 X（再向左，靠近左边界）
+
+const S={ mode:0, Tp:1.5, A:60, v:125, a:20, t:0, running:true, speed:1, tEnd:1 };
+let grains=[];      // {s, d}  s=释放时摆动坐标(A·cos)，d=Pof(t_dep)（释放时木板位移）
+let grainColor=[255,176,0];   // 沙粒 / 轨迹颜色（可调）
+function hexToRgb(h){ h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+function rgba(c,a){ return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'; }
+let last=performance.now();
+let dirty=true;     // 仅在有变化时重绘，空闲（暂停且未拖拽）时不空转，避免主线程被常驻重绘占满导致卡顿/假死
+
+function omega(){ return 2*Math.PI/S.Tp; }
+function Pof(t){ return S.mode===0 ? S.v*t : 0.5*S.a*t*t; }
+function boardX(t){ return (XF-TRAV) + Pof(t); }   // 木板左端世界 X
+function computeTEnd(){ S.tEnd = S.mode===0 ? TRAV/S.v : Math.sqrt(2*TRAV/S.a); }
+
+// ---------- 物理步进 ----------
+function stepPhysics(){
+  const P=Pof(S.t);
+  if(P>TRAV+60){ S.t=0; grains=[]; return; }
+  const s=S.A*Math.cos(omega()*S.t);     // 摆动坐标（沿 z 纵深）
+  grains.push({s:s, d:P});
+  if(grains.length>5000) grains.shift();
+}
+
+// ---------- 绘制：背景 ----------
+function drawBg(){
+  G.clearRect(0,0,W,H);
+  const g=G.createRadialGradient(cx,cy*0.8,80,cx,cy,H*0.75);
+  g.addColorStop(0,'#0a1020'); g.addColorStop(0.5,'#06090f'); g.addColorStop(1,'#020305');
+  G.fillStyle=g; G.fillRect(0,0,W,H);
+}
+
+// ---------- 绘制：木板（纯白 3D 板，顶面 + 前面 + 端面） ----------
+function drawBoard(){
+  const bx=boardX(S.t);
+  const xL=bx-BOARD_HALF, xR=bx+BOARD_HALF;   // 超长 → 视觉上“长度不受限制”（两端始终在画面外）
+  const cTL=proj(xL,BOARD_Y,-ZH), cTR=proj(xR,BOARD_Y,-ZH);
+  const cBR=proj(xR,BOARD_Y,ZH), cBL=proj(xL,BOARD_Y,ZH);
+  if(cTL.ok&&cTR.ok&&cBR.ok&&cBL.ok){
+    // 顶面（纯白 + 轻微立体明暗）
+    G.beginPath();
+    G.moveTo(cTL.sx,cTL.sy); G.lineTo(cTR.sx,cTR.sy); G.lineTo(cBR.sx,cBR.sy); G.lineTo(cBL.sx,cBL.sy); G.closePath();
+    const tg=G.createLinearGradient(0,cBL.sy,0,cTL.sy);
+    tg.addColorStop(0,'#eef2fb'); tg.addColorStop(.5,'#ffffff'); tg.addColorStop(1,'#f4f7fd');
+    G.fillStyle=tg; G.fill();
+    G.strokeStyle='rgba(180,195,220,.7)'; G.lineWidth=1; G.stroke();
+    // 前面（z=+ZH 厚度）—— 只画长边，不画左右端帽，呈现“无尽长条”
+    const f0=proj(xL,BOARD_Y,ZH), f1=proj(xR,BOARD_Y,ZH);
+    const b0=proj(xL,BOARD_Y-BOARD_TH,ZH), b1=proj(xR,BOARD_Y-BOARD_TH,ZH);
+    G.beginPath(); G.moveTo(f0.sx,f0.sy); G.lineTo(f1.sx,f1.sy); G.lineTo(b1.sx,b1.sy); G.lineTo(b0.sx,b0.sy); G.closePath();
+    G.fillStyle='#c4ccda'; G.fill();
+  }
+  // 运动指示：随板滚动的横向参考线（在有效轨迹区）+ 向右箭头
+  const P=Pof(S.t); const sp=130;
+  G.strokeStyle='rgba(255,193,7,.28)'; G.lineWidth=1.5;
+  for(let sx=((P%sp)); sx<TRAV+300; sx+=sp){
+    const x=bx+sx;
+    const z0=proj(x,BOARD_Y+1.5,-ZH+24), z1=proj(x,BOARD_Y+1.5,ZH-24);
+    if(!z0.ok||!z1.ok) continue;
+    G.beginPath(); G.moveTo(z0.sx,z0.sy); G.lineTo(z1.sx,z1.sy); G.stroke();
+  }
+  const a0=proj(XF+50,BOARD_Y+2,0), a1=proj(XF+170,BOARD_Y+2,0);
+  if(a0.ok&&a1.ok){
+    const ang=Math.atan2(a1.sy-a0.sy,a1.sx-a0.sx);
+    G.strokeStyle='rgba(255,193,7,.9)'; G.lineWidth=3;
+    G.beginPath(); G.moveTo(a0.sx,a0.sy); G.lineTo(a1.sx,a1.sy); G.stroke();
+    drawArrowHead(a1.sx,a1.sy,ang,'rgba(255,193,7,.95)',9);
+    G.fillStyle='rgba(255,205,30,.98)'; G.font='700 15px "Microsoft YaHei"'; G.textAlign='center';
+    G.fillText('向右', a1.sx, a1.sy-9);
+  }
+}
+
+// ---------- 绘制：落沙轨迹（板上沙粒，金黄色） ----------
+function drawGrains(){
+  const P=Pof(S.t);
+  const pts=[];
+  for(let i=0;i<grains.length;i++){
+    const g0=grains[i];
+    const localX=TRAV-g0.d;                 // 沙粒在板上的局部横坐标（固定）
+    if(localX<-30||localX>TRAV+30) continue;   // 白板长度不受限：仅做安全边界，不裁剪轨迹
+    const wx=XF+(P-g0.d);                   // 随木板向右滑移的世界 X
+    const wz=g0.s;                          // 摆动坐标（纵深 z）
+    const p=proj(wx, BOARD_Y+2.5, wz);
+    if(p.ok) pts.push(p);
+  }
+  if(pts.length<2) return;
+  // 沙脊连线：两段描边模拟柔和辉光（不使用 shadowBlur，避免播放+拖拽时单帧过重卡死）
+  G.lineJoin='round'; G.lineCap='round';
+  G.strokeStyle=rgba(grainColor,.32); G.lineWidth=6.5;
+  G.beginPath(); G.moveTo(pts[0].sx,pts[0].sy);
+  for(let i=1;i<pts.length;i++) G.lineTo(pts[i].sx,pts[i].sy);
+  G.stroke();
+  G.strokeStyle=rgba(grainColor,.96); G.lineWidth=3.0;
+  G.beginPath(); G.moveTo(pts[0].sx,pts[0].sy);
+  for(let i=1;i<pts.length;i++) G.lineTo(pts[i].sx,pts[i].sy);
+  G.stroke();
+  // 沙粒：批量路径一次填充（上千次 beginPath/fill → 2 次 fill，极快），双层圆模拟柔光
+  G.fillStyle=rgba(grainColor,.26);
+  G.beginPath();
+  for(let i=0;i<pts.length;i+=2){ const p=pts[i]; const r=Math.max(1.5,p.sc*3.0); G.moveTo(p.sx+r,p.sy); G.arc(p.sx,p.sy,r,0,7); }
+  G.fill();
+  G.fillStyle=rgba(grainColor,.98);
+  G.beginPath();
+  for(let i=0;i<pts.length;i+=2){ const p=pts[i]; const r=Math.max(1.4,p.sc*2.5); G.moveTo(p.sx+r,p.sy); G.arc(p.sx,p.sy,r,0,7); }
+  G.fill();
+}
+
+// ---------- 绘制：悬挂横梁（立体圆柱，沿 x 轴） ----------
+function drawFrame(){
+  const xA=XF-POST_X-4, xB=XF+POST_X+4, r=6, yC=TOP_Y, zC=0;
+  const M=18, n=22;
+  const rings=[];
+  for(let i=0;i<=M;i++){
+    const x=xA+(xB-xA)*i/M;
+    const ring=[];
+    for(let j=0;j<n;j++){
+      const th=j/n*2*Math.PI;
+      ring.push(proj(x, yC+r*Math.cos(th), zC+r*Math.sin(th)));
+    }
+    rings.push(ring);
+  }
+  const quads=[];
+  for(let i=0;i<M;i++){
+    let zs=0,cnt=0;
+    for(let j=0;j<n;j++){ const a=rings[i][j], b=rings[i+1][j]; if(a.ok&&b.ok){ zs+=a.z+b.z; cnt+=2; } }
+    quads.push({i, z:cnt?zs/cnt:0, ok:cnt>0});
+  }
+  quads.sort((p,q)=>q.z-p.z);
+  for(const q of quads){
+    if(!q.ok) continue;
+    for(let j=0;j<n;j++){
+      const a0=rings[q.i][j], a1=rings[q.i][(j+1)%n], b0=rings[q.i+1][j], b1=rings[q.i+1][(j+1)%n];
+      if(!a0.ok||!a1.ok||!b0.ok||!b1.ok) continue;
+      const th=(j+0.5)/n*2*Math.PI;
+      const lit=0.45+0.55*0.5*(1+Math.cos(th));   // 上亮下暗的金属圆柱
+      const cr=Math.round(70+(210-70)*lit), cg=Math.round(82+(222-82)*lit), cb=Math.round(104+(240-104)*lit);
+      G.fillStyle='rgb('+cr+','+cg+','+cb+')';
+      G.beginPath(); G.moveTo(a0.sx,a0.sy); G.lineTo(a1.sx,a1.sy); G.lineTo(b1.sx,b1.sy); G.lineTo(b0.sx,b0.sy); G.closePath(); G.fill();
+    }
+  }
+  // 两端封口
+  for(const ring of [rings[0], rings[M]]){
+    G.beginPath(); let st=false;
+    for(let j=0;j<n;j++){ const p=ring[j]; if(!p.ok) continue; if(!st){G.moveTo(p.sx,p.sy);st=true;} else G.lineTo(p.sx,p.sy); }
+    if(st){ G.closePath(); G.fillStyle='#5b6478'; G.fill(); }
+  }
+}
+
+// ---------- 绘制：双线沙摆（漏斗，青铜 3D 实体，旋转不会塌成直线） ----------
+function drawFunnel3D(cx0, yc, cz0){
+  const yTop=yc+FUN_H/2, yBot=yc-FUN_H/2;
+  const rT=TOP_R, rB=NOZ_R, n=30;
+  const top=[], bot=[];
+  for(let i=0;i<n;i++){
+    const a=i/n*2*Math.PI;
+    top.push(proj(cx0+rT*Math.cos(a), yTop, cz0+rT*Math.sin(a)));
+    bot.push(proj(cx0+rB*Math.cos(a), yBot, cz0+rB*Math.sin(a)));
+  }
+  // 侧面锥面：画家算法（远面先画），任意视角都是实体而非一条线
+  const quads=[];
+  for(let i=0;i<n;i++){
+    const a=(i+0.5)/n*2*Math.PI;
+    const ok=top[i].ok&&top[(i+1)%n].ok&&bot[i].ok&&bot[(i+1)%n].ok;
+    const z=(top[i].z+top[(i+1)%n].z+bot[i].z+bot[(i+1)%n].z)/4;
+    quads.push({i,a,ok,z});
+  }
+  quads.sort((p,q)=>q.z-p.z);
+  for(const q of quads){
+    if(!q.ok) continue;
+    const pT0=top[q.i], pT1=top[(q.i+1)%n], pB0=bot[q.i], pB1=bot[(q.i+1)%n];
+    const facing=0.5-0.5*Math.sin(q.a);          // 1=正对相机，-0=背向
+    const lit=0.4+0.6*facing;
+    const dr=98,dg=50,db=18, br=232,bg=152,bb=66;
+    const r=Math.round(dr+(br-dr)*lit), g=Math.round(dg+(bg-dg)*lit), b=Math.round(db+(bb-db)*lit);
+    G.fillStyle='rgb('+r+','+g+','+b+')';
+    G.beginPath();
+    G.moveTo(pT0.sx,pT0.sy); G.lineTo(pT1.sx,pT1.sy); G.lineTo(pB1.sx,pB1.sy); G.lineTo(pB0.sx,pB0.sy); G.closePath();
+    G.fill();
+  }
+  // 底喷嘴（暗）
+  G.beginPath(); G.moveTo(bot[0].sx,bot[0].sy);
+  for(let i=1;i<n;i++) G.lineTo(bot[i].sx,bot[i].sy);
+  G.closePath(); G.fillStyle='rgba(28,16,6,.96)'; G.fill();
+  // 顶口：内壁暗 + 内部金沙 + 描边
+  G.beginPath(); G.moveTo(top[0].sx,top[0].sy);
+  for(let i=1;i<n;i++) G.lineTo(top[i].sx,top[i].sy);
+  G.closePath(); G.fillStyle='#5a2e12'; G.fill();
+  const sr=TOP_R*0.8;
+  G.beginPath();
+  for(let i=0;i<n;i++){
+    const a=i/n*2*Math.PI;
+    const p=proj(cx0+sr*Math.cos(a), yTop-1.5, cz0+sr*Math.sin(a));
+    if(i===0) G.moveTo(p.sx,p.sy); else G.lineTo(p.sx,p.sy);
+  }
+  G.closePath(); G.fillStyle=rgba(grainColor,.95); G.fill();
+  G.beginPath(); G.moveTo(top[0].sx,top[0].sy);
+  for(let i=1;i<n;i++) G.lineTo(top[i].sx,top[i].sy);
+  G.closePath(); G.strokeStyle='rgba(255,210,150,.7)'; G.lineWidth=1.4; G.stroke();
+}
+
+function drawPendulum(bobZ){
+  const bx=XF;
+  const topC=proj(bx,BOB_Y+FUN_H/2,bobZ);
+  const sp0=proj(bx+POST_X,TOP_Y,0), sp1=proj(bx-POST_X,TOP_Y,0);   // 双线：两悬点沿 x 分布 → 漏斗沿纵深(z)内外摆动
+  G.strokeStyle='rgba(107,68,35,.96)'; G.lineWidth=2;   // 摆线：深棕色
+  G.beginPath(); G.moveTo(sp0.sx,sp0.sy); G.lineTo(topC.sx,topC.sy); G.stroke();
+  G.beginPath(); G.moveTo(sp1.sx,sp1.sy); G.lineTo(topC.sx,topC.sy); G.stroke();
+  drawFunnel3D(bx, BOB_Y, bobZ);
+}
+
+// ---------- 绘制：沙漏→白板 的落沙直线（沙粒串成线，与板相交） ----------
+function drawStream(bobZ){
+  const yN=BOB_Y-FUN_H/2;        // 喷嘴底
+  const yB=BOARD_Y+0.6;          // 板面
+  const N=10;
+  // 柔光连线
+  G.strokeStyle=rgba(grainColor,.33); G.lineWidth=1.6; G.lineJoin='round';
+  G.beginPath();
+  for(let i=0;i<=N;i++){ const y=yN+(yB-yN)*i/N; const p=proj(XF,y,bobZ); if(!p.ok) continue; if(i===0)G.moveTo(p.sx,p.sy); else G.lineTo(p.sx,p.sy); }
+  G.stroke();
+  // 沙粒（用当前沙色）
+  G.fillStyle=rgba(grainColor,.92);
+  for(let i=0;i<=N;i++){
+    const y=yN+(yB-yN)*i/N;
+    const p=proj(XF,y,bobZ); if(!p.ok) continue;
+    const r=Math.max(1.4, p.sc*2.1);
+    G.beginPath(); G.arc(p.sx,p.sy,r,0,7); G.fill();
+  }
+}
+
+// ---------- 绘制：白板上绿色坐标横轴（原点固定在白板、随板滑动；向左同步生长） ----------
+function drawAxis(){
+  const zc=0;                                  // 白板中轴（纵深方向中心）
+  const ox=boardX(S.t)+TRAV;                   // 原点 = 白板上固定点(板局部 TRAV)，随板一起滑动 → 相对白板位置不变
+  const o=proj(ox, BOARD_Y+1.6, zc);
+  if(!o.ok) return;
+  const len=Pof(S.t);                          // 随木板位移同步向左生长，末端恰至当前落沙点(世界 XF)
+  if(len<3) return;
+  const e=proj(ox-len, BOARD_Y+1.6, zc);
+  if(!e.ok) return;
+  G.strokeStyle='rgba(80,230,120,.95)'; G.lineWidth=2.5; G.lineCap='round';
+  G.beginPath(); G.moveTo(o.sx,o.sy); G.lineTo(e.sx,e.sy); G.stroke();
+  // 原点
+  G.fillStyle='rgba(130,255,160,1)'; G.beginPath(); G.arc(o.sx,o.sy,3.6,0,7); G.fill();
+  // 刻度（每 1 m = 100 单位）+ 数字
+  const step=100;
+  G.fillStyle='rgba(150,255,175,.98)'; G.font='700 12px "Microsoft YaHei"'; G.textAlign='center';
+  for(let d=0; d<=len+0.5; d+=step){
+    const p=proj(ox-d, BOARD_Y+1.6, zc);
+    const q=proj(ox-d, BOARD_Y+1.6-13, zc);
+    if(!p.ok) continue;
+    if(q.ok){ G.strokeStyle='rgba(80,230,120,.95)'; G.lineWidth=1.4; G.beginPath(); G.moveTo(p.sx,p.sy); G.lineTo(q.sx,q.sy); G.stroke(); }
+    G.fillText((d/100).toFixed(0), p.sx, p.sy-6);
+  }
+  // 轴名
+  G.fillStyle='rgba(120,255,150,1)'; G.textAlign='right';
+  G.fillText('x / m', e.sx, e.sy-9);
+}
+
+function drawArrowHead(x,y,ang,col,size){
+  G.save(); G.fillStyle=col; G.translate(x,y); G.rotate(ang);
+  G.beginPath(); G.moveTo(0,0); G.lineTo(-size*1.1,-size*0.55); G.lineTo(-size*1.1,size*0.55); G.closePath(); G.fill();
+  G.restore();
+}
+
+// ---------- 主绘制 ----------
+function draw(){
+  drawBg();
+  recalcPend();                         // 摆长随周期实时更新（双线摆 L∝T²：周期越长，摆越长）
+  const bobZ=S.A*Math.cos(omega()*S.t);
+  drawBoard();
+  drawGrains();
+  drawStream(bobZ);
+  drawAxis();
+  drawFrame();
+  drawPendulum(bobZ);
+  // 读数（换算为米）
+  document.getElementById('sv').textContent=(Pof(S.t)/U).toFixed(2);
+  document.getElementById('xv').textContent=(bobZ/U).toFixed(2);
+  const Lv=document.getElementById('Lv'); if(Lv) Lv.textContent=Lphys(S.Tp).toFixed(2);   // 摆长(米) 随周期变化
+}
+
+// ---------- 物理归纳（打字机） ----------
+function buildEq(){
+  const L=[];
+  L.push(`<div class="eq hl"><span class="r">双线沙摆 · 木板运动轨迹</span></div>`);
+  L.push(`<div class="eq">沙摆受双线约束，只沿纵深方向（垂直木板运动）做简谐运动：</div>`);
+  L.push(`<div class="eq"><span class="v">x(t) = A·cos(ωt)</span>，　ω = 2π / T</div>`);
+  if(S.mode===0){
+    L.push(`<div class="eq hl"><span class="v">木板：水平向左→右匀速　s = v·t</span></div>`);
+    L.push(`<div class="eq">沙粒落在板上位置：x = A·cos(ω·s/v)</div>`);
+    L.push(`<div class="eq">⇒ <span class="res">等幅、等距的正弦曲线</span>（波长 λ = 2πv/ω 恒定）</div>`);
+  } else {
+    L.push(`<div class="eq hl"><span class="v">木板：水平向左→右加速　s = ½a·t²</span></div>`);
+    L.push(`<div class="eq">t = √(2s/a)，代入 x = A·cos(ωt)：</div>`);
+    L.push(`<div class="eq"><span class="res">x = A·cos( ω·√(2s/a) )</span></div>`);
+    L.push(`<div class="eq">⇒ 单位长度内的相位变化 ∝ 1/√s，<span class="res">波长随 s 增大而变长</span>（先密后疏）</div>`);
+  }
+  L.push(`<div class="eq hl"><span class="res">本质</span></div>`);
+  L.push(`<div class="eq">两个互相垂直方向运动的合成，在运动参考系（木板）中留下轨迹。</div>`);
+  return L;
+}
+let eqTimer=null, eqIdx=0;
+function showBoard(){
+  const box=document.getElementById('eqbox'); box.innerHTML='';
+  const lines=buildEq(); eqIdx=0;
+  if(eqTimer) clearInterval(eqTimer);
+  eqTimer=setInterval(()=>{
+    if(eqIdx>=lines.length){ clearInterval(eqTimer); return; }
+    const d=document.createElement('div'); d.innerHTML=lines[eqIdx];
+    const el=d.firstChild; box.appendChild(el);
+    requestAnimationFrame(()=>el.classList.add('show')); eqIdx++;
+  },460);
+}
+
+// ---------- 控制 ----------
+function reset(){
+  document.getElementById('play').textContent='⏸ 暂停';
+  document.getElementById('eqbox').innerHTML='<div class="eq show" style="opacity:.8">运行中… 木板运动结束后自动归纳。</div>';
+  if(eqTimer) clearInterval(eqTimer);
+  computeTEnd();
+  seekTo(0); S.running=true;
+  const tl=document.getElementById('tl'); if(tl) tl.max=S.tEnd;
+  dirty=true;
+}
+function resize(){
+  dirty=true;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  G.setTransform(dpr,0,0,dpr,0,0);
+  cx=W*0.50; cy=H*0.52;
+  computeTEnd();
+}
+
+// ---------- 主循环 ----------
+function frame(now){
+  try{
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(S.running){
+      let step=dt*S.speed;
+      const N=Math.max(1,Math.ceil(step/0.012));
+      for(let i=0;i<N;i++){ S.t+=step/N; stepPhysics(); }
+      if(S.t>=S.tEnd){
+        S.running=false; S.t=S.tEnd;
+        document.getElementById('play').textContent='▶ 播放';
+        showBoard();
+      }
+      dirty=true;
+    }
+    if(dirty){
+      draw();
+      document.getElementById('tv').textContent=S.t.toFixed(2);
+      document.getElementById('tl').value=S.t;
+      if(!S.running && !dragging) dirty=false;   // 暂停且无操作时停止空转重绘
+    }
+  }catch(err){
+    // 单帧异常也绝不杀掉循环，否则页面会“死机”
+    if(window.console) console.error('frame err:',err);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------- 事件 ----------
+document.getElementById('modeTabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  S.mode=parseInt(b.dataset.m);
+  [...document.querySelectorAll('#modeTabs button')].forEach(x=>x.classList.toggle('on',x===b));
+  const sp=document.getElementById('sp'), spv=document.getElementById('spv'), spL=document.getElementById('spLbl'), spu=document.getElementById('spu');
+  if(S.mode===0){ sp.min=90; sp.max=300; sp.step=5; sp.value=S.v; spL.textContent='木板速度 v'; spu.textContent='m/s'; spv.textContent=(S.v/U).toFixed(2); }
+  else { sp.min=8; sp.max=40; sp.step=1; sp.value=S.a; spL.textContent='木板加速度 a'; spu.textContent='m/s²'; spv.textContent=(S.a/U).toFixed(2); }
+  reset(); dirty=true;
+});
+function bind(id,valId,fn,fmt){
+  const el=document.getElementById(id), v=document.getElementById(valId);
+  el.addEventListener('input',()=>{ fn(parseFloat(el.value)); v.textContent=fmt(parseFloat(el.value)); reset(); dirty=true; });
+}
+bind('Tp','Tpv',x=>{S.Tp=x; recalcPend(); recalcCamForPend();},x=>x.toFixed(2));
+bind('Amp','Av',x=>S.A=x,x=>(x/U).toFixed(2));
+document.getElementById('sp').addEventListener('input',e=>{
+  const x=parseFloat(e.target.value);
+  if(S.mode===0){ S.v=x; document.getElementById('spv').textContent=(x/U).toFixed(2); }
+  else { S.a=x; document.getElementById('spv').textContent=(x/U).toFixed(2); }
+  reset(); dirty=true;
+});
+document.getElementById('gcol').addEventListener('input',e=>{
+  const v=e.target.value;
+  grainColor=hexToRgb(v);
+  document.getElementById('gcv').textContent=v;
+  const lg=document.getElementById('legSand'); if(lg) lg.style.background=v;
+  dirty=true;
+});
+document.getElementById('sps').addEventListener('input',e=>{ S.speed=parseFloat(e.target.value); document.getElementById('spsv').textContent=S.speed.toFixed(2); dirty=true; });
+document.getElementById('play').addEventListener('click',()=>{
+  dirty=true;
+  if(S.t>=S.tEnd){ reset(); return; }
+  S.running=!S.running; document.getElementById('play').textContent=S.running?'⏸ 暂停':'▶ 播放';
+});
+document.getElementById('reset').addEventListener('click',reset);
+function seekTo(t){
+  S.t=Math.max(0,Math.min(S.tEnd,t));
+  grains=[];
+  const N=Math.max(1,Math.ceil(S.t/0.006));
+  for(let i=0;i<=N;i++){ const tt=S.t*i/N; grains.push({s:S.A*Math.cos(omega()*tt), d:Pof(tt)}); }
+}
+document.getElementById('tl').addEventListener('input',e=>{
+  const v=parseFloat(e.target.value);
+  seekTo(v>=S.tEnd-0.02 ? S.tEnd : v);          // 拖到末端视为运动结束
+  S.running=false;
+  document.getElementById('play').textContent='▶ 播放';
+  if(S.t>=S.tEnd-1e-6 && document.getElementById('eqbox').children.length<=1) showBoard();
+  dirty=true;
+});
+window.addEventListener('resize',resize);
+// ---------- 3D 相机交互：拖拽旋转 + 滚轮缩放 ----------
+cv.style.touchAction='none';
+cv.draggable=false;                      // 禁止原生拖图，避免手势被浏览器 DnD 吞掉导致“卡死”
+cv.addEventListener('mousedown',e=>{ e.preventDefault(); dragging=true; lastX=e.clientX; lastY=e.clientY; dirty=true; });
+window.addEventListener('mouseup',()=>dragging=false);
+window.addEventListener('mouseleave',()=>dragging=false);  // 移出窗口也结束拖拽，防止 dragging 卡死为真
+window.addEventListener('mousemove',e=>{
+  if(!dragging) return;
+  e.preventDefault();                    // 阻止拖拽时选中整页文本（否则页面会卡顿/假死）
+  dirty=true;
+  yaw += (e.clientX-lastX)*0.006;
+  pitch += (e.clientY-lastY)*0.006;
+  pitch=Math.max(-8*Math.PI/180, Math.min(62*Math.PI/180, pitch));
+  lastX=e.clientX; lastY=e.clientY;
+});
+cv.addEventListener('wheel',e=>{ e.preventDefault(); camD=Math.max(900,Math.min(3600, camD + e.deltaY*0.9)); dirty=true; },{passive:false});
+cv.addEventListener('touchstart',e=>{ const t=e.touches[0]; dragging=true; lastX=t.clientX; lastY=t.clientY; dirty=true; },{passive:true});
+cv.addEventListener('touchmove',e=>{ if(!dragging) return; const t=e.touches[0];
+  yaw+=(t.clientX-lastX)*0.006; pitch+=(t.clientY-lastY)*0.006;
+  pitch=Math.max(-8*Math.PI/180, Math.min(62*Math.PI/180, pitch));
+  lastX=t.clientX; lastY=t.clientY; e.preventDefault(); dirty=true; },{passive:false});
+cv.addEventListener('touchend',()=>dragging=false);
+
+resize(); reset(); requestAnimationFrame(frame);
+window.__api={S,omega,Pof,proj,getWH:()=>({W,H}),computeTEnd,seekTo,
+  setCam:(y,p,d)=>{ yaw=y; pitch=p; if(d) camD=d; dirty=true; },
+  getCam:()=>({yaw,pitch,camD,camF}),
+  getGrains:()=>grains.length,
+  boardX:()=>boardX(S.t),
+  getPend:()=>({PEND,TOP_Y,camD})};
+})();
+</script>
+</body>
+</html>
