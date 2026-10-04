@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>斜面抛体运动 · 动态矢量分解（θ=30°）</title>
+<style>
+  :root{
+    --bg0:#070d1c; --bg1:#0d1830; --bg2:#11203f;
+    --ink:#e6eefc; --sub:#9fb3d6; --line:rgba(120,150,200,.18);
+    --cyan:#3fd0ff; --gold:#ffcf5a; --orange:#ff8a3d; --green:#56e08a;
+    --red:#ff4d5e; --white:#f3f7ff;
+    --panel:rgba(16,28,54,.72); --panelb:rgba(120,160,230,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 700px at 18% -10%, rgba(60,110,200,.18), transparent 60%),
+      radial-gradient(900px 600px at 100% 110%, rgba(255,90,110,.10), transparent 55%),
+      linear-gradient(160deg,var(--bg0),var(--bg1) 55%,var(--bg2));
+    color:var(--ink); min-height:100%;
+  }
+  header{
+    display:flex;align-items:center;gap:12px;padding:9px 16px;
+    border-bottom:1px solid var(--panelb);
+    background:linear-gradient(90deg,rgba(20,34,64,.6),rgba(20,34,64,.15));
+  }
+  header .brand{display:flex;align-items:center;gap:9px;padding-right:14px;margin-right:2px;
+    border-right:1px solid var(--panelb)}
+  header .brand-mark{width:30px;height:30px;border-radius:9px;flex:0 0 auto;position:relative;
+    background:conic-gradient(from 210deg,#39e0ff,#7b6bff,#ff5e7a,#39e0ff);
+    box-shadow:0 0 16px rgba(80,160,255,.5)}
+  header .brand-mark::after{content:"";position:absolute;inset:7px;border-radius:5px;
+    background:linear-gradient(160deg,#0d1830,#11203f)}
+  /* 棱镜色散小符号 */
+  header .brand-mark::before{content:"";position:absolute;inset:0;border-radius:9px;
+    background:
+      linear-gradient(60deg, transparent 44%, rgba(255,210,120,.0) 44%, rgba(255,210,120,.55) 50%, transparent 56%),
+      conic-gradient(from 200deg, rgba(63,208,255,.0), rgba(63,208,255,.0));
+    mix-blend-mode:screen}
+  header .brand-txt{font-size:17px;font-weight:800;letter-spacing:.4px;color:var(--white);
+    font-family:"Segoe UI","Microsoft YaHei",sans-serif;line-height:1}
+  header .brand-txt .n{background:linear-gradient(90deg,#39e0ff,#7b6bff,#ff5e7a);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+  header .t{color:var(--sub);font-size:12px;margin-left:auto}
+  .wrap{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(232px,.6fr);gap:12px;padding:12px;}
+  @media(max-width:1000px){.wrap{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--panelb);border-radius:14px;
+    padding:9px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .anim{position:relative;overflow:hidden}
+  #cv{width:100%;aspect-ratio:900/620;height:auto;display:block;border-radius:10px;background:transparent}
+  .basis{display:flex;gap:6px;margin-bottom:9px}
+  .basis button{flex:1;padding:7px 6px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--panelb);background:rgba(12,22,44,.6);color:var(--sub);
+    font-size:12px;font-weight:600;transition:.18s}
+  .basis button.on{background:linear-gradient(180deg,rgba(63,208,255,.22),rgba(63,208,255,.06));
+    color:var(--white);border-color:rgba(63,208,255,.6);box-shadow:0 0 14px rgba(63,208,255,.25)}
+  .ctl{margin:6px 0}
+  .ctl label{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:4px}
+  .ctl label b{color:var(--cyan);font-weight:700;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:#39e0ff;cursor:pointer}
+  .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .row button{flex:1;min-width:80px;padding:7px 6px;border-radius:9px;cursor:pointer;
+    border:1px solid var(--panelb);background:rgba(12,22,44,.7);color:var(--ink);font-size:12px;font-weight:600}
+  .row button.primary{background:linear-gradient(180deg,#2a8cff,#1d63d6);border-color:#3a9bff}
+  .row button:hover{filter:brightness(1.12)}
+  .board{margin-top:10px;border-radius:11px;padding:9px 11px;min-height:200px;
+    background:linear-gradient(180deg,#0c1a12,#0a140d);border:1px solid rgba(120,200,140,.28);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.5)}
+  .board h3{margin:0 0 6px;font-size:12px;color:#bfe9c8;letter-spacing:.5px;font-weight:700}
+  .board h3::before{content:"✎ ";color:#7fe0a0}
+  .eq{font-size:12.5px;line-height:1.7;color:#eafff0;opacity:0;transform:translateY(6px);
+    transition:.45s;font-family:"Cambria Math","Latin Modern Math",serif}
+  .eq.show{opacity:1;transform:none;white-space:pre-wrap}
+  .eq .v{color:var(--cyan)} .eq .g{color:var(--gold)} .eq .r{color:#ff9aa6}
+  .eq .res{color:#9dffb6;font-weight:700}
+  .eq.hl{border-left:3px solid #7fe0a0;padding-left:9px;margin:4px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:9px;font-size:11px;color:var(--sub)}
+  .legend i{display:inline-block;width:13px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+  .hint{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-mark"></div>
+    <div class="brand-txt">force<span class="n">99</span></div>
+  </div>
+  <h1>斜面抛体运动 · 动态矢量分解</h1>
+  <div class="t">斜面倾角 θ = 30° 固定　·　平抛 / 斜抛 切换　·　拖动滑块改变 v₀ 与 φ</div>
+</header>
+
+<div class="wrap">
+  <!-- 左：动画区（仅含物理要素：斜面 / 小球 / 轨迹 / 矢量三角形） -->
+  <div class="card anim">
+    <canvas id="cv"></canvas>
+  </div>
+
+  <!-- 右：控制 + 图例 + 落地归纳 -->
+  <div class="card">
+    <div class="basis" id="basisTabs">
+      <button data-m="1" class="on">① 水平 / 竖直</button>
+      <button data-m="2">② 平行 / 垂直斜面</button>
+      <button data-m="3">③ 初速度 / 重力</button>
+    </div>
+    <div class="basis" id="launchTabs" style="margin-top:2px">
+      <button data-l="0">平抛（v₀ 水平）</button>
+      <button data-l="1" class="on">斜抛（φ 可调）</button>
+    </div>
+
+    <div class="ctl">
+      <label>抛出速度 v₀ <b><span id="v0v">24</span> m/s</b></label>
+      <input id="v0" type="range" min="6" max="26" step="1" value="24">
+    </div>
+    <div class="ctl" id="phCtl">
+      <label>抛出方向 φ（相对水平）<b><span id="phv">45</span>°</b></label>
+      <input id="ph" type="range" min="15" max="75" step="1" value="45">
+    </div>
+
+    <div class="row">
+      <button id="play" class="primary">⏸ 暂停</button>
+      <button id="reset">↺ 重播</button>
+    </div>
+    <div class="ctl" style="margin-top:10px">
+      <label>播放速度 <b><span id="spv">1.0</span>×</b></label>
+      <input id="sp" type="range" min="0.25" max="2" step="0.25" value="1">
+    </div>
+    <div class="ctl">
+      <label>时间轴 t = <b><span id="tv">0.00</span> s</b></label>
+      <input id="tl" type="range" min="0" max="1" step="0.001" value="0">
+    </div>
+
+    <div class="legend">
+      <span><i style="background:rgba(255,206,66,.95)"></i>运动轨迹</span>
+      <span><i style="background:var(--cyan)"></i>分位移 / 分速度（青）</span>
+      <span><i style="background:var(--green)"></i>分位移 / 分速度（绿）</span>
+      <span><i style="background:var(--red)"></i>合位移 r / 合速度 v</span>
+    </div>
+
+    <div class="board" id="board">
+      <h3>落地归纳 · 物理知识与求解步骤</h3>
+      <div id="eqbox"></div>
+    </div>
+    <div class="hint">斜面底边等于画面宽度，倾角 θ=30° 由高度（底边·tan30°）体现。可切换「平抛 / 斜抛」两种抛出方式；改变 v₀：轨迹与射程随之不同；斜抛时改变 φ：速度方向随之不同。落回斜面后，以打字机方式逐步列出公式（不含数值）。</div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const cv = document.getElementById('cv');
+const G = cv.getContext('2d');
+const W=900,H=620;               // 固定逻辑画布，与视口解耦
+let ox=80, oy=200, scale=8, vScale=4, slopeSpanPx=W, velCap=80;
+
+const S = {
+  v0:24, theta:Math.PI/6, phi:Math.PI/4, g:10, launch:1,
+  mode:1, t:0, T:1, landed:false, running:true, speed:1,
+  xT:0, yT:0, sAlong:0, apex:0, introT:1, pos:0,
+  lx:0, ly:0
+};
+
+// ---------- 物理 ----------
+function landingT(){
+  const s = Math.sin(S.phi + S.theta);
+  const c = Math.cos(S.theta);
+  return 2*S.v0*s/(S.g*c);
+}
+function stateAt(t){
+  const x = S.lx + S.v0*Math.cos(S.phi)*t;
+  const y = S.ly + S.v0*Math.sin(S.phi)*t - 0.5*S.g*t*t;
+  const vx = S.v0*Math.cos(S.phi);
+  const vy = S.v0*Math.sin(S.phi) - S.g*t;
+  return {x,y,vx,vy,v:Math.hypot(vx,vy)};
+}
+
+// ---------- 视图：固定比例尺（与当前 v0/φ 无关）→ 轨迹随 v0 真正变化、斜面满宽不漂移 ----------
+function setView(){
+  const c=Math.cos(S.theta), sN=Math.sin(S.theta), tanT=sN/c;
+  const g=S.g;
+  // 参考最不利情形 v0=26、最优抛射角（斜面上射程最大）→ 定一个恒定比例尺
+  const tv=26;
+  const phOpt=Math.PI/4 - S.theta/2;
+  const Tref=2*tv*Math.sin(phOpt+S.theta)/(g*c);
+  const xTref=tv*Math.cos(phOpt)*Tref;            // 最大水平射程(世界)
+  const dropRef=xTref*tanT;                        // 对应竖直下落(沿斜面)
+  const apexMax=Math.pow(tv*Math.sin(75*Math.PI/180),2)/(2*g); // 最高顶点(世界)
+  const leftM=W*0.04, rightM=W*0.05, topM=H*0.04, botM=H*0.04;
+  velCap=H*0.20;                                  // 速度矢量三角形最大屏幕长度（放大，确保清晰可读）
+  const availW=W-leftM-rightM;
+  const availV=H-topM-botM-velCap;
+  const scaleH=availW/xTref;                       // 横向：最大射程铺满
+  const scaleV=availV/(apexMax+dropRef);          // 纵向：顶点不越顶 + 落点不越底
+  scale=Math.min(scaleH,scaleV);                   // 恒定！不随当前 v0/φ 变
+  ox=leftM;
+  oy=topM + apexMax*scale;                         // 原点(抛点)固定 → 斜面满宽且不漂移
+  slopeSpanPx=W;                                   // 斜面底边恒定铺满画面宽度
+  // 速度矢量比例尺：以 v0=26 为参考基准 → 典型 v0≈24 时三角形接近满幅；速度越大矢量越长，飞行中实时变化
+  vScale=velCap/26;
+}
+
+// ---------- 工具 ----------
+function w2s(x,y){ return [ox + x*scale, oy - y*scale]; }
+function arrow(x0,y0,x1,y1,col,w,head){
+  const dx=x1-x0, dy=y1-y0, L=Math.hypot(dx,dy);
+  if(L<0.5) return;
+  const ux=dx/L, uy=dy/L;
+  G.strokeStyle=col; G.fillStyle=col; G.lineWidth=w; G.lineCap='round';
+  G.beginPath(); G.moveTo(x0,y0); G.lineTo(x1-ux*head*0.6,y1-uy*head*0.6); G.stroke();
+  const a=Math.atan2(dy,dx);
+  G.beginPath();
+  G.moveTo(x1,y1);
+  G.lineTo(x1-head*Math.cos(a-0.42), y1-head*Math.sin(a-0.42));
+  G.lineTo(x1-head*Math.cos(a+0.42), y1-head*Math.sin(a+0.42));
+  G.closePath(); G.fill();
+}
+function seg(x0,y0,x1,y1,col,w,dash){
+  G.strokeStyle=col; G.lineWidth=w||1; G.setLineDash(dash||[]);
+  G.beginPath(); G.moveTo(x0,y0); G.lineTo(x1,y1); G.stroke(); G.setLineDash([]);
+}
+function txt(s,x,y,col,size,align,base){
+  G.fillStyle=col; G.font='600 '+size+'px "Microsoft YaHei",sans-serif';
+  G.textAlign=align||'left'; G.textBaseline=base||'middle';
+  const w=G.measureText(s).width, a=G.textAlign;
+  if(a==='right') x=Math.max(2+w,Math.min(W-2,x));
+  else if(a==='center') x=Math.max(2+w/2,Math.min(W-2-w/2,x));
+  else x=Math.max(2,Math.min(W-2-w,x));
+  y=Math.max(12,Math.min(H-4,y));
+  G.fillText(s,x,y);
+}
+function rightAngle(O,A,B,col){
+  const u1x=O[0]-A[0], u1y=O[1]-A[1], L1=Math.hypot(u1x,u1y)||1;
+  const u2x=B[0]-A[0], u2y=B[1]-A[1], L2=Math.hypot(u2x,u2y)||1;
+  const s=11;
+  const p1=[A[0]+u1x/L1*s, A[1]+u1y/L1*s];
+  const p2=[A[0]+u2x/L2*s, A[1]+u2y/L2*s];
+  const p3=[A[0]+(u1x/L1+u2x/L2)*s, A[1]+(u1y/L1+u2y/L2)*s];
+  G.strokeStyle=col; G.lineWidth=1.3; G.setLineDash([]);
+  G.beginPath(); G.moveTo(p1[0],p1[1]); G.lineTo(p3[0],p3[1]); G.lineTo(p2[0],p2[1]); G.stroke();
+}
+// 矢量直角三角形：O→A（分①青）→B（分②绿），O→B 为合（红）
+function tri(O,A,B,c1,c2,cR){
+  G.save(); G.fillStyle='rgba(150,200,255,.10)';
+  G.beginPath(); G.moveTo(O[0],O[1]); G.lineTo(A[0],A[1]); G.lineTo(B[0],B[1]); G.closePath(); G.fill(); G.restore();
+  arrow(O[0],O[1],A[0],A[1],c1,2.8,10);
+  arrow(A[0],A[1],B[0],B[1],c2,2.8,10);
+  arrow(O[0],O[1],B[0],B[1],cR,3.6,14);
+  rightAngle(O,A,B,'rgba(235,243,255,.7)');
+}
+
+// ---------- 背景与斜面（背景仅清屏，不画无关网格） ----------
+function drawBg(){ G.clearRect(0,0,W,H); }
+function drawSlope(alpha){
+  if(window.__rec) window.__rec.inslope=true;
+  const O=w2s(0,0);
+  const c=Math.cos(S.theta), s=Math.sin(S.theta);
+  const tL=(0 - O[0])/c, tR=(W - O[0])/c;
+  const U=[0, O[1]+tL*s], Dn=[W, O[1]+tR*s];
+  window.__slopeBounds=[U[0],Dn[0]];
+  G.save();
+  G.globalAlpha=alpha;
+  G.beginPath(); G.moveTo(U[0],U[1]); G.lineTo(Dn[0],Dn[1]);
+  G.lineTo(Dn[0],H+20); G.lineTo(U[0],H+20); G.closePath();
+  G.clip();
+  const grad=G.createLinearGradient(0,O[1],0,H);
+  grad.addColorStop(0,'rgba(206,154,96,.95)');
+  grad.addColorStop(0.45,'rgba(170,116,64,.90)');
+  grad.addColorStop(1,'rgba(108,66,34,.94)');
+  G.fillStyle=grad; G.fillRect(0,0,W,H);
+  const px=-s, py=c;
+  G.strokeStyle='rgba(66,38,16,.30)'; G.lineWidth=1.3;
+  for(let d=tL+20; d<tR; d+=34){
+    const cx=O[0]+c*d, cy=O[1]+s*d;
+    G.beginPath(); G.moveTo(cx+px*H, cy+py*H); G.lineTo(cx-px*H, cy-py*H); G.stroke();
+  }
+  G.strokeStyle='rgba(255,228,184,.07)'; G.lineWidth=1;
+  for(let d=tL+10; d<tR; d+=7){
+    const cx=O[0]+c*d, cy=O[1]+s*d;
+    G.beginPath(); G.moveTo(cx+px*H, cy+py*H); G.lineTo(cx-px*H, cy-py*H); G.stroke();
+  }
+  G.restore();
+  G.strokeStyle='rgba(247,208,154,'+(0.96*alpha+0.04)+')'; G.lineWidth=4; G.lineCap='round';
+  G.beginPath(); G.moveTo(U[0],U[1]); G.lineTo(Dn[0],Dn[1]); G.stroke();
+  G.strokeStyle='rgba(58,32,12,.55)'; G.lineWidth=1.6;
+  G.beginPath(); G.moveTo(U[0],U[1]+3); G.lineTo(Dn[0],Dn[1]+3); G.stroke();
+  // 倾角 θ 标注（锚定在抛出点 O）
+  const rA=30;
+  G.strokeStyle='rgba(255,224,150,'+(0.9*alpha+0.05)+')'; G.lineWidth=1.4;
+  G.beginPath(); G.arc(O[0],O[1],rA,0,S.theta,false); G.stroke();
+  G.strokeStyle='rgba(150,200,255,.5)'; G.lineWidth=1; G.setLineDash([3,3]);
+  G.beginPath(); G.moveTo(O[0],O[1]); G.lineTo(O[0]+rA+16,O[1]); G.stroke(); G.setLineDash([]);
+  const am=S.theta/2;
+  txt('θ=30°', O[0]+(rA+12)*Math.cos(am), O[1]+(rA+12)*Math.sin(am)+4, 'rgba(255,224,150,'+(0.96*alpha+0.04)+')', 14,'center');
+  if(window.__rec) window.__rec.inslope=false;
+}
+
+// ---------- 轨迹 ----------
+function drawTraj(curT){
+  G.strokeStyle='rgba(255,208,70,.18)'; G.lineWidth=1.3; G.setLineDash([4,5]);
+  G.beginPath();
+  for(let i=0;i<=120;i++){ const t=S.T*i/120; const p=stateAt(t); const s=w2s(p.x,p.y);
+    if(i===0)G.moveTo(s[0],s[1]); else G.lineTo(s[0],s[1]); }
+  G.stroke(); G.setLineDash([]);
+  G.strokeStyle='rgba(255,206,66,.92)'; G.lineWidth=2.4;
+  G.beginPath();
+  for(let i=0;i<=100;i++){ const t=curT*i/100; const p=stateAt(t); const s=w2s(p.x,p.y);
+    if(i===0)G.moveTo(s[0],s[1]); else G.lineTo(s[0],s[1]); }
+  G.stroke();
+}
+
+// ---------- 速度矢量三角形（在小球处，放大显示；k 为防溢出缩放） ----------
+function drawVelTri(P, st, mode){
+  if(window.__rec) window.__rec.tag='vel';   // 速度矢量三角形为辅助图示，极端角下箭头尖可能贴边裁剪
+  const c=Math.cos(S.theta), s=Math.sin(S.theta);
+  const C_RES='rgba(255,82,96,.98)', C_CY='rgba(63,208,255,.98)', C_GR='rgba(110,235,140,.98)';
+  const k=Math.min(1, velCap/(st.v*vScale || 1));
+  const sc=vScale*k;
+  let A1, A2;
+  if(mode===1){
+    const vxS=st.vx*sc, vyS=-st.vy*sc;
+    A1=[P[0]+vxS, P[1]]; A2=[P[0]+vxS, P[1]+vyS];
+    txt('vₓ',(P[0]+A1[0])/2,P[1]+17,C_CY,13,'center');
+    txt('v_y',A1[0]+10,(A1[1]+A2[1])/2,C_GR,13,'left');
+  } else if(mode===2){
+    const vpar=st.vx*c - st.vy*s, vper=st.vx*s + st.vy*c;
+    A1=[P[0]+vpar*sc*c, P[1]+vpar*sc*s];
+    A2=[A1[0]+vper*sc*s, A1[1]-vper*sc*c];
+    txt('v∥',(P[0]+A1[0])/2-7,(P[1]+A1[1])/2+16,C_CY,13,'center');
+    txt('v⊥',(A1[0]+A2[0])/2+12,(A1[1]+A2[1])/2,C_GR,13,'left');
+  } else {
+    const v0S=S.v0*sc, gtS=S.g*S.t*sc;
+    A1=[P[0]+v0S*Math.cos(S.phi), P[1]-v0S*Math.sin(S.phi)];
+    A2=[A1[0], A1[1]+gtS];
+    txt('v₀',(P[0]+A1[0])/2-7,(P[1]+A1[1])/2-15,C_CY,13,'center');
+    txt('gt',A1[0]+10,(A1[1]+A2[1])/2,C_GR,13,'left');
+  }
+  // 放大绘制（矢量直角三角形，线宽/箭头同比加粗）
+  G.save(); G.fillStyle='rgba(150,200,255,.13)';
+  G.beginPath(); G.moveTo(P[0],P[1]); G.lineTo(A1[0],A1[1]); G.lineTo(A2[0],A2[1]); G.closePath(); G.fill(); G.restore();
+  arrow(P[0],P[1],A1[0],A1[1],C_CY,3.2,13);
+  arrow(A1[0],A1[1],A2[0],A2[1],C_GR,3.2,13);
+  arrow(P[0],P[1],A2[0],A2[1],C_RES,4.2,17);
+  txt('v',(P[0]+A2[0])/2-7,(P[1]+A2[1])/2-15,C_RES,15,'center');
+  if(window.__rec) window.__rec.tag=null;
+}
+
+// ---------- 矢量分解（三种基，均动态显示 分位移/分速度/合位移/速度矢量三角形） ----------
+function drawDecomp(st){
+  if(window.__rec) window.__rec.who="drawDecomp";
+  const c=Math.cos(S.theta), s=Math.sin(S.theta);
+  const C_RES='rgba(255,82,96,.98)', C_CY='rgba(63,208,255,.98)', C_GR='rgba(110,235,140,.98)';
+  const O=w2s(0,0);
+  const P=w2s(st.x,st.y);
+  // 抛出点标记
+  G.strokeStyle='rgba(255,224,150,.9)'; G.lineWidth=1.4;
+  G.beginPath(); G.arc(O[0],O[1],3.4,0,7); G.stroke();
+  // 初始速度方向指示（φ 控制）
+  const L0=58;
+  const dO=[O[0]+L0*Math.cos(S.phi), O[1]-L0*Math.sin(S.phi)];
+  arrow(O[0],O[1],dO[0],dO[1],'rgba(255,180,80,.85)',3,11);
+  txt('v₀',dO[0]+6,dO[1]-2,'rgba(255,200,120,.95)',13,'left');
+
+  if(S.mode===1){
+    const Px=[P[0],O[1]];
+    if(st.x*st.x>1e-4){
+      tri(O,Px,P,C_CY,C_GR,C_RES);
+      txt('x',(O[0]+Px[0])/2,O[1]+15,C_CY,13,'center');
+      txt('y',Px[0]+14,(Px[1]+P[1])/2,C_GR,13,'left');
+      txt('r',(O[0]+P[0])/2-12,(O[1]+P[1])/2-12,C_RES,14,'center');
+    }
+    drawVelTri(P, st, 1);
+  } else if(S.mode===2){
+    const sP = st.x*c - st.y*s;
+    const nP = st.x*s + st.y*c;
+    const Ax=[O[0]+sP*scale*c, O[1]+sP*scale*s];
+    const Bx=[Ax[0]+nP*scale*s, Ax[1]-nP*scale*c];
+    tri(O,Ax,P,C_CY,C_GR,C_RES);
+    txt('s∥',(O[0]+Ax[0])/2-6,(O[1]+Ax[1])/2+12,C_CY,13,'center');
+    txt('s⊥',(Ax[0]+P[0])/2+10,(Ax[1]+P[1])/2,C_GR,13,'left');
+    txt('r',(O[0]+P[0])/2-12,(O[1]+P[1])/2-12,C_RES,14,'center');
+    drawVelTri(P, st, 2);
+  } else {
+    // 模式③：初速度方向 / 重力方向（匀速 + 自由落体）
+    // 位移三角形 O→A(v₀t 无重力匀速腿)→P(½gt² 重力腿) 中，A 点可能越出画面上边界（画布自动裁剪），整体标记为 ghost
+    const Ax=w2s(S.v0*Math.cos(S.phi)*S.t, S.v0*Math.sin(S.phi)*S.t);
+    if(window.__rec) window.__rec.tag='ghost';
+    arrow(O[0],O[1],Ax[0],Ax[1],C_CY,2.8,11);
+    arrow(Ax[0],Ax[1],P[0],P[1],C_GR,2.8,11);
+    arrow(O[0],O[1],P[0],P[1],C_RES,3.4,13);
+    if(window.__rec) window.__rec.tag=null;
+    txt('v₀t',(O[0]+Ax[0])/2-8,Math.min(O[1],Ax[1])-10,C_CY,13,'center');
+    txt('½gt²',(Ax[0]+P[0])/2+12,(Ax[1]+P[1])/2,C_GR,13,'left');
+    txt('r',(O[0]+P[0])/2-12,(O[1]+P[1])/2-12,C_RES,14,'center');
+    drawVelTri(P, st, 3);
+  }
+}
+
+// ---------- 小球（红立体） ----------
+function drawBall(st){
+  const [bx,by]=w2s(st.x,st.y);
+  const r=8.5;
+  const grd=G.createRadialGradient(bx-r*0.35,by-r*0.4,r*0.2,bx,by,r);
+  grd.addColorStop(0,'#ff8a96'); grd.addColorStop(.45,'#ff4d5e'); grd.addColorStop(1,'#9e1422');
+  G.save();
+  G.fillStyle=grd; G.beginPath(); G.arc(bx,by,r,0,7); G.fill();
+  G.fillStyle='rgba(255,255,255,.55)'; G.beginPath(); G.arc(bx-r*0.32,by-r*0.36,r*0.22,0,7); G.fill();
+  G.restore();
+  return [bx,by];
+}
+
+// ---------- 主绘制 ----------
+function draw(){
+  drawBg();
+  drawSlope(S.introT);
+  drawTraj(S.t);
+  const st=stateAt(S.t);
+  drawDecomp(st);
+  drawBall(st);
+  if(S.landed){
+    const [lx,ly]=w2s(S.xT,S.yT);
+    G.fillStyle='rgba(255,220,120,.95)'; G.beginPath(); G.arc(lx,ly,5,0,7); G.fill();
+    txt('落点',lx+12,ly-10,'rgba(255,220,120,.95)',13,'left');
+  }
+}
+
+// ---------- 落地归纳（打字机，仅公式，不含数值） ----------
+function buildEq(){
+  const lines=[];
+  const flat = S.launch===0;
+  lines.push(`<div class="eq hl"><span class="r">斜面抛体运动 · 落地归纳</span></div>`);
+  if(flat){
+    lines.push(`<div class="eq">抛体方式：<span class="v">平抛</span>（v₀ 水平）</div>`);
+    lines.push(`<div class="eq">已知：斜面倾角 θ，初速度 v₀，重力加速度 g；斜面约束 <span class="r">y = −x·tanθ</span>。</div>`);
+    lines.push(`<div class="eq hl"><span class="res">飞行时间　t = 2v₀·sinθ / (g·cosθ) = 2v₀·tanθ / g</span></div>`);
+  } else {
+    lines.push(`<div class="eq">抛体方式：<span class="v">斜抛</span>（v₀ 与水平方向夹角 φ）</div>`);
+    lines.push(`<div class="eq">已知：斜面倾角 θ，初速度 v₀，抛出角 φ，重力加速度 g；斜面约束 <span class="r">y = −x·tanθ</span>。</div>`);
+    lines.push(`<div class="eq hl"><span class="res">飞行时间　t = 2v₀·sin(φ+θ) / (g·cosθ)</span></div>`);
+  }
+  if(S.mode===1){
+    if(flat){
+      lines.push(`<div class="eq hl"><span class="v">① 分解为：水平 / 竖直</span></div>`);
+      lines.push(`<div class="eq">水平分运动：<span class="v">x = v₀·t</span>，　vₓ = v₀</div>`);
+      lines.push(`<div class="eq">竖直分运动：<span class="g">y = −½g·t²</span>，　v_y = −g·t</div>`);
+      lines.push(`<div class="eq">落回斜面：−½g·t² = −v₀·t·tanθ</div>`);
+      lines.push(`<div class="eq">得飞行时间：<span class="res">t = 2v₀·tanθ / g</span></div>`);
+      lines.push(`<div class="eq">射程（沿斜面）：<span class="res">s = x/cosθ = 2v₀²·sinθ / (g·cos²θ)</span></div>`);
+      lines.push(`<div class="eq">落速：<span class="res">v = √[v₀² + (g·t)²]</span></div>`);
+    } else {
+      lines.push(`<div class="eq hl"><span class="v">① 分解为：水平 / 竖直</span></div>`);
+      lines.push(`<div class="eq">水平分运动：<span class="v">x = v₀·cosφ·t</span>，　vₓ = v₀·cosφ</div>`);
+      lines.push(`<div class="eq">竖直分运动：<span class="g">y = v₀·sinφ·t − ½g·t²</span>，　v_y = v₀·sinφ − g·t</div>`);
+      lines.push(`<div class="eq">落回斜面：v₀·sinφ·t − ½g·t² = −v₀·cosφ·t·tanθ</div>`);
+      lines.push(`<div class="eq">得飞行时间：<span class="res">t = 2v₀·sin(φ+θ) / (g·cosθ)</span></div>`);
+      lines.push(`<div class="eq">射程（沿斜面）：<span class="res">s = x/cosθ = 2v₀²·cosφ·sin(φ+θ) / (g·cos²θ)</span></div>`);
+      lines.push(`<div class="eq">落速：<span class="res">v = √[(v₀·cosφ)² + (v₀·sinφ − g·t)²]</span></div>`);
+    }
+  } else if(S.mode===2){
+    if(flat){
+      lines.push(`<div class="eq hl"><span class="v">① 分解为：平行 / 垂直斜面</span></div>`);
+      lines.push(`<div class="eq">沿斜面向下为 s∥ 正方向，垂直斜面向上为 s⊥ 正方向。</div>`);
+      lines.push(`<div class="eq">平行分量：<span class="v">v₀∥ = v₀·cosθ</span>，　<span class="v">a∥ = g·sinθ</span></div>`);
+      lines.push(`<div class="eq">垂直分量：<span class="g">v₀⊥ = v₀·sinθ</span>，　<span class="g">a⊥ = −g·cosθ</span></div>`);
+      lines.push(`<div class="eq">垂直分运动：s⊥ = v₀⊥·t − ½g·cosθ·t²，落回斜面时 s⊥ = 0</div>`);
+      lines.push(`<div class="eq">得飞行时间：<span class="res">t = 2v₀⊥/(g·cosθ) = 2v₀·tanθ / g</span></div>`);
+      lines.push(`<div class="eq">沿斜面位移：<span class="res">s∥ = v₀∥·t + ½g·sinθ·t² = 2v₀²·sinθ / (g·cos²θ)</span></div>`);
+      lines.push(`<div class="eq">落速：<span class="res">v = √[v₀² + (g·t)²]</span></div>`);
+    } else {
+      lines.push(`<div class="eq hl"><span class="v">① 分解为：平行 / 垂直斜面</span></div>`);
+      lines.push(`<div class="eq">沿斜面向下为 s∥ 正方向，垂直斜面向上为 s⊥ 正方向。</div>`);
+      lines.push(`<div class="eq">平行分量：<span class="v">v₀∥ = v₀·cos(φ+θ)</span>，　<span class="v">a∥ = g·sinθ</span></div>`);
+      lines.push(`<div class="eq">垂直分量：<span class="g">v₀⊥ = v₀·sin(φ+θ)</span>，　<span class="g">a⊥ = −g·cosθ</span></div>`);
+      lines.push(`<div class="eq">垂直分运动：s⊥ = v₀⊥·t − ½g·cosθ·t²，落回斜面时 s⊥ = 0</div>`);
+      lines.push(`<div class="eq">得飞行时间：<span class="res">t = 2v₀⊥/(g·cosθ) = 2v₀·sin(φ+θ)/(g·cosθ)</span></div>`);
+      lines.push(`<div class="eq">沿斜面位移：<span class="res">s∥ = v₀∥·t + ½g·sinθ·t² = 2v₀²·sin(φ+θ)·cosφ / (g·cos²θ)</span></div>`);
+      lines.push(`<div class="eq">落速：<span class="res">v = √[(v₀∥ + g·sinθ·t)² + (v₀⊥ − g·cosθ·t)²]</span></div>`);
+    }
+  } else {
+    lines.push(`<div class="eq hl"><span class="v">① 分解为：初速度方向 / 重力方向</span></div>`);
+    lines.push(`<div class="eq">位移（矢量合成）：<span class="v">r = v₀·t + ½g·t²</span> ＝ 沿初速方向的匀速位移 ＋ 竖直向下的自由落体位移</div>`);
+    lines.push(`<div class="eq">沿初速度方向：<span class="v">s₁ = v₀·t</span>；　沿重力方向（竖直向下）：<span class="g">s₂ = ½g·t²</span></div>`);
+    if(flat){
+      lines.push(`<div class="eq hl"><span class="res">平抛特例（φ = 0）：两直角边互相垂直</span></div>`);
+      lines.push(`<div class="eq">水平：<span class="res">x = v₀·t = v·t</span>；　竖直下落：<span class="res">y = ½g·t²</span></div>`);
+      lines.push(`<div class="eq">合位移（勾股定理）：<span class="res">r = √[(v₀·t)² + (½g·t²)²]</span></div>`);
+      lines.push(`<div class="eq">速度合成（矢量）：<span class="g">v = v₀ + g·t</span> ＝ 初速度 ＋ 竖直向下的变化量 gt</div>`);
+      lines.push(`<div class="eq">落速（勾股定理）：<span class="res">v = √[v₀² + (g·t)²]</span></div>`);
+      lines.push(`<div class="eq">射程（沿斜面）：<span class="res">s = 2v₀²·sinθ / (g·cos²θ)</span></div>`);
+    } else {
+      lines.push(`<div class="eq hl"><span class="res">正弦定理</span></div>`);
+      lines.push(`<div class="eq">位移三角形 O–A–P：边 s₁ = v₀t、s₂ = ½gt²、r；r 沿斜面（与水平夹角 −θ）。</div>`);
+      lines.push(`<div class="eq">三内角：∠O = φ+θ，顶点 ∠A = 90°−φ，顶点 ∠P = 90°−θ。</div>`);
+      lines.push(`<div class="eq">正弦定理：<span class="res">s₁/sin(90°−θ) = s₂/sin(φ+θ)</span> ⇒ <span class="res">v₀t/cosθ = ½g·t²/sin(φ+θ)</span></div>`);
+      lines.push(`<div class="eq">得飞行时间：<span class="res">t = 2v₀·sin(φ+θ) / (g·cosθ)</span></div>`);
+      lines.push(`<div class="eq">射程（沿斜面）：<span class="res">s = r = v₀t·cosφ/cosθ = 2v₀²·cosφ·sin(φ+θ) / (g·cos²θ)</span></div>`);
+      lines.push(`<div class="eq">速度合成（矢量）：<span class="g">v = v₀ + g·t</span>；落速大小：<span class="res">v = √[v₀² + (gt)² − 2v₀gt·sinφ] = √[(v₀cosφ)² + (v₀sinφ − gt)²]</span></div>`);
+    }
+  }
+  return lines;
+}
+let eqTimer=null, eqIdx=0;
+function showBoard(){
+  const box=document.getElementById('eqbox');
+  box.innerHTML='';
+  const lines=buildEq();
+  eqIdx=0;
+  if(eqTimer) clearInterval(eqTimer);
+  eqTimer=setInterval(()=>{
+    if(eqIdx>=lines.length){ clearInterval(eqTimer); return; }
+    const d=document.createElement('div');
+    d.innerHTML=lines[eqIdx];
+    const el=d.firstChild; box.appendChild(el);
+    requestAnimationFrame(()=>el.classList.add('show'));
+    eqIdx++;
+  }, 480);
+}
+
+// ---------- 控制 ----------
+function recompute(){
+  S.T = landingT();
+  setView();
+  S.xT = S.lx + S.v0*Math.cos(S.phi)*S.T;
+  S.yT = S.ly + S.v0*Math.sin(S.phi)*S.T - 0.5*S.g*S.T*S.T;
+  S.sAlong = S.xT/Math.cos(S.theta);
+  S.apex = Math.pow(S.v0*Math.sin(S.phi),2)/(2*S.g);
+  const tl=document.getElementById("tl"); if(tl) tl.max=S.T;
+}
+function reset(){
+  S.t=0; S.landed=false; S.running=true;
+  document.getElementById('play').textContent='⏸ 暂停';
+  document.getElementById('eqbox').innerHTML='<div class="eq show" style="opacity:.8">运行中… 小球落至斜面后自动归纳。</div>';
+  if(eqTimer) clearInterval(eqTimer);
+  recompute();
+}
+function resize(){
+  const dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  G.setTransform(dpr,0,0,dpr,0,0);
+  recompute();
+}
+
+// ---------- 主循环 ----------
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(S.running && !S.landed){
+    S.t += dt*S.speed;
+    if(S.t>=S.T){ S.t=S.T; S.landed=true; S.running=false;
+      document.getElementById('play').textContent='▶ 播放';
+      showBoard();
+    }
+  }
+  draw();
+  document.getElementById('tv').textContent=S.t.toFixed(2);
+  document.getElementById('tl').value=S.t;
+  requestAnimationFrame(frame);
+}
+
+// ---------- 事件 ----------
+function bindSlider(id,valId,fn,fmt){
+  const el=document.getElementById(id), v=document.getElementById(valId);
+  el.addEventListener('input',()=>{ fn(parseFloat(el.value)); v.textContent=fmt(parseFloat(el.value)); reset(); });
+}
+bindSlider('v0','v0v',x=>S.v0=x,x=>x);
+bindSlider('ph','phv',x=>S.phi=x*Math.PI/180,x=>x);
+
+document.getElementById('basisTabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  S.mode=parseInt(b.dataset.m);
+  [...document.querySelectorAll('#basisTabs button')].forEach(x=>x.classList.toggle('on',x===b));
+  reset();
+});
+document.getElementById('launchTabs').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  S.launch=parseInt(b.dataset.l);
+  [...document.querySelectorAll('#launchTabs button')].forEach(x=>x.classList.toggle('on',x===b));
+  const ph=document.getElementById('ph'), phv=document.getElementById('phv');
+  if(S.launch===0){            // 平抛：v₀ 水平，φ=0，禁用 φ 滑块
+    S.phi=0; ph.disabled=true; phv.textContent='0';
+  } else {                      // 斜抛：φ 由滑块控制
+    S.phi=parseFloat(ph.value)*Math.PI/180; ph.disabled=false; phv.textContent=ph.value;
+  }
+  reset();
+});
+document.getElementById('sp').addEventListener('input',e=>{
+  S.speed=parseFloat(e.target.value); document.getElementById('spv').textContent=S.speed.toFixed(2);
+});
+document.getElementById('play').addEventListener('click',()=>{
+  if(S.landed){ reset(); return; }
+  S.running=!S.running;
+  document.getElementById('play').textContent=S.running?'⏸ 暂停':'▶ 播放';
+});
+document.getElementById('reset').addEventListener('click',reset);
+document.getElementById('tl').addEventListener('input',e=>{
+  S.t=parseFloat(e.target.value); S.running=false; S.landed=S.t>=S.T-1e-6;
+  document.getElementById('play').textContent='▶ 播放';
+  if(S.landed && document.getElementById('eqbox').children.length<=1) showBoard();
+});
+window.addEventListener('resize',resize);
+
+// ---------- 启动 ----------
+resize();
+reset();
+requestAnimationFrame(frame);
+
+window.__api={S,draw,recompute,setView,stateAt,w2s,getWH:()=>({W,H}),get span(){return slopeSpanPx;},get sc(){return scale;},get oxv(){return ox;},get slopeBounds(){return window.__slopeBounds||[0,0];},
+  recStart:()=>{window.__rec.pts=[];window.__rec.active=true;},
+  recStop:()=>{window.__rec.active=false;},
+  recPts:()=>window.__rec.pts};
+})();
+</script>
+</body>
+</html>
