@@ -3817,6 +3817,12 @@ const WORKS = [
       desc:"俄歇电子能谱（AES）中 KLM 俄歇过程的能级守恒分析与动能计算。",
       icon:"📐", cover:"assets/img/aes18-cover.png", link:"solutions/aes18_threepage.html", date:"2026-10-01", tag:"原子物理"
     }
+,
+      {
+      type:"animation", title:"双线沙摆 · 木板运动轨迹演示",
+      desc:"双线沙摆沿纵深方向做简谐运动，沙粒竖直漏下落在匀速或加速运动的纯白木板上，在运动参考系中留下正弦轨迹曲线；摆动周期越长，双线摆摆长越长。",
+      icon:"🎬", cover:"assets/img/sand-pendulum-cover.png", link:"animations/sand-pendulum.html", date:"2026-10-04", tag:"力学"
+    }
 ];
 
 
