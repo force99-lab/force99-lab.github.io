@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交流发电机工作原理</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;font-family:"Microsoft YaHei","Segoe UI",sans-serif;background:#0b1020;color:#e8eef7;}
+  #app{display:flex;height:100vh;width:100vw;overflow:hidden;}
+  #stage{flex:1 1 62%;position:relative;min-width:0;background:radial-gradient(120% 120% at 38% 42%,#16213c 0%,#0b1020 70%,#070a14 100%);}
+  #cv{width:100%;height:100%;display:block;}
+  #panel{flex:0 0 38%;max-width:460px;min-width:320px;height:100%;overflow-y:auto;background:#f5f7fb;color:#1c2533;
+         padding:16px 16px 22px;box-shadow:-4px 0 18px rgba(0,0,0,.35);}
+  #panel h1{font-size:18px;font-weight:800;color:#14306b;letter-spacing:.5px;margin-bottom:2px;}
+  #panel .sub{font-size:12px;color:#6b7689;margin-bottom:12px;}
+  .card{background:#fff;border:1px solid #e3e8f0;border-radius:10px;padding:11px 13px;margin-bottom:12px;box-shadow:0 1px 3px rgba(20,40,90,.05);}
+  .card h2{font-size:13.5px;font-weight:800;color:#1d4ea0;margin-bottom:9px;display:flex;align-items:center;gap:6px;}
+  .row{display:flex;align-items:center;gap:8px;margin:9px 0;font-size:13px;}
+  .row label{flex:0 0 92px;color:#3a4658;font-weight:600;}
+  .row input[type=range]{flex:1;accent-color:#1d6fe0;}
+  .row .val{flex:0 0 58px;text-align:right;font-variant-numeric:tabular-nums;color:#0b5fc0;font-weight:700;}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  button{cursor:pointer;border:none;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:700;color:#fff;background:#1d6fe0;transition:.15s;}
+  button:hover{filter:brightness(1.08);}
+  button.primary{background:#0b8a3e;}
+  button.ghost{background:#eef2f8;color:#33445e;border:1px solid #d4dce8;}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;font-size:12.5px;}
+  .readout div{display:flex;justify-content:space-between;border-bottom:1px dashed #e1e7f0;padding:3px 0;}
+  .readout b{font-variant-numeric:tabular-nums;color:#0b5fc0;}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:#445;margin-top:6px;}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
+  .know p{font-size:12.7px;line-height:1.7;color:#33425a;margin:5px 0;}
+  .fml{background:#eef4ff;border-left:3px solid #1d6fe0;padding:6px 10px;border-radius:0 6px 6px 0;margin:6px 0;font-size:13px;color:#102a55;font-family:"Microsoft YaHei","Segoe UI",sans-serif;line-height:1.6;}
+  .fml b{color:#0b5fc0;}
+  .tip{font-size:11.5px;color:#8a94a6;margin-top:8px;line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage"><canvas id="cv"></canvas></div>
+  <div id="panel">
+    <h1>交流发电机工作原理</h1>
+    <div class="sub">线圈在匀强磁场中匀速转动 → 磁通量交变 → 产生正弦交变电动势与电流</div>
+
+    <div class="card">
+      <h2>① 控制区</h2>
+      <div class="row"><label>转速 f</label><input type="range" id="f" min="0.2" max="2" step="0.05" value="0.5"><span class="val" id="fv">0.50 Hz</span></div>
+      <div class="row"><label>磁感应强度 B</label><input type="range" id="B" min="0.1" max="1.2" step="0.05" value="0.5"><span class="val" id="Bv">0.50 T</span></div>
+      <div class="row"><label>线圈匝数 N</label><input type="range" id="N" min="10" max="300" step="10" value="100"><span class="val" id="Nv">100</span></div>
+      <div class="row"><label>负载电阻 R</label><input type="range" id="R" min="1" max="20" step="0.5" value="5"><span class="val" id="Rv">5.0 Ω</span></div>
+      <div class="row"><label>播放速度</label><input type="range" id="spd" min="0.1" max="3" step="0.1" value="1"><span class="val" id="spdv">1.0×</span></div>
+      <div class="btns">
+        <button id="play" class="primary">⏸ 暂停</button>
+        <button id="reset" class="ghost">↺ 重置</button>
+        <button id="slow" class="ghost">0.5×</button>
+        <button id="norm" class="ghost">1×</button>
+        <button id="fast" class="ghost">2×</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:linear-gradient(120deg,#5a2a08,#a8591a,#ffdda8,#a8591a)"></i>铜色线框（线圈）</span>
+        <span><i style="background:linear-gradient(120deg,#77818d,#c5ceda,#fff,#aeb8c4)"></i>银色滑环</span>
+        <span><i style="background:#8ff0ff"></i>电流流向标记</span>
+      </div>
+      <div class="tip">拖拽画面可旋转 3D 视角；滚轮缩放。左区右侧上/中/下为 Φ–t、I–t、I²–t 实时动态图像。<br>
+      线框上的<b>青色箭头</b>＝电流瞬时流向：<b>移动越快表示 |i| 越大</b>，i 过零时箭头变淡停驻、随后<b>反向</b>。</div>
+    </div>
+
+    <div class="card">
+      <h2>② 物理知识归纳</h2>
+      <div class="know">
+        <p><b>核心思想：</b>线圈在匀强磁场中绕垂直于磁感线的轴<b>匀速转动</b>，磁通量发生周期性变化，由<b>法拉第电磁感应定律</b>产生交变电动势。</p>
+        <div class="fml">磁通 <b>Φ = Φ<sub>m</sub>·cos(ωt)</b>，　Φ<sub>m</sub> = N·B·A</div>
+        <div class="fml">电动势 <b>ε = −dΦ/dt = ε<sub>m</sub>·sin(ωt)</b>，　ε<sub>m</sub> = N·B·A·ω</div>
+        <div class="fml">电流 <b>i = ε/R = i<sub>m</sub>·sin(ωt)</b>，　i<sub>m</sub> = ε<sub>m</sub>/R</div>
+        <div class="fml">瞬时功率 <b>P = i²R ∝ sin²(ωt)</b> → 以 <b>2 倍频率</b>脉动，始终 ≥ 0</div>
+        <p><b>三个关键部件：</b>① <b>磁体</b>（提供匀强磁场）；② <b>线框（线圈）</b>（切割磁感线产生感应电动势）；③ <b>金属滑环 + 电刷</b>（把线圈中的交变电流引出到外电路，保持电流方向随转动连续变化）。</p>
+        <p><b>两个特殊位置的特点：</b></p>
+        <div class="fml">① <b>中性面</b>（S⊥B，线圈平面与磁感线垂直的平面）：磁通量最大 <b>Φ<sub>m</sub> = BS</b>，<b>ΔΦ/Δt = 0</b> → ε = 0、i = 0，感应电流方向<b>改变</b>。</div>
+        <div class="fml">② <b>峰值面</b>（S∥B，线圈平面与磁感线平行的平面）：磁通量最小 <b>Φ = 0</b>，<b>ΔΦ/Δt 最大</b> → ε 最大、i 最大，电流方向<b>不变</b>。</div>
+        <p><b>频率关系：</b>交流电频率 f 等于线圈每秒转动的圈数；线圈每转一圈，电动势完成一个完整正弦周期。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>③ 交流电流的四值</h2>
+      <div class="tip">
+        <b>① 瞬时值：</b>交变电流的电动势、电流或电压在<b>某一时刻</b>的值，是时间的函数，随 t 按正弦变化 <b>i = iₘ·sin(ωt)</b>。<br>
+        <b>② 峰值（最大值）：</b>交变电流的电动势、电流或电压所能达到的<b>最大值</b> <b>iₘ = N·B·A·ω/R</b>。<br>
+        <b>③ 有效值：</b>让交变电流与恒定电流分别通过<b>大小相同的电阻</b>，如果在交变电流的<b>一个周期内</b>它们产生的<b>热量相等</b>，就把这个恒定电流的电流 I、电压 U 叫作这一交变电流的有效值。
+      </div>
+      <div class="fml">正弦式交流电的有效值与峰值关系：<b>ε = ε<sub>m</sub>/√2</b>，　<b>U = U<sub>m</sub>/√2</b>，　<b>I = i<sub>m</sub>/√2 ≈ 0.707 i<sub>m</sub></b></div>
+      <div class="tip">
+        <b>④ 平均值：</b>交变电流图像中<b>图线与时间轴所围面积</b>跟<b>对应时间</b>的比值（半周整流均值 <b>Ī = 2iₘ/π ≈ 0.637 iₘ</b>；整周平均恒为 0）。
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>④ 实时物理量</h2>
+      <div class="readout">
+        <div>转角 θ<b id="thv">0°</b></div>
+        <div>磁通 Φ<b id="phiv">0.00 Wb</b></div>
+        <div>电动势 ε<b id="emfv">0.00 V</b></div>
+        <div>电流 i<b id="iv">0.00 A</b></div>
+        <div>功率 i²R<b id="piv">0.00 W</b></div>
+        <div>周期 T<b id="Tv">— s</b></div>
+        <div>电流方向 i<b id="dirv">—</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  "use strict";
+  const cv=document.getElementById('cv'); const G=cv.getContext('2d');
+  let W=0,H=0,DPR=1;
+  // ---------- 物理状态 ----------
+  const S={ f:0.5, B:0.5, N:100, R:5, t:0, running:true, speed:1, theta:0, flow:0 };
+  function omega(){ return 2*Math.PI*S.f; }
+  function T(){ return 1/S.f; }
+  const A=0.02;                       // 线圈面积 (m²)，固定
+  function Phim(){ return S.N*S.B*A; }
+  function Em(){ return Phim()*omega(); }
+  function Im(){ return Em()/S.R; }
+  // 物理量（以 t 时刻计）
+  function phi(t){ return Phim()*Math.cos(omega()*t); }
+  function emf(t){ return -Phim()*omega()*Math.sin(omega()*t)*(-1); } // = Em*sin
+  function cur(t){ return Im()*Math.sin(omega()*t); }
+  function pow(t){ const i=cur(t); return i*i*S.R; }
+
+  // ---------- 相机 ----------
+  let camYaw=-0.50, camPitch=0.30, camDist=33, fov=1200;
+  let dragging=false, lastX=0, lastY=0, dirty=true;
+
+  // ---------- 投影 ----------
+  function proj(x,y,z){
+    const cY=Math.cos(camYaw), sY=Math.sin(camYaw);
+    let X1=cY*x + sY*z, Z1=-sY*x + cY*z, Y1=y;
+    const cP=Math.cos(camPitch), sP=Math.sin(camPitch);
+    let Y2=cP*Y1 - sP*Z1, Z2=sP*Y1 + cP*Z1, X2=X1;
+    const d=camDist, f=fov/(d-Z2);
+    return { sx:cx+X2*f, sy:cy-Y2*f, sc:f, z:Z2, ok:true };
+  }
+  let cx=0, cy=0;
+
+  // ---------- 几何常量（转轴沿 Z：线圈在 X-Y 平面绕 Z 旋转；磁体左右放置，磁场沿 X） ----------
+  const COIL_R=2.4;                 // 线圈旋转半径（XY 平面内）
+  const COIL_W=1.7;                 // 线圈轴向半长（沿 Z）
+  const SHAFT_R=0.26;               // 转轴半径（<滑环内径0.36 → 滑环明显外凸、可辨识）
+  const RING_RO=0.50, RING_RI=0.36; // 滑环外半径 / 内半径（薄壁：外半径仅略大于内半径；用户要求保持不动）
+  const RING_W=0.39;                // 滑环轴向半长（＝厚度≈20px：满厚0.78世界；仅改此项，内外半径 RING_RO/RING_RI 不动）
+  const RING_Z0=COIL_W+2.40;        // 近端滑环中心 z（整体落在磁体 z∈[-2.75,2.75] 之外、紧邻磁体端面之外）
+  const RING_DZ=1.60;               // 两滑环轴向间距（成对相邻、留可见缝隙；须 > 2*RING_W 以免两环重叠）
+  const GAP=3.25;                   // 磁极半间距（沿 X）
+  const COIL_PHASE=Math.PI/2;       // 使"线圈面⊥磁感线"对应磁通最大帧
+
+  // 线圈四角（绕 Z 旋转）：0=后(+P) 1=后(-P) 2=前(-P) 3=前(+P)
+  function coilCorners(phi){
+    const w=COIL_W, r=COIL_R;
+    const px=r*Math.cos(phi), py=r*Math.sin(phi);
+    return [
+      {x:  px, y:  py, z:-w},   // 0 后 +P
+      {x: -px, y: -py, z:-w},   // 1 后 -P
+      {x: -px, y: -py, z: w},   // 2 前 -P
+      {x:  px, y:  py, z: w},   // 3 前 +P
+    ];
+  }
+  // 绕 Z 轴的圆环（多段点），用于滑环 / 转轴
+  function ringPtsZ(zc,rad,seg){
+    const a=[]; for(let k=0;k<seg;k++){const th=k/seg*2*Math.PI; a.push({x:rad*Math.cos(th),y:rad*Math.sin(th),z:zc});} return a;
+  }
+
+  // ---------- 金属质感工具 ----------
+  const LWD=[-0.40,0.72,0.56];      // 世界光照方向(左上-前方)
+  const COPPER=[[0,'#43200a'],[0.20,'#8d4413'],[0.42,'#c97427'],[0.60,'#f6b56a'],[0.72,'#ffe6bd'],[0.86,'#b96c22'],[1,'#3d1d09']];
+  const SILVER=[[0,'#6c7683'],[0.30,'#b7c1cd'],[0.54,'#f4f8fc'],[0.76,'#9ba5b2'],[1,'#5b6470']];
+  const STEEL =[[0,'#69727e'],[0.32,'#b6bfca'],[0.55,'#eef3f9'],[0.78,'#95a0ad'],[1,'#59626e']];
+  function poly(pts,close){ G.beginPath(); pts.forEach((p,i)=> i?G.lineTo(p.x,p.y):G.moveTo(p.x,p.y)); if(close)G.closePath(); }
+  // 圆管笔触：沿屏幕垂直方向铺金属渐变 + 一条镜面高光
+  function metalTube(a,b,width,stops,spec){
+    const dx=b.sx-a.sx, dy=b.sy-a.sy, L=Math.hypot(dx,dy)||1;
+    let nx=-dy/L, ny=dx/L;
+    if(nx*(-0.55)+ny*(-0.84)<0){ nx=-nx; ny=-ny; }   // 法向统一朝向光源侧
+    const hw=width/2, mx=(a.sx+b.sx)/2, my=(a.sy+b.sy)/2;
+    const g=G.createLinearGradient(mx-nx*hw,my-ny*hw,mx+nx*hw,my+ny*hw);
+    for(let k=0;k<stops.length;k++) g.addColorStop(stops[k][0],stops[k][1]);
+    G.strokeStyle=g; G.lineWidth=width; G.lineCap='round';
+    G.beginPath(); G.moveTo(a.sx,a.sy); G.lineTo(b.sx,b.sy); G.stroke();
+    if(spec){
+      const o=0.50*hw;
+      G.strokeStyle='rgba(255,255,255,.55)'; G.lineWidth=Math.max(1,width*0.16);
+      G.beginPath(); G.moveTo(a.sx+nx*o,a.sy+ny*o); G.lineTo(b.sx+nx*o,b.sy+ny*o); G.stroke();
+    }
+  }
+  // ---------- 绘制：磁体（六面立方体，按法向光照着色） ----------
+  function shade(rgb,f){return 'rgb('+Math.min(255,rgb[0]*f|0)+','+Math.min(255,rgb[1]*f|0)+','+Math.min(255,rgb[2]*f|0)+')';}
+  function cuboid(cx0,cy0,cz0,hx,hy,hz,colFace){
+    const V=[];
+    for(let iz=0;iz<2;iz++)for(let iy=0;iy<2;iy++)for(let ix=0;ix<2;ix++)
+      V[ix+iy*2+iz*4]={x:cx0+(ix?hx:-hx), y:cy0+(iy?hy:-hy), z:cz0+(iz?hz:-hz)};
+    const PV=V.map(v=>proj(v.x,v.y,v.z));
+    if(PV.some(p=>!p.ok)) return;
+    const faces=[
+      {a:[1,3,7,5], n:[ 1, 0, 0]},
+      {a:[0,2,6,4], n:[-1, 0, 0]},
+      {a:[2,3,7,6], n:[ 0, 1, 0]},
+      {a:[0,1,5,4], n:[ 0,-1, 0]},
+      {a:[4,5,7,6], n:[ 0, 0, 1]},
+      {a:[0,1,3,2], n:[ 0, 0,-1]},
+    ];
+    faces.forEach(f=> f.az=f.a.reduce((s,i)=>s+V[i].z,0)/4);
+    faces.sort((x,y)=>x.az-y.az);
+    for(const f of faces){
+      const dot=Math.max(0, f.n[0]*LWD[0]+f.n[1]*LWD[1]+f.n[2]*LWD[2]);
+      const t=0.34+0.74*dot;
+      poly(f.a.map(i=>({x:PV[i].sx,y:PV[i].sy})),true);
+      G.fillStyle=shade(colFace,t); G.fill();
+      G.strokeStyle='rgba(0,0,0,.34)'; G.lineWidth=1; G.stroke();
+    }
+  }
+  // ---------- 绘制：磁体（六面体，左右放置；N 左 S 右，磁场沿 X） ----------
+  function magnet(left,colFace,lbl,lblCol){
+    const hx=0.85, hy=1.95, hz=COIL_W+1.05;
+    const cx0 = left? -(GAP+hx) : (GAP+hx);
+    cuboid(cx0, 0, 0, hx, hy, hz, colFace);
+    const faceX = left? (cx0+hx) : (cx0-hx);   // 极面中心 x = ±GAP
+    const fp=proj(faceX,0,0);
+    if(fp.ok){G.fillStyle=lblCol;G.font='800 30px "Microsoft YaHei"';G.textAlign='center';G.textBaseline='middle';G.fillText(lbl,fp.sx,fp.sy);G.textBaseline='alphabetic';}
+  }
+  // 磁场箭头(沿 X：N 左 → S 右)
+  function fieldArrows(){
+    G.save();
+    for(let zz of [-1.4,0,1.4]){
+      for(let yy of [-1.4,0,1.4]){
+        const a=proj(-GAP+0.5, yy, zz), b=proj(GAP-0.5, yy, zz);
+        if(a.ok&&b.ok){
+          G.strokeStyle='rgba(120,180,255,.5)';G.lineWidth=1.4;
+          G.beginPath();G.moveTo(a.sx,a.sy);G.lineTo(b.sx,b.sy);G.stroke();
+          const ah=6, ang=Math.atan2(b.sy-a.sy,b.sx-a.sx);
+          G.fillStyle='rgba(120,180,255,.6)';G.beginPath();
+          G.moveTo(b.sx,b.sy);
+          G.lineTo(b.sx-ah*Math.cos(ang-0.4),b.sy-ah*Math.sin(ang-0.4));
+          G.lineTo(b.sx-ah*Math.cos(ang+0.4),b.sy-ah*Math.sin(ang+0.4));
+          G.closePath();G.fill();
+        }
+      }
+    }
+    const bl=proj(0, GAP-0.3, 0); if(bl.ok){G.fillStyle='rgba(150,200,255,.9)';G.font='700 15px "Microsoft YaHei"';G.textAlign='left';G.fillText('B',bl.sx+6,bl.sy);}
+    G.restore();
+  }
+
+  // ---------- 绘制：线框（铜色开口方框 + 引线 + 电流流向动态标记） ----------
+  const COIL_TAG=['a','b','c','d'];
+  function drawCoil(phi){
+    const pts=coilCorners(phi);
+    const P=pts.map(p=>proj(p.x,p.y,p.z));
+    if(P.some(p=>!p.ok)) return;
+    // 线圈平面淡暖色薄膜(增强立体感)
+    poly(P.slice(0,4).map(p=>({x:p.sx,y:p.sy})),true);
+    G.fillStyle='rgba(255,176,96,0.05)'; G.fill();
+    // 三条边铜管（后直径[0,1]、+P轴[0,3]、-P轴[1,2]）；前直径[2,3]为缺口不画
+    const edges=[[0,1],[0,3],[1,2]];
+    edges.map(e=>({e,z:(pts[e[0]].z+pts[e[1]].z)/2}))
+         .sort((A,B)=>A.z-B.z)
+         .forEach(o=>{
+      const i0=o.e[0], i1=o.e[1], w=7.2;
+      G.strokeStyle='rgba(38,15,3,.85)'; G.lineWidth=w+2; G.lineCap='round';
+      G.beginPath(); G.moveTo(P[i0].sx,P[i0].sy); G.lineTo(P[i1].sx,P[i1].sy); G.stroke();
+      metalTube(P[i0],P[i1],w,COPPER,true);
+    });
+    // ---- 引线（铜）：缺口两端 → 两滑环内侧（一长一短，伸至磁体之外） ----
+    const Rin=RING_RI;                             // 滑环内缘半径
+    const p3r={x:Rin*Math.cos(phi),          y:Rin*Math.sin(phi),          z:COIL_W};
+    const p3z={x:Rin*Math.cos(phi),          y:Rin*Math.sin(phi),          z:RING_Z0};
+    const p2r={x:Rin*Math.cos(phi+Math.PI),  y:Rin*Math.sin(phi+Math.PI),  z:COIL_W};
+    const p2z={x:Rin*Math.cos(phi+Math.PI),  y:Rin*Math.sin(phi+Math.PI),  z:RING_Z0+RING_DZ};
+    const P3r=proj(p3r.x,p3r.y,p3r.z), P3z=proj(p3z.x,p3z.y,p3z.z);
+    const P2r=proj(p2r.x,p2r.y,p2r.z), P2z=proj(p2z.x,p2z.y,p2z.z);
+    G.strokeStyle='rgba(38,15,3,.85)';G.lineWidth=6.4;G.lineCap='round';
+    G.beginPath();G.moveTo(P[3].sx,P[3].sy);G.lineTo(P3r.sx,P3r.sy);G.lineTo(P3z.sx,P3z.sy);G.stroke();
+    metalTube(P[3],P3r,5.4,COPPER,false); metalTube(P3r,P3z,5.4,COPPER,false);   // 短引线 → 近环
+    G.beginPath();G.moveTo(P[2].sx,P[2].sy);G.lineTo(P2r.sx,P2r.sy);G.lineTo(P2z.sx,P2z.sy);G.stroke();
+    metalTube(P[2],P2r,5.4,COPPER,false); metalTube(P2r,P2z,5.4,COPPER,false);   // 长引线 → 远环
+    // 顶点标号 a b c d
+    const ctr=proj(0,0,0);
+    if(ctr.ok){
+      G.font='800 13px "Microsoft YaHei"'; G.textAlign='center'; G.textBaseline='middle';
+      P.forEach((p,i)=>{
+        const vx=p.sx-ctr.sx, vy=p.sy-ctr.sy, L=Math.hypot(vx,vy)||1;
+        const ox=p.sx+vx/L*15, oy=p.sy+vy/L*15;
+        G.fillStyle='rgba(0,0,0,.55)'; G.fillText(COIL_TAG[i],ox+1,oy+1);
+        G.fillStyle='#ffe3b8'; G.fillText(COIL_TAG[i],ox,oy);
+      });
+      G.textBaseline='alphabetic';
+    }
+    // "线框"标注
+    const mid=proj(COIL_R*Math.cos(phi), COIL_R*Math.sin(phi), 0);
+    if(mid.ok){ G.font='800 13.5px "Microsoft YaHei"'; G.textAlign='center';
+      G.fillStyle='rgba(0,0,0,.5)'; G.fillText('线框',mid.sx+1,mid.sy-11);
+      G.fillStyle='rgba(255,214,160,.98)'; G.fillText('线框',mid.sx,mid.sy-12); }
+  }
+  // （转动方向紫色弧箭头已按需求删除）
+
+
+  // ---------- 绘制：滑环(银) + 电刷 + 外电路 + 灯泡 ----------
+  function drawRingsAndBrushes(phi){
+    // 滑环渲染为「短圆柱」：轴向厚度已按参考图加厚（仅改轴向半长 RING_W，内外半径 RING_RO/RING_RI 不动）
+    const rings=[{z:RING_Z0,s:+1},{z:RING_Z0+RING_DZ,s:-1}];
+    const seg=44, Ro=RING_RO, Ri=RING_RI, L=RING_W;
+    for(const rg of rings){
+      const zc=rg.z;
+      const zIn = zc+L;        // 朝环对内侧的端面
+      const zOut= zc-L;        // 朝外侧的端面（对称加厚）
+      const oF=ringPtsZ(zIn,Ro,seg).map(p=>proj(p.x,p.y,p.z));
+      const oB=ringPtsZ(zOut,Ro,seg).map(p=>proj(p.x,p.y,p.z));
+      const iF=ringPtsZ(zIn,Ri,seg).map(p=>proj(p.x,p.y,p.z));
+      if([...oF,...oB,...iF].some(p=>!p.ok)) continue;
+      let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+      oF.concat(oB).forEach(p=>{x0=Math.min(x0,p.sx);y0=Math.min(y0,p.sy);x1=Math.max(x1,p.sx);y1=Math.max(y1,p.sy);});
+      const gr=G.createLinearGradient(0,y0,0,y1);
+      for(let k=0;k<SILVER.length;k++) gr.addColorStop(SILVER[k][0],SILVER[k][1]);
+      G.lineJoin='round';
+      // 外侧圆柱壁（沿 Z 轴有一定长度 → 立体元件）
+      G.fillStyle=gr;
+      for(let k=0;k<seg;k++){ const a=oF[k],b=oF[(k+1)%seg],c=oB[(k+1)%seg],d=oB[k];
+        G.beginPath(); G.moveTo(a.sx,a.sy); G.lineTo(b.sx,b.sy); G.lineTo(c.sx,c.sy); G.lineTo(d.sx,d.sy); G.closePath(); G.fill(); }
+      // 朝向相机的端面环（仅画近端面：避免后盖在孔中露出形成"第三个滑环"的错觉）
+      const face=(oo,ii)=>{ G.beginPath();
+        oo.forEach((p,i)=> i?G.lineTo(p.sx,p.sy):G.moveTo(p.sx,p.sy)); G.closePath();
+        ii.forEach((p,i)=> i?G.lineTo(p.sx,p.sy):G.moveTo(p.sx,p.sy)); G.closePath();
+        G.fillStyle=gr; G.fill('evenodd'); };
+      face(oF,iF);
+      G.strokeStyle='rgba(18,26,38,.92)'; G.lineWidth=1.9;
+      poly(oF.map(p=>({x:p.sx,y:p.sy})),true); G.stroke();
+      // 左上镜面高光弧
+      const cys=(y0+y1)/2, ylim=cys-(y1-y0)*0.22;
+      G.strokeStyle='rgba(255,255,255,.92)'; G.lineWidth=2.4; G.lineCap='round';
+      G.beginPath(); let st=false;
+      oF.forEach(p=>{ if(p.sy<ylim){ if(st)G.lineTo(p.sx,p.sy); else {G.moveTo(p.sx,p.sy); st=true;} } else st=false; });
+      G.stroke();
+      // 焊接点（铜色）：线框两开口端引线分别焊于此，随 φ 转动 → 直观体现「滑环随线框同步转动」
+      const ang=(zc===RING_Z0)? phi : (phi+Math.PI);
+      const wz =(zc===RING_Z0)? RING_Z0 : (RING_Z0+RING_DZ);
+      const wp =proj(RING_RI*Math.cos(ang), RING_RI*Math.sin(ang), wz);
+      if(wp.ok){
+        G.fillStyle='#b9691f'; G.beginPath(); G.arc(wp.sx,wp.sy,4.6,0,7); G.fill();
+        G.strokeStyle='rgba(40,18,4,.9)'; G.lineWidth=1.4; G.stroke();
+        G.fillStyle='rgba(255,231,190,.92)'; G.beginPath(); G.arc(wp.sx-1.3,wp.sy-1.3,1.7,0,7); G.fill();
+      }
+    }
+    // 滑环标注（置于环对下左方空白处，避免压到 N 磁体）
+    const rl=proj(0, RING_RO+0.30, RING_Z0+RING_DZ+RING_W+1.20);
+    if(rl.ok){ G.textAlign='center'; G.font='800 13px "Microsoft YaHei"';
+      G.fillStyle='rgba(8,12,22,.65)'; G.fillText('滑环',rl.sx+1,rl.sy+5);
+      G.fillStyle='rgba(238,244,252,.98)'; G.fillText('滑环',rl.sx,rl.sy+4); }
+    // 电刷（压在滑环外下侧、顶端嵌入环底 → 始终与滑环良好接触）
+    const bN=proj(0, -(RING_RO+0.02), RING_Z0);
+    const bF=proj(0, -(RING_RO+0.02), RING_Z0+RING_DZ);
+    if(bN.ok&&bF.ok){
+      [bN,bF].forEach(p=>{
+        const g2=G.createLinearGradient(p.sx-6,p.sy-2,p.sx+6,p.sy-2);
+        g2.addColorStop(0,'#8d97a6'); g2.addColorStop(.45,'#e8eef6'); g2.addColorStop(1,'#6d7787');
+        G.fillStyle=g2; G.fillRect(p.sx-5,p.sy-2,10,12);
+        G.strokeStyle='rgba(18,24,34,.75)'; G.lineWidth=1; G.strokeRect(p.sx-5,p.sy-2,10,12);
+      });
+      G.fillStyle='rgba(215,224,236,.95)'; G.font='12px "Microsoft YaHei"'; G.textAlign='center';
+      G.fillText('电刷',(bN.sx+bF.sx)/2,Math.max(bN.sy,bF.sy)+34);
+      // 外电路：两电刷 → 向下导线 → 在两者之间的中点串联「灯泡」→ 导线 → 电刷
+      const bx=(bN.sx+bF.sx)/2, by=H*0.82;
+      const path=[{x:bN.sx,y:bN.sy+8},{x:bN.sx,y:by},{x:bx,y:by},{x:bF.sx,y:by},{x:bF.sx,y:bF.sy+8}];
+      G.lineJoin='round'; G.lineCap='round';
+      G.strokeStyle='#7f8b9c'; G.lineWidth=5; poly(path,false); G.stroke();
+      G.strokeStyle='#dce4ee'; G.lineWidth=2.2; poly(path,false); G.stroke();
+      // 灯泡：位于两导线之间的中点（串联接入），亮度 ∝ i²
+      const iNow=cur(S.t), Imx=Im();
+      const i2n=Imx>1e-9?(iNow*iNow)/(Imx*Imx):0;
+      const gg=G.createRadialGradient(bx,by,1,bx,by,21);
+      gg.addColorStop(0,'rgba(255,250,215,'+(0.22+0.78*i2n)+')');
+      gg.addColorStop(0.45,'rgba(255,220,110,'+(0.08+0.72*i2n)+')');
+      gg.addColorStop(1,'rgba(255,190,60,0)');
+      G.fillStyle=gg; G.beginPath(); G.arc(bx,by,21,0,7); G.fill();
+      const bg=G.createRadialGradient(bx-3,by-3,1,bx,by,12);
+      bg.addColorStop(0,'rgba(255,255,242,'+(0.30+0.70*i2n)+')');
+      bg.addColorStop(1,'rgba(118,108,68,'+(0.55+0.45*i2n)+')');
+      G.fillStyle=bg; G.beginPath(); G.arc(bx,by,12,0,7); G.fill();
+      G.strokeStyle='#aab4c2'; G.lineWidth=2; G.stroke();
+      G.strokeStyle='rgba(255,236,150,'+(0.25+0.75*i2n)+')'; G.lineWidth=1.6;
+      G.beginPath();
+      for(let k=0;k<=10;k++){ const t2=k/10, xx=bx-5+t2*10, yy=by+(k%2?1.8:-1.8)*0.8; k?G.lineTo(xx,yy):G.moveTo(xx,yy); }
+      G.stroke();
+      G.fillStyle='rgba(210,220,232,.95)'; G.font='12px "Microsoft YaHei"'; G.textAlign='center';
+      G.fillText('灯泡',bx,by+29);
+      G.fillText('外电路 R',bx,by-25);
+    }
+  }
+
+  // 电流流向：单一闭合回路（线圈→引线→滑环→电刷→外电路→另一电刷→滑环→引线→线圈）
+  // 物理正确：i>0 时沿 0→3→近环→电刷N→外电路→电刷F→远环→2→1→0；
+  // 故两引线电流方向相反（一出一进），外电路两竖直导线也方向相反（一上一下）。
+  function drawCurrent(phi){
+    const P=coilCorners(phi).map(p=>proj(p.x,p.y,p.z));
+    if(P.some(p=>!p.ok)) return;
+    const iNow=cur(S.t), Imx=Im();
+    const rel=Imx>1e-9?Math.abs(iNow)/Imx:0;
+    if(rel<=0.015) return;
+    const Rin=RING_RI;
+    const P3r=proj(Rin*Math.cos(phi),Rin*Math.sin(phi),COIL_W);
+    const P3z=proj(Rin*Math.cos(phi),Rin*Math.sin(phi),RING_Z0);
+    const P2r=proj(Rin*Math.cos(phi+Math.PI),Rin*Math.sin(phi+Math.PI),COIL_W);
+    const P2z=proj(Rin*Math.cos(phi+Math.PI),Rin*Math.sin(phi+Math.PI),RING_Z0+RING_DZ);
+    const bN=proj(0,-(RING_RO+0.02),RING_Z0);
+    const bF=proj(0,-(RING_RO+0.02),RING_Z0+RING_DZ);
+    if(![P3r,P3z,P2r,P2z,bN,bF].every(p=>p.ok)) return;
+    const bx=(bN.sx+bF.sx)/2, by=H*0.82;
+    // 回路有序点列（i>0 电流方向）
+    const L=[
+      {x:P[0].sx,y:P[0].sy},{x:P[3].sx,y:P[3].sy},
+      {x:P3r.sx,y:P3r.sy},{x:P3z.sx,y:P3z.sy},
+      {x:bN.sx,y:bN.sy+8},{x:bN.sx,y:by},{x:bx,y:by},{x:bF.sx,y:by},{x:bF.sx,y:bF.sy+8},
+      {x:P2z.sx,y:P2z.sy},{x:P2r.sx,y:P2r.sy},{x:P[2].sx,y:P[2].sy},
+      {x:P[1].sx,y:P[1].sy}
+    ];
+    const segs=[]; let tot=0;
+    for(let q=0;q<L.length-1;q++){ const a=L[q],b=L[q+1]; const Ld=Math.hypot(b.x-a.x,b.y-a.y)||1; segs.push({a,b,L:Ld,s:tot}); tot+=Ld; }
+    { const a=L[L.length-1],b=L[0]; const Ld=Math.hypot(b.x-a.x,b.y-a.y)||1; segs.push({a,b,L:Ld,s:tot}); tot+=Ld; }
+    const al=0.20+0.80*rel, N=Math.max(14,Math.min(40,Math.round(tot/50))), sz=5.8;
+    for(let k=0;k<N;k++){
+      let u=S.flow+k/N; u=u-Math.floor(u);
+      const d=u*tot; let sg=segs[segs.length-1], f=0;
+      for(let q=0;q<segs.length;q++){ const t2=segs[q]; if(d>=t2.s&&d<t2.s+t2.L){ sg=t2; f=(d-t2.s)/t2.L; break; } }
+      const px=sg.a.x+(sg.b.x-sg.a.x)*f, py=sg.a.y+(sg.b.y-sg.a.y)*f;
+      if(Math.abs(px-bx)<16 && Math.abs(py-by)<17) continue;   // 跳过灯泡
+      const sgn=iNow>=0?1:-1;                                  // 电流反向→箭头尖反向
+      const dx=sgn*(sg.b.x-sg.a.x)/sg.L, dy=sgn*(sg.b.y-sg.a.y)/sg.L;
+      G.beginPath();
+      G.moveTo(px+dx*sz, py+dy*sz);
+      G.lineTo(px-dx*sz*0.6-dy*sz*0.66, py-dy*sz*0.6+dx*sz*0.66);
+      G.lineTo(px-dx*sz*0.6+dy*sz*0.66, py-dy*sz*0.6-dx*sz*0.66);
+      G.closePath();
+      G.fillStyle='rgba(150,244,255,'+al.toFixed(2)+')'; G.fill();
+      G.strokeStyle='rgba(6,34,48,'+(0.15+0.55*al).toFixed(2)+')'; G.lineWidth=1; G.stroke();
+    }
+  }
+
+  // 坐标轴线矢量箭头（实心三角）
+  function axisArrow(x,y,ang,size,color){
+    G.save(); G.translate(x,y); G.rotate(ang); G.fillStyle=color;
+    G.beginPath(); G.moveTo(0,0); G.lineTo(-size,size*0.5); G.lineTo(-size,-size*0.5); G.closePath(); G.fill();
+    G.restore();
+  }
+  // ---------- 绘制：三幅动态图像 ----------
+  function drawGraphs(){
+    const gx0=W*0.60, gx=gx0+10, gw=W-gx-14;
+    const pad=18, top=H*0.06, ph=(H*0.90)/3;
+    const panels=[
+      {title:'磁通量 Φ – t', vlabel:'Φ / Wb', color:'#5fa8ff', unit:'Wb', fn:phi, mx:Phim, txt:'Φ = Φₘ·cos(ωt)'},
+      {title:'电流 i – t', vlabel:'i / A', color:'#ff8a3d', unit:'A', fn:cur, mx:Im, txt:'i = iₘ·sin(ωt)'},
+      {title:'电流平方 i² – t', vlabel:'i² / A²', color:'#46d39a', unit:'A²', fn:function(t){return cur(t)*cur(t);}, mx:function(){return Im()*Im();}, txt:'i² ∝ sin²(ωt)（2倍频率）'},
+    ];
+    const cell=22;
+    for(let k=0;k<3;k++){
+      const y0=top+k*ph, h=ph-pad, midY=y0+h*0.5;
+      // 面板底
+      G.fillStyle='rgba(255,255,255,.04)'; G.fillRect(gx,y0,gw,h);
+      // 小方格背景
+      G.strokeStyle='rgba(140,170,210,.13)'; G.lineWidth=1;
+      for(let x=gx; x<=gx+gw+0.5; x+=cell){ G.beginPath(); G.moveTo(x,y0); G.lineTo(x,y0+h); G.stroke(); }
+      for(let y=y0; y<=y0+h+0.5; y+=cell){ G.beginPath(); G.moveTo(gx,y); G.lineTo(gx+gw,y); G.stroke(); }
+      // 面板边框
+      G.strokeStyle='rgba(255,255,255,.16)'; G.lineWidth=1; G.strokeRect(gx,y0,gw,h);
+      // 周期竖线（叠加在方格上，稍亮）；窗口从 t=0 起生长、超过窗长后滚动
+      const win=Math.max(2*T(),0.5), per=Math.max(T(),1e-3);
+      const tEnd=S.t, tStart=Math.max(0, S.t-win), span=(tEnd-tStart)||1;
+      G.strokeStyle='rgba(140,170,210,.24)';
+      const m0=Math.ceil(tStart/per-1e-9);
+      for(let m=m0; m*per<=tEnd+1e-9; m++){ const xx=gx+(m*per-tStart)/span*gw; if(xx>=gx-0.5&&xx<=gx+gw+0.5){ G.beginPath(); G.moveTo(xx,y0); G.lineTo(xx,y0+h); G.stroke(); } }
+      // 实线坐标轴
+      const axisCol='rgba(216,230,248,.95)';
+      G.strokeStyle=axisCol; G.lineWidth=1.8;
+      // 时间轴（水平，值=0 处）＋ 向右矢量箭头
+      G.beginPath(); G.moveTo(gx,midY); G.lineTo(gx+gw-3,midY); G.stroke();
+      axisArrow(gx+gw-3, midY, 0, 6, axisCol);
+      // 数值轴（竖直，左缘）＋ 向上矢量箭头
+      G.beginPath(); G.moveTo(gx,y0+3); G.lineTo(gx,y0+h); G.stroke();
+      axisArrow(gx, y0+3, -Math.PI/2, 6, axisCol);
+      // 坐标原点 0
+      G.fillStyle='rgba(222,234,250,.92)'; G.font='11px "Microsoft YaHei"'; G.textAlign='right'; G.textBaseline='middle';
+      G.fillText('0', gx-3, midY); G.textBaseline='alphabetic';
+      // 曲线（窗口 [tStart, tEnd]；t≈0 时清空，随播放从左侧生长）
+      const maxV=panels[k].mx(); const amp=h*0.37;
+      G.strokeStyle=panels[k].color; G.lineWidth=2.4; G.beginPath();
+      let first=true;
+      if(S.t>1e-3){
+        for(let px=0;px<=gw;px+=2){
+          const tau=tStart+(px/gw)*span;
+          const v=panels[k].fn(tau);
+          const yy=midY-(maxV!==0? v/maxV:0)*amp;
+          if(first){ G.moveTo(gx+px,yy); first=false; } else G.lineTo(gx+px,yy);
+        }
+      }
+      G.stroke();
+      // 当前点
+      const vNow=panels[k].fn(S.t);
+      const yyN=midY-(maxV!==0? vNow/maxV:0)*amp;
+      G.fillStyle=panels[k].color; G.beginPath(); G.arc(gx+gw-3,yyN,3.6,0,7); G.fill();
+      // 标题（面板名）
+      G.fillStyle='#dbe4f0'; G.font='700 15px "Microsoft YaHei"'; G.textAlign='left';
+      G.fillText(panels[k].title, gx+7, y0+17);
+      // 数值轴名（变量 / 单位）
+      G.fillStyle=panels[k].color; G.font='bold 12.5px "Microsoft YaHei"'; G.textAlign='left';
+      G.fillText(panels[k].vlabel, gx+7, y0+33);
+      // 时间轴名
+      G.fillStyle='rgba(222,234,250,.92)'; G.font='12px "Microsoft YaHei"'; G.textAlign='right';
+      G.fillText('t / s', gx+gw-3, midY+15);
+      // 公式 + 单位
+      G.fillStyle=panels[k].color; G.font='12.5px "Microsoft YaHei"'; G.textAlign='right';
+      G.fillText(panels[k].txt, gx+gw-5, y0+h-6);
+      G.fillStyle='rgba(255,255,255,.55)'; G.font='11px "Microsoft YaHei"';
+      G.fillText('单位：'+panels[k].unit, gx+gw-5, y0+h-20);
+    }
+  }
+
+  function drawWatermark(){
+    G.save();G.font='700 20px "Segoe UI","Microsoft YaHei",sans-serif';G.textAlign='right';G.textBaseline='bottom';
+    G.fillStyle='rgba(255,255,255,.10)';G.fillText('force99',W-12,H-8);G.restore();
+  }
+
+  // ---------- 主绘制 ----------
+  function drawScene(){
+    const phi=S.theta+COIL_PHASE;
+    fieldArrows();
+    magnet(true,[226,59,59],'N','#fff');      // 左 = N (红)
+    magnet(false,[47,111,224],'S','#fff');    // 右 = S (蓝)
+    // 转轴圆柱已删除（此前那根粗钢柱会填满滑环内孔、在环间读成「多余的一个圆柱」）
+    // 转子仅由两个滑环 + 铜引线与线圈相连，内孔可见，与参考图一致
+    drawCoil(phi);                 // 线框(开口) + 引线（先画，接触点稍后被滑环遮挡）
+    drawRingsAndBrushes(phi);      // 滑环(银) + 电刷 + 外电路 + 灯泡
+    drawCurrent(phi);              // 电流流向（单一闭合回路：两引线方向相反）
+    // （转动方向紫色弧箭头已按需求删除）
+  }
+  function draw(){
+    try{
+      G.clearRect(0,0,W,H);
+      // 场景中心(整体左移，使 S 极右端落在图像区起点 gx0=0.60W 左侧，避免与三幅图重叠；本轮再额外左移 45px)
+      cx=W*0.38-45; cy=H*0.40;
+      drawScene();
+      drawGraphs();
+      drawWatermark();
+    }catch(e){}
+  }
+
+  // ---------- 读数更新 ----------
+  function updateReadout(){
+    document.getElementById('thv').textContent=(S.theta*180/Math.PI%360).toFixed(0)+'°';
+    document.getElementById('phiv').textContent=phi(S.t).toFixed(3)+' Wb';
+    document.getElementById('emfv').textContent=emf(S.t).toFixed(3)+' V';
+    document.getElementById('iv').textContent=cur(S.t).toFixed(3)+' A';
+    document.getElementById('piv').textContent=pow(S.t).toFixed(3)+' W';
+    document.getElementById('Tv').textContent=T().toFixed(2)+' s';
+    const i0=cur(S.t), i0m=Im();
+    const dv=document.getElementById('dirv');
+    dv.textContent = i0m<1e-9 ? '—' : (Math.abs(i0)<i0m*0.01 ? '0（正反向转换）' : (i0>0?'a→d→c→b':'a→b→c→d'));
+    dv.style.color = (i0m>1e-9&&Math.abs(i0)>=i0m*0.01&&i0<0) ? '#c2410c' : '#0b5fc0';
+  }
+
+  // ---------- 循环 ----------
+  let last=performance.now();
+  function frame(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(S.running){
+      S.t+=dt*S.speed; S.theta=omega()*S.t;
+      const Imx=Im(); if(Imx>1e-9) S.flow += 0.62*(cur(S.t)/Imx)*dt*S.speed;   // 电流相位：i>0 沿回路正向(见 drawCurrent)，符号带正负→每半周期自动反向
+    }
+    draw(); updateReadout();
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- 尺寸 ----------
+  function resize(){
+    const r=cv.parentElement.getBoundingClientRect();
+    DPR=window.devicePixelRatio||1;
+    W=r.width; H=r.height;
+    cv.width=W*DPR; cv.height=H*DPR;
+    G.setTransform(DPR,0,0,DPR,0,0);
+    dirty=true;
+  }
+  window.addEventListener('resize',resize);
+
+  // ---------- 交互：拖拽旋转 + 滚轮缩放 ----------
+  cv.draggable=false;
+  cv.addEventListener('mousedown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;e.preventDefault();});
+  window.addEventListener('mousemove',e=>{ if(!dragging)return; camYaw+=(e.clientX-lastX)*0.006; camPitch=Math.max(-1.2,Math.min(1.2,camPitch-(e.clientY-lastY)*0.005)); lastX=e.clientX;lastY=e.clientY; dirty=true;});
+  window.addEventListener('mouseup',()=>dragging=false);
+  cv.addEventListener('wheel',e=>{e.preventDefault(); camDist=Math.max(14,Math.min(42,camDist+e.deltaY*0.02)); dirty=true;},{passive:false});
+  cv.style.userSelect='none';
+  // 触摸
+  cv.addEventListener('touchstart',e=>{if(e.touches[0]){dragging=true;lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;}e.preventDefault();},{passive:false});
+  cv.addEventListener('touchmove',e=>{if(dragging&&e.touches[0]){camYaw+=(e.touches[0].clientX-lastX)*0.006;camPitch=Math.max(-1.2,Math.min(1.2,camPitch-(e.touches[0].clientY-lastY)*0.005));lastX=e.touches[0].clientX;lastY=e.touches[0].clientY;dirty=true;}e.preventDefault();},{passive:false});
+  cv.addEventListener('touchend',()=>dragging=false);
+
+  // ---------- 控件 ----------
+  function bind(id,fn){const el=document.getElementById(id);el.addEventListener('input',()=>{fn(parseFloat(el.value));dirty=true;});}
+  bind('f',x=>{S.f=x;document.getElementById('fv').textContent=x.toFixed(2)+' Hz';});
+  bind('B',x=>{S.B=x;document.getElementById('Bv').textContent=x.toFixed(2)+' T';});
+  bind('N',x=>{S.N=x;document.getElementById('Nv').textContent=x.toFixed(0);});
+  bind('R',x=>{S.R=x;document.getElementById('Rv').textContent=x.toFixed(1)+' Ω';});
+  const playBtn=document.getElementById('play');
+  playBtn.addEventListener('click',()=>{S.running=!S.running;playBtn.textContent=S.running?'⏸ 暂停':'▶ 播放';});
+  document.getElementById('reset').addEventListener('click',()=>{
+    S.t=0; S.theta=0; S.flow=0; S.running=true;
+    camYaw=-0.50; camPitch=0.30; camDist=33; dirty=true;   // 复位视角
+    const rs=(id,v)=>{ const el=document.getElementById(id); if(el){ el.value=v; el.dispatchEvent(new Event('input')); } };
+    rs('f',0.5); rs('B',0.5); rs('N',100); rs('R',5); rs('spd',1);   // 复位滑块与标签
+    playBtn.textContent='⏸ 暂停';
+  });
+  function setSpeed(x){ S.speed=x; document.getElementById('spd').value=x; document.getElementById('spdv').textContent=x.toFixed(1)+'×'; }
+  document.getElementById('slow').addEventListener('click',()=>setSpeed(0.5));
+  document.getElementById('norm').addEventListener('click',()=>setSpeed(1));
+  document.getElementById('fast').addEventListener('click',()=>setSpeed(2));
+  bind('spd',x=>{ S.speed=x; document.getElementById('spdv').textContent=x.toFixed(1)+'×'; });
+
+  // ---------- 启动 ----------
+  resize();
+  requestAnimationFrame(frame);
+
+  // 暴露探针(无头验证)
+  window.__gen={ S, phi, cur, emf, pow, omega, T, Phim, Em, Im, setCam:(y,p,d)=>{camYaw=y;camPitch=p;camDist=d;dirty=true;} };
+})();
+</script>
+</body>
+</html>
