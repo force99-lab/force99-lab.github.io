@@ -3829,6 +3829,12 @@ const WORKS = [
       desc:"斜面上的抛体运动动态演示：可切换平抛 / 斜抛，实时分解位移与速度矢量（水平 / 竖直、平行 / 垂直斜面、初速 / 重力三种基），落回斜面后自动归纳物理公式。",
       icon:"🎬", cover:"assets/img/projectile-slope-cover.png", link:"animations/projectile-slope.html", date:"2026-10-04", tag:"力学"
     }
+,
+      {
+      type:"animation", title:"交流发电机工作原理",
+      desc:"交流发电机结构与工作原理动态演示：线圈在匀强磁场中匀速转动，滑环+电刷把交变电流引出外电路，磁通量、电流及其平方随时间变化的三幅图像实时联动。",
+      icon:"🎬", cover:"assets/img/ac-generator-cover.png", link:"animations/ac-generator.html", date:"2026-10-05", tag:"电学"
+    }
 ];
 
 
