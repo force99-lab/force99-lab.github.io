@@ -3835,6 +3835,12 @@ const WORKS = [
       desc:"交流发电机结构与工作原理动态演示：线圈在匀强磁场中匀速转动，滑环+电刷把交变电流引出外电路，磁通量、电流及其平方随时间变化的三幅图像实时联动。",
       icon:"🎬", cover:"assets/img/ac-generator-cover.png", link:"animations/ac-generator.html", date:"2026-10-05", tag:"电学"
     }
+,
+      {
+      type:"animation", title:"正弦交流电有效值的图像推导",
+      desc:"用面积法将 i²–t 曲线下的面积转化为等面积矩形，配合割补法动画，直观推导正弦交流电的有效值 I = iₘ/√2 ≈ 0.707 iₘ。",
+      icon:"🎬", cover:"assets/img/rms-derivation-cover.png", link:"animations/rms-derivation.html", date:"2026-10-06", tag:"电学"
+    }
 ];
 
 
