@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>正弦交流电有效值的图像推导（面积法）</title>
+<style>
+  :root{
+    --bg:#0b1430; --panel:#f4f7fc; --ink:#15233f; --sub:#54627c;
+    --line:#c9d6ea; --acc:#1d6fe0; --acc2:#0fa36b; --warn:#e0531a;
+    --chip:#e7eefc;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:"Microsoft YaHei","Source Han Sans SC","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--ink); display:flex; height:100vh; overflow:hidden;
+  }
+  /* 左：动画推导区 */
+  #stage{flex:1 1 62%; position:relative; min-width:0;}
+  #cv{width:100%; height:100%; display:block;}
+  /* 右：控制 + 知识 */
+  #side{
+    flex:0 0 38%; max-width:520px; min-width:340px; background:var(--panel);
+    overflow-y:auto; padding:18px 20px 26px; box-shadow:-6px 0 20px rgba(0,0,0,.25);
+  }
+  #side h1{font-size:19px; margin:2px 0 4px; color:var(--ink);}
+  #side .lead{font-size:12.5px; color:var(--sub); margin-bottom:14px; line-height:1.6;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:14px;}
+  .card h2{font-size:15px; margin:0 0 10px; display:flex; align-items:center; gap:8px;}
+  .card h2 .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .row{display:flex; align-items:center; gap:10px; margin:9px 0;}
+  .row label{width:78px; font-size:13px; color:var(--sub); flex:none;}
+  .row input[type=range]{flex:1; accent-color:var(--acc);}
+  .row .val{width:84px; text-align:right; font-size:13px; font-variant-numeric:tabular-nums; font-weight:700; color:var(--ink);}
+  .btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  button{font-family:inherit; font-size:13px; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:700;}
+  button.primary{background:var(--acc); color:#fff;}
+  button.ghost{background:var(--chip); color:var(--acc);}
+  button.step{background:#eef4ff; color:var(--acc); flex:1 1 46%; font-size:12px; padding:7px 6px;}
+  .legend{display:flex; flex-wrap:wrap; gap:10px 16px; font-size:12px; color:var(--sub); margin-top:10px;}
+  .legend i{display:inline-block; width:14px; height:4px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+  .readout{display:grid; grid-template-columns:1fr 1fr; gap:8px 14px;}
+  .readout div{display:flex; justify-content:space-between; font-size:13px; border-bottom:1px dashed var(--line); padding:3px 0;}
+  .readout b{font-variant-numeric:tabular-nums; color:var(--acc); font-weight:800;}
+  .know p{font-size:13px; line-height:1.75; margin:7px 0; color:var(--ink);}
+  .know .fml{background:#eef4ff; border-left:3px solid var(--acc); padding:7px 11px; border-radius:0 7px 7px 0; margin:8px 0; font-size:13px; color:#102a55; line-height:1.7; font-family:"Microsoft YaHei",sans-serif;}
+  .know .fml b{color:#0b5fc0;}
+  .know .hl{color:var(--warn); font-weight:800;}
+  .tip{font-size:12px; color:var(--sub); line-height:1.6; margin-top:8px;}
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="cv"></canvas></div>
+
+  <div id="side">
+    <h1>正弦交流电有效值的图像推导</h1>
+    <div class="lead">用<b>面积法</b>推导正弦式交流电的有效值 I：把电流平方 i² 与时间轴围成的面积，转化为一个等面积的<b>矩形</b>，其高就是 I²，开方即得 I = iₘ/√2。</div>
+
+    <div class="card">
+      <h2><span class="n">①</span>控制区</h2>
+      <div class="row"><label>峰值 iₘ</label><input type="range" id="im" min="0.5" max="5" step="0.1" value="3"><span class="val" id="imv">3.0 A</span></div>
+      <div class="row"><label>播放速度</label><input type="range" id="spd" min="0.2" max="2" step="0.1" value="1"><span class="val" id="spdv">1.0×</span></div>
+      <div class="btns">
+        <button id="play" class="primary">⏸ 暂停</button>
+        <button id="reset" class="ghost">↺ 重置</button>
+      </div>
+      <div class="btns" style="margin-top:10px;">
+        <button class="step" data-t="0">① 画 i²–t 曲线</button>
+        <button class="step" data-t="2.5">② 求面积</button>
+        <button class="step" data-t="7.5">③ 割补法</button>
+        <button class="step" data-t="12.5">④ 矩形高 = I²</button>
+        <button class="step" data-t="15.5">⑤ 开方得 I</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:#ff8a3d"></i>电流 i = iₘ·sinωt</span>
+        <span><i style="background:#46d39a"></i>电流平方 i² = iₘ²·sin²ωt</span>
+        <span><i style="background:#1d6fe0"></i>i² 曲线下方面积</span>
+        <span><i style="background:#ffd24d"></i>割补：超出 iₘ²/2 的突出部分</span>
+        <span><i style="background:#9fd0ff"></i>空白部分（待补入）</span>
+        <span><i style="background:#0fa36b"></i>等面积矩形（高=I²）</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">②</span>物理知识归纳</h2>
+      <div class="know">
+        <p><b>定义：</b>让交变电流与恒定电流分别通过<b>阻值相同的电阻</b>，如果在交变电流的<b>一个周期内</b>它们产生的<b>热量相等</b>，就把这个恒定电流 I 叫做该交变电流的有效值。</p>
+        <div class="fml">交变电流热效应：<b>Q<sub>交</sub> = ∫₀ᵀ i²R dt</b>　；　恒定电流热效应：<b>Q<sub>直</sub> = I²RT</b></div>
+        <p><b>面积法推导（正弦式 i = iₘ·sinωt）：</b></p>
+        <div class="fml">∫₀ᵀ i² dt = ∫₀ᵀ iₘ²·sin²ωt dt = iₘ²·<b>T/2</b></div>
+        <div class="fml">令 <b>I²T = iₘ²·T/2</b>　⇒　<b>I² = iₘ²/2</b>　⇒　<span class="hl">I = iₘ/√2 ≈ 0.707 iₘ</span></div>
+        <p>图中 i²–t 曲线与时间轴围成的面积，恰等于一个高 <b>I² = iₘ²/2</b>、宽 <b>T</b> 的矩形面积——这就是"图像求面积"的几何含义。</p>
+        <p><b>割补法（动画③）：</b>i² 曲线在均值线 <b>iₘ²/2</b> 上方的<b>突出部分</b>，面积恰好等于下方的<b>空白部分</b>。把每块突出部分沿其与均值线的交点<b>翻转 180°</b> 补入空白，起伏曲线即展平为 iₘ²/2 的水平线，对应的矩形高就是 I²。</p>
+        <p><b>物理意义：</b>有效值反映交流电的<b>热效应（做功能力）</b>，不是简单的平均。对正弦交流电，无论频率高低，<b>I/iₘ = 1/√2</b> 恒成立。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">③</span>有效值的应用</h2>
+      <div class="know">
+        <p>交流电有<b>峰值、有效值、平均值</b>三种取值，用途各不相同：</p>
+        <p>① <span class="hl">电表测量值是有效值</span>——交流电压表、电流表的读数均为有效值。</p>
+        <p>② <span class="hl">用电器标注的电压、电流是有效值</span>——额定电压、额定电流指有效值。</p>
+        <p>③ <span class="hl">计算电功与电热用有效值</span>——W = UIt、Q = I²Rt 中的 U、I 均取有效值。</p>
+        <p>④ <span class="hl">电容器击穿电压是最大值</span>——电容器所能承受的最大电压对应峰值（最大值），超过则会被击穿。</p>
+        <p>⑤ <span class="hl">计算电量用平均值</span>——q = ∫i dt = <b>Ī</b>·T；感应电动势平均值 <b>Ē</b> = n·ΔΦ/Δt。</p>
+        <div class="fml">记忆口诀：<b>测、标、功、热 → 有效值；击穿 → 最大值；求电量 → 平均值</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">④</span>实时物理量</h2>
+      <div class="readout">
+        <div>当前阶段<b id="stagev">—</b></div>
+        <div>峰值 iₘ<b id="imr">3.00 A</b></div>
+        <div>周期 T<b id="tr">1.00 s</b></div>
+        <div>∫i²dt / T<b id="meanr">4.50 A²</b></div>
+        <div>有效值 I²<b id="i2r">4.50 A²</b></div>
+        <div>有效值 I<b id="ir">2.12 A</b></div>
+        <div>I / iₘ<b id="ratio">0.707</b></div>
+        <div>热量比 Q交/Q直<b id="q">1.00</b></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const cv = document.getElementById('cv');
+  const G = cv.getContext('2d');
+  let W=0, H=0, DPR=1;
+
+  function resize(){
+    const r = cv.parentElement.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+    G.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+
+  // ---- 状态 ----
+  const S = { t:0, running:true, speed:1, im:3.0 };
+  const Tvis = 1.0;            // 演示周期（归一化，仅用于数值展示）
+  const STORY = 18.5;          // 总时长
+  // 阶段时间节点
+  const ST = [0, 2.5, 7.5, 12.5, 15.5];
+  const STAGE_NAMES = [
+    '① 画出 i²–t 曲线',
+    '② 求曲线与时间轴围成面积',
+    '③ 割补法：将超出 iₘ²/2 的突出部分补入空白部分',
+    '④ 矩形高 = I² = iₘ²/2',
+    '⑤ 开方得 I = iₘ/√2'
+  ];
+
+  // ---- 物理 ----
+  function im2(){ return S.im*S.im; }
+  function Ival(){ return S.im/Math.SQRT2; }
+
+  // ============================================================
+  //  绘制
+  // ============================================================
+  function axisArrow(x,y,ang,size,color){
+    G.save(); G.translate(x,y); G.rotate(ang);
+    G.fillStyle=color; G.beginPath();
+    G.moveTo(0,0);
+    G.lineTo(-size, size*0.42);
+    G.lineTo(-size, -size*0.42);
+    G.closePath(); G.fill();
+    G.restore();
+  }
+
+  function drawWatermark(){
+    G.save();
+    G.globalAlpha=0.18;
+    G.fillStyle='#ffffff';
+    G.font='700 13px "Microsoft YaHei",sans-serif';
+    G.textAlign='right'; G.textBaseline='bottom';
+    G.fillText('force99', W-14, H-12);
+    G.restore();
+  }
+
+  function draw(){
+    G.clearRect(0,0,W,H);
+    // 背景
+    const bg = G.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#0d1838'); bg.addColorStop(1,'#0a1228');
+    G.fillStyle=bg; G.fillRect(0,0,W,H);
+    drawWatermark();
+
+    // 顶部阶段横幅
+    const stage = S.t>=STORY ? 4 : (S.t<ST[1]?0:(S.t<ST[2]?1:(S.t<ST[3]?2:(S.t<ST[4]?3:4))));
+    G.fillStyle='#eaf1ff'; G.font='800 20px "Microsoft YaHei",sans-serif'; G.textAlign='left'; G.textBaseline='alphabetic';
+    G.fillText(STAGE_NAMES[stage], 26, 38);
+    G.fillStyle='rgba(150,180,220,.55)'; G.font='13px "Microsoft YaHei",sans-serif';
+    G.fillText('面积法推导：i²–t 曲线下面积 = 等面积矩形面积（高 I²，宽 T）', 26, 60);
+
+    // 绘图区几何（堆叠两图）
+    const padL=78, padR=34, padT=84, padB=58;
+    const gx = padL, gw = W - padL - padR;
+    const totalH = H - padT - padB;
+    const topH = totalH*0.34, gap=26, botH = totalH*0.66 - gap;
+    const topTop = padT, topBot = padT+topH;          // i–t 图
+    const botTop = topBot+gap, botBot = botTop+botH;  // i²–t 图（轴在底）
+
+    drawTopPlot(gx,gw,topTop,topBot);
+    drawBottomPlot(gx,gw,botTop,botBot,stage);
+
+    // 完成徽标
+    if(S.t>=STORY){
+      const a=Math.min(1,(S.t-STORY)/0.6);
+      G.globalAlpha=a;
+      G.fillStyle='rgba(15,163,107,.16)'; G.fillRect(gx,botTop-6,gw,botBot-botTop+12);
+      G.globalAlpha=1;
+      G.fillStyle='#7dffc0'; G.font='800 22px "Microsoft YaHei",sans-serif'; G.textAlign='center';
+      G.fillText('有效值 I = iₘ / √2 ≈ 0.707 iₘ', gx+gw/2, botBot+44);
+      G.textAlign='left';
+    }
+  }
+
+  // ---------- 上图：i = iₘ sinωt ----------
+  function drawTopPlot(gx,gw,topY,botY){
+    const midY = (topY+botY)/2;
+    const halfH = (botY-topY)/2 - 8;
+    const intro = Math.min(1, S.t/2.5);             // 曲线逐渐画出
+    const uMax = intro;
+    // 网格小方格
+    drawGrid(gx,gw,topY,botY);
+    // 坐标轴
+    const ax='rgba(216,230,248,.92)';
+    G.strokeStyle=ax; G.lineWidth=1.6;
+    G.beginPath(); G.moveTo(gx,midY); G.lineTo(gx+gw-2,midY); G.stroke();      // 零轴
+    axisArrow(gx+gw-2, midY, 0, 7, ax);
+    G.beginPath(); G.moveTo(gx,topY+2); G.lineTo(gx,botY); G.stroke();        // 纵轴
+    axisArrow(gx, topY+2, -Math.PI/2, 7, ax);
+    G.fillStyle='rgba(222,234,250,.9)'; G.font='11px "Microsoft YaHei"'; G.textAlign='right'; G.textBaseline='middle';
+    G.fillText('0', gx-5, midY);
+    G.textBaseline='alphabetic'; G.textAlign='right';
+    G.fillText('t / s', gx+gw-4, midY-8);
+    G.fillText('i / A', gx-5, topY+10);
+
+    // 曲线 i
+    function iy(u){ return midY - (S.im*Math.sin(2*Math.PI*u)/S.im)*halfH* (S.im>0?1:1); }
+    function iy2(u){ return midY - Math.sin(2*Math.PI*u)*halfH; }
+    G.strokeStyle='#ff8a3d'; G.lineWidth=2.4; G.beginPath();
+    let first=true;
+    for(let u=0; u<=uMax+1e-4; u+=0.004){
+      const x=gx+u*gw, y=iy2(u);
+      if(first){G.moveTo(x,y);first=false;} else G.lineTo(x,y);
+    }
+    G.stroke();
+    // 标题
+    G.fillStyle='#ffb37a'; G.font='700 13px "Microsoft YaHei"'; G.textAlign='left';
+    G.fillText('交流电流  i = iₘ·sinωt', gx+8, topY+16);
+  }
+
+  // ---------- 下图：i² = iₘ² sin²ωt，面积法 ----------
+  function drawBottomPlot(gx,gw,topY,botY,stage){
+    const axY = botY;                       // 值=0 轴
+    const bMax = im2()*1.22;
+    const by = v => axY - (v/bMax)*(botY-topY-6);
+    const valAt = u => im2()*Math.sin(2*Math.PI*u)*Math.sin(2*Math.PI*u); // i²(u)
+    const mean = im2()/2;
+
+    const intro = Math.min(1, S.t/2.5);
+    const fillF = S.t<ST[1] ? 0 : (S.t<ST[2] ? (S.t-ST[1])/5 : 1);   // ② 面积扫描进度
+    const morph = S.t<ST[2] ? 0 : Math.min(1,(S.t-ST[2])/3);         // ③ 割补进度
+    const rectA = Math.min(1, Math.max(0,(S.t-ST[3])/1.5));          // ④ 矩形标注淡入
+    const rootA = Math.min(1, Math.max(0,(S.t-ST[4])/1.5));          // ⑤ 开方淡入
+
+    drawGrid(gx,gw,topY,botY);
+
+    // 坐标轴
+    const ax='rgba(216,230,248,.92)';
+    G.strokeStyle=ax; G.lineWidth=1.6;
+    G.beginPath(); G.moveTo(gx,axY); G.lineTo(gx+gw-2,axY); G.stroke();
+    axisArrow(gx+gw-2, axY, 0, 7, ax);
+    G.beginPath(); G.moveTo(gx,topY+2); G.lineTo(gx,axY); G.stroke();
+    axisArrow(gx, topY+2, -Math.PI/2, 7, ax);
+    G.fillStyle='rgba(222,234,250,.9)'; G.font='11px "Microsoft YaHei"'; G.textAlign='right'; G.textBaseline='middle';
+    G.fillText('0', gx-5, axY); G.textBaseline='alphabetic'; G.textAlign='right';
+    G.fillText('t / s', gx+gw-4, axY-8);
+    G.textAlign='left'; G.fillText('i² / A²', gx+4, topY+12);
+
+    // 网格横线（iₘ² 与 iₘ²/2 参考线，淡）
+    G.strokeStyle='rgba(140,170,210,.18)'; G.setLineDash([3,4]); G.lineWidth=1;
+    for(let k=1;k<=4;k++){ const yy=by(bMax*k/4); G.beginPath(); G.moveTo(gx,yy); G.lineTo(gx+gw,yy); G.stroke(); }
+    G.setLineDash([]);
+
+    // 均值参考线（iₘ²/2）
+    const yMean = by(mean);
+    if(S.t>ST[1]){
+      G.strokeStyle='rgba(15,163,107,.55)'; G.setLineDash([6,5]); G.lineWidth=1.4;
+      G.beginPath(); G.moveTo(gx,yMean); G.lineTo(gx+gw,yMean); G.stroke(); G.setLineDash([]);
+      G.fillStyle='rgba(120,255,192,.85)'; G.font='11px "Microsoft YaHei"'; G.textAlign='left';
+      G.fillText('均值 = iₘ²/2', gx+6, yMean-6);
+    }
+
+    const isBulge = u => (u>=1/8&&u<=3/8)||(u>=5/8&&u<=7/8);   // i² 在 iₘ²/2 上方（突出部分）的区间
+
+    // 填充面积
+    const uMax = Math.max(intro, fillF);
+    if(S.t < ST[2]){
+      // ② 扫描阶段：绿色 = 曲线下方面积（随时间轴围成的真实面积）
+      G.beginPath();
+      G.moveTo(gx, axY);
+      for(let u=0; u<=uMax+1e-4; u+=0.004){ G.lineTo(gx+u*gw, by(valAt(u))); }
+      G.lineTo(gx+uMax*gw, axY);
+      G.closePath();
+    } else {
+      // ③ 割补阶段：绿色底座 = 隆起区填到均值线、空白区只填到曲线（与下方琥珀色拼成完整矩形）
+      G.beginPath();
+      G.moveTo(gx, axY);
+      for(let u=0; u<=uMax+1e-4; u+=0.004){ G.lineTo(gx+u*gw, by(isBulge(u)?mean:valAt(u))); }
+      G.lineTo(gx+uMax*gw, axY);
+      G.closePath();
+    }
+    const fg=G.createLinearGradient(0,topY,0,axY);
+    fg.addColorStop(0,'rgba(70,211,154,.42)'); fg.addColorStop(1,'rgba(29,111,224,.28)');
+    G.fillStyle=fg; G.fill();
+
+    // 真实 i² 曲线（对照：割补前起伏、割补后应为水平 iₘ²/2 线）
+    G.strokeStyle='#46d39a'; G.lineWidth=2.4; G.beginPath();
+    let first=true;
+    for(let u=0; u<=uMax+1e-4; u+=0.004){
+      const x=gx+u*gw; const y=by(valAt(u));
+      if(first){G.moveTo(x,y);first=false;} else G.lineTo(x,y);
+    }
+    G.stroke();
+
+    // ③ 割补：把超出 iₘ²/2 的“突出部分”割下、翻转 180° 补入低于 iₘ²/2 的空白部分
+    if(morph>0){
+      // 每个隆起从峰值处一分为二，分别绕左、右与均值线的交点(1/8、3/8、5/8、7/8)翻转
+      const pieces=[[1/8,1/4,1/8],[1/4,3/8,3/8],[5/8,3/4,5/8],[3/4,7/8,7/8]];
+      for(const pp of pieces){
+        const uA=pp[0], uB=pp[1], edgeU=pp[2];
+        const xE=gx+edgeU*gw, yE=by(mean);
+        // 割下的“突出部分”顶点（曲线在上、均值线在下）
+        const pts=[{x:gx+uA*gw,y:yE}];
+        for(let u=uA; u<=uB+1e-4; u+=0.004){ pts.push({x:gx+u*gw, y:by(valAt(u))}); }
+        pts.push({x:gx+uB*gw, y:yE});
+        // 绕自身质心翻转 180° 并平移到位：p=1 时正好等于“关于交点(edgeU,均值)作中心对称”，精确补齐空白
+        let mc={x:0,y:0}; for(const q of pts){ mc.x+=q.x; mc.y+=q.y; } mc.x/=pts.length; mc.y/=pts.length;
+        const e=morph*morph*(3-2*morph);           // 缓入缓出，翻转经过竖直位更利落
+        const th=e*Math.PI, tx=e*2*(xE-mc.x), ty=e*2*(yE-mc.y);
+        G.save();
+        G.translate(tx,ty);
+        G.translate(mc.x,mc.y); G.rotate(th); G.translate(-mc.x,-mc.y);
+        G.beginPath(); G.moveTo(pts[0].x,pts[0].y);
+        for(let i=1;i<pts.length;i++) G.lineTo(pts[i].x,pts[i].y);
+        G.closePath();
+        G.fillStyle='rgba(255,210,77,.95)'; G.fill();
+        G.strokeStyle='rgba(170,110,0,.9)'; G.lineWidth=1.3; G.stroke();
+        G.restore();
+      }
+      // 空白部分（待补入）轮廓
+      G.strokeStyle='rgba(159,208,255,.75)'; G.setLineDash([5,4]); G.lineWidth=1.3;
+      const gaps=[[0,1/8],[3/8,5/8],[7/8,1]];
+      for(const g of gaps){
+        G.beginPath();
+        G.moveTo(gx+g[0]*gw, yMean);
+        for(let u=g[0]; u<=g[1]+1e-4; u+=0.004){ G.lineTo(gx+u*gw, by(valAt(u))); }
+        G.lineTo(gx+g[1]*gw, yMean);
+        G.closePath(); G.stroke();
+      }
+      G.setLineDash([]);
+      // 标签
+      if(morph>0.04 && morph<0.96){
+        G.font='700 12.5px "Microsoft YaHei"'; G.textAlign='center'; G.textBaseline='alphabetic';
+        G.fillStyle='rgba(255,210,77,.98)';
+        G.fillText('超出 iₘ²/2 的突出部分（割下）', gx+gw*0.25, topY+ (axY-topY)*0.16);
+        G.fillStyle='rgba(159,208,255,.98)';
+        G.fillText('空白部分（补入）', gx+gw*0.5, axY-9);
+      }
+    }
+
+    // 扫描线（②阶段）
+    if(S.t>=ST[1] && S.t<ST[2]){
+      const xb = gx+fillF*gw;
+      G.strokeStyle='rgba(255,255,255,.5)'; G.lineWidth=1.4;
+      G.beginPath(); G.moveTo(xb,topY); G.lineTo(xb,axY); G.stroke();
+      G.fillStyle='#fff'; G.font='11px "Microsoft YaHei"'; G.textAlign='center';
+      G.fillText('扫过求面积', xb, topY+12);
+    }
+
+    // ④ 矩形标注
+    if(rectA>0){
+      G.globalAlpha=rectA;
+      // 矩形外框（高=均值）
+      G.strokeStyle='#0fa36b'; G.lineWidth=2.2;
+      G.strokeRect(gx, yMean, gw, axY-yMean);
+      // 高=I² 标注（左侧竖箭头）
+      drawDim(gx-30, axY, gx-30, yMean, '#0fa36b', 'I²');
+      // 宽=T 标注（底部横箭头）
+      drawDimH(gx, axY+18, gx+gw, axY+18, '#9fd0ff', 'T');
+      // 文字
+      G.fillStyle='#7dffc0'; G.font='800 15px "Microsoft YaHei"'; G.textAlign='center';
+      G.fillText('等面积矩形：高 = I² = iₘ²/2，宽 = T', gx+gw/2, yMean-10);
+      G.globalAlpha=1;
+    }
+
+    // ⑤ 开方得 I
+    if(rootA>0){
+      G.globalAlpha=rootA;
+      const cxC=gx+gw*0.5;
+      // “开方”徽标上移到空白区：i² 曲线在 u≈0.5 处贴近时间轴，中心列上方为空白
+      // 进一步上提并缩短，确保与下方“等面积矩形”文字及上方标题都不重叠
+      const boxTop = topY + 44;
+      const boxH = Math.min((axY-yMean)-4, 120);
+      // 红字无背景
+      G.fillStyle='rgba(224,83,26,1)';
+      G.font='800 18px "Microsoft YaHei"'; G.textAlign='center'; G.textBaseline='middle';
+      G.fillText('√  →  I = iₘ/√2', cxC, boxTop + boxH/2);
+      G.textBaseline='alphabetic';
+      G.globalAlpha=1;
+    }
+
+    // 标题
+    G.fillStyle='#7fe3b6'; G.font='700 13px "Microsoft YaHei"'; G.textAlign='left';
+    G.fillText('电流平方  i² = iₘ²·sin²ωt', gx+8, topY+30);
+  }
+
+  function drawGrid(gx,gw,topY,botY){
+    const cell=26;
+    G.strokeStyle='rgba(140,170,210,.10)'; G.lineWidth=1;
+    for(let x=gx; x<=gx+gw; x+=cell){ G.beginPath(); G.moveTo(x,topY); G.lineTo(x,botY); G.stroke(); }
+    for(let y=topY; y<=botY; y+=cell){ G.beginPath(); G.moveTo(gx,y); G.lineTo(gx+gw,y); G.stroke(); }
+  }
+
+  function drawDim(x1,y1,x2,y2,color,label){
+    G.strokeStyle=color; G.lineWidth=1.6;
+    G.beginPath(); G.moveTo(x1,y1); G.lineTo(x2,y2); G.stroke();
+    const a=Math.atan2(y2-y1,x2-x1);
+    axisArrow(x2,y2,a,5,color); axisArrow(x1,y1,a+Math.PI,5,color);
+    G.fillStyle=color; G.font='12px "Microsoft YaHei"'; G.textAlign='right'; G.textBaseline='middle';
+    G.fillText(label, x1-4, (y1+y2)/2);
+    G.textBaseline='alphabetic';
+  }
+  function drawDimH(x1,y,x2,_,color,label){
+    G.strokeStyle=color; G.lineWidth=1.6;
+    G.beginPath(); G.moveTo(x1,y); G.lineTo(x2,y); G.stroke();
+    axisArrow(x2,y,0,5,color); axisArrow(x1,y,Math.PI,5,color);
+    G.fillStyle=color; G.font='12px "Microsoft YaHei"'; G.textAlign='center'; G.textBaseline='top';
+    G.fillText(label, (x1+x2)/2, y+4);
+    G.textBaseline='alphabetic';
+  }
+  function roundRect(x,y,w,h,r){
+    G.beginPath();
+    G.moveTo(x+r,y); G.arcTo(x+w,y,x+w,y+h,r); G.arcTo(x+w,y+h,x,y+h,r);
+    G.arcTo(x,y+h,x,y,r); G.arcTo(x,y,x+w,y,r); G.closePath();
+  }
+
+  // ============================================================
+  //  主循环
+  // ============================================================
+  let last=performance.now();
+  function frame(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(S.running){
+      S.t += dt*S.speed;
+      if(S.t>=STORY+1.2){ S.t=STORY; S.running=false; syncPlay(); }
+    }
+    draw();
+    updateReadout();
+    requestAnimationFrame(frame);
+  }
+
+  // ---- 读数 ----
+  function updateReadout(){
+    const stage = S.t>=STORY?4:(S.t<ST[1]?0:(S.t<ST[2]?1:(S.t<ST[3]?2:(S.t<ST[4]?3:4))));
+    document.getElementById('stagev').textContent = STAGE_NAMES[stage].replace(/^. /,'');
+    document.getElementById('imr').textContent = S.im.toFixed(2)+' A';
+    document.getElementById('tr').textContent = Tvis.toFixed(2)+' s';
+    document.getElementById('meanr').textContent = (im2()/2).toFixed(2)+' A²';
+    document.getElementById('i2r').textContent = (im2()/2).toFixed(2)+' A²';
+    document.getElementById('ir').textContent = Ival().toFixed(2)+' A';
+    document.getElementById('ratio').textContent = (Ival()/S.im).toFixed(3);
+    document.getElementById('q').textContent = '1.00';
+  }
+
+  // ---- 交互 ----
+  function syncPlay(){ document.getElementById('play').textContent = S.running?'⏸ 暂停':'▶ 播放'; }
+  document.getElementById('im').addEventListener('input',e=>{
+    S.im=parseFloat(e.target.value); document.getElementById('imv').textContent=S.im.toFixed(1)+' A';
+  });
+  document.getElementById('spd').addEventListener('input',e=>{
+    S.speed=parseFloat(e.target.value); document.getElementById('spdv').textContent=S.speed.toFixed(1)+'×';
+  });
+  document.getElementById('play').addEventListener('click',()=>{ S.running=!S.running; syncPlay(); });
+  document.getElementById('reset').addEventListener('click',()=>{ S.t=0; S.running=true; syncPlay(); });
+  document.querySelectorAll('button.step').forEach(b=>{
+    b.addEventListener('click',()=>{ S.t=parseFloat(b.dataset.t); if(S.t>=STORY)S.t=STORY; S.running=true; syncPlay(); });
+  });
+
+  resize();
+  syncPlay();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
