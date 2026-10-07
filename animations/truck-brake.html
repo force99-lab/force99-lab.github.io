@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汽车刹车 · 木箱会撞到驾驶室吗</title>
+<style>
+  :root{
+    --bg:#0b1430; --panel:#f4f7fc; --ink:#15233f; --sub:#54627c;
+    --line:#c9d6ea; --acc:#1d6fe0; --acc2:#0fa36b; --warn:#e0531a;
+    --chip:#e7eefc;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:"Microsoft YaHei","Source Han Sans SC","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--ink); display:flex; height:100vh; overflow:hidden;
+  }
+  /* 左：动画区 */
+  #stage{flex:1 1 64%; position:relative; min-width:0;}
+  #cv{width:100%; height:100%; display:block;}
+  /* 右：控制交互区 */
+  #side{
+    flex:0 0 36%; max-width:520px; min-width:340px; background:var(--panel);
+    overflow-y:auto; padding:18px 20px 26px; box-shadow:-6px 0 20px rgba(0,0,0,.25);
+  }
+  #side h1{font-size:19px; margin:2px 0 4px; color:var(--ink);}
+  #side .lead{font-size:12.5px; color:var(--sub); margin-bottom:14px; line-height:1.6;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:14px;}
+  .card h2{font-size:15px; margin:0 0 10px; display:flex; align-items:center; gap:8px;}
+  .card h2 .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .row{display:flex; align-items:center; gap:10px; margin:9px 0;}
+  .row label{width:104px; font-size:13px; color:var(--sub); flex:none;}
+  .row input[type=range]{flex:1; accent-color:var(--acc); min-width:0;}
+  .row .val{width:96px; text-align:right; font-size:12.5px; font-variant-numeric:tabular-nums; font-weight:700; color:var(--ink);}
+  .btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  button{font-family:inherit; font-size:13px; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:700;}
+  button.primary{background:var(--acc); color:#fff;}
+  button.ghost{background:var(--chip); color:var(--acc);}
+  button.step{background:#eef4ff; color:var(--acc); flex:1 1 46%; font-size:12px; padding:7px 6px;}
+  .legend{display:flex; flex-wrap:wrap; gap:8px 14px; font-size:12px; color:var(--sub); margin-top:10px;}
+  .legend i{display:inline-block; width:14px; height:4px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+  .readout{display:grid; grid-template-columns:1fr 1fr; gap:8px 14px;}
+  .readout div{display:flex; justify-content:space-between; font-size:13px; border-bottom:1px dashed var(--line); padding:3px 0;}
+  .readout b{font-variant-numeric:tabular-nums; color:var(--acc); font-weight:800;}
+  .verdict{display:flex; align-items:center; gap:10px; border-radius:10px; padding:10px 13px; margin-bottom:11px; font-weight:800; font-size:14px; line-height:1.35;}
+  .verdict .dot{width:12px; height:12px; border-radius:50%; flex:none;}
+  .know p{font-size:13px; line-height:1.75; margin:7px 0; color:var(--ink);}
+  .fml{background:#eef4ff; border-left:3px solid var(--acc); padding:7px 11px; border-radius:0 7px 7px 0; margin:8px 0; font-size:13px; color:#102a55; line-height:1.75; font-family:"Microsoft YaHei",sans-serif;}
+  .fml b{color:#0b5fc0;}
+  .know .hl{color:var(--warn); font-weight:800;}
+  .know .hl2{color:var(--acc2); font-weight:800;}
+  .tip{font-size:12px; color:var(--sub); line-height:1.6; margin-top:8px;}
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="cv"></canvas></div>
+
+  <div id="side">
+    <h1>汽车刹车时，木箱会撞到驾驶室吗？</h1>
+    <div class="lead">拖车以 v₀ 匀速行驶，司机刹车（加速度大小 a）。木箱放在底板上，与底板间动摩擦因数 μ，木箱前端到驾驶室后壁间距为 d。木箱能否"跟住"拖车，取决于摩擦能否提供足够的减速度。</div>
+
+    <div class="card">
+      <h2><span class="n">①</span>控制区</h2>
+      <div class="row"><label>初速度 v₀</label><input type="range" id="v0" min="4" max="30" step="0.5" value="15"><span class="val" id="v0v">15.0 m/s</span></div>
+      <div class="row"><label>刹车加速度 a</label><input type="range" id="a" min="1" max="10" step="0.1" value="6"><span class="val" id="av">6.0 m/s²</span></div>
+      <div class="row"><label>动摩擦因数 μ</label><input type="range" id="mu" min="0.05" max="0.9" step="0.01" value="0.45"><span class="val" id="muv">0.45</span></div>
+      <div class="row"><label>间距 d</label><input type="range" id="d" min="0.2" max="4" step="0.05" value="1.5"><span class="val" id="dv">1.50 m</span></div>
+      <div class="row"><label>播放速度</label><input type="range" id="spd" min="0.2" max="2" step="0.1" value="1"><span class="val" id="spdv">1.0×</span></div>
+      <div class="row"><label>时间轴</label><input type="range" id="tl" min="-1" max="6.4" step="0.01" value="-1"><span class="val" id="tlv">-1.00 s</span></div>
+      <div class="btns">
+        <button id="play" class="primary">⏸ 暂停</button>
+        <button id="reset" class="ghost">↺ 重置</button>
+      </div>
+      <div class="btns" style="margin-top:10px;">
+        <button class="step" data-t="-1">① 匀速行驶</button>
+        <button class="step" data-t="0">② 开始刹车</button>
+        <button class="step" id="btnHit">③ 碰撞时刻</button>
+        <button class="step" data-t="99">④ 停止时刻</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:#e8eef7"></i>拖车（白）</span>
+        <span><i style="background:#c8863f"></i>木箱（木）</span>
+        <span><i style="background:#7dffc0"></i>剩余间距 d</span>
+        <span><i style="background:#ffb347"></i>相对滑动 Δs</span>
+        <span><i style="background:#ff5b4a"></i>摩擦力 f = μmg</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">②</span>物理知识归纳</h2>
+      <div class="know">
+        <p><b>情景与问题：</b>拖车以 v₀ 匀速行驶，司机以大小为 a 的加速度刹车。木箱放在拖车底板上，木箱与底板间动摩擦因数为 μ，木箱前端到驾驶室后壁的距离为 d。问木箱会不会撞到驾驶室？（取 g = 10 m/s²）</p>
+        <p><b>一、木箱会不会相对拖车滑动？</b></p>
+        <p>刹车时木箱因惯性有向前滑动的趋势。要让木箱"跟住"拖车、一起以加速度 a 减速，需要摩擦力提供 ma 的作用力；而底板能提供的最大摩擦力为 μmg。</p>
+        <div class="fml">临界条件：<b>μmg ≥ ma</b> ⇒ <b>μg ≥ a</b> → 木箱与拖车一起减速，<b>无相对滑动</b>（Δs = 0）<br>反之 <b>μg &lt; a</b> → 木箱相对拖车向前滑动</div>
+        <p><b>二、相对滑动的距离有多大？</b></p>
+        <p>滑动时木箱受向后的摩擦力 μmg，减速度大小为 μg（拖车减速度 a &gt; μg）。在<b>地面参考系</b>中分别求出两者从 v₀ 减到静止的位移：</p>
+        <div class="fml">拖车：<b>D<sub>车</sub> = v₀²/(2a)</b>　　木箱：<b>D<sub>箱</sub> = v₀²/(2μg)</b></div>
+        <div class="fml">木箱相对拖车向前的最大位移：<b>Δs = D<sub>箱</sub> − D<sub>车</sub> = (v₀²/2)·(1/μg − 1/a)</b></div>
+        <p><b>三、判断是否碰撞：</b></p>
+        <div class="fml"><b>Δs ≥ d</b> → 木箱追上驾驶室，<span class="hl">发生碰撞</span>；<b>Δs &lt; d</b> → 木箱滑到距驾驶室 (d − Δs) 处停下，<span class="hl2">不碰撞</span></div>
+        <p><b>易错提醒：</b>① 不能只比较"木箱速度大于拖车速度"就下结论，关键看<b>相对位移</b>；② 木箱的减速度是 μg 而<b>不是</b> a；③ 用<b>地面参考系</b>分别算位移再相减最稳妥（等价于相对运动：相对加速度 a − μg）。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">③</span>实时物理量</h2>
+      <div class="verdict" id="vdBox"><span class="dot" id="vdDot"></span><span id="vdTxt">—</span></div>
+      <div class="readout">
+        <div>时间 t<b id="rt">0.00 s</b></div>
+        <div>车速 v<sub>车</sub><b id="rvt">0.0 m/s</b></div>
+        <div>箱速 v<sub>箱</sub><b id="rvb">0.0 m/s</b></div>
+        <div>相对速度<b id="rvr">0.0 m/s</b></div>
+        <div>已滑动 Δs<b id="rds">0.00 m</b></div>
+        <div>剩余间距<b id="rgap">1.50 m</b></div>
+        <div>最大相对位移<b id="rdsmax">0.00 m</b></div>
+        <div>μg / a<b id="rcrit">—</b></div>
+      </div>
+      <div class="tip" id="rtip">木箱最大减速度 μg = 4.5 m/s²，拖车减速度 a = 6.0 m/s²。</div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const cv = document.getElementById('cv');
+  const G  = cv.getContext('2d');
+  let W=0, H=0, DPR=1;
+
+  function resize(){
+    const r = cv.parentElement.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+    G.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+
+  // ================= 物理 =================
+  const GRAV = 10;                 // g = 10 m/s²（中学惯例）
+  const VW = 11.2;                 // 车体总长(m)：车头最前→车尾最后
+  const BED_L = 8.9, BED_TOP = 1.25, BED_TH = 0.22;   // 平板
+  const CAB_U0 = 8.9, CAB_U1 = 11.2, CAB_H = 2.95;    // 驾驶室（后端 u=CAB_U0）
+  const BOX_L = 2.30, BOX_H = 1.70;                   // 木箱
+  const WR = 0.55;                                    // 车轮半径
+
+  const TAU_PRE = 1.0;             // 刹车前匀速段时长
+  const TAU_BRAKE = 5.0;           // 刹车段压缩为 5s
+  const TAU_HOLD_NO = 1.4;         // 不碰撞：结束时停留
+  const TAU_HOLD_C  = 1.8;         // 碰撞后停留
+
+  const S = { t:-TAU_PRE, running:true, speed:1, v0:15, a:6, mu:0.45, d:1.5 };
+
+  function muG(){ return S.mu*GRAV; }
+  function isSliding(){ return muG() < S.a - 1e-9; }
+  function tTruckStop(){ return S.v0/S.a; }
+  function tBoxStop(){ return isSliding() ? S.v0/muG() : tTruckStop(); }
+  function Tsim(){ return isSliding() ? Math.max(tTruckStop(), tBoxStop()) : tTruckStop(); }
+  function dsMax(){ return isSliding() ? (S.v0*S.v0/2)*(1/muG() - 1/S.a) : 0; }
+  function willHit(){ return isSliding() && dsMax() >= S.d - 1e-9; }
+
+  function tCollide(){
+    if(!willHit()) return Infinity;
+    const k = S.a - muG();
+    const tc1 = Math.sqrt(2*S.d/k);
+    if(tc1 <= tTruckStop()) return tc1;
+    const Dt = S.v0*S.v0/(2*S.a);
+    const A = 0.5*muG(), B = -S.v0, C = Dt + S.d;
+    const disc = B*B - 4*A*C;
+    if(disc < 0) return Infinity;
+    return (-B - Math.sqrt(disc))/(2*A);
+  }
+  function tauEnd(){
+    if(willHit()) return (tCollide()/Tsim())*TAU_BRAKE + TAU_HOLD_C;
+    return TAU_BRAKE + TAU_HOLD_NO;
+  }
+
+  function sTruck(t){ const tt=Math.min(t, tTruckStop()); return S.v0*tt - 0.5*S.a*tt*tt; }
+  function vTruck(t){ return Math.max(0, S.v0 - S.a*t); }
+  function sBox(t){ const tt=Math.min(t, tBoxStop()); return S.v0*tt - 0.5*muG()*tt*tt; }
+  function vBox(t){
+    if(!isSliding()) return vTruck(t);
+    if(t >= tCollide()) return vTruck(t);   // 撞上驾驶室后随车一起减速
+    return Math.max(0, S.v0 - muG()*t);
+  }
+  function dsRel(t){ return isSliding() ? Math.max(0, sBox(t) - sTruck(t)) : 0; }
+  function dsShow(t){
+    if(!isSliding()) return 0;
+    return Math.min(S.d, dsRel(t));
+  }
+  function vRel(t){
+    if(!isSliding()) return 0;
+    if(t >= tCollide()) return 0;
+    return Math.max(0, vBox(t) - vTruck(t));
+  }
+  function sTravel(tau){          // 自动画起点起算的绝对位移（米）
+    if(tau <= 0) return S.v0*(tau + TAU_PRE);
+    return S.v0*TAU_PRE + sTruck(tau);
+  }
+  function simT(){ return Math.max(0, S.t); }
+
+  function statusInfo(){
+    const t = simT();
+    if(S.t < 0) return {txt:'匀速行驶（尚未刹车）', col:'#9fd0ff'};
+    if(willHit() && t >= tCollide()) return {txt:'木箱撞击驾驶室！', col:'#ff5b4a'};
+    if(isSliding()){
+      if(t < 0.04) return {txt:'开始刹车：木箱与拖车出现相对滑动', col:'#ffd24d'};
+      if(vRel(t) > 1e-6) return {txt:'刹车中：木箱相对拖车向前滑动', col:'#ffb347'};
+      return {txt:'木箱已停止滑动，与拖车相对静止', col:'#7dffc0'};
+    }
+    return {txt:'摩擦力足够，木箱随拖车一起减速（无相对滑动）', col:'#7dffc0'};
+  }
+
+  // ================= 绘图工具 =================
+  function rr(x,y,w,h,r){
+    r = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+    G.beginPath();
+    G.moveTo(x+r,y); G.arcTo(x+w,y,x+w,y+h,r); G.arcTo(x+w,y+h,x,y+h,r);
+    G.arcTo(x,y+h,x,y,r); G.arcTo(x,y,x+w,y,r); G.closePath();
+  }
+  function arrowHead(x,y,ang,size,color){
+    G.save(); G.translate(x,y); G.rotate(ang);
+    G.fillStyle=color; G.beginPath();
+    G.moveTo(0,0); G.lineTo(-size, size*0.44); G.lineTo(-size,-size*0.44);
+    G.closePath(); G.fill(); G.restore();
+  }
+  function dimH(x1,x2,y,color,label,above){
+    G.strokeStyle=color; G.lineWidth=1.7;
+    G.beginPath(); G.moveTo(x1,y); G.lineTo(x2,y); G.stroke();
+    if(x2-x1 > 12){
+      arrowHead(x2,y,0,6,color); arrowHead(x1,y,Math.PI,6,color);
+    }
+    G.fillStyle=color; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='center'; G.textBaseline= above?'bottom':'top';
+    G.fillText(label,(x1+x2)/2, above? y-6 : y+6);
+    G.textBaseline='alphabetic';
+  }
+  function drawWatermark(){
+    G.save();
+    G.globalAlpha=0.18; G.fillStyle='#ffffff';
+    G.font='700 13px "Microsoft YaHei",sans-serif';
+    G.textAlign='right'; G.textBaseline='bottom';
+    G.fillText('force99', W-14, H-12);
+    G.restore();
+  }
+
+  // ================= 场景常量 / 布局 =================
+  function geom(){
+    const sceneH = Math.round(H*0.52);             // 场景（动画）高度
+    const topM = 8, arrowTopM = 4.57, roadBottomPx = 84;  // 路面以下延伸
+    // 由场景高度决定最大比例，保证整辆车+速度箭头+路面纹理都在场景内
+    const scH = (sceneH - topM - roadBottomPx) / arrowTopM;
+    const scW = (W*0.88) / VW;                      // 由宽度决定
+    const sc = Math.min(scH, scW);
+    const roadY = topM + arrowTopM*sc;
+    const rearX = (W - VW*sc) / 2;
+
+    // 底部带：v–t 图 + 左下信息框
+    const graphX = 22, graphW = W - 44;
+    const graphY = sceneH, graphH = Math.round((H - sceneH) * 0.64);
+    const infoY = graphY + graphH, infoH = H - infoY;
+    const infoX = graphX, infoW = graphW, infoLW = Math.round(graphW * 0.46);
+
+    return { sceneH, roadY, sc, rearX, graphX, graphY, graphW, graphH,
+             infoY, infoH, infoX, infoW, infoLW,
+      ux: u => rearX + u*sc,
+      hy: h => roadY - h*sc
+    };
+  }
+
+  // ================= 主绘制 =================
+  function draw(){
+    const g = geom();
+    const t = simT();
+    const dsv = dsShow(t);
+    const st = statusInfo();
+
+    G.clearRect(0,0,W,H);
+    const bg = G.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#0a1230'); bg.addColorStop(1,'#0a1024');
+    G.fillStyle = bg; G.fillRect(0,0,W,H);
+
+    drawSky(g);
+    drawRoad(g, t);
+    drawVehicle(g, t, dsv);
+    drawIndicators(g, t, dsv);
+    drawFlash(g, t);
+    drawHud(g, st, t);
+    drawVtGraph(g);
+    drawInfoRow(g);
+    drawWatermark();
+  }
+
+  function drawSky(g){
+    const roadY = g.roadY;
+    const sky = G.createLinearGradient(0,0,0,roadY);
+    sky.addColorStop(0,'#0a1230'); sky.addColorStop(1,'#16274e');
+    G.fillStyle=sky; G.fillRect(0,0,W,roadY);
+
+    // 远山
+    G.fillStyle='rgba(38,64,112,.9)';
+    G.beginPath(); G.moveTo(0,roadY);
+    G.lineTo(0, roadY-48); G.lineTo(W*0.10, roadY-86); G.lineTo(W*0.20, roadY-52);
+    G.lineTo(W*0.32, roadY-98); G.lineTo(W*0.45, roadY-50); G.lineTo(W*0.60, roadY-92);
+    G.lineTo(W*0.74, roadY-54); G.lineTo(W*0.88, roadY-82); G.lineTo(W, roadY-52);
+    G.lineTo(W, roadY); G.closePath(); G.fill();
+    // 近处山脊
+    G.fillStyle='rgba(24,42,78,.95)';
+    G.beginPath(); G.moveTo(0,roadY);
+    G.lineTo(0, roadY-26); G.lineTo(W*0.16, roadY-44); G.lineTo(W*0.30, roadY-24);
+    G.lineTo(W*0.52, roadY-40); G.lineTo(W*0.70, roadY-22); G.lineTo(W*0.86, roadY-38);
+    G.lineTo(W, roadY-22); G.lineTo(W, roadY); G.closePath(); G.fill();
+
+    // 地平线光晕
+    const glow = G.createLinearGradient(0,roadY-90,0,roadY);
+    glow.addColorStop(0,'rgba(70,140,235,0)');
+    glow.addColorStop(1,'rgba(80,150,240,.20)');
+    G.fillStyle=glow; G.fillRect(0,roadY-90,W,90);
+  }
+
+  function drawRoad(g, t){
+    const roadY=g.roadY;
+    const rg = G.createLinearGradient(0,roadY,0,H);
+    rg.addColorStop(0,'#1b2540'); rg.addColorStop(1,'#0d1425');
+    G.fillStyle=rg; G.fillRect(0,roadY,W,g.sceneH-roadY);
+
+    // 路面亮边
+    G.fillStyle='rgba(130,175,235,.55)'; G.fillRect(0,roadY-2.5,W,3);
+
+    // 滚动路面纹理（速度感）
+    const roadPx = g.sc*0.40;
+    const per = 12;                       // 世界米
+    const dashPx = per*roadPx;
+    const off = ((sTravel(S.t)%per)+per)%per*roadPx;
+    G.strokeStyle='rgba(200,220,248,.34)'; G.lineWidth=5; G.lineCap='round';
+    for(let x=-off; x<W+dashPx; x+=dashPx){
+      G.beginPath(); G.moveTo(x, roadY+26); G.lineTo(x+dashPx*0.48, roadY+26); G.stroke();
+    }
+    G.lineCap='butt';
+    // 路肩暗纹
+    G.strokeStyle='rgba(120,150,200,.18)'; G.lineWidth=2;
+    G.beginPath(); G.moveTo(0, roadY+78); G.lineTo(W, roadY+78); G.stroke();
+
+    // 路边标杆（速度参照）
+    const postPer = 24, postPx = postPer*roadPx;
+    const offP = ((sTravel(S.t)%postPer)+postPer)%postPer*roadPx;
+    for(let x=-offP; x<W+postPx; x+=postPx){
+      G.fillStyle='#4c5c78'; G.fillRect(x, roadY-54, 4, 54);
+      G.fillStyle='#cfe0f5'; G.fillRect(x-5, roadY-80, 14, 4);
+      G.fillStyle='rgba(255,222,120,.9)'; G.fillRect(x, roadY-26, 4, 7);
+    }
+  }
+
+  function wheel(g, uc, ang){
+    const X=g.ux(uc), Y=g.hy(WR), R=WR*g.sc;
+    G.fillStyle='#0d1424'; G.beginPath(); G.arc(X,Y,R,0,Math.PI*2); G.fill();
+    G.strokeStyle='#3a4860'; G.lineWidth=2; G.beginPath(); G.arc(X,Y,R*0.97,0,Math.PI*2); G.stroke();
+    G.save();
+    G.translate(X,Y); G.rotate(ang);
+    G.fillStyle='#8b9bb4'; G.beginPath(); G.arc(0,0,R*0.60,0,Math.PI*2); G.fill();
+    G.fillStyle='#2b3648';
+    for(let k=0;k<6;k++){
+      G.save(); G.rotate(k*Math.PI/3);
+      G.fillRect(-R*0.055, -R*0.60, R*0.11, R*0.44);
+      G.restore();
+    }
+    G.fillStyle='#cfdcee'; G.beginPath(); G.arc(0,0,R*0.17,0,Math.PI*2); G.fill();
+    G.restore();
+  }
+
+  function drawVehicle(g, t, dsv){
+    const ang = sTravel(S.t)/WR;
+    // ---- 底盘 ----
+    G.fillStyle='#232e46';
+    rr(g.ux(0.10), g.hy(1.02), 11.0*g.sc, 0.30*g.sc, 4); G.fill();
+
+    // ---- 平板 ----
+    const bg2 = G.createLinearGradient(0,g.hy(BED_TOP),0,g.hy(BED_TOP-BED_TH));
+    bg2.addColorStop(0,'#9aa9c0'); bg2.addColorStop(1,'#55637b');
+    G.fillStyle=bg2;
+    rr(g.ux(0), g.hy(BED_TOP), BED_L*g.sc, BED_TH*g.sc, 3); G.fill();
+    G.strokeStyle='rgba(18,28,48,.5)'; G.lineWidth=1;
+    for(let u=0.35;u<BED_L;u+=0.42){
+      G.beginPath(); G.moveTo(g.ux(u), g.hy(BED_TOP)); G.lineTo(g.ux(u), g.hy(BED_TOP-BED_TH)); G.stroke();
+    }
+    // 侧护栏
+    G.fillStyle='rgba(200,214,235,.35)';
+    G.fillRect(g.ux(0), g.hy(BED_TOP+0.16), BED_L*g.sc, 0.14*g.sc);
+    G.strokeStyle='rgba(200,214,235,.5)'; G.lineWidth=1.4;
+    G.strokeRect(g.ux(0), g.hy(BED_TOP+0.16), BED_L*g.sc, 0.14*g.sc);
+
+    // ---- 驾驶室 ----
+    const cg = G.createLinearGradient(0,g.hy(CAB_H),0,g.hy(1.02));
+    cg.addColorStop(0,'#f4f8fd'); cg.addColorStop(0.55,'#dbe4f1'); cg.addColorStop(1,'#aab8cc');
+    G.fillStyle=cg;
+    G.beginPath();
+    G.moveTo(g.ux(CAB_U0), g.hy(1.02));
+    G.lineTo(g.ux(CAB_U0), g.hy(CAB_H-0.14));
+    G.quadraticCurveTo(g.ux(CAB_U0), g.hy(CAB_H), g.ux(CAB_U0+0.22), g.hy(CAB_H));
+    G.lineTo(g.ux(CAB_U1-0.30), g.hy(CAB_H));
+    G.quadraticCurveTo(g.ux(CAB_U1), g.hy(CAB_H), g.ux(CAB_U1), g.hy(CAB_H-0.40));
+    G.lineTo(g.ux(CAB_U1), g.hy(1.20));
+    G.quadraticCurveTo(g.ux(CAB_U1), g.hy(1.02), g.ux(CAB_U1-0.20), g.hy(1.02));
+    G.closePath(); G.fill();
+    // 前风挡
+    G.fillStyle='rgba(78,138,205,.85)';
+    G.beginPath();
+    G.moveTo(g.ux(CAB_U1-0.80), g.hy(CAB_H-0.22));
+    G.lineTo(g.ux(CAB_U1-0.08), g.hy(CAB_H-0.52));
+    G.lineTo(g.ux(CAB_U1-0.08), g.hy(1.72));
+    G.lineTo(g.ux(CAB_U1-0.80), g.hy(1.72));
+    G.closePath(); G.fill();
+    // 侧窗
+    G.fillStyle='rgba(78,138,205,.8)';
+    rr(g.ux(CAB_U0+0.34), g.hy(CAB_H-0.30), 0.96*g.sc, 0.86*g.sc, 5); G.fill();
+    // 驾驶室后壁（面向木箱的一面）
+    G.fillStyle='rgba(120,140,170,.55)';
+    G.fillRect(g.ux(CAB_U0), g.hy(CAB_H-0.04), 0.14*g.sc, (CAB_H-0.04-1.02)*g.sc);
+    // 车门分缝 & 前灯
+    G.strokeStyle='rgba(120,140,170,.6)'; G.lineWidth=1.2;
+    G.beginPath(); G.moveTo(g.ux(CAB_U0+1.5), g.hy(2.6)); G.lineTo(g.ux(CAB_U0+1.5), g.hy(1.15)); G.stroke();
+    G.fillStyle='#ffe9a8';
+    rr(g.ux(CAB_U1-0.34), g.hy(1.52), 0.32*g.sc, 0.22*g.sc, 3); G.fill();
+
+    // ---- 车轮 ----
+    wheel(g, 1.35, ang);
+    wheel(g, 2.72, ang);
+    wheel(g, 9.75, ang);
+
+    // ---- 木箱 ----
+    const uFront = CAB_U0 - S.d + dsv;
+    const uBack  = uFront - BOX_L;
+    const yBot = g.hy(BED_TOP), yTop = g.hy(BED_TOP+BOX_H);
+    const x0 = g.ux(uBack), x1 = g.ux(uFront);
+    const wg = G.createLinearGradient(x0,yTop,x1,yBot);
+    wg.addColorStop(0,'#dda35c'); wg.addColorStop(0.5,'#c8863f'); wg.addColorStop(1,'#a3662b');
+    G.fillStyle=wg; G.fillRect(x0,yTop,x1-x0,yBot-yTop);
+    G.strokeStyle='rgba(96,54,14,.55)'; G.lineWidth=1.6;
+    for(let k=1;k<4;k++){
+      const yy=yTop+(yBot-yTop)*k/4;
+      G.beginPath(); G.moveTo(x0,yy); G.lineTo(x1,yy); G.stroke();
+    }
+    G.strokeStyle='rgba(130,78,24,.8)'; G.lineWidth=2.6;
+    G.beginPath(); G.moveTo(x0,yTop); G.lineTo(x1,yBot); G.stroke();
+    G.beginPath(); G.moveTo(x1,yTop); G.lineTo(x0,yBot); G.stroke();
+    G.strokeStyle='#7d4a16'; G.lineWidth=3.2; G.strokeRect(x0,yTop,x1-x0,yBot-yTop);
+    // 木箱起始位置虚框
+    if(dsv > 0.01){
+      const uF0 = CAB_U0 - S.d;
+      G.setLineDash([5,4]); G.strokeStyle='rgba(255,214,130,.7)'; G.lineWidth=1.5;
+      G.strokeRect(g.ux(uF0-BOX_L), yTop, BOX_L*g.sc, yBot-yTop);
+      G.setLineDash([]);
+    }
+  }
+
+  function drawIndicators(g, t, dsv){
+    const t0 = CAB_U0 - S.d;
+    const uFront = t0 + dsv;
+    const yBot = g.hy(BED_TOP), yTop = g.hy(BED_TOP+BOX_H);
+
+    // ---- 木箱所受摩擦力（作用于木箱底面，向后 = 左）：画在木箱后端面处 ----
+    if(isSliding() && S.t > 0 && vRel(t) > 1e-6){
+      const xBk = g.ux(uFront - BOX_L);
+      const yf = g.hy(BED_TOP + 0.72);
+      const L = 1.05*g.sc;
+      // 与底面的连线
+      G.strokeStyle='rgba(255,91,74,.4)'; G.setLineDash([3,3]); G.lineWidth=1.2;
+      G.beginPath(); G.moveTo(xBk, yf); G.lineTo(xBk, yBot); G.stroke();
+      G.setLineDash([]);
+      G.strokeStyle='#ff5b4a'; G.lineWidth=3;
+      G.beginPath(); G.moveTo(xBk, yf); G.lineTo(xBk-L, yf); G.stroke();
+      arrowHead(xBk-L, yf, Math.PI, 9, '#ff5b4a');
+      G.fillStyle='#ff8b7a'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='right'; G.textBaseline='top';
+      G.fillText('f = μmg', xBk-6, yf+7);
+      G.textBaseline='alphabetic';
+    }
+
+    // ---- 速度矢量 ----
+    const vScale = (W*0.15)/30;
+    const vT = vTruck(t), vB = vBox(t);
+    // 车速箭头（驾驶室上方）
+    if(vT > 0.05){
+      const x0 = g.ux(CAB_U0+0.6), y0 = g.hy(CAB_H+1.62);
+      G.strokeStyle='#8fd0ff'; G.lineWidth=3.2;
+      G.beginPath(); G.moveTo(x0,y0); G.lineTo(x0+vT*vScale,y0); G.stroke();
+      arrowHead(x0+vT*vScale, y0, 0, 9, '#8fd0ff');
+      G.fillStyle='#bfe4ff'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='left'; G.textBaseline='bottom';
+      G.fillText('v车 = '+vT.toFixed(1)+' m/s', x0, y0-6);
+    }
+    // 箱速箭头（木箱上方）
+    if(vB > 0.05){
+      const x0 = g.ux(uFront - BOX_L - 0.1), y0 = g.hy(BED_TOP+BOX_H+0.90);
+      G.strokeStyle='#ffb347'; G.lineWidth=3.2;
+      G.beginPath(); G.moveTo(x0,y0); G.lineTo(x0+vB*vScale,y0); G.stroke();
+      arrowHead(x0+vB*vScale, y0, 0, 9, '#ffb347');
+      G.fillStyle='#ffd79b'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='left'; G.textBaseline='bottom';
+      G.fillText('v箱 = '+vB.toFixed(1)+' m/s', x0, y0-6);
+    }
+    G.textBaseline='alphabetic';
+
+    // ---- 相对滑动 Δs 标注（画在平板面下方，避免压住木箱花纹）----
+    if(dsv > 0.01){
+      const yS = g.hy(BED_TOP-0.30);
+      G.strokeStyle='rgba(255,179,71,.45)'; G.setLineDash([3,3]); G.lineWidth=1.2;
+      G.beginPath(); G.moveTo(g.ux(t0), yBot); G.lineTo(g.ux(t0), yS-9); G.stroke();
+      G.beginPath(); G.moveTo(g.ux(uFront), yBot); G.lineTo(g.ux(uFront), yS-9); G.stroke();
+      G.setLineDash([]);
+      dimH(g.ux(t0), g.ux(uFront), yS, '#ffb347', 'Δs = '+dsv.toFixed(2)+' m', false);
+    }
+
+    // ---- 剩余间距标注（置于车体上方，绝不压住驾驶室/木箱）----
+    const gapNow = Math.max(0, S.d - dsv);
+    if(gapNow > 0.05){
+      const yG = g.hy(CAB_H + 0.24);
+      const yExt = g.hy(CAB_H + 0.02);
+      const xA = g.ux(uFront), xB = g.ux(CAB_U0);
+      G.strokeStyle='rgba(125,255,192,.55)'; G.setLineDash([4,4]); G.lineWidth=1.2;
+      G.beginPath(); G.moveTo(xA, yExt); G.lineTo(xA, yG+9); G.stroke();
+      G.beginPath(); G.moveTo(xB, yExt); G.lineTo(xB, yG+9); G.stroke();
+      G.setLineDash([]);
+      dimH(xA, xB, yG, '#7dffc0', (S.d>2.6?'间距 d = ':'剩余 d = ')+gapNow.toFixed(2)+' m', true);
+    }
+  }
+
+  function drawFlash(g, t){
+    if(!willHit()) return;
+    const dt = t - tCollide();
+    if(dt < 0 || dt > 0.55) return;
+    const al = 1 - dt/0.55;
+    const X = g.ux(CAB_U0), Y = g.hy(2.05);
+    const rg = G.createRadialGradient(X,Y,0,X,Y,1.7*g.sc);
+    rg.addColorStop(0,'rgba(255,96,64,'+(0.9*al)+')');
+    rg.addColorStop(1,'rgba(255,96,64,0)');
+    G.fillStyle=rg; G.beginPath(); G.arc(X,Y,1.7*g.sc,0,Math.PI*2); G.fill();
+    G.fillStyle='rgba(255,150,110,'+al+')';
+    G.font='800 28px "Microsoft YaHei",sans-serif';
+    G.textAlign='center'; G.textBaseline='middle';
+    G.fillText('碰 !', X-1.15*g.sc, Y-1.35*g.sc);
+    G.textBaseline='alphabetic';
+    // 冲击线
+    G.strokeStyle='rgba(255,170,140,'+(al*0.9)+')'; G.lineWidth=2;
+    for(let k=0;k<6;k++){
+      const a=-Math.PI*0.55 + k*Math.PI*0.22;
+      const r1=0.8*g.sc*(1+ (1-al)*0.3), r2=1.5*g.sc*(1+(1-al)*0.35);
+      G.beginPath();
+      G.moveTo(X+Math.cos(a)*r1, Y+Math.sin(a)*r1);
+      G.lineTo(X+Math.cos(a)*r2, Y+Math.sin(a)*r2);
+      G.stroke();
+    }
+  }
+
+  function drawHud(g, st, t){
+    // 标题
+    G.fillStyle='#eaf1ff'; G.font='800 19px "Microsoft YaHei",sans-serif';
+    G.textAlign='left'; G.textBaseline='alphabetic';
+    G.fillText('汽车刹车 · 木箱会撞到驾驶室吗', 24, 36);
+    G.fillStyle='rgba(150,180,220,.6)'; G.font='12.5px "Microsoft YaHei",sans-serif';
+    G.fillText('木箱能否"跟住"拖车，取决于摩擦力能否提供足够减速度（g 取 10 m/s²）', 24, 58);
+
+    // 状态徽标
+    const txt = st.txt;
+    G.font='700 13.5px "Microsoft YaHei",sans-serif';
+    const tw = G.measureText(txt).width;
+    const bw = tw + 44, bh = 32, bx = W - bw - 22, by = 20;
+    G.fillStyle='rgba(10,18,36,.55)';
+    rr(bx,by,bw,bh,16); G.fill();
+    G.strokeStyle=st.col; G.lineWidth=1.6; rr(bx,by,bw,bh,16); G.stroke();
+    G.fillStyle=st.col; G.beginPath(); G.arc(bx+19, by+bh/2, 6, 0, Math.PI*2); G.fill();
+    G.fillStyle=st.col; G.textAlign='left'; G.textBaseline='middle';
+    G.fillText(txt, bx+33, by+bh/2+0.5);
+    G.textBaseline='alphabetic';
+  }
+
+  // ---- 文字自动换行 ----
+  function wrapText(text, x, y, maxW, lh){
+    G.textAlign='left'; G.textBaseline='alphabetic';
+    let line='', yy=y;
+    for(const ch of text){
+      const test = line+ch;
+      if(G.measureText(test).width > maxW && line){ G.fillText(line, x, yy); line=ch; yy+=lh; }
+      else line = test;
+    }
+    if(line) G.fillText(line, x, yy);
+  }
+
+  // ---- 车与木箱的 v–t 图像（场景下方）----
+  function drawVtGraph(g){
+    const gx=g.graphX, gy=g.graphY, gw=g.graphW, gh=g.graphH;
+    G.fillStyle='rgba(11,20,40,.72)'; rr(gx,gy,gw,gh,12); G.fill();
+    G.strokeStyle='rgba(140,170,210,.30)'; G.lineWidth=1; rr(gx,gy,gw,gh,12); G.stroke();
+
+    const padL=54, padR=18, padT=30, padB=30;
+    const x0=gx+padL, y0=gy+gh-padB, x1=gx+gw-padR, y1=gy+padT;
+    const Tmax = Math.max(0.4, Tsim()*1.04);
+    const vMax = S.v0*1.10;
+    const TX = t => x0 + (t/Tmax)*(x1-x0);
+    const VY = v => y0 - (v/vMax)*(y0-y1);
+
+    // 图标题
+    G.fillStyle='#cfe0f5'; G.font='700 13px "Microsoft YaHei",sans-serif';
+    G.textAlign='left'; G.textBaseline='top';
+    G.fillText('车与木箱的速度—时间图像  v – t', gx+14, gy+12);
+
+    // 网格
+    G.strokeStyle='rgba(140,170,210,.13)'; G.lineWidth=1;
+    const nt=5, nv=4;
+    for(let i=0;i<=nt;i++){ const xx=x0+(x1-x0)*i/nt; G.beginPath(); G.moveTo(xx,y1); G.lineTo(xx,y0); G.stroke(); }
+    for(let i=0;i<=nv;i++){ const yy=y0-(y0-y1)*i/nv; G.beginPath(); G.moveTo(x0,yy); G.lineTo(x1,yy); G.stroke(); }
+
+    // 碰撞时刻竖线
+    if(willHit()){
+      const xc=TX(Math.min(tCollide(),Tmax));
+      G.strokeStyle='rgba(255,91,74,.85)'; G.setLineDash([5,4]); G.lineWidth=1.5;
+      G.beginPath(); G.moveTo(xc,y1); G.lineTo(xc,y0); G.stroke(); G.setLineDash([]);
+      G.fillStyle='#ff8b7a'; G.font='700 12px "Microsoft YaHei",sans-serif';
+      G.textAlign='center'; G.textBaseline='bottom';
+      G.fillText('碰撞 '+tCollide().toFixed(2)+'s', xc, y1+15);
+    }
+
+    // 坐标轴
+    G.strokeStyle='rgba(216,230,248,.95)'; G.lineWidth=1.8;
+    G.beginPath(); G.moveTo(x0,y1); G.lineTo(x0,y0); G.lineTo(x1,y0); G.stroke();
+    arrowHead(x0, y1, -Math.PI/2, 7, 'rgba(216,230,248,.95)');
+    arrowHead(x1, y0, 0, 7, 'rgba(216,230,248,.95)');
+
+    // 坐标标注
+    G.fillStyle='rgba(195,215,240,1)'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='right'; G.textBaseline='middle';
+    G.fillText(vMax.toFixed(0), x0-8, VY(vMax));
+    G.fillText('0', x0-8, VY(0));
+    G.save(); G.translate(gx+15, (y0+y1)/2); G.rotate(-Math.PI/2);
+    G.textAlign='center'; G.fillText('v / (m·s⁻¹)', 0, 0); G.restore();
+    G.textAlign='center'; G.textBaseline='top';
+    G.fillText('0', x0, y0+6);
+    G.textAlign='right'; G.fillText('t / s', x1, y0+6);
+    G.fillStyle='rgba(170,195,230,.8)'; G.font='11px "Microsoft YaHei",sans-serif';
+    for(let i=0;i<=nt;i++){ G.textAlign='center'; G.fillText((Tmax*i/nt).toFixed(1), x0+(x1-x0)*i/nt, y0+6); }
+
+    // 曲线
+    function curve(fn,color){
+      G.strokeStyle=color; G.lineWidth=2.6; G.beginPath();
+      const N=160;
+      for(let i=0;i<=N;i++){ const tt=Tmax*i/N; const xx=TX(tt), yy=VY(Math.max(0,fn(tt)));
+        if(i===0) G.moveTo(xx,yy); else G.lineTo(xx,yy); }
+      G.stroke();
+    }
+    curve(t=>vTruck(t), '#4aa3ff');
+    curve(t=>vBox(t),   '#ffb347');
+
+    // 当前时刻游标
+    const tc=Math.min(Math.max(0,simT()), Tmax);
+    const xc2=TX(tc);
+    G.strokeStyle='rgba(255,255,255,.55)'; G.setLineDash([4,3]); G.lineWidth=1.4;
+    G.beginPath(); G.moveTo(xc2,y1); G.lineTo(xc2,y0); G.stroke(); G.setLineDash([]);
+    function dot(v,color){ const yy=VY(Math.max(0,v));
+      G.fillStyle=color; G.beginPath(); G.arc(xc2,yy,4,0,Math.PI*2); G.fill();
+      G.strokeStyle='#0b1430'; G.lineWidth=1.5; G.stroke(); }
+    dot(vTruck(tc),'#4aa3ff'); dot(vBox(tc),'#ffb347');
+    G.fillStyle='rgba(255,255,255,.92)'; G.font='700 11.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='center'; G.textBaseline='top'; G.fillText('t='+tc.toFixed(2), xc2, y1-3);
+
+    // 图例
+    const lx=Math.min(x1-150, x0+96), ly=gy+24;
+    G.font='700 12px "Microsoft YaHei",sans-serif'; G.textBaseline='middle'; G.textAlign='left';
+    G.strokeStyle='#4aa3ff'; G.lineWidth=3; G.beginPath(); G.moveTo(lx,ly); G.lineTo(lx+22,ly); G.stroke();
+    G.fillStyle='#cfe0f5'; G.fillText('拖车 v车', lx+28, ly);
+    G.strokeStyle='#ffb347'; G.beginPath(); G.moveTo(lx,ly+18); G.lineTo(lx+22,ly+18); G.stroke();
+    G.fillStyle='#cfe0f5'; G.fillText('木箱 v箱', lx+28, ly+18);
+  }
+
+  // ---- 底部：左 = Δs 与 d 对比（缩小）；右 = 结论 ----
+  function drawInfoRow(g){
+    const bx=g.infoX, by=g.infoY, bw=g.infoW, bh=g.infoH, lw=g.infoLW;
+
+    // 左：Δs 与 d
+    G.fillStyle='rgba(11,20,40,.72)'; rr(bx,by,lw,bh,12); G.fill();
+    G.strokeStyle='rgba(140,170,210,.30)'; G.lineWidth=1; rr(bx,by,lw,bh,12); G.stroke();
+    G.fillStyle='#cfe0f5'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='left'; G.textBaseline='alphabetic';
+    G.fillText('相对滑动 Δs  与  间距 d', bx+14, by+22);
+
+    const labW=70, barX=bx+14+labW, barW=lw-14-labW-72, rowH=18;
+    const yd=by+40, ys=by+62;
+    const mx=Math.max(dsMax(), S.d, 1e-3);
+    function mbar(y,val,col,label,valT){
+      G.fillStyle='rgba(255,255,255,.09)'; rr(barX,y,barW,rowH-6,4); G.fill();
+      const w=Math.max(0,Math.min(barW, val/mx*barW));
+      G.fillStyle=col; rr(barX,y,w,rowH-6,4); G.fill();
+      G.fillStyle='rgba(214,228,246,.9)'; G.font='11.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='right'; G.textBaseline='middle';
+      G.fillText(label, barX-8, y+(rowH-6)/2);
+      G.textAlign='left'; G.fillStyle=col; G.font='700 12px "Microsoft YaHei",sans-serif';
+      G.fillText(valT, barX+w+8, y+(rowH-6)/2);
+    }
+    mbar(yd, S.d, '#0fa36b', '间距 d', S.d.toFixed(2)+' m');
+    mbar(ys, dsMax(), isSliding()?(dsMax()>=S.d?'#ff5b4a':'#ffb347'):'#0fa36b', '最大 Δs', dsMax().toFixed(2)+' m');
+    const xd=barX+Math.min(barW, S.d/mx*barW);
+    G.strokeStyle='rgba(125,255,192,.85)'; G.setLineDash([4,3]); G.lineWidth=1.3;
+    G.beginPath(); G.moveTo(xd, yd-3); G.lineTo(xd, ys+rowH-4); G.stroke(); G.setLineDash([]);
+
+    // 右：结论
+    const rx=bx+lw+16, rw=bw-lw-16;
+    G.fillStyle='rgba(11,20,40,.72)'; rr(rx,by,rw,bh,12); G.fill();
+    G.strokeStyle='rgba(140,170,210,.30)'; G.lineWidth=1; rr(rx,by,rw,bh,12); G.stroke();
+    let txt, col;
+    if(!isSliding()){ txt='μg ≥ a：无相对滑动，Δs = 0 → 不会碰撞'; col='#7dffc0'; }
+    else if(willHit()){ txt='Δs ≥ d：相对滑过 '+dsMax().toFixed(2)+' m ＞ 间距 '+S.d.toFixed(2)+' m → 会碰撞'; col='#ff8b7a'; }
+    else { txt='Δs < d：相对滑过 '+dsMax().toFixed(2)+' m ＜ 间距 '+S.d.toFixed(2)+' m → 不会碰撞'; col='#7dffc0'; }
+    G.fillStyle=col; G.font='700 13.5px "Microsoft YaHei",sans-serif'; G.textBaseline='middle';
+    wrapText(txt, rx+16, by+bh/2 - 8, rw-32, 19);
+  }
+
+  // ================= 读数 =================
+  function updateReadout(){
+    const t = simT();
+    const st = statusInfo();
+    document.getElementById('vdDot').style.background = st.col;
+    const vb = document.getElementById('vdBox');
+    vb.style.background = st.col==='#ff5b4a' ? 'rgba(224,83,26,.12)' : (st.col==='#ffb347' ? 'rgba(255,179,71,.14)' : 'rgba(15,163,107,.12)');
+    vb.style.color = st.col==='#ff5b4a' ? '#c8401a' : (st.col==='#ffb347' ? '#a06400' : '#0b7c51');
+    document.getElementById('vdTxt').textContent = (S.t<0?'匀速段 | ':'') + st.txt;
+
+    document.getElementById('rt').textContent  = t.toFixed(2)+' s';
+    document.getElementById('rvt').textContent = vTruck(t).toFixed(1)+' m/s';
+    document.getElementById('rvb').textContent = vBox(t).toFixed(1)+' m/s';
+    document.getElementById('rvr').textContent = vRel(t).toFixed(1)+' m/s';
+    document.getElementById('rds').textContent = dsShow(t).toFixed(2)+' m';
+    document.getElementById('rgap').textContent= Math.max(0,S.d-dsShow(t)).toFixed(2)+' m';
+    document.getElementById('rdsmax').textContent = dsMax().toFixed(2)+' m';
+    document.getElementById('rcrit').textContent = muG().toFixed(1)+' / '+S.a.toFixed(1);
+    document.getElementById('rtip').textContent =
+      '木箱最大减速度 μg = '+muG().toFixed(1)+' m/s²，拖车减速度 a = '+S.a.toFixed(1)+' m/s²；'
+      + (isSliding() ? 'μmg 不足以让木箱跟住拖车，木箱相对滑动。' : 'μmg 足以让木箱随拖车一起减速，无相对滑动。');
+
+    const tl = document.getElementById('tl');
+    const te = tauEnd();
+    tl.min = (-TAU_PRE).toFixed(2); tl.max = te.toFixed(2);
+    if(document.activeElement !== tl) tl.value = Math.max(-TAU_PRE, Math.min(te, S.t)).toFixed(2);
+    document.getElementById('tlv').textContent = S.t.toFixed(2)+' s';
+  }
+
+  // ================= 主循环 =================
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05, (now-last)/1000); last = now;
+    if(S.running){
+      S.t += dt*S.speed;
+      if(S.t >= tauEnd()){ S.t = tauEnd(); S.running = false; syncPlay(); }
+    }
+    draw();
+    updateReadout();
+    requestAnimationFrame(frame);
+  }
+  function syncPlay(){ document.getElementById('play').textContent = S.running ? '⏸ 暂停' : '▶ 播放'; }
+
+  // ================= 交互 =================
+  function fmt(k){
+    if(k==='v0') return S.v0.toFixed(1)+' m/s';
+    if(k==='a')  return S.a.toFixed(1)+' m/s²';
+    if(k==='mu') return S.mu.toFixed(2);
+    if(k==='d')  return S.d.toFixed(2)+' m';
+    return '';
+  }
+  function softReset(){ S.t = -TAU_PRE; S.running = true; syncPlay(); }
+
+  ['v0','a','mu','d'].forEach(k=>{
+    const el = document.getElementById(k);
+    el.addEventListener('input', ()=>{
+      S[k] = parseFloat(el.value);
+      document.getElementById(k+'v').textContent = fmt(k);
+      softReset();
+    });
+  });
+  document.getElementById('spd').addEventListener('input', e=>{
+    S.speed = parseFloat(e.target.value);
+    document.getElementById('spdv').textContent = S.speed.toFixed(1)+'×';
+  });
+  document.getElementById('tl').addEventListener('input', e=>{
+    S.t = parseFloat(e.target.value);
+    S.running = false; syncPlay();
+  });
+  document.getElementById('play').addEventListener('click', ()=>{
+    if(!S.running && S.t >= tauEnd()-1e-6) S.t = -TAU_PRE;
+    S.running = !S.running; syncPlay();
+  });
+  document.getElementById('reset').addEventListener('click', ()=>{
+    S.t = -TAU_PRE; S.running = true;
+    document.getElementById('spd').value = 1; S.speed = 1;
+    document.getElementById('spdv').textContent = '1.0×';
+    ['v0','a','mu','d'].forEach((k,i)=>{
+      const def=[15,6,0.45,1.5][i];
+      S[k]=def;
+      const el=document.getElementById(k); el.value=def;
+      document.getElementById(k+'v').textContent = fmt(k);
+    });
+    syncPlay();
+  });
+  document.querySelectorAll('button.step').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const tv = b.dataset.t;
+      if(tv === undefined) return;
+      S.t = (parseFloat(tv) === 99) ? tauEnd() : parseFloat(tv);
+      S.running = false; syncPlay();
+    });
+  });
+  document.getElementById('btnHit').addEventListener('click', ()=>{
+    if(willHit()) S.t = tCollide();
+    else S.t = TAU_BRAKE + 0.5;
+    S.running = false; syncPlay();
+  });
+
+  resize();
+  syncPlay();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
