@@ -3848,6 +3848,12 @@ const WORKS = [
       desc:"用面积法将 i²–t 曲线下的面积转化为等面积矩形，配合割补法动画，直观推导正弦交流电的有效值 I = iₘ/√2 ≈ 0.707 iₘ。",
       icon:"🎬", cover:"assets/img/rms-derivation-cover.png", link:"animations/rms-derivation.html", date:"2026-10-06", tag:"电学"
     }
+,
+      {
+      type:"animation", title:"汽车刹车 · 木箱会撞到驾驶室吗",
+      desc:"交互动画：拖车刹车时木箱能否跟住拖车，取决于 μmg 与 ma 的比较；实时演示相对滑动位移 Δs 与间距 d 的关系。",
+      icon:"🎬", cover:"assets/img/truck-brake-cover.png", link:"animations/truck-brake.html", date:"2026-10-07", tag:"力学"
+    }
 ];
 
 
