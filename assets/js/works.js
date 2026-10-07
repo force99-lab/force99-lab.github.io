@@ -3579,7 +3579,14 @@ const WORKS = [
 
 
 
+  },
+
+  {
+    type:"video", title:"2026诺贝尔物理学奖 · 冰立方中微子",
+    desc:"60秒动画讲清2026诺贝尔物理学奖：哈尔岑与冰立方，从三位宇宙信使到冰下5160个光学传感器探测高能中微子。",
+    icon:"🏅", cover:"assets/img/nobel-neutrino-cover.png", link:"videos/nobel_neutrino.html", date:"2026-10-07", tag:"近代物理"
   }
+
 
 
 
