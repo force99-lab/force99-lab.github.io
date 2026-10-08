@@ -3860,6 +3860,12 @@ const WORKS = [
       desc:"光滑水平面 9 球链式碰撞：恒力作用下的弹性与完全非弹性过程及动量守恒分析。",
       icon:"📐", cover:"assets/img/chain9-cover.png", link:"solutions/chain9_threepage.html", date:"2026-10-08", tag:"动量守恒·碰撞模型"
     }
+,
+      {
+      type:"solve", title:"电磁驱动机械臂（2025 高考·甘肃卷）",
+      desc:"光滑平行导轨上双导体棒与电容器构成的电磁驱动模型：感应电动势、安培力、电容器电荷及稳定速度与最小间距分析。",
+      icon:"📐", cover:"assets/img/doc10-cover.png", link:"solutions/doc10_threepage.html", date:"2026-10-08", tag:"电磁感应·双棒电容器模型"
+    }
 ];
 
 
