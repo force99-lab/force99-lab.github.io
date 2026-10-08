@@ -3854,6 +3854,12 @@ const WORKS = [
       desc:"交互动画：拖车刹车时木箱能否跟住拖车，取决于 μmg 与 ma 的比较；实时演示相对滑动位移 Δs 与间距 d 的关系。",
       icon:"🎬", cover:"assets/img/truck-brake-cover.png", link:"animations/truck-brake.html", date:"2026-10-07", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"9 球链式碰撞（自编题）",
+      desc:"光滑水平面 9 球链式碰撞：恒力作用下的弹性与完全非弹性过程及动量守恒分析。",
+      icon:"📐", cover:"assets/img/chain9-cover.png", link:"solutions/chain9_threepage.html", date:"2026-10-08", tag:"动量守恒·碰撞模型"
+    }
 ];
 
 
