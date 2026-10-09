@@ -3866,6 +3866,12 @@ const WORKS = [
       desc:"光滑平行导轨上双导体棒与电容器构成的电磁驱动模型：感应电动势、安培力、电容器电荷及稳定速度与最小间距分析。",
       icon:"📐", cover:"assets/img/doc10-cover.png", link:"solutions/doc10_threepage.html", date:"2026-10-08", tag:"电磁感应·双棒电容器模型"
     }
+,
+      {
+      type:"animation", title:"弹性碰撞·轻弹簧小球链速度交换",
+      desc:"六个等质量小球，球①自由出发与②弹性碰撞交换速度；②—③经轻弹簧耦合后③再与⑤交换速度，⑤带动④⑥。演示轻弹簧传递速度与等质量弹性碰撞速度交换。",
+      icon:"🎬", cover:"assets/img/spring-collision-cover.png", link:"animations/spring-collision.html", date:"2026-10-09", tag:"力学"
+    }
 ];
 
 
