@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>弹性碰撞 · 轻弹簧连接的等质量小球链</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:"Microsoft YaHei",system-ui,"Segoe UI",sans-serif;background:#e9eef5;color:#12253f;overflow:hidden}
+  #app{display:flex;height:100vh;width:100vw}
+
+  /* ---------- 左：动画区 ---------- */
+  #stage{flex:1 1 auto;min-width:0;position:relative;background:#e9eef5}
+  #cv{display:block;width:100%;height:100%}
+
+  /* ---------- 右：交互控制区 ---------- */
+  #side{width:394px;flex:0 0 394px;height:100vh;overflow-y:auto;padding:12px;
+        background:linear-gradient(180deg,#f4f8fd,#e7eef7);border-left:1px solid #d3ddec}
+  #side::-webkit-scrollbar{width:8px}
+  #side::-webkit-scrollbar-thumb{background:#c2d1e4;border-radius:4px}
+
+  .card{background:#fff;border:1px solid #dbe4f0;border-radius:12px;padding:12px 13px;margin-bottom:11px;
+        box-shadow:0 2px 12px rgba(30,60,110,.07)}
+  .card h3{margin:0 0 10px;font-size:14.5px;color:#0f2745;letter-spacing:.5px;display:flex;align-items:center;gap:8px;font-weight:800}
+  .card h3::before{content:"";width:9px;height:9px;border-radius:2.5px;background:linear-gradient(135deg,#1d6fe0,#0fa36b);flex:0 0 auto}
+
+  .row{display:flex;align-items:center;gap:9px;margin:9px 0}
+  .row label{flex:0 0 104px;font-size:12.5px;color:#3b4d69;line-height:1.35}
+  .row input[type=range]{flex:1 1 auto;accent-color:#1d6fe0}
+  .row .val{flex:0 0 70px;text-align:right;font-size:12.5px;font-weight:800;color:#0b5cc4;font-variant-numeric:tabular-nums}
+
+  .btns{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+  button{font-family:inherit;font-size:12.5px;font-weight:700;border:none;border-radius:8px;padding:7px 11px;
+         cursor:pointer;color:#fff;background:linear-gradient(135deg,#2b7de0,#1c5fc4);box-shadow:0 1px 4px rgba(30,90,200,.25);transition:.15s}
+  button:hover{filter:brightness(1.08)}
+  button.alt{background:linear-gradient(135deg,#0fa36b,#0c8a5a)}
+  button.jp{background:linear-gradient(135deg,#e0861d,#c8680c)}
+  button.ghost{background:#eef3fa;color:#27496f;border:1px solid #d4e0f0}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;font-size:12px;color:#33455f}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+
+  /* 知识归纳 */
+  .know p{margin:7px 0;font-size:12.8px;line-height:1.62;color:#2b3c57}
+  .know b{color:#0b5cc4}
+  .fml{font-family:"Consolas",monospace;font-size:12.5px;color:#102a55;background:#eef4ff;border-left:3px solid #1d6fe0;
+       padding:6px 9px;border-radius:5px;margin:7px 0;display:block;line-height:1.55}
+
+  /* 实时物理量 */
+  #verdict{font-size:13px;font-weight:800;line-height:1.5;padding:9px 11px;border-radius:9px;margin-bottom:9px;
+           background:linear-gradient(135deg,#eaf2ff,#e6fbf2);border:1px solid #cfe0f3;color:#0c3a6b}
+  .kv{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-bottom:1px dashed #e4ebf3}
+  .kv .k{color:#46597a}.kv .v{font-weight:800;color:#0b3f78;font-variant-numeric:tabular-nums}
+  .bars{margin-top:9px}
+  .barrow{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:12px;color:#33455f}
+  .barrow .nm{flex:0 0 36px;font-weight:800}
+  .barrow .track{flex:1 1 auto;height:13px;background:#eef2f7;border-radius:7px;overflow:hidden;position:relative}
+  .barrow .fill{position:absolute;left:0;top:0;bottom:0;border-radius:7px}
+  .barrow .vv{flex:0 0 52px;text-align:right;font-variant-numeric:tabular-nums;color:#27496f;font-weight:700}
+  .hint{font-size:11.5px;color:#7a8aa0;margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+  </div>
+
+  <div id="side">
+    <!-- ① 控制 -->
+    <div class="card">
+      <h3>① 控制区</h3>
+      <div class="row"><label>球①初速度 v₀</label><input id="v0" type="range" min="0.4" max="2.4" step="0.05" value="1.4"><span class="val" id="v0v">1.40</span></div>
+      <div class="row"><label>弹簧劲度 k</label><input id="k" type="range" min="6" max="60" step="1" value="18"><span class="val" id="kv">18</span></div>
+      <div class="row"><label>小球质量 m</label><input id="m" type="range" min="0.5" max="2.0" step="0.1" value="1.0"><span class="val" id="mv">1.0</span></div>
+      <div class="row"><label>播放倍速</label><input id="rate" type="range" min="0.1" max="1.5" step="0.05" value="0.5"><span class="val" id="ratev">0.50×</span></div>
+      <div class="row"><label>时间轴 t</label><input id="tl" type="range" min="0" max="6" step="0.005" value="0"><span class="val" id="tlv">0.00</span></div>
+      <div class="btns">
+        <button id="play">▶ 播放</button>
+        <button id="reset" class="ghost">↺ 重置</button>
+      </div>
+      <div class="btns">
+        <button class="jp" id="b12">▶ ①⇄② 碰撞</button>
+        <button class="jp" id="b35">▶ ③⇄⑤ 碰撞</button>
+        <button class="jp" id="bEnd">▶ 末态</button>
+      </div>
+      <div class="legend">
+        <span><i class="dot" style="background:#ff5a5a"></i>①</span>
+        <span><i class="dot" style="background:#ffa23a"></i>②</span>
+        <span><i class="dot" style="background:#4aa3ff"></i>③</span>
+        <span><i class="dot" style="background:#46d18a"></i>④</span>
+        <span><i class="dot" style="background:#b07cff"></i>⑤</span>
+        <span><i class="dot" style="background:#2fd0d0"></i>⑥</span>
+        <span style="width:100%">蓝线 = 轻弹簧；绿虚线 = 中轴线</span>
+      </div>
+    </div>
+
+    <!-- ② 物理知识归纳 -->
+    <div class="card know">
+      <h3>② 物理知识归纳</h3>
+      <p><b>等质量弹性碰撞 → 速度交换。</b>两球质量相等、发生对心弹性碰撞时，二者沿碰撞方向的速度分量互换（①⇄②、③⇄⑤ 均如此）。</p>
+      <span class="fml">v₁' = v₂ ,&nbsp; v₂' = v₁ &nbsp;(m₁=m₂, 对心弹性碰撞)</span>
+      <p><b>轻弹簧连接 → 简谐振荡。</b>②—③ 由轻弹簧相连，① 把速度交给 ② 后，②、③ 相对做简谐运动，而系统质心匀速右移，所以③ 会逐渐「漂」向 ⑤。</p>
+      <p><b>⑤ 居中、带动上下两球。</b>④—⑤—⑥ 用弹簧连成竖直「一」字，⑤ 在中间。③ 把速度交给 ⑤ 后，⑤ 经弹簧把运动传给 ④、⑥，三者耦合振荡。</p>
+      <p style="color:#9a4b1a"><b>易错：</b>不是「所有球串成一条弹簧链」。① 自由不连弹簧；②—③ 是水平一对；④—⑤—⑥ 是竖直一对，只有 ⑤ 参与与 ③ 的碰撞。</p>
+    </div>
+
+    <!-- ③ 实时物理量 -->
+    <div class="card">
+      <h3>③ 实时物理量</h3>
+      <div id="verdict">就绪</div>
+      <div class="kv"><span class="k">时刻 t</span><span class="v" id="rt">0.000 s</span></div>
+      <div class="kv"><span class="k">总机械能 E</span><span class="v" id="rE">0.000</span></div>
+      <div class="kv"><span class="k">动能 Eₖ</span><span class="v" id="rK">0.000</span></div>
+      <div class="kv"><span class="k">弹簧势能 Eₚ</span><span class="v" id="rP">0.000</span></div>
+      <div class="kv"><span class="k">总动量 pₓ</span><span class="v" id="rPx">0.000</span></div>
+      <div class="bars" id="bars"></div>
+      <div class="hint">各球速度（水平分量 vₓ）：红条正向右、蓝条负向左。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var S={t:0,running:false,rate:0.5,v0:1.4,k:18,m:1,Tw:6,t12:null,t35:null,hist:null,events:[],flash:null,cover:false};
+  var R=0.32, L0=1.8, X5=4.0;
+  var balls=[], springs=[], contacts=[];
+
+  function lighten(hex){
+    var c=hex.replace('#',''); if(c.length===3)c=c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+    var r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+    r=Math.min(255,r+90);g=Math.min(255,g+90);b=Math.min(255,b+90);
+    return 'rgb('+r+','+g+','+b+')';
+  }
+
+  function initState(){
+    var v0=S.v0,k=S.k,m=S.m;
+    // ②—③ 弹簧对：质心右漂、相对简谐；取约 2.5 个周期后③到达⑤（此时 v₃≈v₀）
+    var omega=Math.sqrt(2*k/m), Vcm=v0/2, Nc=2;
+    var tc=(Math.PI+2*Math.PI*Nc)/omega;
+    X5 = L0 + Vcm*tc + 1.85*R;
+    balls=[
+      {x:-1.6, y:0, vx:v0, vy:0, m:m, col:'#ff5a5a', lab:'①'},
+      {x:0,    y:0, vx:0,  vy:0, m:m, col:'#ffa23a', lab:'②'},
+      {x:L0,   y:0, vx:0,  vy:0, m:m, col:'#4aa3ff', lab:'③'},
+      {x:X5,   y:L0, vx:0, vy:0, m:m, col:'#46d18a', lab:'④'},
+      {x:X5,   y:0,  vx:0,  vy:0, m:m, col:'#b07cff', lab:'⑤'},
+      {x:X5,   y:-L0,vx:0,  vy:0, m:m, col:'#2fd0d0', lab:'⑥'}
+    ];
+    springs=[ {i:1,j:2,k:k,L0:L0}, {i:3,j:4,k:k,L0:L0}, {i:4,j:5,k:k,L0:L0} ];
+    contacts=[ {i:0,j:1}, {i:2,j:4} ];
+    S.t=0; S.events=[]; S.flash=null;
+  }
+
+  function accel(){
+    var i;
+    for(i=0;i<balls.length;i++){balls[i].ax=0;balls[i].ay=0;}
+    for(i=0;i<springs.length;i++){
+      var sp=springs[i],a=balls[sp.i],b=balls[sp.j];
+      var dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1e-9;
+      var f=sp.k*(d-sp.L0), fx=f*dx/d, fy=f*dy/d;
+      a.ax+=fx/a.m; a.ay+=fy/a.m; b.ax-=fx/b.m; b.ay-=fy/b.m;
+    }
+  }
+  function step(h){
+    var i;
+    accel();
+    for(i=0;i<balls.length;i++){balls[i].vx+=balls[i].ax*h*0.5; balls[i].vy+=balls[i].ay*h*0.5;}
+    for(i=0;i<balls.length;i++){balls[i].x+=balls[i].vx*h; balls[i].y+=balls[i].vy*h;}
+    accel();
+    for(i=0;i<balls.length;i++){balls[i].vx+=balls[i].ax*h*0.5; balls[i].vy+=balls[i].ay*h*0.5;}
+    S.t+=h;
+    checkContacts();
+  }
+  function advance(simDt){
+    if(simDt<=0)return;
+    var h=1e-3, n=Math.max(1,Math.ceil(simDt/h)); h=simDt/n;
+    for(var s=0;s<n;s++) step(h);
+  }
+  // 所有球对之间的弹性碰撞 + 位置分离：杜绝任何两球重叠/穿透（④ 穿过 ⑥ 即由此修复）
+  function checkContacts(){
+    var i,j,a,b,dx,dy,d,nx,ny,overlap,rvx,rvy,vn;
+    for(i=0;i<balls.length;i++)for(j=i+1;j<balls.length;j++){
+      a=balls[i]; b=balls[j];
+      dx=b.x-a.x; dy=b.y-a.y; d=Math.hypot(dx,dy);
+      if(d<2*R && d>1e-6){
+        nx=dx/d; ny=dy/d;
+        // 位置分离：把两球沿法向推开到刚好相切，避免穿插后继续重叠
+        overlap=2*R-d;
+        a.x-=nx*overlap*0.5; a.y-=ny*overlap*0.5;
+        b.x+=nx*overlap*0.5; b.y+=ny*overlap*0.5;
+        // 法向速度交换（等质量对心弹性碰撞：速度立即反向、大小不变）
+        rvx=b.vx-a.vx; rvy=b.vy-a.vy; vn=rvx*nx+rvy*ny;
+        if(vn<0){
+          a.vx+=vn*nx; a.vy+=vn*ny; b.vx-=vn*nx; b.vy-=vn*ny;
+          // 仅对设计碰撞点记录事件时刻与红圈
+          if((i===0&&j===1)||(i===2&&j===4)){
+            var et=(i===0)?'①⇄② 弹性碰撞 · 速度交换':'③⇄⑤ 弹性碰撞 · 速度交换';
+            if(i===0 && S.t12===null) S.t12=S.t;
+            if(i===2 && S.t35===null) S.t35=S.t;
+            S.events.push({t:S.t,et:et});
+            S.flash={t:S.t,x:(a.x+b.x)/2,y:(a.y+b.y)/2,et:et};
+          }
+        }
+      }
+    }
+  }
+  function energies(){
+    var Ek=0,Ep=0,px=0,py=0,i;
+    for(i=0;i<balls.length;i++){var b=balls[i];Ek+=0.5*b.m*(b.vx*b.vx+b.vy*b.vy);px+=b.m*b.vx;py+=b.m*b.vy;}
+    for(i=0;i<springs.length;i++){var sp=springs[i],a=balls[sp.i],b=balls[sp.j];var d=Math.hypot(b.x-a.x,b.y-a.y);Ep+=0.5*sp.k*(d-sp.L0)*(d-sp.L0);}
+    return {Ek:Ek,Ep:Ep,E:Ek+Ep,px:px,py:py};
+  }
+
+  // ---------- 预演：求关键时刻、456 振荡周期与历史 ----------
+  function recompute(){
+    initState();
+    S.t12=null; S.t35=null;   // 重置事件时刻，按当前参数重新探测
+    var h=1e-3,tMax=16.0,hist=[],acc=0,t35f=null,rprev=null,cross=[];
+    while(S.t<tMax){
+      advance(h); acc+=h;
+      if(acc>=0.012){acc=0; hist.push({t:S.t,v:[balls[0].vx,balls[1].vx,balls[2].vx,balls[3].vx,balls[4].vx,balls[5].vx]});}
+      if(S.t35!==null && t35f===null) t35f=S.t35;
+      // ③④⇄⑤ 后，用「呼吸指标」(vx④+vx⑥)/2 − vx⑤ 监测 456 相对振荡（剔除整体漂移），过零即半周期
+      // 起点延后 0.45s，跳过碰撞后瞬态，取稳态周期
+      if(t35f!==null && S.t>t35f+0.45){
+        var r=(balls[3].vx+balls[5].vx)*0.5-balls[4].vx;
+        if(rprev!==null && ((rprev<0&&r>=0)||(rprev>=0&&r<0))) cross.push(S.t);
+        rprev=r;
+      }
+    }
+    // 由呼吸指标过零（相邻过零=半周期）估计 456 振荡主周期
+    var period=null;
+    if(cross.length>=3){
+      var halfs=[]; for(var ci=1;ci<cross.length;ci++) halfs.push(cross[ci]-cross[ci-1]);
+      halfs.sort(function(a,b){return a-b;});
+      period=2*halfs[Math.floor(halfs.length/2)];
+    }
+    if(!(period>0.05)) period=0.85;           // 兜底（典型≈0.82s）
+    period=Math.min(period,4.0);
+    var win=(t35f!==null)? t35f+2.7*period : tMax;   // 碰撞后再展示约 2.7 个周期（确保 ≥2）
+    S.Tw=Math.min(win,tMax);
+    if(t35f===null) S.Tw=tMax;
+    S.hist=hist.filter(function(p){return p.t<=S.Tw+1e-6;});
+    var tl=document.getElementById('tl'); if(tl){tl.max=S.Tw.toFixed(2); if(parseFloat(tl.value)>S.Tw) tl.value=S.Tw;}
+  }
+
+  // ---------- 坐标映射 ----------
+  var G={};
+  function geom(){
+    var W=cv.width,H=cv.height;
+    var xmin=-2.2,xmax=X5+1.7,ymin=-2.5,ymax=2.5;
+    var sceneH = S.cover ? H : H*0.60;
+    var sc=Math.min((W*0.93)/(xmax-xmin),(sceneH*0.86)/(ymax-ymin));
+    var axisY = S.cover ? H*0.56 : sceneH*0.5;
+    G={W:W,H:H,sceneH:sceneH,sc:sc,cx:W*0.5-((xmin+xmax)/2)*sc,axisY:axisY};
+  }
+  function X(x){return G.cx+x*G.sc;}
+  function Y(y){return G.axisY-y*G.sc;}
+
+  // ---------- 绘制 ----------
+  function drawPaper(x0,y0,w,h){
+    if(S.cover){
+      // 主题化深蓝渐变背景（scisimulator 深蓝黑科技系）+ 中心聚光
+      var g=ctx.createLinearGradient(0,0,0,h);
+      g.addColorStop(0,'#0c2640'); g.addColorStop(0.55,'#081d31'); g.addColorStop(1,'#051423');
+      ctx.fillStyle=g; ctx.fillRect(x0,y0,w,h);
+      var fx=w*0.52, fy=h*0.55;
+      var fg=ctx.createRadialGradient(fx,fy,8, fx,fy, Math.max(w,h)*0.62);
+      fg.addColorStop(0,'rgba(46,104,168,.50)'); fg.addColorStop(0.5,'rgba(30,72,128,.22)'); fg.addColorStop(1,'rgba(30,72,128,0)');
+      ctx.fillStyle=fg; ctx.fillRect(x0,y0,w,h);
+      ctx.lineWidth=1;
+      for(var gx=Math.ceil(-2.2/G.sc);gx*G.sc<(X5+1.7);gx++){
+        var px=X(gx); if(px<x0||px>x0+w)continue;
+        ctx.strokeStyle=(gx%5===0)?'rgba(150,195,240,.14)':'rgba(150,195,240,.06)';
+        ctx.beginPath();ctx.moveTo(px,y0);ctx.lineTo(px,y0+h);ctx.stroke();
+      }
+      for(var gy=-5;gy<=5;gy++){
+        var py=Y(gy*0.5); if(py<y0||py>y0+h)continue;
+        ctx.strokeStyle=(gy%5===0)?'rgba(150,195,240,.14)':'rgba(150,195,240,.06)';
+        ctx.beginPath();ctx.moveTo(x0,py);ctx.lineTo(x0+w,py);ctx.stroke();
+      }
+      return;
+    }
+    ctx.fillStyle='#0e2a4e'; ctx.fillRect(x0,y0,w,h);
+    ctx.lineWidth=1;
+    for(var gx=Math.ceil(-2.2/G.sc);gx*G.sc<(X5+1.7);gx++){
+      var px=X(gx); if(px<x0||px>x0+w)continue;
+      ctx.strokeStyle=(gx%5===0)?'rgba(150,195,240,.24)':'rgba(150,195,240,.11)';
+      ctx.beginPath();ctx.moveTo(px,y0);ctx.lineTo(px,y0+h);ctx.stroke();
+    }
+    for(var gy=-5;gy<=5;gy++){
+      var py=Y(gy*0.5); if(py<y0||py>y0+h)continue;
+      ctx.strokeStyle=(gy%5===0)?'rgba(150,195,240,.24)':'rgba(150,195,240,.11)';
+      ctx.beginPath();ctx.moveTo(x0,py);ctx.lineTo(x0+w,py);ctx.stroke();
+    }
+  }
+  function drawAxis(x0,y0,w,h){
+    var y=Y(0);
+    ctx.save();ctx.setLineDash([9,7]);ctx.strokeStyle='rgba(40,170,90,.85)';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(x0+4,y);ctx.lineTo(x0+w-4,y);ctx.stroke();ctx.restore();
+  }
+  function coil(P,Q,coils,amp,col){
+    var dx=Q.x-P.x,dy=Q.y-P.y,len=Math.hypot(dx,dy)||1e-9;
+    var ux=dx/len,uy=dy/len,px=-uy,py=ux,lead=Math.min(13,len*0.22),body=len-2*lead,steps=22,pts=[];
+    pts.push({x:P.x,y:P.y});pts.push({x:P.x+ux*lead,y:P.y+uy*lead});
+    for(var s=0;s<=steps;s++){var f=s/steps,al=lead+body*f,off=Math.sin(Math.PI*coils*f)*amp;
+      pts.push({x:P.x+ux*al+px*off,y:P.y+uy*al+py*off});}
+    pts.push({x:Q.x-ux*lead,y:Q.y-uy*lead});pts.push({x:Q.x,y:Q.y});
+    ctx.lineWidth=4.2;ctx.strokeStyle='rgba(18,48,104,.55)';ctx.lineJoin='round';ctx.beginPath();
+    ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+    ctx.lineWidth=3.0;ctx.strokeStyle=col;ctx.lineJoin='round';ctx.beginPath();
+    ctx.moveTo(pts[0].x,pts[0].y);for(i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();
+    ctx.lineWidth=1.1;ctx.strokeStyle='rgba(255,255,255,.6)';ctx.beginPath();
+    ctx.moveTo(pts[1].x,pts[1].y-1.4);for(i=2;i<pts.length-1;i++)ctx.lineTo(pts[i].x,pts[i].y-1.4);ctx.stroke();
+  }
+  function drawSprings(){
+    for(var i=0;i<springs.length;i++){
+      var sp=springs[i],a=balls[sp.i],b=balls[sp.j];
+      coil({x:X(a.x),y:Y(a.y)},{x:X(b.x),y:Y(b.y)},7,R*G.sc*0.42,'#7cc4ff');
+    }
+  }
+  function drawBall(b,idx){
+    var x=X(b.x),y=Y(b.y),rr=R*G.sc;
+    var col=(idx!==undefined&&COLS[idx])?COLS[idx]:b.col;
+    // 接触投影（柔和阴影）
+    ctx.save();ctx.globalAlpha=0.18;ctx.fillStyle='#000';
+    ctx.beginPath();ctx.ellipse(x,y+rr*0.62,rr*0.92,rr*0.34,0,0,7);ctx.fill();ctx.restore();
+    // 金属球体：多档金色径向渐变（亮白镜面 → 暖金 → 深琥珀边缘）
+    var g=ctx.createRadialGradient(x-rr*0.42,y-rr*0.46,rr*0.05, x-rr*0.10,y-rr*0.10,rr*1.08);
+    g.addColorStop(0.00,'#fffdf6');
+    g.addColorStop(0.12,'#fff0c4');
+    g.addColorStop(0.34,'#f7d27e');
+    g.addColorStop(0.62,'#e6ac42');
+    g.addColorStop(0.85,'#bb7c20');
+    g.addColorStop(1.00,'#7d4d12');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rr,0,7);ctx.fill();
+    // 底部环境反射光（金属感关键：下方有一道暖色反光）
+    var rg=ctx.createRadialGradient(x,y+rr*0.55,rr*0.05, x,y+rr*0.55,rr*0.95);
+    rg.addColorStop(0,'rgba(255,232,176,.55)');rg.addColorStop(1,'rgba(255,232,176,0)');
+    ctx.save();ctx.beginPath();ctx.arc(x,y,rr,0,7);ctx.clip();
+    ctx.fillStyle=rg;ctx.fillRect(x-rr,y-rr,rr*2,rr*2);ctx.restore();
+    // 锐利镜面高光（金属光泽核心：小而亮的热点 + 柔光晕）
+    var sg=ctx.createRadialGradient(x-rr*0.40,y-rr*0.44,0, x-rr*0.40,y-rr*0.44,rr*0.40);
+    sg.addColorStop(0,'rgba(255,255,255,.98)');sg.addColorStop(0.5,'rgba(255,255,255,.5)');sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=sg;ctx.beginPath();ctx.arc(x-rr*0.40,y-rr*0.44,rr*0.40,0,7);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.96)';ctx.beginPath();ctx.arc(x-rr*0.33,y-rr*0.37,rr*0.12,0,7);ctx.fill();
+    // 编号（白字保证可读性）
+    ctx.fillStyle='#fff';ctx.font='bold '+(rr*0.90).toFixed(0)+'px "Microsoft YaHei",sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(b.lab,x,y+0.5);
+  }
+  function drawBalls(){for(var i=0;i<balls.length;i++)drawBall(balls[i],i);}
+  function drawVectors(){
+    for(var i=0;i<balls.length;i++){
+      // ③⇄⑤ 碰撞后清除 ②、③（下标1、2）的速度矢量箭头
+      if(S.t35!==null && S.t>=S.t35 && (i===1||i===2)) continue;
+      var b=balls[i],sp=Math.hypot(b.vx,b.vy);
+      if(sp<0.04)continue;
+      var x=X(b.x),y=Y(b.y),rr=R*G.sc,len=Math.min(rr*2.6,sp*G.sc*0.9);
+      var ang=Math.atan2(-b.vy,b.vx),ex=x+Math.cos(ang)*len,ey=y+Math.sin(ang)*len;
+      ctx.strokeStyle='rgba(220,40,40,.9)';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.stroke();
+      var a1=ang+Math.PI*0.85,a2=ang-Math.PI*0.85;
+      ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ex+Math.cos(a1)*7,ey+Math.sin(a1)*7);
+      ctx.lineTo(ex+Math.cos(a2)*7,ey+Math.sin(a2)*7);ctx.closePath();ctx.fillStyle='rgba(220,40,40,.9)';ctx.fill();
+    }
+    // 中轴线标注
+    ctx.fillStyle='rgba(40,170,90,.95)';ctx.font='12px "Microsoft YaHei"';
+    ctx.textAlign='right';ctx.fillText('中轴线',X(X5+1.55),Y(0)-7);
+  }
+  function drawFlash(){
+    if(!S.flash)return; var dt=S.t-S.flash.t; if(dt>0.7)return;
+    var a=1-dt/0.7,x=X(S.flash.x),y=Y(S.flash.y),rr=R*G.sc*2.0;
+    ctx.save();ctx.globalAlpha=a;ctx.strokeStyle='rgba(230,40,40,.95)';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(x,y,rr+6*(1-a),0,7);ctx.stroke();
+    ctx.fillStyle='rgba(220,30,30,'+a+')';ctx.font='bold 13px "Microsoft YaHei"';ctx.textAlign='center';
+    ctx.fillText(S.flash.et,x,y-rr-12);ctx.restore();
+  }
+  function drawWatermark(){
+    var x=G.W-12,y=G.sceneH-10;
+    ctx.save();ctx.textAlign='right';ctx.font='bold 13px "Microsoft YaHei"';
+    ctx.fillStyle='rgba(160,200,245,.7)';ctx.fillText('force99',x,y);ctx.restore();
+  }
+  function drawVtGraph(x0,y0,w,h){
+    var padL=34,padR=12,padT=22,padB=20, pw=w-padL-padR, ph=h-padT-padB;
+    ctx.fillStyle='#fff';ctx.fillRect(x0,y0,w,h);
+    ctx.strokeStyle='#dbe4f0';ctx.lineWidth=1;ctx.strokeRect(x0+0.5,y0+0.5,w-1,h-1);
+    ctx.fillStyle='#0f2745';ctx.font='bold 12.5px "Microsoft YaHei"';ctx.textAlign='left';
+    ctx.fillText('速度—时间图像（vₓ）',x0+padL,y0+15);
+    var hist=S.hist; if(!hist||!hist.length){return;}
+    var tmax=S.Tw, vmax=Math.max(S.v0*1.15,0.2);
+    function gx(t){return x0+padL+pw*(t/tmax);}
+    function gy(v){return y0+padT+ph*0.5-ph*(v/vmax);}
+    // grid + zero
+    ctx.strokeStyle='#eef2f7';ctx.lineWidth=1;
+    for(var g=0;g<=4;g++){var gxv=x0+padL+pw*g/4;ctx.beginPath();ctx.moveTo(gxv,y0+padT);ctx.lineTo(gxv,y0+padT+ph);ctx.stroke();}
+    ctx.strokeStyle='#c9d6e6';ctx.beginPath();ctx.moveTo(x0+padL,gy(0));ctx.lineTo(x0+padL+pw,gy(0));ctx.stroke();
+    ctx.fillStyle='#7a8aa0';ctx.font='10.5px sans-serif';ctx.textAlign='right';
+    ctx.fillText('+'+vmax.toFixed(1),x0+padL-3,gy(vmax)+8);
+    ctx.fillText('0',x0+padL-3,gy(0)+3);
+    ctx.fillText('-'+vmax.toFixed(1),x0+padL-3,gy(-vmax)-2);
+    // event markers
+    function marker(t,lab,col){
+      if(t===null||t>S.Tw)return; var mx=gx(t);
+      ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle=col;ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.moveTo(mx,y0+padT);ctx.lineTo(mx,y0+padT+ph);ctx.stroke();ctx.restore();
+      ctx.fillStyle=col;ctx.font='10px "Microsoft YaHei"';ctx.textAlign='center';
+      ctx.fillText(lab,mx,y0+padT+ph+13);
+    }
+    marker(S.t12,'①⇄②','rgba(220,90,30,.9)');
+    marker(S.t35,'③⇄⑤','rgba(60,120,220,.95)');
+    // 各球 vₓ 曲线（①红 ②橙 ③蓝 ④绿 ⑤紫 ⑥青）
+    for(var c=0;c<6;c++){
+      ctx.strokeStyle=COLS[c];ctx.lineWidth=2;ctx.beginPath();
+      for(var i=0;i<hist.length;i++){var p=hist[i];var xx=gx(p.t),yy=gy(p.v[c]);
+        if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);}
+      ctx.stroke();
+    }
+    // cursor
+    var cx=gx(Math.min(S.t,S.Tw));
+    ctx.strokeStyle='rgba(20,40,70,.6)';ctx.lineWidth=1.4;ctx.beginPath();
+    ctx.moveTo(cx,y0+padT);ctx.lineTo(cx,y0+padT+ph);ctx.stroke();
+  }
+  function drawEnergyBox(x0,y0,w,h){
+    var E=energies();
+    ctx.fillStyle='#0e2238';ctx.fillRect(x0,y0,w,h);
+    ctx.strokeStyle='#284a6e';ctx.lineWidth=1;ctx.strokeRect(x0+0.5,y0+0.5,w-1,h-1);
+    var pad=12;ctx.textAlign='left';
+    ctx.fillStyle='#9fd0ff';ctx.font='bold 12.5px "Microsoft YaHei"';
+    ctx.fillText('能量 / 动量',x0+pad,y0+18);
+    ctx.font='12px "Microsoft YaHei"';
+    function row(y,lab,val,col){ctx.fillStyle='#bcd2ea';ctx.fillText(lab,x0+pad,y);ctx.fillStyle=col||'#fff';ctx.textAlign='right';
+      ctx.fillText(val,x0+w-pad,y);ctx.textAlign='left';}
+    row(y0+40,'总机械能 E',E.E.toFixed(3),'#ffe27a');
+    row(y0+60,'动能 Eₖ',E.Ek.toFixed(3),'#8ff0c0');
+    row(y0+80,'弹簧势能 Eₚ',E.Ep.toFixed(3),'#7fd0ff');
+    row(y0+100,'总动量 pₓ',E.px.toFixed(3),'#ffd0a0');
+    // kinetic fraction bar
+    var fy=y0+118,bw=w-2*pad,bh=12;
+    ctx.fillStyle='#16293f';ctx.fillRect(x0+pad,fy,bw,bh);
+    var fk=E.E>1e-6?E.Ek/E.E:0;
+    ctx.fillStyle='#0fa36b';ctx.fillRect(x0+pad,fy,bw*fk,bh);
+    ctx.fillStyle='#7fd0ff';ctx.fillRect(x0+pad+fw_(bw,fk),fy,bw*(1-fk),bh);
+    ctx.fillStyle='#cfe2f5';ctx.font='10.5px "Microsoft YaHei"';
+    ctx.fillText('动能占比 '+Math.round(fk*100)+'%',x0+pad,fy+bh+14);
+    function fw_(b,f){return b*f;}
+    ctx.fillStyle='#7e93ad';ctx.font='10px "Microsoft YaHei"';
+    ctx.fillText('碰撞/弹簧均守恒',x0+pad,fy+bh+30);
+  }
+
+  function draw(){
+    geom();
+    var W=G.W,H=G.H,sceneH=G.sceneH;
+    ctx.clearRect(0,0,W,H);
+    drawPaper(0,0,W,sceneH);
+    drawAxis(0,0,W,sceneH);
+    drawSprings();
+    drawBalls();
+    drawVectors();
+    drawFlash();
+    drawWatermark();
+    if(S.cover){
+      // 暗角，提升"精美"质感（scisimulator 封面常见处理）
+      var vg=ctx.createRadialGradient(W*0.5,H*0.5,Math.min(W,H)*0.30, W*0.5,H*0.5, Math.max(W,H)*0.72);
+      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.38)');
+      ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+      return;
+    }
+    var bandY=sceneH+8,bandH=H-bandY-10;
+    drawVtGraph(10,bandY,W*0.60-16,bandH);
+    drawEnergyBox(W*0.62,bandY,W*0.38-18,bandH);
+  }
+
+  // ---------- 读数面板 ----------
+  var COLS=['#ff5a5a','#ffa23a','#4aa3ff','#46d18a','#b07cff','#2fd0d0'];
+  function updatePanel(){
+    var E=energies();
+    document.getElementById('rt').textContent=S.t.toFixed(3)+' s';
+    document.getElementById('rE').textContent=E.E.toFixed(3);
+    document.getElementById('rK').textContent=E.Ek.toFixed(3);
+    document.getElementById('rP').textContent=E.Ep.toFixed(3);
+    document.getElementById('rPx').textContent=E.px.toFixed(3);
+    var v=document.getElementById('verdict');
+    var txt;
+    if(S.t12===null||S.t<S.t12) txt='就绪：球① 向右运动，准备与球② 弹性碰撞';
+    else if(S.t35===null||S.t<S.t35) txt='球②—③ 经轻弹簧相互作用（简谐振荡）中';
+    else txt='球⑤ 经轻弹簧带动球④、⑥ 运动';
+    v.textContent=txt;
+    var bars=document.getElementById('bars');var html='';
+    for(var i=0;i<balls.length;i++){var b=balls[i],vv=b.vx,vm=Math.max(S.v0,0.3);
+      var w=Math.min(100,Math.abs(vv)/vm*100),col=vv>=0?'#ff6a6a':'#4aa3ff';
+      html+='<div class="barrow"><span class="nm" style="color:'+COLS[i]+'">'+b.lab+'</span>'+
+        '<span class="track"><span class="fill" style="width:'+w+'%;background:'+col+'"></span></span>'+
+        '<span class="vv">'+vv.toFixed(2)+'</span></div>';}
+    bars.innerHTML=html;
+  }
+
+  // ---------- 交互 ----------
+  function seek(t){ initState(); advance(t); S.t=t; }
+  function setTlVal(t){ var tl=document.getElementById('tl'); if(tl){tl.value=t; document.getElementById('tlv').textContent=t.toFixed(2);} }
+
+  function bindSlider(id,key,fmt){
+    var el=document.getElementById(id),out=document.getElementById(id+'v');
+    el.addEventListener('input',function(){
+      S[key]=parseFloat(el.value); out.textContent=fmt(S[key]);
+      recompute(); seek(0); setTlVal(0); draw(); updatePanel();
+    });
+  }
+  bindSlider('v0','v0',function(v){return v.toFixed(2);});
+  bindSlider('k','k',function(v){return v.toFixed(0);});
+  bindSlider('m','m',function(v){return v.toFixed(1);});
+
+  document.getElementById('rate').addEventListener('input',function(){
+    S.rate=parseFloat(this.value); document.getElementById('ratev').textContent=S.rate.toFixed(2)+'×';
+  });
+  document.getElementById('tl').addEventListener('input',function(){
+    S.running=false; document.getElementById('play').textContent='▶ 播放';
+    S.t=parseFloat(this.value); document.getElementById('tlv').textContent=S.t.toFixed(2);
+    seek(S.t); draw(); updatePanel();
+  });
+  document.getElementById('play').addEventListener('click',function(){
+    S.running=!S.running; this.textContent=S.running?'⏸ 暂停':'▶ 播放';
+  });
+  document.getElementById('reset').addEventListener('click',function(){
+    S.running=false; document.getElementById('play').textContent='▶ 播放';
+    seek(0); setTlVal(0); draw(); updatePanel();
+  });
+  function jump(t){ S.running=false; document.getElementById('play').textContent='▶ 播放';
+    seek(t); setTlVal(t); draw(); updatePanel(); }
+  document.getElementById('b12').addEventListener('click',function(){jump(S.t12!==null?S.t12:0);});
+  document.getElementById('b35').addEventListener('click',function(){jump(S.t35!==null?S.t35:0);});
+  document.getElementById('bEnd').addEventListener('click',function(){jump(S.Tw);});
+
+  // ---------- 主循环 ----------
+  function resize(){ if(S.cover)return; cv.width=document.getElementById('stage').clientWidth; cv.height=document.getElementById('stage').clientHeight; draw(); }
+  window.addEventListener('resize',resize);
+
+  var last=performance.now();
+  function loop(now){
+    var dt=Math.min(0.05,(now-last)/1000); last=now;
+    if(S.running){
+      var before=S.t; advance(S.rate*dt);
+      if(S.t>=S.Tw){S.t=S.Tw;S.running=false;document.getElementById('play').textContent='▶ 播放';}
+      setTlVal(S.t);
+    }
+    draw(); updatePanel();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- 启动 ----------
+  function boot(){
+    S.cover = /[?&]cover=1/.test(location.search);
+    if(S.cover){
+      cv.width=900; cv.height=506;     // 站点封面惯例 900×506
+      recompute();
+      var cf = (S.t35!==null) ? Math.min(S.Tw, S.t35+0.9) : S.Tw*0.7;  // 冻结于③⇄⑤后④⑤⑥对称帧（无叠加文字）
+      S.running=false; seek(cf); draw(); updatePanel();
+      window.__coverReady=true; return;
+    }
+    cv.width=document.getElementById('stage').clientWidth;
+    cv.height=document.getElementById('stage').clientHeight;
+    recompute(); seek(0); draw(); updatePanel();
+    requestAnimationFrame(loop);
+  }
+  boot();
+  window.__sc={get balls(){return balls;}, get S(){return S;}, R:R, get springs(){return springs;}, seek:seek, recompute:recompute};
+})();
+</script>
+</body>
+</html>
