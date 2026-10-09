@@ -253,11 +253,14 @@
   var G={};
   function geom(){
     var W=cv.width,H=cv.height;
-    var xmin=-2.2,xmax=X5+1.7,ymin=-2.5,ymax=2.5;
     var sceneH = S.cover ? H : H*0.60;
-    var sc=Math.min((W*0.93)/(xmax-xmin),(sceneH*0.86)/(ymax-ymin));
-    var axisY = S.cover ? H*0.56 : sceneH*0.5;
-    G={W:W,H:H,sceneH:sceneH,sc:sc,cx:W*0.5-((xmin+xmax)/2)*sc,axisY:axisY};
+    var xmin,xmax,ymin,ymax;
+    if(S.cover && S.cb){ xmin=S.cb.xmin; xmax=S.cb.xmax; ymin=S.cb.ymin; ymax=S.cb.ymax; }
+    else { xmin=-2.2; xmax=X5+1.7; ymin=-2.5; ymax=2.5; }
+    var sc=Math.min((W*0.90)/(xmax-xmin),(sceneH*0.82)/(ymax-ymin));
+    var cx=W*0.5-((xmin+xmax)/2)*sc;
+    var axisY=(S.cover&&S.cb)? (H*0.5+((ymin+ymax)/2)*sc) : (S.cover? H*0.56 : sceneH*0.5);
+    G={W:W,H:H,sceneH:sceneH,sc:sc,cx:cx,axisY:axisY};
   }
   function X(x){return G.cx+x*G.sc;}
   function Y(y){return G.axisY-y*G.sc;}
@@ -269,19 +272,21 @@
       var g=ctx.createLinearGradient(0,0,0,h);
       g.addColorStop(0,'#0c2640'); g.addColorStop(0.55,'#081d31'); g.addColorStop(1,'#051423');
       ctx.fillStyle=g; ctx.fillRect(x0,y0,w,h);
-      var fx=w*0.52, fy=h*0.55;
+      var fx=w*0.50, fy=h*0.50;
       var fg=ctx.createRadialGradient(fx,fy,8, fx,fy, Math.max(w,h)*0.62);
       fg.addColorStop(0,'rgba(46,104,168,.50)'); fg.addColorStop(0.5,'rgba(30,72,128,.22)'); fg.addColorStop(1,'rgba(30,72,128,0)');
       ctx.fillStyle=fg; ctx.fillRect(x0,y0,w,h);
       ctx.lineWidth=1;
-      for(var gx=Math.ceil(-2.2/G.sc);gx*G.sc<(X5+1.7);gx++){
+      var wlx=(-G.cx)/G.sc, wrx=(w-G.cx)/G.sc;
+      for(var gx=Math.floor(wlx);gx<=wrx;gx++){
         var px=X(gx); if(px<x0||px>x0+w)continue;
-        ctx.strokeStyle=(gx%5===0)?'rgba(150,195,240,.14)':'rgba(150,195,240,.06)';
+        ctx.strokeStyle=(Math.round(gx)%5===0)?'rgba(150,195,240,.14)':'rgba(150,195,240,.06)';
         ctx.beginPath();ctx.moveTo(px,y0);ctx.lineTo(px,y0+h);ctx.stroke();
       }
-      for(var gy=-5;gy<=5;gy++){
-        var py=Y(gy*0.5); if(py<y0||py>y0+h)continue;
-        ctx.strokeStyle=(gy%5===0)?'rgba(150,195,240,.14)':'rgba(150,195,240,.06)';
+      var ytop=G.axisY/G.sc, ybot=(G.axisY-h)/G.sc, gy0;
+      for(gy0=Math.floor(ybot/0.5)*0.5; gy0<=ytop; gy0+=0.5){
+        var py=Y(gy0); if(py<y0||py>y0+h)continue;
+        ctx.strokeStyle=(Math.round(gy0*2)%5===0)?'rgba(150,195,240,.14)':'rgba(150,195,240,.06)';
         ctx.beginPath();ctx.moveTo(x0,py);ctx.lineTo(x0+w,py);ctx.stroke();
       }
       return;
@@ -557,7 +562,13 @@
       cv.width=900; cv.height=506;     // 站点封面惯例 900×506
       recompute();
       var cf = (S.t35!==null) ? Math.min(S.Tw, S.t35+0.9) : S.Tw*0.7;  // 冻结于③⇄⑤后④⑤⑥对称帧（无叠加文字）
-      S.running=false; seek(cf); draw(); updatePanel();
+      S.running=false; seek(cf);
+      // 自动取景：以冻结帧所有小球的实际包围盒为画面范围，保证「全部画面」入镜、不偏置不裁切
+      var xmn=1e9,xmx=-1e9,ymn=1e9,ymx=-1e9,i;
+      for(i=0;i<balls.length;i++){xmn=Math.min(xmn,balls[i].x);xmx=Math.max(xmx,balls[i].x);ymn=Math.min(ymn,balls[i].y);ymx=Math.max(ymx,balls[i].y);}
+      var pad=Math.max(0.8,(xmx-xmn)*0.15);
+      S.cb={xmin:xmn-pad, xmax:xmx+pad, ymin:Math.min(ymn-pad,-2.4), ymax:Math.max(ymx+pad,2.4)};
+      draw(); updatePanel();
       window.__coverReady=true; return;
     }
     cv.width=document.getElementById('stage').clientWidth;
