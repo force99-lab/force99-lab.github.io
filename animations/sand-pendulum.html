@@ -152,7 +152,8 @@
 "use strict";
 const cv=document.getElementById('cv');
 const G=cv.getContext('2d');
-const W=920,H=720;
+window.__COVER = (location.search.indexOf('cover=1') >= 0);
+const W=window.__COVER?900:920, H=window.__COVER?506:720;
 let cx=W*0.50, cy=H*0.52;
 // ---------- 真实 3D 相机（可拖拽旋转 / 滚轮缩放） ----------
 let yaw=32*Math.PI/180, pitch=26*Math.PI/180, camD=2400, camF=2200;
@@ -214,9 +215,27 @@ function stepPhysics(){
 // ---------- 绘制：背景 ----------
 function drawBg(){
   G.clearRect(0,0,W,H);
+  if(window.__COVER){
+    // 主题化：靛紫—品红渐变 + 径向辉光 + 微弱网格
+    const g=G.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#2a1452'); g.addColorStop(0.55,'#160a30'); g.addColorStop(1,'#070418');
+    G.fillStyle=g; G.fillRect(0,0,W,H);
+    const fg=G.createRadialGradient(cx,cy*0.66,10,cx,cy*0.66,H*0.7);
+    fg.addColorStop(0,'rgba(255,95,170,.18)'); fg.addColorStop(1,'rgba(255,95,170,0)');
+    G.fillStyle=fg; G.fillRect(0,0,W,H);
+    G.lineWidth=1; G.strokeStyle='rgba(200,150,255,.05)';
+    for(let x=0;x<=W;x+=40){G.beginPath();G.moveTo(x,0);G.lineTo(x,H);G.stroke();}
+    for(let y=0;y<=H;y+=40){G.beginPath();G.moveTo(0,y);G.lineTo(W,y);G.stroke();}
+    return;
+  }
   const g=G.createRadialGradient(cx,cy*0.8,80,cx,cy,H*0.75);
   g.addColorStop(0,'#0a1020'); g.addColorStop(0.5,'#06090f'); g.addColorStop(1,'#020305');
   G.fillStyle=g; G.fillRect(0,0,W,H);
+}
+function coverVignette(c,w,h){
+  const g=c.createRadialGradient(w*0.5,h*0.5,Math.min(w,h)*0.30, w*0.5,h*0.5, Math.max(w,h)*0.74);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.46)');
+  c.fillStyle=g; c.fillRect(0,0,w,h);
 }
 
 // ---------- 绘制：木板（纯白 3D 板，顶面 + 前面 + 端面） ----------
@@ -463,6 +482,7 @@ function draw(){
   drawAxis();
   drawFrame();
   drawPendulum(bobZ);
+  if(window.__COVER) coverVignette(G,W,H);
   // 读数（换算为米）
   document.getElementById('sv').textContent=(Pof(S.t)/U).toFixed(2);
   document.getElementById('xv').textContent=(bobZ/U).toFixed(2);
@@ -519,6 +539,7 @@ function resize(){
   G.setTransform(dpr,0,0,dpr,0,0);
   cx=W*0.50; cy=H*0.52;
   computeTEnd();
+  if(window.__COVER){ cv.style.width='900px'; cv.style.height='506px'; }
 }
 
 // ---------- 主循环 ----------
@@ -623,7 +644,16 @@ cv.addEventListener('touchmove',e=>{ if(!dragging) return; const t=e.touches[0];
   lastX=t.clientX; lastY=t.clientY; e.preventDefault(); dirty=true; },{passive:false});
 cv.addEventListener('touchend',()=>dragging=false);
 
-resize(); reset(); requestAnimationFrame(frame);
+resize(); reset();
+if(window.__COVER){
+  const hero=S.tEnd*0.60;                 // 冻结于沙摆轨迹清晰形成的中段
+  S.t=0; grains=[];
+  const N=Math.max(1,Math.ceil(hero/0.02));
+  for(let i=0;i<=N;i++){ S.t=hero*i/N; stepPhysics(); }
+  S.t=hero; S.running=false; dirty=true;
+  window.__coverReady=true;
+}
+requestAnimationFrame(frame);
 window.__api={S,omega,Pof,proj,getWH:()=>({W,H}),computeTEnd,seekTo,
   setCam:(y,p,d)=>{ yaw=y; pitch=p; if(d) camD=d; dirty=true; },
   getCam:()=>({yaw,pitch,camD,camF}),
