@@ -3878,6 +3878,12 @@ const WORKS = [
       desc:"2026年重庆高考物理第10题。带电粒子在匀强电场中做类平抛运动，速率相同的点连成椭圆族，求电场强度、M与N两点电势差、初速度与运动时间之比，答案为A、B。",
       icon:"📐", cover:"assets/img/p10-cover.png", link:"solutions/p10_threepage.html", date:"2026-10-10", tag:"电场"
     }
+,
+      {
+      type:"solve", title:"导轨导体棒与滑动变阻器（2026 高考·重庆卷）",
+      desc:"2026 高考重庆卷 T15（16 分）：导轨导体棒接滑动变阻器，外力 F 随动能 Ek 分段变化（Ek<2 J 时 F=3Ek+1，Ek≥2 J 时 F=7 N）；求安培力、稳定速度与合外力做功，以及存在两个稳定速度时的变阻器阻值，含零JS三页式动画与折叠解题。",
+      icon:"📐", cover:"assets/img/cq15-cover.png", link:"solutions/cq15_threepage.html", date:"2026-10-10", tag:"电磁感应·导轨变阻器"
+    }
 ];
 
 
