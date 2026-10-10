@@ -3890,6 +3890,12 @@ const WORKS = [
       desc:"2026 高考湖南卷 T14（14 分）：储能器（U=kq）与导轨单杆电路，开关 S 接 a/b/c 三种工况——直连电源求初加速度、接入储能器充电求末速度、与定值电阻成回路求棒上焦耳热，含零JS三页式动画与折叠解题。",
       icon:"📐", cover:"assets/img/hn-cover.png", link:"solutions/hn_threepage.html", date:"2026-10-10", tag:"电磁感应·储能器单杆"
     }
+,
+      {
+      type:"animation", title:"抽桌面布·物块是否掉落",
+      desc:"长桌布以加速度a抽出，物块与桌布摩擦因数μ、离桌边距离dE、与布左缘距离dL。判定物块是否随布滑动、是否在裸桌面减速停下而不掉落，附v–t图。",
+      icon:"🎬", cover:"assets/img/tablecloth-cover.png", link:"animations/tablecloth.html", date:"2026-10-10", tag:"力学"
+    }
 ];
 
 
