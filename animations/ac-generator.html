@@ -113,6 +113,7 @@
 (function(){
   "use strict";
   const cv=document.getElementById('cv'); const G=cv.getContext('2d');
+  const COVER = (location.search && location.search.indexOf('cover=1')>=0);
   let W=0,H=0,DPR=1;
   // ---------- 物理状态 ----------
   const S={ f:0.5, B:0.5, N:100, R:5, t:0, running:true, speed:1, theta:0, flow:0 };
@@ -541,11 +542,28 @@
   function draw(){
     try{
       G.clearRect(0,0,W,H);
-      // 场景中心(整体左移，使 S 极右端落在图像区起点 gx0=0.60W 左侧，避免与三幅图重叠；本轮再额外左移 45px)
-      cx=W*0.38-45; cy=H*0.40;
-      drawScene();
-      drawGraphs();
-      drawWatermark();
+      if(COVER){
+        // 主题化深蓝渐变背景（电磁主题）+ 中心聚光
+        const bg=G.createLinearGradient(0,0,0,H);
+        bg.addColorStop(0,'#0c1f3e'); bg.addColorStop(0.55,'#0a1730'); bg.addColorStop(1,'#06101f');
+        G.fillStyle=bg; G.fillRect(0,0,W,H);
+        const fx=W*0.5, fy=H*0.46;
+        const fg=G.createRadialGradient(fx,fy,10,fx,fy,Math.max(W,H)*0.62);
+        fg.addColorStop(0,'rgba(40,110,180,.42)'); fg.addColorStop(0.55,'rgba(28,72,130,.20)'); fg.addColorStop(1,'rgba(20,50,90,0)');
+        G.fillStyle=fg; G.fillRect(0,0,W,H);
+        cx=W*0.5; cy=H*0.46;
+        drawScene();
+        drawWatermark();
+        const vg=G.createRadialGradient(W*0.5,H*0.5,Math.min(W,H)*0.30, W*0.5,H*0.5,Math.max(W,H)*0.72);
+        vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.42)');
+        G.fillStyle=vg; G.fillRect(0,0,W,H);
+      } else {
+        // 场景中心(整体左移，使 S 极右端落在图像区起点 gx0=0.60W 左侧，避免与三幅图重叠；本轮再额外左移 45px)
+        cx=W*0.38-45; cy=H*0.40;
+        drawScene();
+        drawGraphs();
+        drawWatermark();
+      }
     }catch(e){}
   }
 
@@ -577,6 +595,16 @@
 
   // ---------- 尺寸 ----------
   function resize(){
+    if(COVER){
+      const p=document.getElementById('panel'); if(p) p.style.display='none';
+      const st=document.getElementById('stage'); if(st) st.style.padding='0';
+      W=900; H=506;
+      cv.style.width=W+'px'; cv.style.height=H+'px';
+      cv.width=W; cv.height=H;
+      G.setTransform(1,0,0,1,0,0);
+      dirty=true;
+      return;
+    }
     const r=cv.parentElement.getBoundingClientRect();
     DPR=window.devicePixelRatio||1;
     W=r.width; H=r.height;
@@ -621,7 +649,15 @@
 
   // ---------- 启动 ----------
   resize();
-  requestAnimationFrame(frame);
+  if(COVER){
+    // 冻结于线圈倾斜 45° 的精彩帧（3D 转子 + 滑环 + 电流箭头最直观）
+    S.running=false; S.theta=Math.PI/4; S.t=S.theta/omega(); S.flow=0.32;
+    camYaw=-0.50; camPitch=0.30; camDist=33;
+    draw();
+    window.__coverReady=true;
+  } else {
+    requestAnimationFrame(frame);
+  }
 
   // 暴露探针(无头验证)
   window.__gen={ S, phi, cur, emf, pow, omega, T, Phim, Em, Im, setCam:(y,p,d)=>{camYaw=y;camPitch=p;camDist=d;dirty=true;} };
