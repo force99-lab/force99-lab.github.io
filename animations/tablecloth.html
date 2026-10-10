@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抽桌面布 · 物块会掉下桌吗</title>
+<style>
+  :root{
+    --bg:#0b1430; --panel:#f4f7fc; --ink:#15233f; --sub:#54627c;
+    --line:#c9d6ea; --acc:#1d6fe0; --acc2:#0fa36b; --warn:#e0531a;
+    --chip:#e7eefc;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:"Microsoft YaHei","Source Han Sans SC","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--ink); display:flex; height:100vh; overflow:hidden;
+  }
+  #stage{flex:1 1 64%; position:relative; min-width:0;}
+  #cv{width:100%; height:100%; display:block;}
+  #side{
+    flex:0 0 36%; max-width:520px; min-width:340px; background:var(--panel);
+    overflow-y:auto; padding:18px 20px 26px; box-shadow:-6px 0 20px rgba(0,0,0,.25);
+  }
+  #side h1{font-size:19px; margin:2px 0 4px; color:var(--ink);}
+  #side .lead{font-size:12.5px; color:var(--sub); margin-bottom:14px; line-height:1.6;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:14px;}
+  .card h2{font-size:15px; margin:0 0 10px; display:flex; align-items:center; gap:8px;}
+  .card h2 .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+  .row{display:flex; align-items:center; gap:10px; margin:9px 0;}
+  .row label{width:118px; font-size:13px; color:var(--sub); flex:none;}
+  .row input[type=range]{flex:1; accent-color:var(--acc); min-width:0;}
+  .row .val{width:96px; text-align:right; font-size:12.5px; font-variant-numeric:tabular-nums; font-weight:700; color:var(--ink);}
+  .btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  button{font-family:inherit; font-size:13px; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:700;}
+  button.primary{background:var(--acc); color:#fff;}
+  button.ghost{background:var(--chip); color:var(--acc);}
+  button.step{background:#eef4ff; color:var(--acc); flex:1 1 30%; font-size:12px; padding:7px 6px;}
+  .legend{display:flex; flex-wrap:wrap; gap:8px 14px; font-size:12px; color:var(--sub); margin-top:10px;}
+  .legend i{display:inline-block; width:14px; height:4px; border-radius:2px; margin-right:5px; vertical-align:middle;}
+  .readout{display:grid; grid-template-columns:1fr 1fr; gap:8px 14px;}
+  .readout div{display:flex; justify-content:space-between; font-size:13px; border-bottom:1px dashed var(--line); padding:3px 0;}
+  .readout b{font-variant-numeric:tabular-nums; color:var(--acc); font-weight:800;}
+  .verdict{display:flex; align-items:center; gap:10px; border-radius:10px; padding:10px 13px; margin-bottom:11px; font-weight:800; font-size:14px; line-height:1.35;}
+  .verdict .dot{width:12px; height:12px; border-radius:50%; flex:none;}
+  .know p{font-size:13px; line-height:1.75; margin:7px 0; color:var(--ink);}
+  .fml{background:#eef4ff; border-left:3px solid var(--acc); padding:7px 11px; border-radius:0 7px 7px 0; margin:8px 0; font-size:13px; color:#102a55; line-height:1.75; font-family:"Microsoft YaHei",sans-serif;}
+  .fml b{color:#0b5fc0;}
+  .know .hl{color:var(--warn); font-weight:800;}
+  .know .hl2{color:var(--acc2); font-weight:800;}
+  .tip{font-size:12px; color:var(--sub); line-height:1.6; margin-top:8px;}
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="cv"></canvas></div>
+
+  <div id="side">
+    <h1>抽桌面布，物块会掉下桌吗？</h1>
+    <div class="lead">木纹桌上铺一条长桌布，物块放在布上。猛地向右抽动桌布（加速度 a），物块靠摩擦被带动。物块能否留在桌面，取决于摩擦能否让它"跟住"桌布——本质是 μmg 与 ma 的较量。</div>
+
+    <div class="card">
+      <h2><span class="n">①</span>控制区</h2>
+      <div class="row"><label>桌布加速度 a</label><input type="range" id="a" min="2" max="40" step="0.5" value="20"><span class="val" id="av">20.0 m/s²</span></div>
+      <div class="row"><label>摩擦因数 μ</label><input type="range" id="mu" min="0.10" max="1.00" step="0.01" value="0.40"><span class="val" id="muv">0.40</span></div>
+      <div class="row"><label>物块离桌边 d</label><input type="range" id="dE" min="0.20" max="3.00" step="0.05" value="0.90"><span class="val" id="dEv">0.90 m</span></div>
+      <div class="row"><label>离桌布左缘 d₁</label><input type="range" id="dL" min="0.10" max="2.00" step="0.05" value="0.90"><span class="val" id="dLv">0.90 m</span></div>
+      <div class="row"><label>播放速度</label><input type="range" id="spd" min="0.2" max="2" step="0.1" value="1"><span class="val" id="spdv">1.0×</span></div>
+      <div class="row"><label>时间轴</label><input type="range" id="tl" min="-0.6" max="1.6" step="0.01" value="-0.6"><span class="val" id="tlv">-0.60 s</span></div>
+      <div class="btns">
+        <button id="play" class="primary">⏸ 暂停</button>
+        <button id="reset" class="ghost">↺ 重置</button>
+      </div>
+      <div class="btns" style="margin-top:10px;">
+        <button class="step" data-t="0">① 开始抽动</button>
+        <button class="step" id="btnSep">② 分离时刻</button>
+        <button class="step" data-t="99">③ 结束</button>
+      </div>
+      <div class="legend">
+        <span><i style="background:#1f9e8c"></i>物块（青）</span>
+        <span><i style="background:#cdd9e8"></i>桌布（浅）</span>
+        <span><i style="background:#7dffc0"></i>距桌边 d</span>
+        <span><i style="background:#ffb347"></i>相对滑动</span>
+        <span><i style="background:#ff5b4a"></i>摩擦力 f = μmg</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">②</span>物理知识归纳</h2>
+      <div class="know">
+        <p><b>情景：</b>桌布长条铺在桌上，物块置于布上，向右猛抽桌布（加速度 a）。物块与桌布间动摩擦因数为 μ，物块右缘距桌右缘为 d，物块左缘距桌布左缘为 d₁。（取 g = 10 m/s²）</p>
+        <p><b>一、物块会不会相对桌布滑动？</b></p>
+        <p>抽布时物块因惯性"不想动"。若摩擦能带动物块一起以 a 加速，需要 ma；桌布能提供的最大摩擦力为 μmg。</p>
+        <div class="fml">临界：<b>μmg ≥ ma</b> ⇒ <b>μg ≥ a</b> → 物块跟住桌布，<b>无相对滑动</b><br>反之 <b>μg &lt; a</b> → 桌布从物块下"滑出"，出现相对滑动</div>
+        <p><b>二、分离时物块滑了多远？</b></p>
+        <p>滑动时物块受向右的摩擦 μmg，加速度为 μg；桌布加速度更大为 a。在地面参考系中，桌布相对物块以 (a − μg) 加速。当相对位移达到 d₁ 时，桌布刚好从物块下全部抽出（分离）。</p>
+        <div class="fml">分离时刻：<b>tₛ = √[ 2d₁ / (a − μg) ]</b>，此时物块位移 <b>x₁ = ½·μg·tₛ²</b>。<b>分离后物块不会立即停止</b>——它在桌面摩擦 μ（定值）下继续向右减速滑行，到 <b>t = 2tₛ</b> 才停下，总位移 <b>X = μg·tₛ² = 2x₁</b>。</div>
+        <p><b>三、判断是否掉落：</b></p>
+        <div class="fml"><b>X &lt; d</b> → 物块总位移小于到桌边距离，<span class="hl2">抽布成功（留在桌面）</span>；<b>X ≥ d</b> → 物块被拖过桌边，<span class="hl">掉下桌面</span></div>
+        <div class="fml">临界加速度：<b>a꜀ = μg·(1 + d₁/d)</b>（刚好的分界）</div>
+        <p><b>易错提醒：</b>① 抽得<b>越快</b>（a 越大）物块反而动得越少——这是"惯性"的妙用；② 物块加速度是 μg 而<b>不是</b> a；③ 用<b>地面参考系</b>分别算位移最稳（等价于相对加速度 a − μg）；④ 桌布抽走后物块受桌面摩擦<b>减速滑行一段才停下</b>，不是瞬间静止。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">③</span>实时物理量</h2>
+      <div class="verdict" id="vdBox"><span class="dot" id="vdDot"></span><span id="vdTxt">—</span></div>
+      <div class="readout">
+        <div>时间 t<b id="rt">0.00 s</b></div>
+        <div>桌布速度 v布<b id="rvc">0.0 m/s</b></div>
+        <div>物块速度 v块<b id="rvb">0.0 m/s</b></div>
+        <div>相对速度<b id="rvr">0.0 m/s</b></div>
+        <div>相对滑动<b id="rsl">0.00 m</b></div>
+        <div>距桌边 d<b id="rgap">0.90 m</b></div>
+        <div>是否分离<b id="rsep">否</b></div>
+        <div>μg / a<b id="rcrit">—</b></div>
+      </div>
+      <div class="tip" id="rtip">物块最大加速度 μg = 4.0 m/s²，桌布加速度 a = 10.0 m/s²。</div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const cv = document.getElementById('cv');
+  const G  = cv.getContext('2d');
+  let W=0, H=0, DPR=1;
+  window.__COVER = (location.search.indexOf('cover=1') >= 0);
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    if(window.__COVER){ W=900; H=506; }
+    else { const r = cv.parentElement.getBoundingClientRect(); W=r.width; H=r.height; }
+    cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+    cv.style.width = W+'px'; cv.style.height = H+'px';
+    G.setTransform(DPR,0,0,DPR,0,0);
+  }
+  window.addEventListener('resize', resize);
+
+  // ================= 物理 =================
+  const GRAV = 10;
+  const Wt = 11, Dd = 3.4;     // 桌面：长(x) × 深(y)
+  const SB = 0.65, HB = 0.55;  // 物块边长 / 高（已缩小至 1/2）
+  const TAU_PRE = 0.6;         // 抽动前静止保持
+  const SLOW = 0.25;           // 慢放系数（真实事件很短）
+
+  const S = { t:-TAU_PRE, running:true, speed:1, a:20, mu:0.40, dE:0.90, dL:0.90 };
+
+  function muG(){ return S.mu*GRAV; }
+  function isSlip(){ return S.a > muG() + 1e-9; }
+  // 桌布从物块下全抽出所需相对位移 = d₁；分离时刻：
+  function tSep(){ return isSlip() ? Math.sqrt(2*S.dL/(S.a - muG())) : Infinity; }
+  // 分离后物块在桌面摩擦 μ（定值）下减速至停：t = tₛ + vₛ/μg = 2·tₛ
+  function tRest(){ return isSlip() ? 2*tSep() : tFall(); }
+  // 物块右缘到达桌右缘的时刻（分离前或分离后减速阶段）
+  function tEdge(){
+    if(!isSlip()) return tFall();
+    const ts=tSep(), x1=0.5*muG()*ts*ts;
+    if(x1 >= S.dE-1e-9) return Math.sqrt(2*S.dE/muG());     // 分离前已到桌边
+    const vsep=muG()*ts, disc=Math.max(0, vsep*vsep - 2*muG()*(S.dE-x1));
+    return ts + (vsep - Math.sqrt(disc))/muG();              // 减速阶段到达桌边
+  }
+  function tFall(){ return Math.sqrt(2*S.dE/(isSlip()?muG():S.a)); } // 无滑：随布以 a 拖到边缘
+  function xRest(){ // 物块最终静止位移
+    if(!isSlip()) return 0.5*S.a*tFall()*tFall();             // = dE
+    return muG()*tSep()*tSep();                               // = 2·½μg·tₛ² = μg·tₛ²
+  }
+  function willFall(){ return !isSlip() ? true : (xRest() >= S.dE - 1e-9); }
+  function success(){ return isSlip() && !willFall(); }
+
+  function Xc(tau){ return 0.5*S.a*tau*tau; }                 // 桌布位移（向右）
+  function Xb(tau){
+    if(!isSlip()) return 0.5*S.a*tau*tau;
+    const ts=tSep();
+    if(tau <= ts) return 0.5*muG()*tau*tau;                  // 在布上：加速
+    if(tau >= tRest()) return xRest();                       // 已在桌面减速停下，停在原地（不再后退）
+    const dt=tau-ts;                                          // 分离后：桌面减速滑行
+    return 0.5*muG()*ts*ts + muG()*ts*dt - 0.5*muG()*dt*dt;
+  }
+  function vCloth(tau){ return S.a*tau; }
+  function vBlock(tau){
+    if(!isSlip()) return S.a*tau;
+    const ts=tSep();
+    if(tau <= ts) return muG()*tau;                          // 在布上：加速
+    return Math.max(0, muG()*ts - muG()*(tau-ts));           // 分离后：桌面减速，降至 0 后保持
+  }
+  function slipDisp(tau){ return !isSlip() ? 0 : Math.max(0, Xc(tau)-Xb(tau)); }
+  function gapEdge(tau){ return Math.max(0, S.dE - Xb(tau)); }
+  function vRel(tau){ return Math.max(0, vCloth(tau) - vBlock(tau)); }
+  function isSep(tau){ return isSlip() && tau >= tSep() - 1e-9; }
+
+  function Tend(){
+    if(!isSlip()) return tFall() + 0.9;
+    return tRest() + 0.9;
+  }
+
+  function simT(){ return Math.max(0, S.t); }
+  function statusInfo(){
+    const tau = simT();
+    if(S.t < 0) return {txt:'静止就绪：桌布尚未抽动', col:'#9fd0ff'};
+    if(!isSlip()) return {txt:'μg ≥ a：无相对滑动，物块随桌布一起被拖走', col:'#ff8b7a'};
+    if(gapEdge(tau) <= 0) return {txt:'物块被拖下桌面！', col:'#ff5b4a'};
+    if(tau >= tRest()-1e-9) return {txt:'桌布已抽出，物块在桌面减速停下（成功）', col:'#7dffc0'};
+    if(vRel(tau) > 1e-6) return {txt:'抽动中：桌布从物块下向右滑出，物块随后减速滑行', col:'#ffb347'};
+    return {txt:'相对静止', col:'#7dffc0'};
+  }
+
+  // ================= 绘图工具 =================
+  function rr(x,y,w,h,r){
+    r = Math.min(r, Math.abs(w)/2, Math.abs(h)/2);
+    G.beginPath();
+    G.moveTo(x+r,y); G.arcTo(x+w,y,x+w,y+h,r); G.arcTo(x+w,y+h,x,y+h,r);
+    G.arcTo(x,y+h,x,y,r); G.arcTo(x,y,x+w,y,r); G.closePath();
+  }
+  function arrowHead(x,y,ang,size,color){
+    G.save(); G.translate(x,y); G.rotate(ang);
+    G.fillStyle=color; G.beginPath();
+    G.moveTo(0,0); G.lineTo(-size, size*0.44); G.lineTo(-size,-size*0.44);
+    G.closePath(); G.fill(); G.restore();
+  }
+  function drawWatermark(){
+    G.save();
+    G.globalAlpha=0.18; G.fillStyle='#ffffff';
+    G.font='700 13px "Microsoft YaHei",sans-serif';
+    G.textAlign='right'; G.textBaseline='bottom';
+    G.fillText('force99', W-14, H-12);
+    G.restore();
+  }
+
+  // ================= 场景：2.5D 斜投影 =================
+  function sceneGeom(){
+    const sceneH = Math.round(window.__COVER ? H : H*0.50);
+    const topPad = 74, botPad = 78;
+    const mX = W*0.10;
+    const SXw = (W - 2*mX)/Wt;
+    const avail = sceneH - topPad - botPad;
+    const SXv = avail / (Dd*0.46 + HB*0.92);
+    const SX = Math.min(SXw, SXv);
+    const SY = SX*0.46, SZ = SX*0.92;
+    const OX = mX + (W - 2*mX - Wt*SX)/2;       // 居中
+    const OY = topPad + Dd*SY + HB*SZ;
+    return { sceneH, SX, SY, SZ, OX, OY };
+  }
+  function P(sc, x,y,z){ return { sx: sc.OX + x*sc.SX, sy: sc.OY - y*sc.SY - z*sc.SZ }; }
+  // 世界坐标：x 右(抽动方向)，y 深(入屏)，z 高
+  // 桌面 y∈[0,Dd]，z=0 顶面
+
+  // ---- 封面模式：主题化渐变背景 + 微弱网格 + 径向辉光 ----
+  function coverBackground(c,w,h){
+    const g=c.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#0f3a44'); g.addColorStop(0.55,'#0a2230'); g.addColorStop(1,'#050f14');
+    c.fillStyle=g; c.fillRect(0,0,w,h);
+    const fg=c.createRadialGradient(w*0.5,h*0.46,10, w*0.5,h*0.46, Math.max(w,h)*0.60);
+    fg.addColorStop(0,'rgba(120,235,210,.16)'); fg.addColorStop(1,'rgba(120,235,210,0)');
+    c.fillStyle=fg; c.fillRect(0,0,w,h);
+    c.lineWidth=1; c.strokeStyle='rgba(150,225,210,.045)';
+    for(let x=0;x<=w;x+=40){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,h); c.stroke(); }
+    for(let y=0;y<=h;y+=40){ c.beginPath(); c.moveTo(0,y); c.lineTo(w,y); c.stroke(); }
+  }
+  function coverVignette(c,w,h){
+    const g=c.createRadialGradient(w*0.5,h*0.5,Math.min(w,h)*0.30, w*0.5,h*0.5, Math.max(w,h)*0.74);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.46)');
+    c.fillStyle=g; c.fillRect(0,0,w,h);
+  }
+
+  function draw(){
+    const sc = sceneGeom();
+    const tau = simT();
+    const st = statusInfo();
+
+    G.clearRect(0,0,W,H);
+    if(window.__COVER){ coverBackground(G,W,H); }
+    else {
+      const bg = G.createLinearGradient(0,0,0,H);
+      bg.addColorStop(0,'#0a1230'); bg.addColorStop(1,'#0a1024');
+      G.fillStyle = bg; G.fillRect(0,0,W,H);
+    }
+
+    drawScene(sc, tau);
+    if(!window.__COVER){
+      drawHud(sc, st, tau);
+      drawVtGraph(sc);
+      drawInfoRow(sc);
+    }
+    drawWatermark();
+    if(window.__COVER) coverVignette(G,W,H);
+  }
+
+  // ---- 桌面 ----
+  function drawTable(sc){
+    const tA = P(sc,0,0,0), tB = P(sc,Wt,0,0), tC = P(sc,Wt,Dd,0), tD = P(sc,0,Dd,0);
+    // 落地阴影
+    G.fillStyle='rgba(0,0,0,.30)';
+    poly([tA,tB,P(sc,Wt,0,-0.9),P(sc,0,0,-0.9)]);
+    // 桌面厚度（前+右）
+    const thk=0.55;
+    G.fillStyle='#5c3a1d';
+    poly([tA,tB,P(sc,Wt,0,-thk),P(sc,0,0,-thk)]);            // 前
+    G.fillStyle='#4a2f17';
+    poly([tB,tC,P(sc,Wt,Dd,-thk),P(sc,Wt,0,-thk)]);          // 右
+    // 桌面木纹
+    const wg = G.createLinearGradient(0,tB.sy,0,tC.sy);
+    wg.addColorStop(0,'#c8924f'); wg.addColorStop(1,'#9a6736');
+    G.fillStyle=wg; poly([tA,tB,tC,tD]);
+    // 木纹线
+    G.strokeStyle='rgba(110,68,32,.45)'; G.lineWidth=1.2;
+    for(let i=1;i<7;i++){
+      const y=Dd*i/7;
+      const p1=P(sc,0,y,0), p2=P(sc,Wt,y,0);
+      G.beginPath(); G.moveTo(p1.sx,p1.sy); G.lineTo(p2.sx,p2.sy); G.stroke();
+    }
+    G.strokeStyle='rgba(255,235,200,.35)'; G.lineWidth=1;
+    for(let i=0;i<8;i++){ const x=Wt*(i+0.5)/8; const p1=P(sc,x,0.1,0),p2=P(sc,x,Dd-0.1,0);
+      G.beginPath(); G.moveTo(p1.sx,p1.sy+1); G.lineTo(p2.sx,p2.sy+1); G.stroke(); }
+    // 桌面前沿高光
+    G.strokeStyle='rgba(255,225,180,.5)'; G.lineWidth=2;
+    G.beginPath(); G.moveTo(tA.sx,tA.sy); G.lineTo(tB.sx,tB.sy); G.stroke();
+  }
+  function poly(pts){
+    G.beginPath(); G.moveTo(pts[0].sx,pts[0].sy);
+    for(let i=1;i<pts.length;i++) G.lineTo(pts[i].sx,pts[i].sy);
+    G.closePath(); G.fill();
+  }
+
+  // ---- 桌布 ----
+  function drawCloth(sc, tau){
+    const cl = (Wt - S.dE - SB - S.dL) + Xc(tau);   // 当前桌布左缘 x
+    const Lc = 16;
+    const z0 = 0.04;
+    const y0=0.05, y1=Dd-0.05;
+    // 阴影
+    G.fillStyle='rgba(20,40,70,.20)';
+    poly([P(sc,cl,y0,z0-0.06),P(sc,cl+Lc,y0,z0-0.06),P(sc,cl+Lc,y1,z0-0.06),P(sc,cl,y1,z0-0.06)]);
+    // 布面
+    const cg = G.createLinearGradient(0,P(sc,cl,y0,z0).sy,0,P(sc,cl,y1,z0).sy);
+    cg.addColorStop(0,'#eef3fa'); cg.addColorStop(1,'#d4deec');
+    G.fillStyle=cg;
+    poly([P(sc,cl,y0,z0),P(sc,cl+Lc,y0,z0),P(sc,cl+Lc,y1,z0),P(sc,cl,y1,z0)]);
+    // 条纹
+    G.strokeStyle='rgba(150,170,200,.35)'; G.lineWidth=1.2;
+    for(let k=1;k<7;k++){ const x=cl+Lc*k/7;
+      G.beginPath(); G.moveTo(P(sc,x,y0,z0).sx,P(sc,x,y0,z0).sy); G.lineTo(P(sc,x,y1,z0).sx,P(sc,x,y1,z0).sy); G.stroke(); }
+    // 布边
+    G.strokeStyle='rgba(120,140,170,.7)'; G.lineWidth=2;
+    G.beginPath(); G.moveTo(P(sc,cl,y0,z0).sx,P(sc,cl,y0,z0).sy);
+    G.lineTo(P(sc,cl,y1,z0).sx,P(sc,cl,y1,z0).sy); G.stroke();
+  }
+
+  // ---- 物块 ----
+  function drawBlock(sc, tau){
+    const left = Wt - S.dE - SB + Xb(tau);      // 当前物块左缘 x
+    const byc = (Dd - SB)/2;
+    let drop = 0, alpha = 1;
+    const ge = gapEdge(tau);
+    if(ge <= 0){ const over = -ge; drop = Math.min(1, over/0.5); alpha = Math.max(0.15, 1-drop); }
+    const zOff = -drop*1.6;
+    // 阴影（在桌面上）
+    if(alpha>0.2){
+      G.fillStyle='rgba(20,30,50,.28)';
+      poly([P(sc,left,byc,0.02),P(sc,left+SB,byc,0.02),P(sc,left+SB,byc+SB,0.02),P(sc,left,byc+SB,0.02)]);
+    }
+    G.save(); G.globalAlpha = alpha;
+    const zt = HB + zOff;
+    // 顶面
+    const top=[P(sc,left,byc,zt),P(sc,left+SB,byc,zt),P(sc,left+SB,byc+SB,zt),P(sc,left,byc+SB,zt)];
+    const tg=G.createLinearGradient(0,top[0].sy,0,top[3].sy);
+    tg.addColorStop(0,'#4fd6c2'); tg.addColorStop(1,'#2bb3a0');
+    G.fillStyle=tg; poly(top);
+    // 前面（y=byc）
+    const front=[P(sc,left,byc,0+zOff),P(sc,left+SB,byc,0+zOff),P(sc,left+SB,byc,zt),P(sc,left,byc,zt)];
+    G.fillStyle='#1f9e8c'; poly(front);
+    // 右面（x=left+SB）
+    const right=[P(sc,left+SB,byc,0+zOff),P(sc,left+SB,byc+SB,0+zOff),P(sc,left+SB,byc+SB,zt),P(sc,left+SB,byc,zt)];
+    G.fillStyle='#16857a'; poly(right);
+    // 顶面前沿高光
+    G.strokeStyle='rgba(255,255,255,.35)'; G.lineWidth=1.4;
+    G.beginPath(); G.moveTo(top[0].sx,top[0].sy); G.lineTo(top[1].sx,top[1].sy); G.stroke();
+    G.restore();
+    // 成功/失败徽标
+    if(success() && isSep(tau)){
+      badge(sc, P(sc,left+SB/2,byc+SB/2,zt), '#7dffc0', '✓ 成功');
+    } else if(willFall() && ge<=0){
+      badge(sc, P(sc,left+SB/2,byc+SB/2,zt), '#ff5b4a', '✗ 掉落');
+    }
+  }
+  function badge(sc,p,col,txt){
+    G.save(); G.globalAlpha=0.95;
+    G.font='800 15px "Microsoft YaHei",sans-serif';
+    const w=G.measureText(txt).width+18;
+    G.fillStyle='rgba(8,14,30,.7)'; rr(p.sx-w/2,p.sy-26,w,24,12); G.fill();
+    G.strokeStyle=col; G.lineWidth=1.6; rr(p.sx-w/2,p.sy-26,w,24,12); G.stroke();
+    G.fillStyle=col; G.textAlign='center'; G.textBaseline='middle';
+    G.fillText(txt,p.sx,p.sy-14);
+    G.restore(); G.textBaseline='alphabetic';
+  }
+
+  // ---- 指示：箭头 / 尺寸线 ----
+  function drawIndicators(sc, tau){
+    const tA = P(sc,0,0,0), tB = P(sc,Wt,0,0);
+    const left = Wt - S.dE - SB + Xb(tau);
+    const rightNow = left + SB;
+    const clothLeft = (Wt - S.dE - SB - S.dL) + Xc(tau);
+
+    // 摩擦箭头（物块前侧面，向右）——仅在物块仍与桌布接触（分离前）显示
+    if(isSlip() && tau <= tSep()-1e-9){
+      const pf = P(sc,left+SB*0.5, (Dd-SB)/2, HB*0.55);
+      const L = 1.0*sc.SX;
+      G.strokeStyle='#ff5b4a'; G.lineWidth=3.2;
+      G.beginPath(); G.moveTo(pf.sx,pf.sy); G.lineTo(pf.sx+L,pf.sy); G.stroke();
+      arrowHead(pf.sx+L,pf.sy,0,9,'#ff5b4a');
+      G.fillStyle='#ff8b7a'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='left'; G.textBaseline='bottom';
+      G.fillText('f = μmg', pf.sx+L+6, pf.sy+4);
+      G.textBaseline='alphabetic';
+    }
+
+    // 速度矢量：桌布（右端悬垂处）、物块
+    const vS = (W*0.16)/Math.max(8, S.a*Tend());
+    const vc=vCloth(tau), vb=vBlock(tau);
+    if(vc>0.05){
+      const p=P(sc,Math.min(Wt-0.4, clothLeft+8), 0.4, 0.0);
+      const L=vc*vS;
+      G.strokeStyle='#4aa3ff'; G.lineWidth=3.2;
+      G.beginPath(); G.moveTo(p.sx,p.sy); G.lineTo(p.sx+L,p.sy); G.stroke();
+      arrowHead(p.sx+L,p.sy,0,9,'#4aa3ff');
+      G.fillStyle='#bfe4ff'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='left'; G.textBaseline='bottom';
+      G.fillText('v布='+vc.toFixed(1), p.sx, p.sy-5);
+    }
+    if(vb>0.05){
+      const p=P(sc,left+SB*0.5, (Dd+SB)/2+0.2, HB*0.6);
+      const L=vb*vS;
+      G.strokeStyle='#2fd0bb'; G.lineWidth=3.2;
+      G.beginPath(); G.moveTo(p.sx,p.sy); G.lineTo(p.sx+L,p.sy); G.stroke();
+      arrowHead(p.sx+L,p.sy,0,9,'#2fd0bb');
+      G.fillStyle='#aef3e8'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='left'; G.textBaseline='bottom';
+      G.fillText('v块='+vb.toFixed(1), p.sx, p.sy-5);
+      G.textBaseline='alphabetic';
+    }
+
+    // 尺寸线 距桌边 d（物块右缘 → 桌右缘），画在桌面前下方
+    const yDim = tB.sy + 40;
+    const gE = gapEdge(tau);
+    if(gE > 0.02 || willFall()){
+      dimH(sc, tB.sx, P(sc,rightNow,0,0).sx, yDim, '#7dffc0', 'd = '+Math.max(0,gE).toFixed(2)+' m', false, true);
+    }
+    // 尺寸线 d₁（物块左缘 → 桌布左缘），画在桌后上方
+    const yDim2 = P(sc,0,Dd,0).sy - 26;
+    const d1now = Math.max(0, S.dL - slipDisp(tau));
+    if(isSlip() && d1now > 0.01){
+      dimH(sc, P(sc,clothLeft,0,0).sx, P(sc,left,0,0).sx, yDim2, '#ffb347', 'd₁ = '+d1now.toFixed(2)+' m', true, false);
+    }
+  }
+
+  function dimH(sc,x1,x2,y,color,label,above,down){
+    G.strokeStyle=color; G.lineWidth=1.7;
+    G.beginPath(); G.moveTo(x1,y); G.lineTo(x2,y); G.stroke();
+    if(Math.abs(x2-x1)>12){
+      arrowHead(x2,y,0,6,color); arrowHead(x1,y,Math.PI,6,color);
+    }
+    // 竖直引线
+    G.setLineDash([3,3]); G.lineWidth=1; G.strokeStyle=color;
+    if(down){ const yTop=P(sc,0,0,0).sy;
+              G.beginPath(); G.moveTo(x1,yTop); G.lineTo(x1,y-6); G.stroke();
+              G.beginPath(); G.moveTo(x2,yTop); G.lineTo(x2,y-6); G.stroke(); }
+    G.setLineDash([]);
+    G.fillStyle=color; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='center'; G.textBaseline= above?'bottom':'top';
+    G.fillText(label,(x1+x2)/2, above? y-6 : y+6);
+    G.textBaseline='alphabetic';
+  }
+
+  function drawScene(sc, tau){
+    drawTable(sc);
+    drawCloth(sc, tau);
+    drawBlock(sc, tau);
+    drawIndicators(sc, tau);
+  }
+
+  function drawHud(sc, st, tau){
+    G.fillStyle='#eaf1ff'; G.font='800 19px "Microsoft YaHei",sans-serif';
+    G.textAlign='left'; G.textBaseline='alphabetic';
+    G.fillText('抽桌面布 · 物块会掉下桌吗', 24, 36);
+    G.fillStyle='rgba(150,180,220,.6)'; G.font='12.5px "Microsoft YaHei",sans-serif';
+    G.fillText('猛抽桌布，物块靠惯性"留在原地"——比的是 μmg 与 ma（g 取 10 m/s²）', 24, 58);
+
+    const txt = st.txt;
+    G.font='700 13.5px "Microsoft YaHei",sans-serif';
+    const tw = G.measureText(txt).width;
+    const bw = tw + 44, bh = 32, bx = W - bw - 22, by = 20;
+    G.fillStyle='rgba(10,18,36,.55)';
+    rr(bx,by,bw,bh,16); G.fill();
+    G.strokeStyle=st.col; G.lineWidth=1.6; rr(bx,by,bw,bh,16); G.stroke();
+    G.fillStyle=st.col; G.beginPath(); G.arc(bx+19, by+bh/2, 6, 0, Math.PI*2); G.fill();
+    G.fillStyle=st.col; G.textAlign='left'; G.textBaseline='middle';
+    G.fillText(txt, bx+33, by+bh/2+0.5);
+    G.textBaseline='alphabetic';
+  }
+
+  // ---- 文字自动换行 ----
+  function wrapText(text, x, y, maxW, lh){
+    G.textAlign='left'; G.textBaseline='alphabetic';
+    let line='', yy=y;
+    for(const ch of text){
+      const test = line+ch;
+      if(G.measureText(test).width > maxW && line){ G.fillText(line, x, yy); line=ch; yy+=lh; }
+      else line = test;
+    }
+    if(line) G.fillText(line, x, yy);
+  }
+
+  // ---- v–t 图像 ----
+  function drawVtGraph(sc){
+    const gx=22, gy=sc.sceneH, gw=W-44, gh=Math.round((H-sc.sceneH)*0.62);
+    G.fillStyle='rgba(11,20,40,.72)'; rr(gx,gy,gw,gh,12); G.fill();
+    G.strokeStyle='rgba(140,170,210,.30)'; G.lineWidth=1; rr(gx,gy,gw,gh,12); G.stroke();
+
+    const padL=54, padR=18, padT=30, padB=30;
+    const x0=gx+padL, y0=gy+gh-padB, x1=gx+gw-padR, y1=gy+padT;
+    const Tmax = Math.max(0.3, Tend());
+    const vMax = Math.max(vCloth(Tmax), 6)*1.08;
+    const TX = t => x0 + (t/Tmax)*(x1-x0);
+    const VY = v => y0 - (v/vMax)*(y0-y1);
+
+    G.fillStyle='#cfe0f5'; G.font='700 13px "Microsoft YaHei",sans-serif';
+    G.textAlign='left'; G.textBaseline='top';
+    G.fillText('桌布与物块的速度—时间图像  v – t', gx+14, gy+12);
+
+    G.strokeStyle='rgba(140,170,210,.13)'; G.lineWidth=1;
+    const nt=5, nv=4;
+    for(let i=0;i<=nt;i++){ const xx=x0+(x1-x0)*i/nt; G.beginPath(); G.moveTo(xx,y1); G.lineTo(xx,y0); G.stroke(); }
+    for(let i=0;i<=nv;i++){ const yy=y0-(y0-y1)*i/nv; G.beginPath(); G.moveTo(x0,yy); G.lineTo(x1,yy); G.stroke(); }
+
+    // 关键时刻竖线：分离 / 停下 / 掉落
+    if(isSlip()){
+      if(tSep() <= Tmax){
+        const xs=TX(tSep());
+        G.strokeStyle='rgba(255,179,71,.9)'; G.setLineDash([5,4]); G.lineWidth=1.6;
+        G.beginPath(); G.moveTo(xs,y1); G.lineTo(xs,y0); G.stroke(); G.setLineDash([]);
+        G.fillStyle='#ffd79b'; G.font='700 12px "Microsoft YaHei",sans-serif';
+        G.textAlign='center'; G.textBaseline='bottom';
+        G.fillText('分离 '+tSep().toFixed(2)+'s', xs, y1+15);
+      }
+      if(willFall() && tEdge() <= Tmax){
+        const xf=TX(tEdge());
+        G.strokeStyle='rgba(255,91,74,.9)'; G.setLineDash([5,4]); G.lineWidth=1.6;
+        G.beginPath(); G.moveTo(xf,y1); G.lineTo(xf,y0); G.stroke(); G.setLineDash([]);
+        G.fillStyle='#ff8b7a'; G.font='700 12px "Microsoft YaHei",sans-serif';
+        G.textAlign='center'; G.textBaseline='bottom';
+        G.fillText('掉落 '+tEdge().toFixed(2)+'s', xf, y1+15);
+      } else if(success() && tRest() <= Tmax){
+        const xr=TX(tRest());
+        G.strokeStyle='rgba(47,208,187,.9)'; G.setLineDash([5,4]); G.lineWidth=1.6;
+        G.beginPath(); G.moveTo(xr,y1); G.lineTo(xr,y0); G.stroke(); G.setLineDash([]);
+        G.fillStyle='#aef3e8'; G.font='700 12px "Microsoft YaHei",sans-serif';
+        G.textAlign='center'; G.textBaseline='bottom';
+        G.fillText('停下 '+tRest().toFixed(2)+'s', xr, y1+15);
+      }
+    } else {
+      const xf=TX(Math.min(tFall(),Tmax));
+      G.strokeStyle='rgba(255,91,74,.9)'; G.setLineDash([5,4]); G.lineWidth=1.6;
+      G.beginPath(); G.moveTo(xf,y1); G.lineTo(xf,y0); G.stroke(); G.setLineDash([]);
+      G.fillStyle='#ff8b7a'; G.font='700 12px "Microsoft YaHei",sans-serif';
+      G.textAlign='center'; G.textBaseline='bottom';
+      G.fillText('掉落 '+tFall().toFixed(2)+'s', xf, y1+15);
+    }
+
+    // 坐标轴
+    G.strokeStyle='rgba(216,230,248,.95)'; G.lineWidth=1.8;
+    G.beginPath(); G.moveTo(x0,y1); G.lineTo(x0,y0); G.lineTo(x1,y0); G.stroke();
+    arrowHead(x0, y1, -Math.PI/2, 7, 'rgba(216,230,248,.95)');
+    arrowHead(x1, y0, 0, 7, 'rgba(216,230,248,.95)');
+
+    G.fillStyle='rgba(195,215,240,1)'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='right'; G.textBaseline='middle';
+    G.fillText(vMax.toFixed(0), x0-8, VY(vMax));
+    G.fillText('0', x0-8, VY(0));
+    G.save(); G.translate(gx+15, (y0+y1)/2); G.rotate(-Math.PI/2);
+    G.textAlign='center'; G.fillText('v / (m·s⁻¹)', 0, 0); G.restore();
+    G.textAlign='center'; G.textBaseline='top';
+    G.fillText('0', x0, y0+6);
+    G.textAlign='right'; G.fillText('t / s', x1, y0+6);
+    G.fillStyle='rgba(170,195,230,.8)'; G.font='11px "Microsoft YaHei",sans-serif';
+    for(let i=0;i<=nt;i++){ G.textAlign='center'; G.fillText((Tmax*i/nt).toFixed(2), x0+(x1-x0)*i/nt, y0+6); }
+
+    function curve(fn,color){
+      G.strokeStyle=color; G.lineWidth=2.6; G.beginPath();
+      const N=160;
+      for(let i=0;i<=N;i++){ const tt=Tmax*i/N; const xx=TX(tt), yy=VY(Math.max(0,fn(tt)));
+        if(i===0) G.moveTo(xx,yy); else G.lineTo(xx,yy); }
+      G.stroke();
+    }
+    curve(t=>vCloth(t), '#4aa3ff');
+    curve(t=>vBlock(t), '#2fd0bb');
+
+    // 当前游标
+    const tc=Math.min(Math.max(0,simT()), Tmax);
+    const xc2=TX(tc);
+    G.strokeStyle='rgba(255,255,255,.55)'; G.setLineDash([4,3]); G.lineWidth=1.4;
+    G.beginPath(); G.moveTo(xc2,y1); G.lineTo(xc2,y0); G.stroke(); G.setLineDash([]);
+    function dot(v,color){ const yy=VY(Math.max(0,v));
+      G.fillStyle=color; G.beginPath(); G.arc(xc2,yy,4,0,Math.PI*2); G.fill();
+      G.strokeStyle='#0b1430'; G.lineWidth=1.5; G.stroke(); }
+    dot(vCloth(tc),'#4aa3ff'); dot(vBlock(tc),'#2fd0bb');
+    G.fillStyle='rgba(255,255,255,.92)'; G.font='700 11.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='center'; G.textBaseline='top'; G.fillText('t='+tc.toFixed(2), xc2, y1-3);
+
+    // 图例
+    const lx=Math.min(x1-150, x0+96), ly=gy+24;
+    G.font='700 12px "Microsoft YaHei",sans-serif'; G.textBaseline='middle'; G.textAlign='left';
+    G.strokeStyle='#4aa3ff'; G.lineWidth=3; G.beginPath(); G.moveTo(lx,ly); G.lineTo(lx+22,ly); G.stroke();
+    G.fillStyle='#cfe0f5'; G.fillText('桌布 v布', lx+28, ly);
+    G.strokeStyle='#2fd0bb'; G.beginPath(); G.moveTo(lx,ly+18); G.lineTo(lx+22,ly+18); G.stroke();
+    G.fillStyle='#cfe0f5'; G.fillText('物块 v块', lx+28, ly+18);
+  }
+
+  // ---- 底部信息条 ----
+  function drawInfoRow(sc){
+    const bx=22, by=sc.sceneH+Math.round((H-sc.sceneH)*0.62)+8, bw=W-44, bh=H-by-8, lw=Math.round(bw*0.46);
+    G.fillStyle='rgba(11,20,40,.72)'; rr(bx,by,lw,bh,12); G.fill();
+    G.strokeStyle='rgba(140,170,210,.30)'; G.lineWidth=1; rr(bx,by,lw,bh,12); G.stroke();
+    G.fillStyle='#cfe0f5'; G.font='700 12.5px "Microsoft YaHei",sans-serif';
+    G.textAlign='left'; G.textBaseline='alphabetic';
+    G.fillText('物块位移 X  与  到桌边距离 d', bx+14, by+22);
+
+    const xbMaxV = xRest();
+    const labW=84, barX=bx+14+labW, barW=lw-14-labW-72, rowH=18;
+    const yd=by+40, ys=by+62;
+    const mx=Math.max(xbMaxV, S.dE, 1e-3);
+    function mbar(y,val,col,label,valT){
+      G.fillStyle='rgba(255,255,255,.09)'; rr(barX,y,barW,rowH-6,4); G.fill();
+      const w=Math.max(0,Math.min(barW, val/mx*barW));
+      G.fillStyle=col; rr(barX,y,w,rowH-6,4); G.fill();
+      G.fillStyle='rgba(214,228,246,.9)'; G.font='11.5px "Microsoft YaHei",sans-serif';
+      G.textAlign='right'; G.textBaseline='middle';
+      G.fillText(label, barX-8, y+(rowH-6)/2);
+      G.textAlign='left'; G.fillStyle=col; G.font='700 12px "Microsoft YaHei",sans-serif';
+      G.fillText(valT, barX+w+8, y+(rowH-6)/2);
+    }
+    mbar(yd, S.dE, '#0fa36b', '到桌边 d', S.dE.toFixed(2)+' m');
+    mbar(ys, xbMaxV, (success()?'#2fd0bb':'#ff5b4a'), '物块位移 X', xbMaxV.toFixed(2)+' m');
+    const xd=barX+Math.min(barW, S.dE/mx*barW);
+    G.strokeStyle='rgba(125,255,192,.85)'; G.setLineDash([4,3]); G.lineWidth=1.3;
+    G.beginPath(); G.moveTo(xd, yd-3); G.lineTo(xd, ys+rowH-4); G.stroke(); G.setLineDash([]);
+
+    const rx=bx+lw+16, rw=bw-lw-16;
+    G.fillStyle='rgba(11,20,40,.72)'; rr(rx,by,rw,bh,12); G.fill();
+    G.strokeStyle='rgba(140,170,210,.30)'; G.lineWidth=1; rr(rx,by,rw,bh,12); G.stroke();
+    let txt, col;
+    if(!isSlip()){ txt='μg ≥ a：无相对滑动，物块随桌布一起被拖离桌面 → 掉落'; col='#ff8b7a'; }
+    else if(willFall()){ txt='X ≥ d：物块被拖过 '+xbMaxV.toFixed(2)+' m ≥ 桌边 '+S.dE.toFixed(2)+' m → 掉落'; col='#ff8b7a'; }
+    else { txt='X < d：抽出时物块仅移 '+xbMaxV.toFixed(2)+' m < 桌边 '+S.dE.toFixed(2)+' m → 留在桌面'; col='#7dffc0'; }
+    G.fillStyle=col; G.font='700 13.5px "Microsoft YaHei",sans-serif'; G.textBaseline='middle';
+    wrapText(txt, rx+16, by+bh/2 - 8, rw-32, 19);
+  }
+
+  // ================= 读数 =================
+  function updateReadout(){
+    const tau = simT();
+    const st = statusInfo();
+    document.getElementById('vdDot').style.background = st.col;
+    const vb = document.getElementById('vdBox');
+    vb.style.background = st.col==='#ff5b4a' ? 'rgba(224,83,26,.12)' : (st.col==='#ffb347' ? 'rgba(255,179,71,.14)' : 'rgba(15,163,107,.12)');
+    vb.style.color = st.col==='#ff5b4a' ? '#c8401a' : (st.col==='#ffb347' ? '#a06400' : '#0b7c51');
+    document.getElementById('vdTxt').textContent = (S.t<0?'就绪 | ':'') + st.txt;
+
+    document.getElementById('rt').textContent  = tau.toFixed(2)+' s';
+    document.getElementById('rvc').textContent = vCloth(tau).toFixed(1)+' m/s';
+    document.getElementById('rvb').textContent = vBlock(tau).toFixed(1)+' m/s';
+    document.getElementById('rvr').textContent = vRel(tau).toFixed(1)+' m/s';
+    document.getElementById('rsl').textContent = slipDisp(tau).toFixed(2)+' m';
+    document.getElementById('rgap').textContent= gapEdge(tau).toFixed(2)+' m';
+    document.getElementById('rsep').textContent= !isSlip()? '无' : (willFall()? '—' : (isSep(tau)?'是':'否'));
+    document.getElementById('rcrit').textContent = muG().toFixed(1)+' / '+S.a.toFixed(1);
+    document.getElementById('rtip').textContent =
+      '物块最大加速度 μg = '+muG().toFixed(1)+' m/s²，桌布加速度 a = '+S.a.toFixed(1)+' m/s²；'
+      + (isSlip() ? 'μmg 不足以带动物块，桌布从物块下滑出。' : 'μmg 足以带动物块，无相对滑动。');
+
+    const tl = document.getElementById('tl');
+    const te = Tend();
+    tl.min = (-TAU_PRE).toFixed(2); tl.max = te.toFixed(2);
+    if(document.activeElement !== tl) tl.value = Math.max(-TAU_PRE, Math.min(te, S.t)).toFixed(2);
+    document.getElementById('tlv').textContent = S.t.toFixed(2)+' s';
+  }
+
+  // ================= 主循环 =================
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05, (now-last)/1000); last = now;
+    if(S.running){
+      S.t += dt*S.speed*SLOW;
+      if(S.t >= Tend()){ S.t = Tend(); S.running = false; syncPlay(); }
+    }
+    draw();
+    updateReadout();
+    requestAnimationFrame(frame);
+  }
+  function syncPlay(){ document.getElementById('play').textContent = S.running ? '⏸ 暂停' : '▶ 播放'; }
+
+  // ================= 交互 =================
+  function fmt(k){
+    if(k==='a')  return S.a.toFixed(1)+' m/s²';
+    if(k==='mu') return S.mu.toFixed(2);
+    if(k==='dE') return S.dE.toFixed(2)+' m';
+    if(k==='dL') return S.dL.toFixed(2)+' m';
+    return '';
+  }
+  function softReset(){ S.t = -TAU_PRE; S.running = true; syncPlay(); }
+
+  ['a','mu','dE','dL'].forEach(k=>{
+    const el = document.getElementById(k);
+    el.addEventListener('input', ()=>{
+      S[k] = parseFloat(el.value);
+      document.getElementById(k+'v').textContent = fmt(k);
+      softReset();
+    });
+  });
+  document.getElementById('spd').addEventListener('input', e=>{
+    S.speed = parseFloat(e.target.value);
+    document.getElementById('spdv').textContent = S.speed.toFixed(1)+'×';
+  });
+  document.getElementById('tl').addEventListener('input', e=>{
+    S.t = parseFloat(e.target.value);
+    S.running = false; syncPlay();
+  });
+  document.getElementById('play').addEventListener('click', ()=>{
+    if(!S.running && S.t >= Tend()-1e-6) S.t = -TAU_PRE;
+    S.running = !S.running; syncPlay();
+  });
+  document.getElementById('reset').addEventListener('click', ()=>{
+    S.t = -TAU_PRE; S.running = true;
+    document.getElementById('spd').value = 1; S.speed = 1;
+    document.getElementById('spdv').textContent = '1.0×';
+    const def=[10,0.40,0.90,0.90];
+    ['a','mu','dE','dL'].forEach((k,i)=>{
+      S[k]=def[i];
+      const el=document.getElementById(k); el.value=def[i];
+      document.getElementById(k+'v').textContent = fmt(k);
+    });
+    syncPlay();
+  });
+  document.querySelectorAll('button.step').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const tv = b.dataset.t;
+      if(tv === undefined) return;
+      S.t = (parseFloat(tv) === 99) ? Tend() : parseFloat(tv);
+      S.running = false; syncPlay();
+    });
+  });
+  document.getElementById('btnSep').addEventListener('click', ()=>{
+    if(isSlip() && !willFall()) S.t = tSep();
+    else if(willFall()) S.t = tFall();
+    else S.t = Tend();
+    S.running = false; syncPlay();
+  });
+
+  resize();
+  if(window.__COVER){
+    const panel = document.getElementById('panel'); if(panel) panel.style.display='none';
+    const stg = document.getElementById('stage'); if(stg){ stg.style.position='fixed'; stg.style.inset='0'; stg.style.zIndex='5'; }
+    S.t = isSlip() ? tSep()*1.15 : tFall()*0.9;   // 冻结于物块滑上裸桌面精彩帧
+    S.running = false; syncPlay();
+    window.__coverReady = true;
+  }
+  syncPlay();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
