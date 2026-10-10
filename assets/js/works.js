@@ -3884,6 +3884,12 @@ const WORKS = [
       desc:"2026 高考重庆卷 T15（16 分）：导轨导体棒接滑动变阻器，外力 F 随动能 Ek 分段变化（Ek<2 J 时 F=3Ek+1，Ek≥2 J 时 F=7 N）；求安培力、稳定速度与合外力做功，以及存在两个稳定速度时的变阻器阻值，含零JS三页式动画与折叠解题。",
       icon:"📐", cover:"assets/img/cq15-cover.png", link:"solutions/cq15_threepage.html", date:"2026-10-10", tag:"电磁感应·导轨变阻器"
     }
+,
+      {
+      type:"solve", title:"储能器与导轨单杆电路（2026 高考·湖南卷）",
+      desc:"2026 高考湖南卷 T14（14 分）：储能器（U=kq）与导轨单杆电路，开关 S 接 a/b/c 三种工况——直连电源求初加速度、接入储能器充电求末速度、与定值电阻成回路求棒上焦耳热，含零JS三页式动画与折叠解题。",
+      icon:"📐", cover:"assets/img/hn-cover.png", link:"solutions/hn_threepage.html", date:"2026-10-10", tag:"电磁感应·储能器单杆"
+    }
 ];
 
 
