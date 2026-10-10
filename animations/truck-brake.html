@@ -126,12 +126,14 @@
   const cv = document.getElementById('cv');
   const G  = cv.getContext('2d');
   let W=0, H=0, DPR=1;
+  window.__COVER = (location.search.indexOf('cover=1') >= 0);
 
   function resize(){
-    const r = cv.parentElement.getBoundingClientRect();
     DPR = Math.min(window.devicePixelRatio||1, 2);
-    W = r.width; H = r.height;
+    if(window.__COVER){ W=900; H=506; }
+    else { const r = cv.parentElement.getBoundingClientRect(); W=r.width; H=r.height; }
     cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+    cv.style.width = W+'px'; cv.style.height = H+'px';
     G.setTransform(DPR,0,0,DPR,0,0);
   }
   window.addEventListener('resize', resize);
@@ -246,7 +248,8 @@
 
   // ================= 场景常量 / 布局 =================
   function geom(){
-    const sceneH = Math.round(H*0.52);             // 场景（动画）高度
+    const COVER = window.__COVER;
+    const sceneH = Math.round(COVER ? H : H*0.52);             // 封面模式：场景占满整幅
     const topM = 8, arrowTopM = 4.57, roadBottomPx = 84;  // 路面以下延伸
     // 由场景高度决定最大比例，保证整辆车+速度箭头+路面纹理都在场景内
     const scH = (sceneH - topM - roadBottomPx) / arrowTopM;
@@ -269,6 +272,25 @@
   }
 
   // ================= 主绘制 =================
+  // ---- 封面模式：主题化渐变背景 + 微弱网格 + 地平线辉光 ----
+  function coverBackground(c,w,h){
+    const g=c.createLinearGradient(0,0,0,h);
+    g.addColorStop(0,'#173a66'); g.addColorStop(0.55,'#0c1b34'); g.addColorStop(1,'#05080f');
+    c.fillStyle=g; c.fillRect(0,0,w,h);
+    const gy=h*0.60;
+    const glow=c.createLinearGradient(0,gy-80,0,gy);
+    glow.addColorStop(0,'rgba(255,176,96,0)'); glow.addColorStop(1,'rgba(255,176,96,.18)');
+    c.fillStyle=glow; c.fillRect(0,gy-80,w,80);
+    c.lineWidth=1; c.strokeStyle='rgba(150,195,240,.045)';
+    for(let x=0;x<=w;x+=40){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,h); c.stroke(); }
+    for(let y=0;y<=h;y+=40){ c.beginPath(); c.moveTo(0,y); c.lineTo(w,y); c.stroke(); }
+  }
+  function coverVignette(c,w,h){
+    const g=c.createRadialGradient(w*0.5,h*0.5,Math.min(w,h)*0.30, w*0.5,h*0.5, Math.max(w,h)*0.74);
+    g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.46)');
+    c.fillStyle=g; c.fillRect(0,0,w,h);
+  }
+
   function draw(){
     const g = geom();
     const t = simT();
@@ -276,19 +298,25 @@
     const st = statusInfo();
 
     G.clearRect(0,0,W,H);
-    const bg = G.createLinearGradient(0,0,0,H);
-    bg.addColorStop(0,'#0a1230'); bg.addColorStop(1,'#0a1024');
-    G.fillStyle = bg; G.fillRect(0,0,W,H);
+    if(window.__COVER){ coverBackground(G,W,H); }
+    else {
+      const bg = G.createLinearGradient(0,0,0,H);
+      bg.addColorStop(0,'#0a1230'); bg.addColorStop(1,'#0a1024');
+      G.fillStyle = bg; G.fillRect(0,0,W,H);
+    }
 
     drawSky(g);
     drawRoad(g, t);
     drawVehicle(g, t, dsv);
     drawIndicators(g, t, dsv);
     drawFlash(g, t);
-    drawHud(g, st, t);
-    drawVtGraph(g);
-    drawInfoRow(g);
+    if(!window.__COVER){
+      drawHud(g, st, t);
+      drawVtGraph(g);
+      drawInfoRow(g);
+    }
     drawWatermark();
+    if(window.__COVER) coverVignette(G,W,H);
   }
 
   function drawSky(g){
@@ -813,6 +841,13 @@
   });
 
   resize();
+  if(window.__COVER){
+    const panel = document.getElementById('panel'); if(panel) panel.style.display='none';
+    const stg = document.getElementById('stage'); if(stg){ stg.style.position='fixed'; stg.style.inset='0'; stg.style.zIndex='5'; }
+    S.t = willHit() ? tCollide()*0.82 : TAU_BRAKE*0.5;   // 冻结于相对滑动精彩帧
+    S.running = false; syncPlay();
+    window.__coverReady = true;
+  }
   syncPlay();
   requestAnimationFrame(frame);
 })();
