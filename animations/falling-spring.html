@@ -231,6 +231,7 @@ table.ro td.ph{color:var(--gold);font-weight:700}
 <script>
 (function(){
 'use strict';
+const COVER = (location.search && location.search.indexOf('cover=1')>=0);
 const TAU = Math.PI*2;
 const $ = function(id){ return document.getElementById(id); };
 
@@ -535,7 +536,18 @@ function drawCoil(G,cx,yTop,yBot,amp,turns,wob){
 function draw(){
   const st = stateOf(S.idx, S.lt), P = S.P;
   G.clearRect(0,0,W,H);
-  G.fillStyle = '#0a0e1a'; G.fillRect(0,0,W,H);   // 不透明底色：确保任意浏览器合成下都可见
+  if(COVER){
+    // 主题化深蓝青渐变背景（与红球/青弹簧互补）+ 中心聚光
+    const bg = G.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0,'#0a2233'); bg.addColorStop(0.55,'#07192a'); bg.addColorStop(1,'#04111d');
+    G.fillStyle = bg; G.fillRect(0,0,W,H);
+    const fx=W*0.42, fy=H*0.46;
+    const fg=G.createRadialGradient(fx,fy,10, fx,fy, Math.max(W,H)*0.62);
+    fg.addColorStop(0,'rgba(46,140,150,.42)'); fg.addColorStop(0.5,'rgba(28,86,120,.20)'); fg.addColorStop(1,'rgba(20,60,90,0)');
+    G.fillStyle=fg; G.fillRect(0,0,W,H);
+  } else {
+    G.fillStyle = '#0a0e1a'; G.fillRect(0,0,W,H);   // 不透明底色：确保任意浏览器合成下都可见
+  }
   const cx = ox, gy = Y(0), rb = RB*sc;
   // 背景网格
   if(S.showGrid){
@@ -674,6 +686,12 @@ function draw(){
   }
 
   wm(G,W,H);
+  if(COVER){
+    // 四角暗角，提升封面质感
+    const vg = G.createRadialGradient(W*0.5,H*0.5, Math.min(W,H)*0.30, W*0.5,H*0.5, Math.max(W,H)*0.72);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.42)');
+    G.fillStyle=vg; G.fillRect(0,0,W,H);
+  }
 }
 
 /* ============ 图 1：F – s ============ */
@@ -924,14 +942,30 @@ function frame(ts){
 function resizeAll(){
   const cv = $('cv');
   if(cv){
-    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
-    W = Math.max(150, cv.clientWidth); H = Math.max(150, cv.clientHeight);
-    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
-    G = cv.getContext('2d'); G.setTransform(dpr,0,0,dpr,0,0);
-    oy = H - Math.max(18, H*0.055);
-    ox = Math.round(W*0.40);
-    sc = Math.max(20, (oy-16)/1.6);
-    setView();
+    if(COVER){
+      // 封面模式：固定 900×506，隐藏图区与控件
+      const st = cv.parentElement; if(st) st.style.padding='0';
+      cv.style.display='block'; cv.style.margin='0 auto';
+      let cs = document.getElementById('__coverCss');
+      if(!cs){ cs=document.createElement('style'); cs.id='__coverCss'; document.head.appendChild(cs); }
+      cs.textContent='.col-graphs,.col-ctrl{display:none!important}.card.stage{padding:0!important}';
+      W = 900; H = 506;
+      cv.width = W; cv.height = H;
+      cv.style.width = W+'px'; cv.style.height = H+'px';
+      G = cv.getContext('2d'); G.setTransform(1,0,0,1,0,0);
+      ox = Math.round(W*0.52);
+      oy = Math.round(H*0.84);        // 地面靠下
+      sc = 430;                      // 放大：弹簧+小球充满画面（封面特写）
+    } else {
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+      W = Math.max(150, cv.clientWidth); H = Math.max(150, cv.clientHeight);
+      cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+      G = cv.getContext('2d'); G.setTransform(dpr,0,0,dpr,0,0);
+      oy = H - Math.max(18, H*0.055);
+      ox = Math.round(W*0.40);
+      sc = Math.max(20, (oy-16)/1.6);
+      setView();
+    }
   }
   [['cvF','F'],['cvV','V']].forEach(function(p){
     const c = $(p[0]); if(!c) return;
@@ -971,9 +1005,18 @@ function rebuild(){ buildSegs(); }
 let lastTs = 0;
 buildSegs();
 resizeAll();
-bindUI();
-window.addEventListener('resize', resizeAll);
-requestAnimationFrame(frame);
+if(COVER){
+  // 冻结于「首次接触 · 弹簧被压缩」的精彩帧（力矢量 + 压缩弹簧最丰富）
+  const ci = S.segs.findIndex(function(s){ return s.ty==='contact'; });
+  if(ci>=0){ S.idx = ci; S.lt = S.segs[ci].tc*0.5; S.t = S.segs[ci].t0 + S.lt; }
+  S.run = false;
+  draw();
+  window.__coverReady = true;
+} else {
+  bindUI();
+  window.addEventListener('resize', resizeAll);
+  requestAnimationFrame(frame);
+}
 })();
 </script>
 </body>
