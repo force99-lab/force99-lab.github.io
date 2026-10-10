@@ -3872,6 +3872,12 @@ const WORKS = [
       desc:"六个等质量小球，球①自由出发与②弹性碰撞交换速度；②—③经轻弹簧耦合后③再与⑤交换速度，⑤带动④⑥。演示轻弹簧传递速度与等质量弹性碰撞速度交换。",
       icon:"🎬", cover:"assets/img/spring-collision-cover.png", link:"animations/spring-collision.html", date:"2026-10-09", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"匀强电场等速率椭圆曲线",
+      desc:"2026年重庆高考物理第10题。带电粒子在匀强电场中做类平抛运动，速率相同的点连成椭圆族，求电场强度、M与N两点电势差、初速度与运动时间之比，答案为A、B。",
+      icon:"📐", cover:"assets/img/p10-cover.png", link:"solutions/p10_threepage.html", date:"2026-10-10", tag:"电场"
+    }
 ];
 
 
