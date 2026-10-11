@@ -3896,6 +3896,12 @@ const WORKS = [
       desc:"长桌布以加速度a抽出，物块与桌布摩擦因数μ、离桌边距离dE、与布左缘距离dL。判定物块是否随布滑动、是否在裸桌面减速停下而不掉落，附v–t图。",
       icon:"🎬", cover:"assets/img/tablecloth-cover.png", link:"animations/tablecloth.html", date:"2026-10-10", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"反射式飞行时间质谱仪（2026 高考·河南卷）",
+      desc:"2026 高考河南卷 T14（14 分）：反射式飞行时间质谱仪——离子经加速电场 U₁ 加速、无场区飞行后进入与 AB 成 θ 角的反射电场 U₂，证明所有离子从同一点射出、垂直位移与比荷无关，并由飞行时间比 τ₁/τ₂=2/3 求质量比 α₁/α₂=9/4，含零JS三页式动画与折叠解题。",
+      icon:"📐", cover:"assets/img/henan14-tofms-cover.png", link:"solutions/henan14_threepage.html", date:"2026-10-11", tag:"电场·加速与偏转"
+    }
 ];
 
 
