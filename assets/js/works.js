@@ -3902,6 +3902,12 @@ const WORKS = [
       desc:"2026 高考河南卷 T14（14 分）：反射式飞行时间质谱仪——离子经加速电场 U₁ 加速、无场区飞行后进入与 AB 成 θ 角的反射电场 U₂，证明所有离子从同一点射出、垂直位移与比荷无关，并由飞行时间比 τ₁/τ₂=2/3 求质量比 α₁/α₂=9/4，含零JS三页式动画与折叠解题。",
       icon:"📐", cover:"assets/img/henan14-tofms-cover.png", link:"solutions/henan14_threepage.html", date:"2026-10-11", tag:"电场·加速与偏转"
     }
+,
+      {
+      type:"animation", title:"力的动态平衡 · 五类模型图解",
+      desc:"五种模型图解力的动态平衡：动态三角形、相似三角形、矢量圆、衣架模型与挡板转动，实时展示力的矢量变化与临界规律。",
+      icon:"📐", cover:"assets/img/force-equilibrium-cover.png", link:"animations/force-equilibrium.html", date:"2026-10-16", tag:"力学"
+    }
 ];
 
 
