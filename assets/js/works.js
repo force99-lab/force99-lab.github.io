@@ -3926,6 +3926,12 @@ const WORKS = [
       desc:"2026 甘肃高考 第13题（10分）：汽缸+弹簧+理想气体，水平初态到倾斜30度等温压缩再到加热回原长，求劲度系数与末态压强温度",
       icon:"📐", cover:"assets/img/gs13-cover.png", link:"solutions/gs13_threepage.html", date:"2026-10-18", tag:"热学"
     }
+,
+      {
+      type:"animation", title:"示波器原理 · 真三维动态演示",
+      desc:"真三维动态演示示波器工作原理：电子经加速电场获得速度，再由水平与竖直偏转电场控制打在荧光屏上，实时绘出 X 扫描与 Y 信号合成的波形，并配相似三角形与电压—时间图。",
+      icon:"🎬", cover:"assets/img/oscilloscope-3d-cover.png", link:"animations/oscilloscope-3d.html", date:"2026-10-18", tag:"电学"
+    }
 ];
 
 
