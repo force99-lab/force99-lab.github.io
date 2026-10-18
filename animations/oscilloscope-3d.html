@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>示波器原理 · 真三维动态演示</title>
+<style>
+  :root{
+    --bg:#0a1024; --panel:#0c1730; --line:#1d3a5f; --txt:#dbe7ff; --sub:#8fb0d6;
+    --blue:#4aa3ff; --teal:#5fd0c8; --amber:#ffb347; --red:#ff6a5a; --green:#57f0a8; --cyan:#7fe6ff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    display:flex;overflow:hidden;-webkit-font-smoothing:antialiased}
+  #stage{flex:1;position:relative;min-width:0;background:#070d1c}
+  #cv{display:block;width:100%;height:100%;cursor:grab}
+  #cv.drag{cursor:grabbing}
+  #hint{position:absolute;left:14px;top:12px;font-size:12px;color:#6f8db4;
+    background:rgba(8,16,32,.6);padding:5px 10px;border-radius:6px;pointer-events:none}
+  #panel{width:38%;max-width:452px;min-width:340px;height:100%;overflow-y:auto;
+    background:linear-gradient(180deg,#0c1730,#0a1224);border-left:1px solid var(--line);padding:14px 16px}
+  #panel h2{font-size:14px;margin:0 0 10px;color:#eaf2ff;font-weight:600;
+    display:flex;align-items:center;gap:7px}
+  #panel h2::before{content:"";width:4px;height:15px;background:var(--teal);border-radius:2px}
+  .card{background:rgba(255,255,255,.028);border:1px solid var(--line);
+    border-radius:12px;padding:13px 14px;margin-bottom:13px}
+  .row{display:flex;align-items:center;gap:10px;margin:9px 0}
+  .lbl{font-size:12.5px;color:var(--sub);min-width:46px}
+  .seg{display:flex;gap:6px;flex:1}
+  .seg button{flex:1;padding:6px 0;border:1px solid #2a4a6a;background:#0e1a30;color:#9fc0e0;
+    border-radius:7px;cursor:pointer;font-size:12.5px;transition:.14s}
+  .seg button:hover{border-color:var(--blue)}
+  .seg button.on{background:var(--blue);color:#04122b;border-color:var(--blue);font-weight:600}
+  label.sl{display:block;font-size:12.5px;color:var(--sub);margin:9px 0 3px}
+  label.sl .val{color:var(--amber);float:right;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--blue);height:20px}
+  label.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub);margin:10px 0 2px;cursor:pointer}
+  label.chk input{accent-color:var(--teal);width:15px;height:15px}
+  .btns{display:flex;gap:8px;flex-wrap:wrap}
+  .btns button,.wide,.presets button{flex:1;min-width:62px;padding:8px 0;border:1px solid #2a4a6a;
+    background:#0e1a30;color:#cfe2ff;border-radius:8px;cursor:pointer;font-size:13px;transition:.14s}
+  .btns button:hover,.wide:hover,.presets button:hover{border-color:var(--blue);background:#152744}
+  .btns button.on{background:var(--teal);color:#052a26;border-color:var(--teal);font-weight:600}
+  .wide{width:100%;margin-top:9px}
+  .presets{display:flex;gap:8px;margin-top:10px}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;
+    padding:5px 0;border-bottom:1px dashed #1a2f4d;font-size:12.5px}
+  .kv:last-child{border-bottom:none}
+  .kv span{color:var(--sub)}
+  .kv b{color:var(--green);font-weight:600;font-variant-numeric:tabular-nums}
+  .fml{font-family:"Microsoft YaHei",system-ui,sans-serif;font-size:13px;color:#102a55;
+    background:#eef4ff;border-left:3px solid #1d6fe0;border-radius:5px;
+    padding:7px 10px;margin:8px 0;line-height:1.5}
+  .fml.hl{border-left-color:#e07a1f;background:#fff5e6}
+  .tip{font-size:12px;color:#7f9cc0;margin:8px 0 0;line-height:1.6}
+  #cvS{display:block;width:100%;height:200px;border-radius:8px;background:#08111f}
+  .tag{display:inline-block;font-size:11px;color:#04122b;background:var(--teal);
+    padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="hint">左键拖拽旋转 · 滚轮缩放 · 右键拖拽平移</div>
+</div>
+
+<div id="panel">
+  <div class="card">
+    <h2>加速电压<span class="tag">从 0 起调</span></h2>
+    <label class="sl">加速电压 U_a<span class="val" id="uav">120 V</span>
+      <input id="ua" type="range" min="0" max="300" step="1" value="120"></label>
+    <div class="kv"><span>电子出射速度 v₀</span><b id="rV0">—</b></div>
+    <div class="kv"><span>偏转灵敏度 Y/U_Y ∝ 1/U_a</span><b id="rSens">—</b></div>
+  </div>
+
+  <div class="card">
+    <h2>偏转信号<span class="tag">双信号</span></h2>
+    <div class="row"><span class="lbl">Y 信号</span>
+      <div class="seg" id="ySeg">
+        <button data-v="sine" class="on">正弦</button>
+        <button data-v="scan">扫描</button>
+        <button data-v="square">方波</button>
+      </div>
+    </div>
+    <label class="sl">Y 幅值 U_ym<span class="val" id="yAv">20 V</span>
+      <input id="yA" type="range" min="0" max="40" step="1" value="20"></label>
+    <label class="sl">Y 频率 f_y<span class="val" id="yFv">1.00</span>
+      <input id="yF" type="range" min="0.2" max="3" step="0.05" value="1"></label>
+    <label class="sl">Y 初相位 φ<span class="val" id="yPv">0°</span>
+      <input id="yP" type="range" min="0" max="180" step="1" value="0"></label>
+    <div class="row" style="margin-top:12px"><span class="lbl">X 信号</span>
+      <div class="seg" id="xSeg">
+        <button data-v="scan" class="on">扫描</button>
+        <button data-v="sine">正弦</button>
+        <button data-v="square">方波</button>
+      </div>
+    </div>
+    <label class="sl">X 幅值 U_xm<span class="val" id="xAv">20 V</span>
+      <input id="xA" type="range" min="0" max="40" step="1" value="20"></label>
+    <label class="sl">X 频率 f_x<span class="val" id="xFv">0.50</span>
+      <input id="xF" type="range" min="0.2" max="3" step="0.05" value="0.5"></label>
+    <label class="chk"><input type="checkbox" id="lock" checked>
+      整步锁定（T_scan = 信号周期 × <span id="nv">2</span>）</label>
+    <div class="presets">
+      <button id="pWave">波形显示</button>
+      <button id="pLiss">李萨如</button>
+      <button id="pSquare">方波</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>相似三角形求屏上偏移<span class="tag">高考</span></h2>
+    <canvas id="cvS"></canvas>
+    <p class="tip">电子在偏转板内偏移 y_b，出板后沿直线过<b>板中点</b>打到屏上 Y；由相似三角形 y_b/(L/2)=Y/(D+L/2) 得屏上偏移。调节 U_Y / U_a 可见两三角形实时变化。</p>
+  </div>
+
+  <div class="card">
+    <h2>播放与视角</h2>
+    <div class="btns">
+      <button id="bPlay" class="on">暂停</button>
+      <button id="bReset">重置</button>
+    </div>
+    <label class="sl">电子发射率<span class="val" id="erv">24 /s</span>
+      <input id="er" type="range" min="4" max="60" step="1" value="24"></label>
+    <label class="sl">速度<span class="val" id="spv">1.0×</span>
+      <input id="sp" type="range" min="0.1" max="3" step="0.1" value="1"></label>
+    <button id="bView" class="wide">重置三维视角</button>
+  </div>
+
+  <div class="card">
+    <h2>实时物理量</h2>
+    <div class="kv"><span>U_Y（竖直板）</span><b id="rUy">0.0 V</b></div>
+    <div class="kv"><span>U_X（水平板）</span><b id="rUx">0.0 V</b></div>
+    <div class="kv"><span>屏上光点 (x, y)</span><b id="rPos">(0.0, 0.0)</b></div>
+    <div class="kv"><span>当前图形</span><b id="rType">波形（时基）</b></div>
+  </div>
+
+  <div class="card">
+    <h2>知识归纳（高考向）</h2>
+    <div class="fml">① 加速：eU_a = ½mv₀² ⇒ v₀ = √(2eU_a/m)</div>
+    <div class="fml">② 板内类平抛：y_b = ½at² = U_Y·L²/(4d·U_a)，tanθ = v_y/v₀ = U_Y·L/(2d·U_a)</div>
+    <div class="fml hl">③ 相似三角形：y_b/(L/2) = Y/(D+L/2) ⇒ Y = [L(L+2D)/(4d·U_a)]·U_Y</div>
+    <div class="fml">④ 偏转灵敏度 Y/U_Y = L(L+2D)/(4dU_a) ∝ 1/U_a；且 Y ∝ U_Y（线性）</div>
+    <div class="fml">⑤ 应用：Y 接信号、X 接锯齿扫描 → 显示波形；X、Y 均正弦 → 李萨如图形</div>
+    <p class="tip">左图电子逐个从灯丝 K 发射，经 A 加速、偏转板受力偏转后打上荧光屏；屏上绿迹即所有电子落点累积成的 (X, Y) 合成图形。</p>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var cv=$('cv'), stage=$('stage'), ctx=cv.getContext('2d');
+var cvS=$('cvS'), gs=cvS.getContext('2d');
+var W=0,H=0,Ws=0,Hs=0,dpr=1;
+function resize(){
+  dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+  W=Math.max(240,stage.clientWidth); H=Math.max(240,stage.clientHeight);
+  cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+  cv.style.width=W+'px'; cv.style.height=H+'px'; ctx.setTransform(dpr,0,0,dpr,0,0);
+  Ws=Math.max(200,cvS.clientWidth||360); Hs=200;
+  cvS.width=Math.round(Ws*dpr); cvS.height=Math.round(Hs*dpr);
+  cvS.style.width=Ws+'px'; cvS.style.height=Hs+'px'; gs.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',resize);
+
+/* ================= 三维引擎：轨道相机 + 透视投影 + 深度排序 ================= */
+var CAM0={yaw:-0.62,pitch:0.30,dist:16.5};
+var cam={yaw:CAM0.yaw,pitch:CAM0.pitch,dist:CAM0.dist,tx:0,ty:0,tz:0};
+function project(p){
+  var x=p.x-cam.tx,y=p.y-cam.ty,z=p.z-cam.tz;
+  var cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw);
+  var x1=x*cy+z*sy, z1=-x*sy+z*cy;
+  var cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
+  var y1=y*cp-z1*sp, z2=y*sp+z1*cp;
+  var depth=z2+cam.dist; if(depth<0.6)depth=0.6;
+  var f=Math.min(W,H)*1.15;
+  var cvc=H*0.40; // 整体场景上移，下方留出空间给 X/Y 信号波形
+  return {sx:W*0.5+x1/depth*f, sy:cvc-y1/depth*f, d:depth};
+}
+function P(x,y,z){return {x:x,y:y,z:z};}
+function hx(h){h=h.replace('#','');return [parseInt(h.substr(0,2),16),parseInt(h.substr(2,2),16),parseInt(h.substr(4,2),16)];}
+function shade(h,f){var c=hx(h);return 'rgb('+Math.min(255,c[0]*f|0)+','+Math.min(255,c[1]*f|0)+','+Math.min(255,c[2]*f|0)+')';}
+var LIT=(function(){var v=[0.45,0.72,0.52],n=Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);return [v[0]/n,v[1]/n,v[2]/n];})();
+function lam(nx,ny,nz){var d=nx*LIT[0]+ny*LIT[1]+nz*LIT[2];if(d<0)d=0;return 0.34+0.66*d;}
+
+var OP=[],TR=[];
+function addFace(pts,fill,stroke,lw,alpha,arr){
+  arr=arr||OP; var sp=[]; for(var i=0;i<pts.length;i++)sp.push(project(pts[i]));
+  var d=0; for(var j=0;j<sp.length;j++)d+=sp[j].d; d/=sp.length;
+  arr.push({sp:sp,fill:fill,stroke:stroke,lw:lw||1,alpha:(alpha==null?1:alpha),d:d});
+}
+function addBox(cx,cy,cz,sx,sy,sz,fill,stroke,alpha,arr){
+  var x0=cx-sx/2,x1=cx+sx/2,y0=cy-sy/2,y1=cy+sy/2,z0=cz-sz/2,z1=cz+sz/2;
+  var v=[P(x0,y0,z0),P(x1,y0,z0),P(x1,y1,z0),P(x0,y1,z0),P(x0,y0,z1),P(x1,y0,z1),P(x1,y1,z1),P(x0,y1,z1)];
+  addFace([v[4],v[5],v[6],v[7]],fill,stroke,1,alpha,arr);
+  addFace([v[0],v[1],v[2],v[3]],fill,stroke,1,alpha,arr);
+  addFace([v[3],v[2],v[6],v[7]],fill,stroke,1,alpha,arr);
+  addFace([v[0],v[1],v[5],v[4]],fill,stroke,1,alpha,arr);
+  addFace([v[1],v[2],v[6],v[5]],fill,stroke,1,alpha,arr);
+  addFace([v[0],v[3],v[7],v[4]],fill,stroke,1,alpha,arr);
+}
+function addMetalBox(cx,cy,cz,sx,sy,sz,base,arr){
+  arr=arr||OP;
+  var x0=cx-sx/2,x1=cx+sx/2,y0=cy-sy/2,y1=cy+sy/2,z0=cz-sz/2,z1=cz+sz/2;
+  var v=[P(x0,y0,z0),P(x1,y0,z0),P(x1,y1,z0),P(x0,y1,z0),P(x0,y0,z1),P(x1,y0,z1),P(x1,y1,z1),P(x0,y1,z1)];
+  function f(idx,nx,ny,nz,vert){
+    var lf=lam(nx,ny,nz);
+    var fill=vert?{c0:shade(base,Math.min(1.18,lf*1.2)),c1:shade(base,lf*0.6),vert:true}:shade(base,lf);
+    addFace(idx.map(function(i){return v[i];}),fill,shade(base,Math.min(1,lf*1.5+0.24)),1,1,arr);
+  }
+  f([4,5,6,7],0,0,1,true);  f([0,1,2,3],0,0,-1,false);
+  f([3,2,6,7],0,1,0,true);  f([0,1,5,4],0,-1,0,false);
+  f([1,2,6,5],1,0,0,false);  f([0,3,7,4],-1,0,0,false);
+}
+function addCylX(x0,x1,yc,zc,r,base,holeR,arr){
+  arr=arr||OP; var N=20,i,th;
+  function ring(xx){var a=[];for(i=0;i<N;i++){th=2*Math.PI*i/N;a.push(P(xx,yc+r*Math.cos(th),zc+r*Math.sin(th)));}return a;}
+  var r0=ring(x0),r1=ring(x1);
+  for(i=0;i<N;i++){var j=(i+1)%N,ca=Math.cos(2*Math.PI*(i+0.5)/N),sa=Math.sin(2*Math.PI*(i+0.5)/N);
+    addFace([r0[i],r0[j],r1[j],r1[i]],shade(base,lam(0,ca,sa)),shade(base,lam(0,ca,sa)*1.15),1,1,arr);}
+  addFace(r1,shade(base,1.0),shade(base,1.2),1,1,arr);
+  if(holeR){
+    var hr=[];for(i=0;i<N;i++){th=2*Math.PI*i/N;hr.push(P(x1+0.03,yc+holeR*Math.cos(th),zc+holeR*Math.sin(th)));}
+    addFace(hr,'#0a1830','#274a6e',1,1,arr);
+  }
+}
+function drawFaces(list){
+  list.sort(function(a,b){return b.d-a.d;});
+  for(var i=0;i<list.length;i++){
+    var fc=list[i],sp=fc.sp;
+    ctx.globalAlpha=fc.alpha; ctx.beginPath(); ctx.moveTo(sp[0].sx,sp[0].sy);
+    for(var j=1;j<sp.length;j++)ctx.lineTo(sp[j].sx,sp[j].sy);
+    ctx.closePath();
+    if(fc.fill){
+      if(typeof fc.fill==='object'){
+        var mny=1e9,mxy=-1e9,mnx=1e9,mxx=-1e9;
+        for(var k=0;k<sp.length;k++){if(sp[k].sy<mny)mny=sp[k].sy;if(sp[k].sy>mxy)mxy=sp[k].sy;if(sp[k].sx<mnx)mnx=sp[k].sx;if(sp[k].sx>mxx)mxx=sp[k].sx;}
+        var g=fc.fill.vert?ctx.createLinearGradient(0,mny,0,mxy):ctx.createLinearGradient(mnx,0,mxx,0);
+        g.addColorStop(0,fc.fill.c0); g.addColorStop(1,fc.fill.c1); ctx.fillStyle=g;
+      }else ctx.fillStyle=fc.fill;
+      ctx.fill();
+    }
+    if(fc.stroke){ctx.strokeStyle=fc.stroke;ctx.lineWidth=fc.lw;ctx.stroke();}
+  }
+  ctx.globalAlpha=1;
+}
+
+/* ================= 场景常量（世界坐标 X=管轴, Y=竖直, Z=水平） ================= */
+var XK=5.72, XG=5.5, XA1a=5.3,XA1b=4.9, XA2a=4.86,XA2b=4.55;
+var XX_A=3.2, XX_B=2.2, LX=1.0;         // 水平偏转板入口/出口/板长
+var YY_A=1.6, YY_B=0.6, LY=1.0;         // 竖直偏转板
+var XS=-5.5;                             // 荧光屏
+var DBZ=XX_B-XS, DBY=YY_B-XS;            // 出口到屏距离
+var SCZ=XX_A>XX_B?XX_B:XX_B;
+var HALF_Z=2.6, HALF_Y=1.95;             // 屏半宽/半高
+var PLATE=0.82;                          // 极板半间距
+var SY0=8.5, SZ0=12.0;                   // 偏转灵敏度结构常数（世界/伏@Ua=1V量纲）
+
+/* ================= 信号 ================= */
+var S={t:0,running:true,rate:1,emitRate:24,emitAcc:0,Ua:120,
+       xType:'scan',xAmp:20,xFreq:0.5, yType:'sine',yAmp:20,yFreq:1,yPhase:0,
+       lock:true,nShow:2,parts:[],trace:[]};
+function sig(type,t,amp,freq,phase){
+  var w=2*Math.PI*freq, ph0=phase||0;
+  if(type==='sine')return amp*Math.sin(w*t+ph0);
+  if(type==='square')return amp*(Math.sin(w*t+ph0)>=0?1:-1);
+  var T=1/freq, ph=(t/T)%1; if(ph<0)ph+=1; return amp*(2*ph-1);
+}
+function Ux(){return sig(S.xType,S.t,S.xAmp,xFreqEff(),0);}
+function Uy(){return sig(S.yType,S.t,S.yAmp,yFreqEff(),S.yPhase*Math.PI/180);}
+function xFreqEff(){return (S.lock&&S.xType==='scan')?S.yFreq/S.nShow:S.xFreq;}
+function yFreqEff(){return (S.lock&&S.yType==='scan')?S.xFreq/S.nShow:S.yFreq;}
+
+/* ================= 偏转与轨迹 ================= */
+function deflection(Ua,ux,uy){
+  if(Ua<=0.5)return null;
+  var Y=SY0*uy/Ua, Z=SZ0*ux/Ua;
+  var yb=Y*(LY/2)/(DBY+LY/2), zb=Z*(LX/2)/(DBZ+LX/2);
+  return {Y:Y,Z:Z,yb:yb,zb:zb,mY:(Y-yb)/(XS-YY_B),mZ:(Z-zb)/(XS-XX_B)};
+}
+function traj(def,x){
+  var y=0,z=0;
+  if(x<=XX_A&&x>=XX_B){var s=(XX_A-x)/LX; z=def.zb*s*s;}
+  else if(x<XX_B){z=def.zb+def.mZ*(x-XX_B);}
+  if(x<=YY_A&&x>=YY_B){var sy=(YY_A-x)/LY; y=def.yb*sy*sy;}
+  else if(x<YY_B){y=def.yb+def.mY*(x-YY_B);}
+  return {y:y,z:z};
+}
+
+/* ================= 建模 ================= */
+function buildScene(){
+  OP.length=0; TR.length=0;
+  addBox(0.15,0,0,12.3,5.3,6.0,'rgba(120,170,220,0.05)','rgba(150,200,255,0.42)',1,TR); // 玻璃管
+  addBox(-5.62,0,0,0.1,4.0,5.3,'#071427','#16324f',1);                                    // 屏背板
+  addBox(5.82,0.36,0,0.07,0.46,0.07,'#ff9a4d','#ff7a30',1);                                // F 灯丝
+  addCylX(5.5,5.86,0,0,0.26,'#caa36a',0.10);                                               // K 阴极
+  addCylX(XA1a,XA1b,0,0,0.46,'#9fb8d0',0.16);                                              // A1 加速阳极
+  addCylX(XA2a,XA2b,0,0,0.33,'#9fb8d0',0.12);                                              // A2 聚焦极
+  // 偏转极板（金属质感）
+  addMetalBox((XX_A+XX_B)/2,0, PLATE, LX,2.0,0.10,'#4aa3ff');   // XX′ 上(+z)
+  addMetalBox((XX_A+XX_B)/2,0,-PLATE, LX,2.0,0.10,'#4aa3ff');   // XX′ 下(-z)
+  addMetalBox((YY_A+YY_B)/2, PLATE,0, LY,0.10,2.0,'#f0a63c');   // YY′ 上(+y)
+  addMetalBox((YY_A+YY_B)/2,-PLATE,0, LY,0.10,2.0,'#f0a63c');   // YY′ 下(-y)
+}
+
+/* ================= 背景 / 屏 / 电子 ================= */
+function drawBg(){
+  var g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#0b1430'); g.addColorStop(1,'#060b18');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(90,140,200,.05)'; ctx.lineWidth=1;
+  for(var x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(var y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+}
+var GZ=[],GY=[];
+for(var gz=-2.6;gz<=2.61;gz+=0.52)GZ.push(+gz.toFixed(3));
+for(var gy=-1.95;gy<=1.951;gy+=0.39)GY.push(+gy.toFixed(3));
+function seg3(a,b,color,lw){var pa=project(a),pb=project(b);ctx.strokeStyle=color;ctx.lineWidth=lw;ctx.beginPath();ctx.moveTo(pa.sx,pa.sy);ctx.lineTo(pb.sx,pb.sy);ctx.stroke();}
+function drawScreen(){
+  var xf=XS+0.04,i;
+  for(i=0;i<GZ.length;i++)seg3(P(xf,GY[0],GZ[i]),P(xf,GY[GY.length-1],GZ[i]),'rgba(70,210,150,.16)',1);
+  for(i=0;i<GY.length;i++)seg3(P(xf,GY[i],GZ[0]),P(xf,GY[i],GZ[GZ.length-1]),'rgba(70,210,150,.16)',1);
+  seg3(P(xf,0,GZ[0]),P(xf,0,GZ[GZ.length-1]),'rgba(90,230,170,.4)',1.2);
+  seg3(P(xf,GY[0],0),P(xf,GY[GY.length-1],0),'rgba(90,230,170,.4)',1.2);
+  var tr=S.trace,n=tr.length;
+  if(n>1){
+    // 频率阈值判定点/线：滑块拖到最低（≈0.2–0.25Hz）→ 只显移动亮点；其余 → 连成线形成图形
+    var dotMode=(S.xType==='square'||S.yType==='square')||(Math.min(S.xFreq,S.yFreq)<0.28);
+    var pts=[];
+    for(var k=0;k<n;k++)pts.push(project(P(xf,tr[k].y,tr[k].z)));
+    if(dotMode){
+      // 仅画最近若干点作“移动亮点/短拖尾”，避免低频铺成线
+      var k0=Math.max(0,n-16);
+      for(var k=k0;k<n;k++){var nl=(k-k0)/Math.max(1,n-k0);
+        ctx.globalAlpha=0.30+0.70*nl;ctx.fillStyle='#57f0a8';
+        ctx.beginPath();ctx.arc(pts[k].sx,pts[k].sy,2.4,0,7);ctx.fill();}
+      ctx.globalAlpha=1;
+    }else{
+      // 连线成图形；用段长中位数跳过扫描回扫等大跳变，避免横向拖线
+      var segs=[];for(var k=1;k<n;k++){var qx=pts[k].sx-pts[k-1].sx,qy=pts[k].sy-pts[k-1].sy;segs.push(Math.sqrt(qx*qx+qy*qy));}
+      segs.sort(function(a,b){return a-b;});
+      var med=segs[Math.floor(n*0.5)]||0, GAP=Math.max(26,med*4);
+      for(var k=1;k<n;k++){var nl=k/n;
+        var rx=pts[k].sx-pts[k-1].sx, ry=pts[k].sy-pts[k-1].sy, dd=Math.sqrt(rx*rx+ry*ry);
+        if(dd>GAP){ctx.globalAlpha=0.30+0.70*nl;ctx.fillStyle='#57f0a8';ctx.beginPath();ctx.arc(pts[k].sx,pts[k].sy,2.2,0,7);ctx.fill();continue;}
+        ctx.globalAlpha=0.22+0.78*nl;ctx.strokeStyle='#57f0a8';ctx.lineWidth=1.2+1.3*nl;ctx.lineJoin='round';ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(pts[k-1].sx,pts[k-1].sy);ctx.lineTo(pts[k].sx,pts[k].sy);ctx.stroke();}
+      ctx.globalAlpha=1;
+    }
+  }
+}
+function spawnElectron(){
+  var def=deflection(S.Ua,Ux(),Uy());
+  if(!def)return;
+  S.parts.push({ph:0,def:def});
+}
+// 绿色立体电子（径向渐变球面，高光偏左上）
+function drawEsphere(sx,sy,r,al){
+  if(r<0.6)r=0.6;
+  var g=ctx.createRadialGradient(sx-r*0.38,sy-r*0.38,r*0.12, sx,sy,r);
+  g.addColorStop(0,'#eafff2');
+  g.addColorStop(0.42,'#5dff9e');
+  g.addColorStop(0.82,'#1fb866');
+  g.addColorStop(1,'#0a6e3a');
+  ctx.globalAlpha=al;
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sx,sy,r,0,7); ctx.fill();
+  // 高光点
+  ctx.globalAlpha=al*0.9; ctx.fillStyle='rgba(255,255,255,.85)';
+  ctx.beginPath(); ctx.arc(sx-r*0.34,sy-r*0.34,Math.max(0.6,r*0.26),0,7); ctx.fill();
+  ctx.globalAlpha=1;
+}
+function drawElectrons(dt){
+  // 当前理想束（淡绿引导线，非光晕）
+  var d0=deflection(S.Ua,Ux(),Uy());
+  if(d0){
+    ctx.strokeStyle='rgba(90,240,168,.16)';ctx.lineWidth=1;ctx.beginPath();
+    for(var x=XG,m=0;x>=XS;x-=0.4,m++){var tp=traj(d0,x),q=project(P(x,tp.y,tp.z));if(m===0)ctx.moveTo(q.sx,q.sy);else ctx.lineTo(q.sx,q.sy);}
+    ctx.stroke();
+  }
+  // 离散电子（绿色立体球 + 渐隐拖尾，体现真实飞行运动）
+  for(var i=S.parts.length-1;i>=0;i--){
+    var p=S.parts[i];
+    p.ph+=dt/0.55; if(p.ph>1.03)p.ph=1.03;
+    var x=XG+(XS-XG)*p.ph, tp=traj(p.def,x), q=project(P(x,tp.y,tp.z));
+    var al=0.5+0.5*Math.min(1,p.ph), rr=1.9+1.7*Math.min(1,p.ph);
+    // 拖尾：沿该电子自身轨迹画渐隐短光尾，明确“它在飞”而非静止
+    var NT=7, gx=[], gy=[];
+    for(var k=NT;k>=0;k--){
+      var pht=p.ph-k*0.020; if(pht<0)pht=0;
+      var xt=XG+(XS-XG)*pht, tpt=traj(p.def,xt), qt=project(P(xt,tpt.y,tpt.z));
+      gx.push(qt.sx); gy.push(qt.sy);
+    }
+    for(var k=NT;k>=1;k--){
+      var fk=1-k/(NT+1);
+      ctx.strokeStyle='rgba(90,255,168,'+(0.44*fk*fk).toFixed(3)+')';
+      ctx.lineWidth=Math.max(1.2,rr*(0.4+0.55*fk));
+      ctx.beginPath();ctx.moveTo(gx[k],gy[k]);ctx.lineTo(gx[k-1],gy[k-1]);ctx.stroke();
+    }
+    drawEsphere(q.sx,q.sy,rr,al);
+    if(p.ph>=1){
+      if(Math.abs(p.def.Y)<HALF_Y&&Math.abs(p.def.Z)<HALF_Z){
+        S.trace.push({y:p.def.Y,z:p.def.Z}); if(S.trace.length>120)S.trace.shift();
+      }
+      S.parts.splice(i,1);
+    }
+  }
+}
+var LABELS=[
+  {p:P(5.72,0.66,0),t:'K 阴极'},{p:P(5.1,0.62,0),t:'A 加速阳极'},{p:P(5.9,0.66,0),t:'F 灯丝'},
+  {p:P(2.7,1.35,PLATE+0.2),t:"XX′ 水平偏转"},{p:P(1.1,PLATE+0.55,0.9),t:"YY′ 竖直偏转"},
+  {p:P(XS,2.28,0),t:'荧光屏'}
+];
+function drawLabels(){
+  ctx.font='500 13px "Microsoft YaHei",sans-serif'; ctx.textAlign='center';
+  for(var i=0;i<LABELS.length;i++){var q=project(LABELS[i].p);
+    ctx.fillStyle='rgba(220,235,255,.92)'; ctx.fillText(LABELS[i].t,q.sx,q.sy);
+    ctx.fillStyle='rgba(120,180,240,.9)'; ctx.beginPath(); ctx.arc(q.sx,q.sy+3,1.6,0,7); ctx.fill();}
+  ctx.textAlign='left';
+}
+
+/* ================= X/Y 信号电压—时间 画中画 ================= */
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function drawSignalCard(t,type,amp,freq,color,title,x0,y0,WW,WH,phase){
+  // 背景卡片（半透明，叠在 3D 场景上）
+  ctx.fillStyle='rgba(8,16,32,.74)'; roundRect(x0,y0,WW,WH,10); ctx.fill();
+  ctx.strokeStyle='rgba(90,140,200,.42)'; ctx.lineWidth=1; roundRect(x0,y0,WW,WH,10); ctx.stroke();
+  // 标题
+  ctx.fillStyle='#cfe2ff'; ctx.font='600 12px "Microsoft YaHei",sans-serif'; ctx.textAlign='left';
+  ctx.fillText(title,x0+11,y0+17);
+  // 绘图区
+  var px0=x0+11, py0=y0+26, pw=WW-22, ph=WH-50, midY=py0+ph/2;
+  ctx.strokeStyle='rgba(120,160,210,.16)'; ctx.lineWidth=1; ctx.strokeRect(px0,py0,pw,ph);
+  ctx.beginPath(); ctx.moveTo(px0,midY); ctx.lineTo(px0+pw,midY); ctx.stroke();
+  // 电压随该路幅值自适应
+  var maxV=Math.max(amp,1), twin=2.4;
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  for(var xp=0;xp<=pw;xp+=2){
+    var tau=t-twin*(1-xp/pw);
+    var v=sig(type,tau,amp,freq,phase);
+    var yy=midY-(v/maxV)*(ph/2-5);
+    if(xp===0)ctx.moveTo(px0+xp,yy);else ctx.lineTo(px0+xp,yy);
+  }
+  ctx.stroke();
+  // 右端"当前值"亮点：直观指示此刻该路电压
+  var v0=sig(type,t,amp,freq,phase), y0c=midY-(v0/maxV)*(ph/2-5);
+  ctx.fillStyle=color; ctx.beginPath(); ctx.arc(px0+pw-1,y0c,2.8,0,7); ctx.fill();
+  ctx.globalAlpha=.35; ctx.beginPath(); ctx.arc(px0+pw-1,y0c,5.6,0,7); ctx.fill(); ctx.globalAlpha=1;
+  // 图例 + 时间方向
+  ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle=color; ctx.fillText('●',x0+11,y0+WH-9);
+  ctx.fillStyle='#7f9cc0'; ctx.textAlign='right'; ctx.fillText('时间 →',x0+WW-11,y0+WH-9); ctx.textAlign='left';
+}
+function drawWmMid(cx,cy){
+  // 两信号卡片之间（底部中间间隙）的 force99 亮闪水印
+  ctx.save();
+  var wm='force99';
+  ctx.font='700 18px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineJoin='round';
+  var cw=[],tw=0,i,j;
+  for(i=0;i<wm.length;i++){var w=ctx.measureText(wm[i]).width;cw.push(w);tw+=w;}
+  // 暗底常驻（示波器画布为深色背景，需提亮才可见）
+  ctx.lineWidth=3.5;ctx.strokeStyle='rgba(6,11,20,.55)';
+  ctx.fillStyle='rgba(176,216,255,.62)';
+  for(i=0,j=-tw/2;i<wm.length;i++){ctx.strokeText(wm[i],cx+j,cy);ctx.fillText(wm[i],cx+j,cy);j+=cw[i];}
+  // 依次亮闪（高斯峰沿字母移动；由 Date.now() 驱动，暂停也循环）
+  // 光照峰经过时字母颜色插值到中国红(222,41,16)，过后平滑恢复原蓝白常驻色
+  var beamW=12, span=tw+2*beamW;
+  var ph=((Date.now()/1000)*0.5)%1;
+  var beam=cx-tw/2-beamW+ph*span;
+  var R0=176,G0=216,B0=255;           // 原色 淡蓝白
+  for(i=0,j=-tw/2;i<wm.length;i++){
+    var cc=cx+j+cw[i]/2, d=(cc-beam)/beamW, b=Math.exp(-d*d*2.2);
+    var r=Math.round(R0+(222-R0)*b), g=Math.round(G0+(41-G0)*b), bl=Math.round(B0+(16-B0)*b);
+    ctx.shadowBlur=22*b;ctx.shadowColor='rgba(255,70,60,'+(0.9*b).toFixed(3)+')';
+    ctx.fillStyle='rgba('+r+','+g+','+bl+','+(0.62+0.38*b).toFixed(3)+')';
+    ctx.fillText(wm[i],cx+j,cy);
+    j+=cw[i];
+  }
+  ctx.restore();
+}
+function drawSignals(t){
+  var WH=Math.max(110,Math.min(H*0.26,190));
+  var WW=Math.max(210,Math.min(W*0.44,330,(W-44)/2));   // 限宽保证左/右两卡不重叠
+  var y0=H-14-WH;
+  drawSignalCard(t,S.xType,S.xAmp,xFreqEff(),'#4aa3ff','X 信号（水平板）',14,y0,WW,WH,0);
+  drawSignalCard(t,S.yType,S.yAmp,yFreqEff(),'#ffb347','Y 信号 φ='+S.yPhase.toFixed(0)+'°',W-14-WW,y0,WW,WH,S.yPhase*Math.PI/180);
+  drawWmMid(W/2, y0+WH*0.74);   // 两信号电压之间的 force99 水印（偏下）
+}
+
+/* ================= 相似三角形 2D 图 ================= */
+function drawSimTri(tsCurs){
+  gs.clearRect(0,0,Ws,Hs);
+  var uy=Uy(),ux=Ux(),def=deflection(S.Ua,ux,uy);
+  var axisY=Hs*0.58;
+  // 轴
+  gs.strokeStyle='rgba(150,190,230,.4)';gs.lineWidth=1;gs.setLineDash([4,4]);
+  gs.beginPath();gs.moveTo(Ws*0.04,axisY);gs.lineTo(Ws*0.97,axisY);gs.stroke();gs.setLineDash([]);
+  if(!def){
+    gs.fillStyle='#9fb6d6';gs.font='13px "Microsoft YaHei",sans-serif';gs.textAlign='center';
+    gs.fillText('U_a 过低：电子未被加速，无法到达屏',Ws/2,Hs*0.4);
+    gs.fillText('请调大加速电压 U_a',Ws/2,Hs*0.4+20);gs.textAlign='left';return;
+  }
+  var Y=def.Y;
+  // —— 为便于观察，示意图中把极板按比例加长（非真实尺度），使两相似三角形清晰可见 ——
+  var Wtot=Ws*0.92, f=0.30;                 // f = 极板半长(L/2) 在总路径中的示意占比
+  var xA=Ws*0.96, xM=xA-f*Wtot, xB=xM-f*Wtot, xS=xA-Wtot; // A入口 B出口 M板中点 S屏
+  var plateFrac=2*f;                          // 极板占路径比例（入口→出口）
+  // 竖直比例：按当前幅值固定比例（不随瞬时 |Y| 缩放），使两三角形在大部分相位都饱满可读
+  // yb 取 yb/Y=f，保证两三角形共享同一偏转角 θ（严格相似）
+  var YmaxW=SY0*S.yAmp/Math.max(S.Ua,1);
+  var syp=(Hs*0.38)/Math.max(YmaxW,0.12);
+  var Ypx=Y*syp; if(Ypx>Hs*0.42)Ypx=Hs*0.42; if(Ypx<-Hs*0.42)Ypx=-Hs*0.42;
+  var ybpx=Ypx*f;
+  // 偏转板（上下两水平板，示意加长；间距已加大以便观察内部三角形）
+  var gapPx=Hs*0.16;
+  gs.strokeStyle='#5f83a8';gs.lineWidth=3.5;
+  gs.beginPath();gs.moveTo(xA,axisY-gapPx);gs.lineTo(xB,axisY-gapPx);gs.stroke();
+  gs.beginPath();gs.moveTo(xA,axisY+gapPx);gs.lineTo(xB,axisY+gapPx);gs.stroke();
+  gs.fillStyle='#8fb0d6';gs.font='11px "Microsoft YaHei",sans-serif';gs.textAlign='center';
+  gs.fillText('YY′ 偏转板（示意加长）',(xA+xB)/2,axisY-gapPx-7);
+  // 相似三角形：小（板内，紫）大（到屏，绿）—— 共享 θ
+  gs.fillStyle='rgba(178,124,255,.26)';
+  gs.beginPath();gs.moveTo(xM,axisY);gs.lineTo(xB,axisY);gs.lineTo(xB,axisY+ybpx);gs.closePath();gs.fill();
+  gs.fillStyle='rgba(86,232,150,.18)';
+  gs.beginPath();gs.moveTo(xM,axisY);gs.lineTo(xS,axisY);gs.lineTo(xS,axisY+Ypx);gs.closePath();gs.fill();
+  // 电子轨迹：板内抛物线 + 出板直线
+  gs.strokeStyle='#7fe6ff';gs.lineWidth=2;gs.beginPath();
+  for(var s=0;s<=1.001;s+=0.05){var xx=xA-(xA-xB)*s, yy=ybpx*s*s; if(s===0)gs.moveTo(xx,axisY+yy);else gs.lineTo(xx,axisY+yy);}
+  gs.lineTo(xS,axisY+Ypx);gs.stroke();
+  // 速度线：出板后沿出射方向延长，过板中点 M（相似三角形斜边）
+  gs.strokeStyle='rgba(255,120,90,.72)';gs.lineWidth=1;gs.setLineDash([3,3]);
+  gs.beginPath();gs.moveTo(xB,axisY+ybpx);gs.lineTo(xM,axisY);gs.lineTo(xS,axisY+Ypx);gs.stroke();gs.setLineDash([]);
+  // 屏
+  gs.strokeStyle='#57f0a8';gs.lineWidth=2.5;
+  gs.beginPath();gs.moveTo(xS,axisY-Hs*0.34);gs.lineTo(xS,axisY+Hs*0.34);gs.stroke();
+  // 标注
+  gs.fillStyle='#cdb0ff';gs.font='11px "Microsoft YaHei",sans-serif';
+  gs.fillText('y_b',xB+8,axisY+Math.max(ybpx*0.5,10));
+  gs.fillStyle='#8ff0c0';gs.fillText('Y',xS+12,axisY+Ypx/2);
+  gs.fillStyle='#9fb6d6';gs.font='10px "Microsoft YaHei",sans-serif';
+  gs.fillText('L/2',(xM+xB)/2,axisY+16);
+  gs.fillText('D+L/2',(xM+xS)/2,axisY+16);
+  gs.fillText('θ',xM+8,axisY-5);
+  gs.fillStyle='#6f8db4';gs.font='10px "Microsoft YaHei",sans-serif';
+  gs.fillText('电子 ←',xA-2,axisY-gapPx-15);
+  // 动态游标电子（沿入口→屏方向飞行，与电子真实运动方向一致）
+  var pos=(tsCurs-XS)/(XX_A-XS);              // 0=入口A 1=屏S
+  var cx2,cy2;
+  if(pos<=plateFrac){ var sc=pos/plateFrac; cx2=xA-pos*Wtot; cy2=ybpx*sc*sc; }
+  else{ var sc2=(pos-plateFrac)/(1-plateFrac); cx2=xA-pos*Wtot; cy2=ybpx+(Ypx-ybpx)*sc2; }
+  gs.fillStyle='#eaffff';gs.beginPath();gs.arc(cx2,axisY+cy2,3.2,0,7);gs.fill();
+  // 比例式
+  gs.fillStyle='#cfe2ff';gs.font='11px "Microsoft YaHei",sans-serif';gs.textAlign='center';
+  gs.fillText('y_b/(L/2) = Y/(D+L/2)   ⇒   Y = [L(L+2D)/(4d·U_a)]·U_Y',Ws/2,Hs-8);
+  gs.textAlign='left';
+}
+
+/* ================= 读数 ================= */
+var rUy=$('rUy'),rUx=$('rUx'),rPos=$('rPos'),rType=$('rType'),rV0=$('rV0'),rSens=$('rSens');
+function updateReadout(){
+  var uy=Uy(),ux=Ux();
+  rUy.textContent=uy.toFixed(1)+' V'; rUx.textContent=ux.toFixed(1)+' V';
+  var d=deflection(S.Ua,ux,uy);
+  if(d){rPos.textContent='('+d.Z.toFixed(2)+', '+d.Y.toFixed(2)+')';}
+  else rPos.textContent='(—, —)';
+  var ty=(S.xType==='scan')?'波形（时基）':((S.xType==='sine'&&S.yType==='sine')?'李萨如图形':'合成图形');
+  rType.textContent=ty;
+  var v0=S.Ua>0?Math.sqrt(2*1.6e-19*S.Ua/9.11e-31):0;
+  rV0.textContent=v0>0?(v0/1e6).toFixed(2)+'×10⁶ m/s':'0（未加速）';
+  rSens.textContent=S.Ua>0?(SY0/S.Ua).toFixed(3)+' 格/V':'—';
+}
+
+/* ================= 主绘制 ================= */
+var cur={Y:0,Z:0};
+function draw(dt,now){
+  try{
+    buildScene(); drawBg(); drawFaces(OP); drawScreen(); drawFaces(TR);
+    drawElectrons(dt); drawLabels(); drawSignals(S.t);
+    var d=deflection(S.Ua,Ux(),Uy()); if(d){cur.Y=d.Y;cur.Z=d.Z;}
+    drawSimTri(((now/1000*0.5)%1)*(3.2-XS)+XS); // 游标 x 从 3.2 到 -5.5 循环
+    updateReadout();
+    window.__drawErr=null;
+  }catch(e){window.__drawErr=String(e&&e.stack||e);}
+}
+
+/* ================= 交互 ================= */
+var drag=null;
+cv.addEventListener('mousedown',function(e){drag={x:e.clientX,y:e.clientY,pan:e.button===2};cv.classList.add('drag');e.preventDefault();});
+window.addEventListener('mousemove',function(e){
+  if(!drag)return; var dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;
+  if(drag.pan){var s=cam.dist*0.0016;cam.tx-=dx*s;cam.ty+=dy*s;}
+  else{cam.yaw+=dx*0.006;cam.pitch+=dy*0.006;if(cam.pitch>1.45)cam.pitch=1.45;if(cam.pitch<-1.45)cam.pitch=-1.45;}
+});
+window.addEventListener('mouseup',function(){drag=null;cv.classList.remove('drag');});
+cv.addEventListener('contextmenu',function(e){e.preventDefault();});
+cv.addEventListener('wheel',function(e){e.preventDefault();cam.dist*=(1+e.deltaY*0.0012);if(cam.dist<7)cam.dist=7;if(cam.dist>30)cam.dist=30;},{passive:false});
+
+function segBind(id,key){var box=$(id);box.addEventListener('click',function(e){
+  if(e.target.tagName!=='BUTTON')return;var b=box.querySelectorAll('button');
+  for(var i=0;i<b.length;i++)b[i].classList.remove('on');e.target.classList.add('on');S[key]=e.target.getAttribute('data-v');});}
+segBind('xSeg','xType'); segBind('ySeg','yType');
+function slider(id,vid,key,fmt){var el=$(id);el.addEventListener('input',function(){S[key]=parseFloat(this.value);$(vid).textContent=fmt(S[key]);});}
+slider('yA','yAv','yAmp',function(v){return v.toFixed(0)+' V';});
+slider('yF','yFv','yFreq',function(v){return v.toFixed(2);});
+slider('yP','yPv','yPhase',function(v){return v.toFixed(0)+'°';});
+slider('xA','xAv','xAmp',function(v){return v.toFixed(0)+' V';});
+slider('xF','xFv','xFreq',function(v){return v.toFixed(2);});
+slider('ua','uav','Ua',function(v){return v.toFixed(0)+' V';});
+slider('er','erv','emitRate',function(v){return v.toFixed(0)+' /s';});
+slider('sp','spv','rate',function(v){return v.toFixed(1)+'×';});
+$('lock').addEventListener('change',function(){S.lock=this.checked;});
+function setSeg(id,val){var b=$(id).querySelectorAll('button');for(var i=0;i<b.length;i++)b[i].classList.toggle('on',b[i].getAttribute('data-v')===val);}
+function applyPreset(p){
+  S.parts.length=0;S.trace.length=0;
+  if(p==='wave'){S.xType='scan';S.yType='sine';S.yFreq=1;S.xFreq=0.5;S.lock=true;S.nShow=2;setSeg('xSeg','scan');setSeg('ySeg','sine');}
+  if(p==='liss'){S.xType='sine';S.yType='sine';S.xFreq=1;S.yFreq=1.5;S.lock=false;setSeg('xSeg','sine');setSeg('ySeg','sine');}
+  if(p==='square'){S.xType='scan';S.yType='square';S.yFreq=1;S.xFreq=0.5;S.lock=true;S.nShow=2;setSeg('xSeg','scan');setSeg('ySeg','square');}
+  $('xF').value=S.xFreq;$('xFv').textContent=S.xFreq.toFixed(2);
+  $('yF').value=S.yFreq;$('yFv').textContent=S.yFreq.toFixed(2);
+  $('lock').checked=S.lock;$('nv').textContent=S.nShow;
+}
+$('pWave').addEventListener('click',function(){applyPreset('wave');});
+$('pLiss').addEventListener('click',function(){applyPreset('liss');});
+$('pSquare').addEventListener('click',function(){applyPreset('square');});
+var bPlay=$('bPlay');
+bPlay.addEventListener('click',function(){S.running=!S.running;this.textContent=S.running?'暂停':'播放';this.classList.toggle('on',S.running);});
+$('bReset').addEventListener('click',function(){S.t=0;S.parts.length=0;S.trace.length=0;S.emitAcc=0;});
+$('bView').addEventListener('click',function(){cam.yaw=CAM0.yaw;cam.pitch=CAM0.pitch;cam.dist=CAM0.dist;cam.tx=cam.ty=cam.tz=0;});
+
+/* ================= 启动 ================= */
+resize(); draw(0,performance.now()); window.__ready=true;
+var last=performance.now();
+function frame(now){
+  var dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(S.running){
+    S.t+=dt*S.rate;
+    S.emitAcc+=dt; var interval=1/S.emitRate, guard=0;
+    while(S.emitAcc>=interval&&guard<8){S.emitAcc-=interval;spawnElectron();guard++;}
+  }
+  draw(dt,now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
