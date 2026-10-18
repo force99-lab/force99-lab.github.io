@@ -3908,6 +3908,12 @@ const WORKS = [
       desc:"五种模型图解力的动态平衡：动态三角形、相似三角形、矢量圆、衣架模型与挡板转动，实时展示力的矢量变化与临界规律。",
       icon:"📐", cover:"assets/img/force-equilibrium-cover.png", link:"animations/force-equilibrium.html", date:"2026-10-16", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"几何光学·折射与全反射·扩角",
+      desc:"2026 湖南高考 第13题（10分）：车载摄像头嵌入均匀透明介质，将视场角由120度扩至180度，求介质折射率与光线入射角",
+      icon:"📐", cover:"assets/img/hn13-cover.png", link:"solutions/hn13_threepage.html", date:"2026-10-18", tag:"光学"
+    }
 ];
 
 
