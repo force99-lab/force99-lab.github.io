@@ -3920,6 +3920,12 @@ const WORKS = [
       desc:"2026 贵州高考 第13题（9分）：绳波两波形（t=0 实线、t=0.25s 虚线），求波长、周期、波速及 t=0.5s 波形",
       icon:"📐", cover:"assets/img/gz13-cover.png", link:"solutions/gz13_threepage.html", date:"2026-10-18", tag:"机械波"
     }
+,
+      {
+      type:"solve", title:"热力学·气体定律与受力平衡",
+      desc:"2026 甘肃高考 第13题（10分）：汽缸+弹簧+理想气体，水平初态到倾斜30度等温压缩再到加热回原长，求劲度系数与末态压强温度",
+      icon:"📐", cover:"assets/img/gs13-cover.png", link:"solutions/gs13_threepage.html", date:"2026-10-18", tag:"热学"
+    }
 ];
 
 
