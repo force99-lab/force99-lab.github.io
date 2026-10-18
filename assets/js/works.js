@@ -3914,6 +3914,12 @@ const WORKS = [
       desc:"2026 湖南高考 第13题（10分）：车载摄像头嵌入均匀透明介质，将视场角由120度扩至180度，求介质折射率与光线入射角",
       icon:"📐", cover:"assets/img/hn13-cover.png", link:"solutions/hn13_threepage.html", date:"2026-10-18", tag:"光学"
     }
+,
+      {
+      type:"solve", title:"机械波·波的图像与传播",
+      desc:"2026 贵州高考 第13题（9分）：绳波两波形（t=0 实线、t=0.25s 虚线），求波长、周期、波速及 t=0.5s 波形",
+      icon:"📐", cover:"assets/img/gz13-cover.png", link:"solutions/gz13_threepage.html", date:"2026-10-18", tag:"机械波"
+    }
 ];
 
 
