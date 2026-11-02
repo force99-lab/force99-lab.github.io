@@ -3932,6 +3932,12 @@ const WORKS = [
       desc:"真三维动态演示示波器工作原理：电子经加速电场获得速度，再由水平与竖直偏转电场控制打在荧光屏上，实时绘出 X 扫描与 Y 信号合成的波形，并配相似三角形与电压—时间图。",
       icon:"🎬", cover:"assets/img/oscilloscope-3d-cover.png", link:"animations/oscilloscope-3d.html", date:"2026-10-18", tag:"电学"
     }
+,
+      {
+      type:"animation", title:"带电粒子在磁场中的运动 · 20 模型精讲",
+      desc:"从有界磁场的动态圆、圆形边界，到组合场、质谱仪与回旋加速器等 20 个经典模型；含配速法旋轮线与分界磁场「拱+环」轨迹的交互演示，右侧同步归纳物理规律与实时物理量。",
+      icon:"🧲", cover:"assets/img/magnetic-particle-cover.png", link:"animations/magnetic-particle-18.html", date:"2026-11-02", tag:"磁场"
+    }
 ];
 
 
