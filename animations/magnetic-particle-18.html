@@ -1,0 +1,3920 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>带电粒子在磁场中的运动 · 20 模型精讲</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#05080f;color:#cfe3ff;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;overflow:hidden}
+  #app{display:flex;height:100vh}
+  #stage{position:relative;flex:1 1 auto;min-width:0;background:
+    radial-gradient(1200px 700px at 38% 32%,#0d1830 0%,#070d1c 60%,#04070f 100%)}
+  #cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #title{position:absolute;left:18px;top:12px;font-size:20px;font-weight:700;
+    color:#eaf4ff;letter-spacing:1px;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  #title small{display:block;font-size:12px;font-weight:400;color:#7fa6d8;margin-top:2px}
+  #panel{flex:0 0 340px;background:linear-gradient(180deg,#0a1222,#070d18);
+    border-left:1px solid #16345c;padding:14px 14px 16px;overflow-y:auto}
+  #panel h2{font-size:13px;color:#7fd8ff;margin:14px 0 7px;letter-spacing:1px;
+    border-left:3px solid #2fa7ff;padding-left:8px}
+  #panel h2:first-child{margin-top:2px}
+  .nav{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .nav button{font:inherit;font-size:11.5px;color:#bcd4f2;background:#10203a;
+    border:1px solid #1d3a63;border-radius:7px;padding:7px 6px;text-align:left;
+    cursor:pointer;transition:.15s;line-height:1.25}
+  .nav button:hover{background:#163153;border-color:#2f6fb0}
+  .nav button.on{background:#1356a8;border-color:#49b6ff;color:#fff;
+    box-shadow:0 0 12px rgba(42,150,255,.45)}
+  .nav button b{color:#ffd479;font-weight:700;margin-right:3px}
+  #ctrls{display:flex;gap:8px;align-items:center;margin:12px 0 6px}
+  #ctrls button{font:inherit;font-size:13px;color:#eaf4ff;background:#16345c;
+    border:1px solid #2f6fb0;border-radius:8px;padding:8px 12px;cursor:pointer}
+  #ctrls button:hover{background:#1d4a86}
+  #spd{margin-left:auto;font-size:12px;color:#9fc2ea}
+  #spd select{font:inherit;font-size:12px;background:#10203a;color:#cfe3ff;
+    border:1px solid #1d3a63;border-radius:6px;padding:3px 6px}
+  #prog{height:5px;background:#0c1a30;border-radius:4px;overflow:hidden;margin-top:8px}
+  #progI{height:100%;width:0;background:linear-gradient(90deg,#2fa7ff,#7fffd0)}
+  #note{margin-top:12px;font-size:12.5px;line-height:1.65;color:#aebfdc;
+    background:#0c182c;border:1px solid #16314f;border-radius:9px;padding:11px 12px}
+  #note b{color:#ffd479}
+  #note .k{color:#7fffd0;font-weight:700}
+  #note .h{color:#eaf4ff;font-weight:700;font-size:13.5px;display:block;margin-bottom:4px}
+  .wm{font:700 13px/1 "Microsoft YaHei";fill:#bfe0ff;opacity:.0}
+  #extraCtl{margin-top:10px;display:none;background:#0c182c;border:1px solid #16314f;
+    border-radius:9px;padding:10px 12px}
+  #extraCtl .ctl{margin:9px 0}
+  #extraCtl label{font-size:12px;color:#9fc2ea;display:flex;justify-content:space-between;margin-bottom:2px}
+  #extraCtl label span:last-child{color:#ffd479;font-weight:700}
+  #extraCtl input[type=range]{width:100%;accent-color:#2fa7ff}
+  #extraCtl .hint{font-size:11.5px;color:#7fa6d8;margin:2px 0 4px;line-height:1.5}
+  /* 公式竖式分式（与三页式一致：横向 padding 移容器、line-height 不重叠） */
+  #note .frac{display:inline-flex;flex-direction:column;vertical-align:middle;
+    text-align:center;line-height:1.08;font-size:.92em;margin:0 1px;
+    transform:translateY(-.04em)}
+  #note .frac .num{border-bottom:1px solid currentColor;padding:0 4px}
+  #note .frac .den{padding:0 4px}
+  #note sub,#note sup{font-size:.78em}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="title">带电粒子在磁场中的运动</div>
+  </div>
+  <div id="panel">
+    <h2>一、有界磁场与动态圆</h2>
+    <div class="nav" id="navA"></div>
+    <h2>二、仪器与复合场</h2>
+    <div class="nav" id="navB"></div>
+    <div id="ctrls">
+      <button id="play">⏸ 暂停</button>
+      <button id="reset">↺ 重置</button>
+      <span id="spd">速度 <select id="speed">
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option>
+        <option value="1.6">1.6×</option><option value="2.4">2.4×</option></select></span>
+    </div>
+    <div id="prog"><div id="progI"></div></div>
+    <div id="note"></div>
+    <div id="extraCtl"></div>
+  </div>
+</div>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+var W=0,H=0,DPR=1;
+function hidpi(){
+  var r=cv.getBoundingClientRect();
+  W=Math.max(640,r.width); H=Math.max(360,r.height);
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+// ---- world -> screen projection (auto fit per model view rect) ----
+var V={sc:1,ox:0,oy:0};
+function setView(v){
+  var m=0.13, vw=v[2]-v[0], vh=v[3]-v[1];
+  var sc=Math.min(W*(1-2*m)/vw, H*(1-2*m)/vh);
+  V.sc=sc;
+  V.ox=(W - vw*sc)/2 - v[0]*sc;
+  V.oy=(H - vh*sc)/2 + v[3]*sc; // world top v[3] maps to H*m
+}
+function P(x,y){ return [V.ox+x*V.sc, V.oy - y*V.sc]; }
+function L(x,y){ return V.sc; } // scale factor
+
+// ---- draw helpers ----
+function line(a,b,c,d,col,w,dash){
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w||1.4;
+  if(dash)ctx.setLineDash(dash);ctx.beginPath();
+  ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke();ctx.restore();
+}
+function arrow(x1,y1,x2,y2,col,w,head){
+  ctx.save();ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w||2;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  var ang=Math.atan2(y2-y1,x2-x1),h=head||9;
+  ctx.beginPath();ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-h*Math.cos(ang-0.42),y2-h*Math.sin(ang-0.42));
+  ctx.lineTo(x2-h*Math.cos(ang+0.42),y2-h*Math.sin(ang+0.42));
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+function txt(s,x,y,col,sz,al,wt){
+  ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+
+    'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';
+  ctx.fillText(s,x,y);ctx.restore();
+}
+// ===== 公式渲染：上下分式 \frac{分子}{分母} + 真实下标 _{x} + 上标 ^{x} =====
+function fmtFont(sz,wt){ return (wt||'400')+' '+sz+'px "Microsoft YaHei",sans-serif'; }
+function fmtBrace(str,i){
+  if(str[i]!=='{'){ return {s:str[i], end:i+1}; }
+  var depth=0,j=i;
+  for(;j<str.length;j++){ if(str[j]==='{')depth++; else if(str[j]==='}'){depth--; if(depth===0){j++;break;}} }
+  return {s:str.substr(i+1,j-i-2), end:j};
+}
+function fmtParse(str){
+  var toks=[], i=0, n=str.length;
+  while(i<n){
+    if(str.substr(i,5)==='\\frac'){
+      i+=5; var g1=fmtBrace(str,i); i=g1.end; var g2=fmtBrace(str,i); i=g2.end;
+      toks.push({ty:'frac',n:g1.s,d:g2.s});
+    } else if(str[i]==='_'||str[i]==='^'){
+      var op=str[i]; i++;
+      var g=fmtBrace(str,i); i=g.end;
+      toks.push({ty:(op==='_'?'sub':'sup'),s:g.s});
+    } else {
+      var j=i; while(j<n && str[j]!=='\\' && str[j]!=='_' && str[j]!=='^') j++;
+      toks.push({ty:'txt',s:str.substr(i,j-i)}); i=j;
+    }
+  }
+  return toks;
+}
+function fmtW(t,sz,wt){
+  if(t.ty==='txt'){ ctx.font=fmtFont(sz,wt); return ctx.measureText(t.s).width; }
+  if(t.ty==='sub'||t.ty==='sup'){ ctx.font=fmtFont(sz*0.7,wt); return ctx.measureText(t.s).width; }
+  var ns=sz*0.9, ds=sz*0.9;
+  ctx.font=fmtFont(ns,wt); var wn=ctx.measureText(t.n).width;
+  ctx.font=fmtFont(ds,wt); var wd=ctx.measureText(t.d).width;
+  return Math.max(wn,wd)+10;
+}
+function fmtD(t,x,y,sz,wt){
+  if(t.ty==='txt'){ ctx.font=fmtFont(sz,wt); ctx.fillText(t.s,x,y); return ctx.measureText(t.s).width; }
+  if(t.ty==='sub'){ var ss=sz*0.7; ctx.font=fmtFont(ss,wt); ctx.fillText(t.s,x,y+sz*0.52); return ctx.measureText(t.s).width; }
+  if(t.ty==='sup'){ var ss=sz*0.7; ctx.font=fmtFont(ss,wt); ctx.fillText(t.s,x,y-sz*0.60); return ctx.measureText(t.s).width; }
+  var ns=sz*0.9, ds=sz*0.9;
+  ctx.font=fmtFont(ns,wt); var wn=ctx.measureText(t.n).width;
+  ctx.font=fmtFont(ds,wt); var wd=ctx.measureText(t.d).width;
+  var fw=Math.max(wn,wd)+10, barY=y-sz*0.46;
+  ctx.font=fmtFont(ns,wt); ctx.textAlign='center'; ctx.fillText(t.n, x+fw/2, barY-sz*0.20);
+  ctx.font=fmtFont(ds,wt); ctx.fillText(t.d, x+fw/2, barY+sz*0.80);
+  ctx.textAlign='left';
+  ctx.strokeStyle=ctx.fillStyle; ctx.lineWidth=Math.max(1,sz*0.06);
+  ctx.beginPath(); ctx.moveTo(x+4,barY); ctx.lineTo(x+fw-4,barY); ctx.stroke();
+  return fw;
+}
+function fmt(s,x,y,col,sz,al,wt){
+  sz=sz||13; wt=wt||'400'; al=al||'left'; s=s==null?'':String(s);
+  s=fmtPreprocess(s);
+  var toks=fmtParse(s), total=0, k;
+  for(k=0;k<toks.length;k++) total+=fmtW(toks[k],sz,wt);
+  ctx.save(); ctx.fillStyle=col||'#cfe3ff'; ctx.textBaseline='alphabetic'; ctx.textAlign='left';
+  var cx=x; if(al==='center')cx=x-total/2; else if(al==='right')cx=x-total;
+  for(k=0;k<toks.length;k++){ cx+=fmtD(toks[k],cx,y,sz,wt); }
+  ctx.restore();
+  return total;
+}
+function escHTML(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// 预处理：把源码里的 a/(b)、a/b、U_H 自动转成标记（frac / sub），无需逐条改写字符串
+function fmtPreprocess(s){ return _fmtPP(String(s), true); }
+// 预处理：源码 a/(b)、a/b、U_H 自动转标记；带 CJK 守卫、函数参数斜杠跳过、原子保护已标记 \frac
+function _fmtPP(s, allowFrac){
+  s = String(s);
+  var SEP = ' \t=→⟹⇒+−-×÷<>∝,;:.（）():，。、：；≈≠≤≥\n\r';
+  var out = '', i = 0, n = s.length;
+  while (i < n){
+    var c = s[i];
+    if (c === '\\'){
+      var j = i + 1; while (j < n && /[a-zA-Z]/.test(s[j])) j++;
+      out += s.substr(i, j - i); i = j; continue;
+    }
+    if (c === '_' || c === '^'){
+      out += c; i++;
+      if (s[i] === '{'){ var d=0,k=i; for(;k<n;k++){ if(s[k]==='{')d++; else if(s[k]==='}'){d--; if(d===0){k++;break;}} } out += s.substr(i,k-i); i=k; }
+      else { out += s[i]; i++; }
+      continue;
+    }
+    if (c === '{'){
+      var d2=0,k2=i; for(;k2<n;k2++){ if(s[k2]==='{')d2++; else if(s[k2]==='}'){d2--; if(d2===0){k2++;break;}} }
+      out += s.substr(i,k2-i); i=k2; continue;
+    }
+    if (c === '√'){
+      var q = i + 1; while (q < n && s[q] === ' ') q++;
+      if (s[q] === '('){
+        var dep=0, kk=q; for(;kk<n;kk++){ if(s[kk]==='(')dep++; else if(s[kk]===')'){dep--; if(dep===0){kk++;break;}} }
+        out += '√(' + _fmtPP(s.substr(q+1, kk-q-2), false) + ')'; i = kk; continue;
+      }
+      out += '√'; i++; continue;
+    }
+    if (allowFrac && c === '/'){
+      var depth = 0;
+      for (var t=0; t<i; t++){ if(s[t]==='('||s[t]==='（')depth++; else if(s[t]===')'||s[t]==='）')depth--; }
+      if (depth > 0){ out += c; i++; continue; }
+      var pe = i-1; while (pe>=0 && s[pe]===' ') pe--;
+      var ns='', nsStart;
+      if (pe>=0 && s[pe]===')'){
+        var dd=0, ps=pe, openP=-1; for(;ps>=0;ps--){ if(s[ps]===')')dd++; else if(s[ps]==='('){dd--; if(dd===0){openP=ps;break;}} }
+        ns = s.substr(openP+1, pe-openP-1); nsStart = openP;
+      } else {
+        var p3=pe; while(p3>=0 && SEP.indexOf(s[p3])<0){ ns = s[p3]+ns; p3--; }
+        nsStart = p3+1;
+      }
+      var qe=i+1; while(qe<n && s[qe]===' ') qe++;
+      var ds='', dsEnd;
+      if (qe<n && s[qe]==='('){
+        var ee=0, qs=qe; for(;qs<n;qs++){ if(s[qs]==='(')ee++; else if(s[qs]===')'){ee--; if(ee===0){qs++;break;}} }
+        ds = s.substr(qe+1, qs-qe-2); dsEnd = qs;
+      } else {
+        var q3=qe; while(q3<n && SEP.indexOf(s[q3])<0){ ds+=s[q3]; q3++; }
+        dsEnd = q3;
+      }
+      if (ns!=='' && ds!=='' && !hasCJK2(ns) && !hasCJK2(ds)){
+        out = out.slice(0, out.length - (i - nsStart));
+        out += '\\frac{'+ns+'}{'+ds+'}'; i = dsEnd; continue;
+      }
+    }
+    out += c; i++;
+  }
+  return out;
+}
+function hasCJK2(ch){ if(!ch)return false; var c=ch.charCodeAt(0); return (c>=0x3400&&c<=0x4DBF)||(c>=0x4E00&&c<=0x9FFF)||(c>=0xF900&&c<=0xFAFF); }
+function fmtHTML(s){
+  s=fmtPreprocess(s); var out='', i=0, n=s.length;
+  while(i<n){
+    if(s.substr(i,5)==='\\frac'){
+      i+=5; var g1=fmtBrace(s,i); i=g1.end; var g2=fmtBrace(s,i); i=g2.end;
+      out+='<span class="frac"><span class="num">'+escHTML(fmtHTML(g1.s))+'</span><span class="den">'+escHTML(fmtHTML(g2.s))+'</span></span>';
+    } else if(s[i]==='_'||s[i]==='^'){
+      var op=s[i]; i++; var g=fmtBrace(s,i); i=g.end;
+      out+=(op==='_'?'<sub>':'<sup>')+escHTML(fmtHTML(g.s))+(op==='_'?'</sub>':'</sup>');
+    } else {
+      var j=i; while(j<n && s[j]!=='\\' && s[j]!=='_' && s[j]!=='^') j++;
+      out+=escHTML(s.substr(i,j-i)); i=j;
+    }
+  }
+  return out;
+}
+// B field symbols (into page × / out of page ·) filling a polygon interior
+function bfieldMarks(pts,into,step){
+  ctx.save();ctx.strokeStyle='rgba(120,170,230,.5)';ctx.fillStyle='rgba(120,170,230,.5)';
+  ctx.lineWidth=1.1;
+  var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  for(var i=0;i<pts.length;i++){ x0=Math.min(x0,pts[i][0]);x1=Math.max(x1,pts[i][0]);
+    y0=Math.min(y0,pts[i][1]);y1=Math.max(y1,pts[i][1]); }
+  var inset=step*0.55;
+  for(var x=x0+inset;x<=x1-inset;x+=step)for(var y=y0+inset;y<=y1-inset;y+=step){
+    if(!inPoly(x,y,pts))continue;
+    var s=P(x,y);
+    if(into){ line(s[0]-3.4,s[1]-3.4,s[0]+3.4,s[1]+3.4,'rgba(120,170,230,.45)',1.1);
+      line(s[0]-3.4,s[1]+3.4,s[0]+3.4,s[1]-3.4,'rgba(120,170,230,.45)',1.1);}
+    else { ctx.beginPath();ctx.arc(s[0],s[1],2,0,7);ctx.fill(); }
+  }
+  ctx.restore();
+}
+function inPoly(x,y,p){
+  var c=false,n=p.length;
+  for(var i=0,j=n-1;i<n;j=i++){
+    var xi=p[i][0],yi=p[i][1],xj=p[j][0],yj=p[j][1];
+    if(((yi>y)!=(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;
+  } return c;
+}
+function bfieldRect(x0,y0,x1,y1,into,step){
+  ctx.save();ctx.strokeStyle='rgba(120,170,230,.55)';ctx.fillStyle='rgba(120,170,230,.55)';
+  ctx.lineWidth=1.2;
+  for(var x=x0;x<=x1;x+=step)for(var y=y0;y<=y1;y+=step){
+    var s=P(x,y);
+    if(into){ line(s[0]-3.5,s[1]-3.5,s[0]+3.5,s[1]+3.5,'rgba(120,170,230,.5)',1.1);
+      line(s[0]-3.5,s[1]+3.5,s[0]+3.5,s[1]-3.5,'rgba(120,170,230,.5)',1.1);}
+    else { ctx.beginPath();ctx.arc(s[0],s[1],2,0,7);ctx.fill(); }
+  }
+  ctx.restore();
+}
+
+// ---- physics: arc from entry, center, find exit by marching ----
+function makeArc(E,vel,qB,R){
+  if(!isFinite(R)||R<=0)R=3;
+  var sp=Math.hypot(vel[0],vel[1]); if(sp<1e-9)sp=1;
+  if(!isFinite(qB)||qB===0)qB=1;
+  var sgn=Math.sign(qB)||1;
+  var dir=[vel[1],-vel[0]];
+  var Cx=E[0]+sgn*R*dir[0]/sp, Cy=E[1]+sgn*R*dir[1]/sp;
+  var a0=Math.atan2(E[1]-Cy,E[0]-Cx);
+  var asign=-sgn;
+  return {Cx:Cx,Cy:Cy,R:R,a0:a0,asign:asign,sp:sp};
+}
+function posAt(a,s){ return [a.Cx+a.R*Math.cos(a.a0+a.asign*s),
+                             a.Cy+a.R*Math.sin(a.a0+a.asign*s)]; }
+function tanAt(a,s){ // unit velocity dir
+  var ang=a.a0+a.asign*s;
+  return [a.asign*-Math.sin(ang), a.asign*Math.cos(ang)];
+}
+
+// region inField functions
+function inLine(p,P0,n){ return (p[0]-P0[0])*n[0]+(p[1]-P0[1])*n[1] >= -1e-6; }
+function inBand(p,P0,n1,P1,n2){ return inLine(p,P0,n1)&&inLine(p,P1,n2); }
+function inRect(p,x0,y0,x1,y1){ return p[0]>=x0-1e-6&&p[0]<=x1+1e-6&&p[1]>=y0-1e-6&&p[1]<=y1+1e-6; }
+function inCircle(p,O,Rc){ return Math.hypot(p[0]-O[0],p[1]-O[1])<=Rc+1e-6; }
+
+function findExit(a,E,inF){
+  var ds=0.004, sMax=2*Math.PI+0.01, s=0, prev=true;
+  while(s<sMax){
+    s+=ds; var pos=posAt(a,s); var inn=inF(pos);
+    if(prev&&!inn){ // refine
+      var lo=s-ds, hi=s;
+      for(var it=0;it<22;it++){ var mid=(lo+hi)/2; if(inF(posAt(a,mid)))lo=mid; else hi=mid; }
+      return lo;
+    }
+    prev=inn;
+  }
+  return sMax;
+}
+function ease(x){ return x<0?0:x>1?1:x*x*(3-2*x); }
+
+// ============================================================
+// MODELS
+// ============================================================
+function regPoly(pts){ return pts; }
+var M=[]; // models
+
+// generic bounded-field renderer
+function drawBound(m,p){
+  var g=m._geo, E=g.E, a=g.arc, sw=g.sweep;
+  // region
+  if(g.kind==='line'){
+    var A=g.lA,B=g.lB; var sa=P(A[0],A[1]),sb=P(B[0],B[1]);
+    line(sa[0],sa[1],sb[0],sb[1],'#5fa8e6',2.2);
+    // field shading (one side) using normal
+    var nx=g.ln[0],ny=g.ln[1];
+    ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.beginPath();
+    var ext=6;
+    var p1=[A[0]+nx*ext,A[1]+ny*ext], p2=[B[0]+nx*ext,B[1]+ny*ext];
+    var sA=P(A[0],A[1]),sB=P(B[0],B[1]),s1=P(p1[0],p1[1]),s2=P(p2[0],p2[1]);
+    ctx.moveTo(sA[0],sA[1]);ctx.lineTo(sB[0],sB[1]);ctx.lineTo(s2[0],s2[1]);ctx.lineTo(s1[0],s1[1]);
+    ctx.closePath();ctx.fill();ctx.restore();
+    bfieldMarks([A,B,p2,p1], m.Binto, 0.95);
+  } else if(g.kind==='parallel'){
+    var A1=g.lA,B1=g.lB,A2=g.lA2,B2=g.lB2;
+    line.apply(null,P.apply(null,g.lA).concat(P.apply(null,g.lB)).concat(['#5fa8e6',2.2]));
+    var sa1=P(g.lA[0],g.lA[1]),sb1=P(g.lB[0],g.lB[1]);
+    var sa2=P(g.lA2[0],g.lA2[1]),sb2=P(g.lB2[0],g.lB2[1]);
+    line(sa1[0],sa1[1],sb1[0],sb1[1],'#5fa8e6',2.2);
+    line(sa2[0],sa2[1],sb2[0],sb2[1],'#5fa8e6',2.2);
+    var poly=[g.lA,g.lB,g.lB2,g.lA2]; bfieldMarks(poly,m.Binto,0.95);
+  } else if(g.kind==='rect'){
+    var r0=g.rect; var s0=P(r0[0],r0[1]),s1=P(r0[2],r0[1]),s2=P(r0[2],r0[3]),s3=P(r0[0],r0[3]);
+    ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.beginPath();
+    ctx.moveTo(s0[0],s0[1]);ctx.lineTo(s1[0],s1[1]);ctx.lineTo(s2[0],s2[1]);ctx.lineTo(s3[0],s3[1]);
+    ctx.closePath();ctx.fill();ctx.restore();
+    ctx.save();ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.2;ctx.stroke();ctx.restore();
+    bfieldRect(r0[0],r0[1],r0[2],r0[3],m.Binto,0.95);
+  } else if(g.kind==='circle'){
+    var O=g.O,Rc=g.Rc; var sO=P(O[0],O[1]);
+    ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.2;
+    ctx.beginPath();ctx.arc(sO[0],sO[1],Rc*V.sc,0,7);ctx.fill();ctx.stroke();ctx.restore();
+    // B marks inside circle
+    bfieldMarksCircle(O,Rc,m.Binto,0.95);
+  }
+  // full auxiliary circle (dashed, faint) — reveals geometry
+  var sC=P(a.Cx,a.Cy);
+  ctx.save();ctx.strokeStyle='rgba(150,180,230,.28)';ctx.lineWidth=1;ctx.setLineDash([4,5]);
+  ctx.beginPath();ctx.arc(sC[0],sC[1],a.R*V.sc,0,7);ctx.stroke();ctx.restore();
+  // entry velocity (incoming dashed)
+  var vin=g.vel; var sE=P(E[0],E[1]);
+  var back=[E[0]-vin[0]*0.9, E[1]-vin[1]*0.9];
+  arrow.apply(null,P(back[0],back[1]).concat(sE).concat(['#9fd0ff',2,9]));
+  // arc up to current
+  var sNow=sw*ease(p);
+  ctx.save();ctx.strokeStyle='#7fffd0';ctx.lineWidth=3.2;ctx.lineCap='round';
+  ctx.shadowColor='rgba(80,255,200,.5)';ctx.shadowBlur=8;
+  ctx.beginPath();
+  var steps=70;
+  for(var i=0;i<=steps;i++){ var s=sNow*i/steps; var pos=posAt(a,s); var sp2=P(pos[0],pos[1]);
+    if(i===0)ctx.moveTo(sp2[0],sp2[1]); else ctx.lineTo(sp2[0],sp2[1]); }
+  ctx.stroke();ctx.restore();
+  var posN=posAt(a,sNow); var spN=P(posN[0],posN[1]);
+  // geometry: radius C->pos, chord E->exit, sweep angle — progressive
+  var reveal=Math.max(0,(p-0.30)/0.55);
+  if(reveal>0){
+    ctx.save();ctx.globalAlpha=reveal;
+    // radius line
+    line(sC[0],sC[1],spN[0],spN[1],'#ffd479',1.6);
+    // center dot
+    ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(sC[0],sC[1],3,0,7);ctx.fill();
+    txt('O',sC[0]+7,sC[1]-7,'#ffd479',12,'left','700');
+    // sweep angle arc at center
+    var aS=a.a0, aE=a.a0+a.asign*sNow;
+    ctx.strokeStyle='rgba(255,212,121,.85)';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.arc(sC[0],sC[1],18,aS,aE,a.asign<0);ctx.stroke();
+    ctx.restore();
+  }
+  // chord + exit velocity near end
+  if(p>0.62){
+    var sExit=sw; var posX=posAt(a,sExit); var sX=P(posX[0],posX[1]);
+    ctx.save();ctx.globalAlpha=(p-0.62)/0.38;
+    line(sE[0],sE[1],sX[0],sX[1],'rgba(255,120,90,.8)',1.6,[3,4]);
+    var tv=tanAt(a,sExit);
+    arrow(sX[0],sX[1],sX[0]+tv[0]*V.sc*0.9,sX[1]-tv[1]*V.sc*0.9,'#ff9a6a',2,9);
+    ctx.restore();
+  }
+  // particle
+  drawParticle(spN[0],spN[1]);
+  // labels
+  txt('v',sE[0]-22,sE[1]-14,'#9fd0ff',13,'right','700');
+}
+
+function bfieldMarksCircle(O,Rc,into,step){
+  ctx.save();ctx.strokeStyle='rgba(120,170,230,.55)';ctx.fillStyle='rgba(120,170,230,.55)';ctx.lineWidth=1.2;
+  for(var x=O[0]-Rc;x<=O[0]+Rc;x+=step)for(var y=O[1]-Rc;y<=O[1]+Rc;y+=step){
+    if(Math.hypot(x-O[0],y-O[1])>Rc)continue;
+    var s=P(x,y);
+    if(into){ line(s[0]-3.5,s[1]-3.5,s[0]+3.5,s[1]+3.5,'rgba(120,170,230,.5)',1.1);
+      line(s[0]-3.5,s[1]+3.5,s[0]+3.5,s[1]-3.5,'rgba(120,170,230,.5)',1.1);}
+    else { ctx.beginPath();ctx.arc(s[0],s[1],2,0,7);ctx.fill(); }
+  }
+  ctx.restore();
+}
+
+function drawParticle(x,y){
+  ctx.save();ctx.shadowColor='rgba(255,140,90,.6)';ctx.shadowBlur=10;
+  ctx.fillStyle='#ff7a4d';ctx.beginPath();ctx.arc(x,y,5.5,0,7);ctx.fill();
+  ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x-1.6,y-1.6,1.8,0,7);ctx.fill();
+  ctx.restore();
+}
+
+// ---------- build bounded model ----------
+function boundedModel(cfg){
+  // cfg: kind, region params, E, vel, qB, R, view, Binto, board, title
+  var m={type:'bound',title:cfg.title,short:cfg.short,group:cfg.group,
+    board:cfg.board,view:cfg.view,Binto:cfg.Binto,dur:cfg.dur||7.5};
+  m.build=function(){
+    var a=makeArc(cfg.E,cfg.vel,cfg.qB,cfg.R);
+    var inF;
+    if(cfg.kind==='line') inF=function(p){return inLine(p,cfg.lA,cfg.ln);};
+    else if(cfg.kind==='parallel') inF=function(p){return inBand(p,cfg.lA,cfg.ln,cfg.lA2,cfg.ln2);};
+    else if(cfg.kind==='rect') inF=function(p){return inRect(p,cfg.rect[0],cfg.rect[1],cfg.rect[2],cfg.rect[3]);};
+    else if(cfg.kind==='circle') inF=function(p){return inCircle(p,cfg.O,cfg.Rc);};
+    var sw=findExit(a,cfg.E,inF);
+    m._geo={kind:cfg.kind,E:cfg.E,vel:cfg.vel,arc:a,sweep:sw,
+      lA:cfg.lA,lB:cfg.lB,ln:cfg.ln,lA2:cfg.lA2,lB2:cfg.lB2,ln2:cfg.ln2,
+      rect:cfg.rect,O:cfg.O,Rc:cfg.Rc};
+  };
+  m.render=function(p){ drawBound(m,p); };
+  return m;
+}
+
+// ============ MODEL DEFINITIONS (18) ============
+// group A: 1-8 ; group B: 9-18
+// R chosen for clarity; geometry computed by engine.
+
+// 1 直线边界（劣弧 / 优弧 · 正负电荷 · 三角形 · 板书归纳）
+(function(){
+  var m={type:'lineA',title:'① 直线边界磁场 · 劣弧与优弧',short:'直线边界',group:'A',dur:11,
+    view:[-6.5,-5.5,12.5,5], Binto:true, noCap:true,
+    ctl:[{key:'theta',label:'入射角 θ',min:25,max:80,step:1,unit:'°'}],
+    theta:55,
+    board:[{t:'k',s:'R = mv / (qB)'},
+      {t:'x',s:'圆心角：＋q = 2π−2θ，－q = 2θ'},
+      {t:'x',s:'   （θ 为入射角；t = 圆心角·R / v）'},
+      {t:'x',s:'弦长 L = 2R·sin(圆心角/2) = 2R·sinθ'},
+      {t:'x',s:'末速度沿轨迹切线'},
+      {t:'x',s:'三角形顶角（圆心处）= 2θ'},
+      {t:'x',s:'出射速度与边界夹角 = θ'}],
+    render:function(p){
+      var deg=m.theta, th=deg*Math.PI/180;
+      var yB=-2.2, xL=-6.5, xR=6.5, yT=4.2, R=3.0;
+      var E=[0,yB];                                   // 入射点（边界中点）
+      var vel=[Math.cos(th),Math.sin(th)];            // 入射速度：与边界成 θ、指向磁场内
+      // 磁场矩形区域（直线边界 + 上方有限长宽，确保轨迹在内）
+      var sBL=P(xL,yB),sBR=P(xR,yB),sTR=P(xR,yT),sTL=P(xL,yT);
+      ctx.save();
+      ctx.fillStyle='rgba(40,90,160,.10)';
+      ctx.beginPath();ctx.moveTo(sBL[0],sBL[1]);ctx.lineTo(sBR[0],sBR[1]);
+      ctx.lineTo(sTR[0],sTR[1]);ctx.lineTo(sTL[0],sTL[1]);ctx.closePath();ctx.fill();
+      ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.4;ctx.stroke();ctx.restore();
+      line(sBL[0],sBL[1],sBR[0],sBR[1],'#7fc0ff',2.8);                 // 边界线强调
+      bfieldRect(xL+0.25,yB+0.25,xR-0.25,yT-0.25,true,1.05);           // × 磁感线
+      lbl('B ⊙ 垂直纸面向里',P(xL+0.4,yT+0.5)[0],P(xL+0.4,yT+0.5)[1],'rgba(150,200,250,.96)',12,'left','700');
+      // 两电荷轨迹（同一入射点、同一速度、相反电性）
+      var aP=makeArc(E,vel,-1,R);   // ＋q → 优弧（中心在磁场内上方，大回环）
+      var aN=makeArc(E,vel,+1,R);   // －q → 劣弧（中心在边界下方，浅弧）
+      var swP=findExit(aP,E,function(pp){return inLine(pp,[0,yB],[0,1]);});
+      var swN=findExit(aN,E,function(pp){return inLine(pp,[0,yB],[0,1]);});
+      var gA=Math.min(1,p/0.6);
+      var sNowP=swP*ease(gA), sNowN=swN*ease(gA);
+      // （不画整圆辅助线，避免越出磁场区域干扰观感）
+      // 入射速度（共享）：始端在边界 E，指向磁场内，紫红色
+      var sE=P(E[0],E[1]);
+      var fwd=[E[0]+vel[0]*1.15, E[1]+vel[1]*1.15]; var sfwd=P(fwd[0],fwd[1]);
+      arrow(sE[0],sE[1],sfwd[0],sfwd[1],'#d23bb0',2.6,10);
+      lbl('v',sE[0]+24,sE[1]+22,'#d23bb0',13,'left','700');
+      // θ 角（在入射点 E 处：速度与边界的夹角）
+      ctx.save();ctx.strokeStyle='rgba(159,208,255,.85)';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.arc(sE[0],sE[1],34,-th,0,false);ctx.stroke();ctx.restore();
+      lbl('θ',sE[0]+30,sE[1]+16,'#9fd0ff',12,'center','700');
+      // 轨迹（随粒子长出）
+      arcPath(aP,sNowP,'#7fffd0',3.2);   // ＋q 绿
+      arcPath(aN,sNowN,'#ff9a6a',3.2);   // －q 橙
+      var pP=posAt(aP,sNowP), pN=posAt(aN,sNowN);
+      drawParticle(P(pP[0],pP[1])[0],P(pP[0],pP[1])[1]);
+      drawParticle(P(pN[0],pN[1])[0],P(pN[0],pN[1])[1]);
+      // 出射速度（动画后段）
+      if(p>0.62){
+        var a2=Math.max(0,(p-0.62)/0.38); ctx.save();ctx.globalAlpha=a2;
+        var tP=tanAt(aP,swP), tN=tanAt(aN,swN);
+        var eP=posAt(aP,swP), eN=posAt(aN,swN);
+        var sEP=P(eP[0],eP[1]), sEN=P(eN[0],eN[1]);
+        arrow(sEP[0],sEP[1],sEP[0]+tP[0]*V.sc*1.1,sEP[1]-tP[1]*V.sc*1.1,'#7fffd0',2.2,9);
+        arrow(sEN[0],sEN[1],sEN[0]+tN[0]*V.sc*1.1,sEN[1]-tN[1]*V.sc*1.1,'#ff9a6a',2.2,9);
+        drawExitTheta(sEP,tP,'#7fffd0');
+        drawExitTheta(sEN,tN,'#ff9a6a');
+        ctx.restore();
+      }
+      // 三角形：进磁场 E · 出磁场 X · 圆心 C
+      var rev=Math.max(0,(p-0.55)/0.15);
+      if(rev>0){ tri(aP,swP,E,'#7fffd0',rev,true); tri(aN,swN,E,'#ff9a6a',rev*0.9,false); }
+      // 电荷标签
+      lbl('＋q（优弧）',P(-3.6,4.7)[0],P(-3.6,4.7)[1],'#7fffd0',12.5,'center','700');
+      lbl('－q（劣弧）',P(3.6,4.7)[0],P(3.6,4.7)[1],'#ff9a6a',12.5,'center','700');
+      // 动画结束后：右 1/3 打字机板书归纳
+      typeBox(p,deg);
+    }};
+  M.push(m);
+  function auxC(a,col){var sC=P(a.Cx,a.Cy);ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(sC[0],sC[1],a.R*V.sc,0,7);ctx.stroke();ctx.restore();}
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.beginPath();var steps=90;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function lbl(s,x,y,col,sz,al,wt){
+    ctx.save();
+    ctx.fillStyle=col||'#cfe3ff'; ctx.font=(wt||'400')+' '+(sz||13)+'px "Microsoft YaHei",sans-serif';
+    ctx.textAlign=al||'left'; ctx.textBaseline='middle';
+    ctx.fillText(s,x,y); ctx.restore();
+  }
+  function tri(a,sw,E,col,rev,showEntry){var C=[a.Cx,a.Cy];var ex=posAt(a,sw);var sC=P(C[0],C[1]),sE=P(E[0],E[1]),sX=P(ex[0],ex[1]);
+    ctx.save();ctx.globalAlpha=rev;ctx.strokeStyle=col;ctx.lineWidth=1.8;ctx.setLineDash([2,3]);
+    ctx.beginPath();ctx.moveTo(sE[0],sE[1]);ctx.lineTo(sC[0],sC[1]);ctx.lineTo(sX[0],sX[1]);ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(sC[0],sC[1],3.2,0,7);ctx.fill();
+    ctx.restore();
+    var below=a.Cy<-2.0, off=below?15:-15;
+    lbl('2θ',sC[0],sC[1]-off,col,11,'center','700');        // 顶角标在夹角内
+    lbl('圆心 C',sC[0]+6,sC[1]+off,col,11,'left','700');     // 圆心标签置于夹角外侧，避开虚线边
+    if(showEntry)lbl('进',sE[0],sE[1]+16,col,11,'center','700');
+    lbl('出',sX[0],sX[1]+16,col,11,'center','700');}
+  function drawExitTheta(s,t,col){
+    var vAng=Math.atan2(-t[1],t[0]);   // 出射速度屏幕角（y 向下为正）
+    var r=32;
+    ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.globalAlpha*=0.92;
+    ctx.beginPath();ctx.arc(s[0],s[1],r,0,vAng, vAng<0);ctx.stroke();ctx.restore();
+    lbl('θ', s[0]+26, s[1]+16, col, 12, 'center','700');
+  }
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function typeBox(p,deg){
+    if(p<0.66)return;
+    var lines=[
+      '运动半径  R = mv / (qB)',
+      '圆心角(偏向角)：＋q = 2π−2θ，－q = 2θ',
+      '   （θ 为入射角）',
+      '弦长  L = 2R·sin(圆心角/2) = 2R·sinθ',
+      '运动时间  t = 弧长 / v = 圆心角·R / v',
+      '末速度沿轨迹切线',
+      '  （与入射方向夹角 = 圆心角）',
+      '出射速度与边界夹角 = θ'
+    ];
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)';ctx.strokeStyle='rgba(120,170,230,.55)';ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd479';ctx.font='700 14px "Microsoft YaHei"';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('物理归纳（直线边界）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-0.70)/0.30);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0';ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+})();
+// 2 平行边界（三速度 · 相交 / 相切 / 不能到上边界 · 临界条件）
+(function(){
+  function lbl(s,x,y,col,sz,al,wt){ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';ctx.fillText(s,x,y);ctx.restore();}
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.beginPath();var steps=90;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function drawExitTheta(s,t,col){var vAng=Math.atan2(-t[1],t[0]);var r=32;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.globalAlpha*=0.92;ctx.beginPath();ctx.arc(s[0],s[1],r,0,vAng, vAng<0);ctx.stroke();ctx.restore();lbl('θ', s[0]+26, s[1]+16, col, 12, 'center','700');}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  var m={type:'paraA',title:'② 平行边界磁场 · 临界条件',short:'平行边界',group:'A',dur:12,
+    view:[-7,-5,13.5,4.5], Binto:true, noCap:true,
+    board:[{t:'k',s:'三速度 · 三种轨迹（相交/相切/不能到上边界）'},{t:'x',s:'相切(临界)：R = h/(1+cosθ)'},{t:'x',s:'R 小→仍从下边界出；R 大→穿过上边界'}],
+    ctl:[{key:'theta',label:'入射角 θ',min:25,max:80,step:1,unit:'°'},
+         {key:'vmul',label:'速度档位 k',min:0.5,max:0.9,step:0.01,unit:''}],
+    theta:55, vmul:0.7,
+    render:function(p){
+      var deg=m.theta, th=deg*Math.PI/180;
+      var xL=-6.5, xR=6.5, yLo=-2.2, yHi=2.2;          // 上下平行边界（磁场带）
+      var h=yHi-yLo;                                     // 上下边界间距
+      var E=[0.7,yLo];                                   // 入射点（下边界）
+      var vel=[Math.cos(th),Math.sin(th)];               // 与边界成 θ、指向磁场内
+      var Rc=h/(1+Math.cos(th));                         // 相切（临界）半径
+      var Rs=[m.vmul*Rc, Rc, Rc/m.vmul];                 // 三粒子半径（对应三速度）
+      var cols=['#7fffd0','#ffd479','#ff9a6a'];
+      var names=['① 速度较小 → 仍从下边界射出','② 临界 → 与上边界相切','③ 速度较大 → 穿过上边界射出'];
+      // 磁场带（两平行边界 + ×）
+      var sLl=P(xL,yLo), sRl=P(xR,yLo), sLu=P(xL,yHi), sRu=P(xR,yHi);
+      ctx.save(); ctx.fillStyle='rgba(40,90,160,.10)';
+      ctx.beginPath(); ctx.moveTo(sLl[0],sLl[1]); ctx.lineTo(sRl[0],sRl[1]); ctx.lineTo(sRu[0],sRu[1]); ctx.lineTo(sLu[0],sLu[1]); ctx.closePath(); ctx.fill(); ctx.restore();
+      line(sLl[0],sLl[1],sRl[0],sRl[1],'#7fc0ff',2.8);  // 下边界
+      line(sLu[0],sLu[1],sRu[0],sRu[1],'#7fc0ff',2.8);  // 上边界
+      bfieldRect(xL+0.25,yLo+0.25,xR-0.25,yHi-0.25,true,1.05);
+      lbl('B ⊙ 垂直纸面向里',P(xL+0.4,yHi+0.35)[0],P(xL+0.4,yHi+0.35)[1],'rgba(150,200,250,.96)',12,'left','700');
+      lbl('上边界',P(2.4,yHi-0.3)[0],P(2.4,yHi-0.3)[1],'rgba(150,200,250,.82)',11,'center','400');
+      lbl('下边界（入射）',P(2.4,yLo+0.35)[0],P(2.4,yLo+0.35)[1],'rgba(150,200,250,.82)',11,'center','400');
+      // 共享初速度（紫红，始端在边界 E 指向磁场内）
+      var sE=P(E[0],E[1]);
+      var fwd=[E[0]+vel[0]*1.15,E[1]+vel[1]*1.15], sfwd=P(fwd[0],fwd[1]);
+      arrow(sE[0],sE[1],sfwd[0],sfwd[1],'#d23bb0',2.6,10);
+      lbl('v',sE[0]+22,sE[1]-14,'#d23bb0',13,'left','700');
+      // θ 角（入射点 E：速度与下边界夹角）
+      ctx.save(); ctx.strokeStyle='rgba(159,208,255,.85)'; ctx.lineWidth=1.3;
+      ctx.beginPath(); ctx.arc(sE[0],sE[1],34,-th,0,false); ctx.stroke(); ctx.restore();
+      lbl('θ',sE[0]+30,sE[1]-22,'#9fd0ff',12,'center','700');
+      // 三粒子轨迹
+      var gA=Math.min(1,p/0.6);
+      for(var i=0;i<3;i++){
+        var a=makeArc(E,vel,-1,Rs[i]);
+        var inB=function(pp){return inBand(pp,[0,yLo],[0,1],[0,yHi],[0,-1]);};
+        var sw=findExit(a,E,inB);
+        var sN=sw*ease(gA);
+        arcPath(a,sN,cols[i],3.2);
+        var pp=posAt(a,sN);
+        drawParticle(P(pp[0],pp[1])[0],P(pp[0],pp[1])[1]);
+        if(i===1){
+          // 相切粒子：切点 T（圆心正上方 = 上边界接触点）
+          var T=[a.Cx, a.Cy+a.R]; var sT=P(T[0],T[1]);
+          var sC=P(a.Cx,a.Cy);
+          var rev=Math.max(0,(p-0.5)/0.2);
+          if(rev>0){
+            ctx.save(); ctx.globalAlpha=rev; ctx.strokeStyle=cols[1]; ctx.lineWidth=1.8; ctx.setLineDash([2,3]);
+            ctx.beginPath(); ctx.moveTo(sE[0],sE[1]); ctx.lineTo(sC[0],sC[1]); ctx.lineTo(sT[0],sT[1]); ctx.closePath(); ctx.stroke();
+            ctx.setLineDash([]);
+            // 竖直腿：圆心→下边界(Rcosθ) 与 圆心→上边界切点(R)
+            line(sC[0],sC[1],P(a.Cx,yLo)[0],P(a.Cx,yLo)[1],'rgba(255,212,121,.55)',1.3,[3,3]);
+            line(sC[0],sC[1],sT[0],sT[1],'rgba(255,212,121,.9)',1.6,[2,3]);
+            ctx.fillStyle=cols[1]; ctx.beginPath(); ctx.arc(sC[0],sC[1],3.4,0,7); ctx.fill();
+            ctx.restore();
+            lbl('圆心 C',sC[0]-10,sC[1]+14,cols[1],11,'right','700');
+            lbl('R',(sC[0]+sT[0])/2-18,(sC[1]+sT[1])/2,cols[1],11,'left','700');
+            lbl('Rcosθ',sC[0]-22,P(a.Cx,yLo)[1]-12,cols[1],11,'right','700');
+            lbl('进',sE[0],sE[1]-16,cols[1],11,'center','700');
+            lbl('切',sT[0],sT[1]+16,cols[1],11,'center','700');
+          }
+          if(p>0.62){ var a2=Math.max(0,(p-0.62)/0.38); ctx.save(); ctx.globalAlpha=a2; var tT=tanAt(a,sw); arrow(sT[0],sT[1],sT[0]+tT[0]*V.sc*0.9,sT[1]-tT[1]*V.sc*0.9,cols[1],2.2,9); drawExitTheta(sT,tT,cols[1]); ctx.restore(); }
+        } else {
+          var ex=posAt(a,sw); var sX=P(ex[0],ex[1]);
+          lbl(i===0?'出（下边界）':'出（上边界）',sX[0],sX[1]-16,cols[i],11,'center','700');
+          if(p>0.62){ var a3=Math.max(0,(p-0.62)/0.38); ctx.save(); ctx.globalAlpha=a3; var tX=tanAt(a,sw); arrow(sX[0],sX[1],sX[0]+tX[0]*V.sc*0.9,sX[1]-tX[1]*V.sc*0.9,cols[i],2.2,9); drawExitTheta(sX,tX,cols[i]); ctx.restore(); }
+        }
+      }
+      // 三种情况说明（下边界下方留白区，左列竖排）
+      lbl(names[0],P(-6.0,-3.4)[0],P(-6.0,-3.4)[1],cols[0],11.5,'left','700');
+      lbl(names[1],P(-6.0,-3.95)[0],P(-6.0,-3.95)[1],cols[1],11.5,'left','700');
+      lbl(names[2],P(-6.0,-4.5)[0],P(-6.0,-4.5)[1],cols[2],11.5,'left','700');
+      // 右 1/3 打字机板书
+      pTypeBox(p);
+    }};
+  M.push(m);
+  function pTypeBox(p){
+    if(p<0.66)return;
+    var lines=[
+      '运动半径  R = mv / (qB)',
+      '上下边界间距  h',
+      '相切（临界）条件：',
+      '    R(1+cosθ) = h',
+      '即  R = h / (1+cosθ)',
+      '   （或  cosθ = h/R − 1）',
+      'R < h/(1+cosθ) → 从下边界射出',
+      'R = h/(1+cosθ) → 与上边界相切',
+      'R > h/(1+cosθ) → 穿过上边界射出',
+      '末速度沿轨迹切线；与边界夹角 = θ'
+    ];
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（平行边界）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-0.70)/0.30);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+})();
+
+// 3 圆形边界·径向（公共弦 · 两圆圆心连线 · 圆心角关系）
+(function(){
+  function lbl(s,x,y,col,sz,al,wt){ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';ctx.fillText(s,x,y);ctx.restore();}
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.beginPath();var steps=90;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  var m={type:'circRad',title:'③ 圆形边界 · 径向入射',short:'圆形·径向',group:'A',dur:12,
+    view:[-6.5,-5.5,13,5.5], Binto:true, noCap:true,
+    board:[{t:'k',s:'公共弦 AB：2·Rc·sin(α/2)=2·r·sin(φ/2)'},
+      {t:'x',s:'径向射入 → 圆心角 α+φ=π'},
+      {t:'x',s:'O 轨迹圆心 / O′ 边界圆心'}],
+    ctl:[{key:'v',label:'速度 v（圆周运动半径 r）',min:1.6,max:3.4,step:0.05,unit:''}],
+    v:2.8,
+    render:function(p){
+      var Rc=3.6;                         // 磁场边界半径（固定）
+      var r=m.v;                           // 圆周运动半径（∝速度，可调）
+      var O_=[0,0];                        // 边界圆心
+      var A=[-Rc,0];                       // 入射点（边界最左端）
+      var vel=[1,0];                       // 径向射入（指向圆心）
+      var a=makeArc(A,vel,-1,r);           // 轨迹圆（＋q）
+      var inF=function(pp){return inCircle(pp,O_,Rc);};
+      var sw=findExit(a,A,inF);            // 出磁场扫掠长度
+      var B=posAt(a,sw);                    // 出磁场点
+      var O=[a.Cx,a.Cy];                    // 轨迹圆心
+      var sO=P(O_[0],O_[1]), sO2=P(O[0],O[1]), sE=P(A[0],A[1]), sB=P(B[0],B[1]);
+      // 磁场区域（圆 + × 磁感线）
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.4;
+      ctx.beginPath();ctx.arc(sO[0],sO[1],Rc*V.sc,0,7);ctx.fill();ctx.stroke();ctx.restore();
+      bfieldMarksCircle(O_,Rc,true,1.0);
+      lbl('B ⊙ 垂直纸面向里',P(Rc*0.55,-Rc*0.78)[0],P(Rc*0.55,-Rc*0.78)[1],'rgba(150,200,250,.92)',12,'left','700');
+      // 初速度（紫红，始端在边界 A，指向磁场内，加长）
+      var L=1.9; var fwd=[A[0]+vel[0]*L, A[1]+vel[1]*L], sfwd=P(fwd[0],fwd[1]);
+      arrow(sE[0],sE[1],sfwd[0],sfwd[1],'#d23bb0',2.7,10);
+      lbl('v',sfwd[0]+9,sfwd[1]-2,'#d23bb0',13,'left','700');
+      // 动态轨迹（随粒子长出）
+      var gA=Math.min(1,p/0.45);
+      var sN=sw*ease(gA);
+      arcPath(a,sN,'#7fffd0',3.2);
+      var pp=posAt(a,sN); drawParticle(P(pp[0],pp[1])[0],P(pp[0],pp[1])[1]);
+      // 公共弦 AB（轨迹形成后连成，动画生长）
+      var chP=Math.max(0,(p-0.45)/0.15);
+      if(chP>0){
+        var mid=[A[0]+(B[0]-A[0])*ease(chP), A[1]+(B[1]-A[1])*ease(chP)]; var smid=P(mid[0],mid[1]);
+        ctx.save();ctx.strokeStyle='#ff9a6a';ctx.lineWidth=2;ctx.setLineDash([5,4]);
+        ctx.beginPath();ctx.moveTo(sE[0],sE[1]);ctx.lineTo(smid[0],smid[1]);ctx.stroke();ctx.restore();
+      }
+      // 两圆圆心连线与半径（构造线，依次淡入）
+      function seg(Pa,Pb,col,w,d,al){ ctx.save();ctx.globalAlpha=al;ctx.strokeStyle=col;ctx.lineWidth=w;if(d)ctx.setLineDash(d);ctx.beginPath();ctx.moveTo(Pa[0],Pa[1]);ctx.lineTo(Pb[0],Pb[1]);ctx.stroke();ctx.restore(); }
+      var t1=Math.max(0,(p-0.60)/0.05), t2=Math.max(0,(p-0.65)/0.05), t3=Math.max(0,(p-0.70)/0.05),
+          t4=Math.max(0,(p-0.75)/0.05), t5=Math.max(0,(p-0.80)/0.05);
+      seg(sO,sE,'rgba(127,192,255,.85)',1.6,null,ease(t1));     // O′→A
+      seg(sO,sB,'rgba(127,192,255,.85)',1.6,null,ease(t2));     // O′→B
+      seg(sO2,sE,'rgba(127,255,208,.9)',1.7,null,ease(t3));     // O→A
+      seg(sO2,sB,'rgba(127,255,208,.9)',1.7,null,ease(t4));     // O→B
+      seg(sO,sO2,'rgba(255,212,121,.9)',1.8,[4,4],ease(t5));    // O′→O
+      // 圆心点
+      ctx.save();ctx.fillStyle='#7fc0ff';ctx.beginPath();ctx.arc(sO[0],sO[1],3.4,0,7);ctx.fill();
+      ctx.fillStyle='#7fffd0';ctx.beginPath();ctx.arc(sO2[0],sO2[1],3.4,0,7);ctx.fill();ctx.restore();
+      // 圆心角弧（φ 在 O，α 在 O′）
+      function wedge(c,p1,p2,col){var sc=P(c[0],c[1]),s1=P(p1[0],p1[1]),s2=P(p2[0],p2[1]);
+        var a1=Math.atan2(s1[1]-sc[1],s1[0]-sc[0]),a2=Math.atan2(s2[1]-sc[1],s2[0]-sc[0]);
+        var d=a2-a1;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
+        ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(sc[0],sc[1],20,a1,a1+d,d<0);ctx.stroke();ctx.restore();}
+      if(p>0.66){ var g6=ease(Math.max(0,(p-0.66)/0.1)); ctx.save();ctx.globalAlpha=g6;
+        wedge(O,A,B,'#7fffd0'); wedge(O_,A,B,'#7fc0ff'); ctx.restore(); }
+      // 标签（纯定位：空白区 / 夹角内侧，无黑底）
+      var ph=Math.max(0,(p-0.60)/0.22); ctx.save();ctx.globalAlpha=ease(ph);
+      lbl('A（进）',P(A[0],A[1]-0.55)[0],P(A[0],A[1]-0.55)[1],'#cfe3ff',12,'center','700');
+      lbl('B（出）',P(B[0],B[1]+0.5)[0],P(B[0],B[1]+0.5)[1],'#cfe3ff',12,'center','700');
+      lbl('O′ 磁场圆心',P(0.7,-1.5)[0],P(0.7,-1.5)[1],'#7fc0ff',12,'left','700');
+      lbl('O 轨迹圆心',P(O[0]-0.95,O[1]+0.28)[0],P(O[0]-0.95,O[1]+0.28)[1],'#7fffd0',12,'left','700');
+      var oBmid=[(O_[0]+B[0])/2,(O_[1]+B[1])/2], dx=B[0]-O_[0], dy=B[1]-O_[1], Lb=Math.hypot(dx,dy)||1;
+      var rcPos=[oBmid[0]-0.42*dx/Lb, oBmid[1]-0.42*dy/Lb];
+      lbl('Rc',P(rcPos[0],rcPos[1])[0],P(rcPos[0],rcPos[1])[1],'#7fc0ff',11,'center','700');
+      lbl('r',(sO2[0]+sE[0])/2-20,(sO2[1]+sE[1])/2,'#7fffd0',11,'right','700');
+      lbl('弦 AB',(sE[0]+sB[0])/2-12,(sE[1]+sB[1])/2+14,'#ff9a6a',11,'left','700');
+      var bis=function(c,p1,p2){var v1=[p1[0]-c[0],p1[1]-c[1]],v2=[p2[0]-c[0],p2[1]-c[1]];
+        var n1=Math.hypot(v1[0],v1[1]),n2=Math.hypot(v2[0],v2[1]);
+        var bx=v1[0]/n1+v2[0]/n2, by=v1[1]/n1+v2[1]/n2, nb=Math.hypot(bx,by)||1;
+        return [c[0]+bx/nb*0.85, c[1]+by/nb*0.85];};
+      var fp=bis(O,A,B), ap=bis(O_,A,B);
+      lbl('φ',P(fp[0],fp[1])[0],P(fp[0],fp[1])[1],'#7fffd0',13,'center','700');
+      lbl('α',P(ap[0],ap[1])[0],P(ap[0],ap[1])[1],'#7fc0ff',13,'center','700');
+      ctx.restore();
+      // 右 1/3 打字机板书
+      pTypeBox(p);
+    }};
+  M.push(m);
+  function pTypeBox(p){
+    if(p<0.66)return;
+    var lines=[
+      '运动半径  r = mv / (qB)',
+      '磁场边界半径  Rc（圆形区域）',
+      '进 A、出 B 连成公共弦 AB：',
+      '   2·Rc·sin(α/2) = 2·r·sin(φ/2)',
+      '径向射入（v 沿半径指向圆心）：',
+      '   圆心角 α + φ = π  →  α = π − φ',
+      '代入：Rc·cos(φ/2) = r·sin(φ/2)',
+      '即  Rc = r·tan(φ/2)',
+      '   （φ = 2·arctan(Rc/r)）',
+      '末速度沿轨迹切线；沿径向射出'
+    ];
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（圆形·径向）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-0.70)/0.30);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+})();
+// 4 圆形边界·非径向（同点异向 · 紫红轨迹 · 速度可调）
+(function(){
+  function lbl(s,x,y,col,sz,al,wt){
+    ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+
+      'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';
+    ctx.fillText(s,x,y);ctx.restore();
+  }
+  function arcPath(a,sN,col,w){
+    ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';
+    ctx.shadowColor=col;ctx.shadowBlur=6;
+    ctx.beginPath();var steps=90;
+    for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);
+      if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}
+    ctx.stroke();ctx.restore();
+  }
+  function rr(x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+  }
+  var m={type:'circNonRad',title:'④ 圆形边界 · 非径向入射',short:'圆形·非径向',group:'A',dur:13,
+    view:[-6.5,-5.5,13,5.5], Binto:true, noCap:true,
+    board:[{t:'k',s:'圆周运动半径 r = mv/(qB)，由速度 v 决定'},
+      {t:'x',s:'20 个粒子从同一点 A 入射，方向覆盖 0°–180°'},
+      {t:'x',s:'洛伦兹力提供向心力，轨迹为圆弧'},
+      {t:'x',s:'进 A、出 B 均在磁场边界上'},
+      {t:'k',s:'出界点到始点最大距离 = 圆周运动直径 2r'}],
+    ctl:[{key:'v',label:'速度 v（圆周运动半径 r）',min:1.6,max:3.4,step:0.05,unit:''}],
+    v:2.8,
+    render:function(p){
+      var Rc=3.6;                         // 磁场边界半径（固定）
+      var r=m.v;                           // 圆周运动半径（∝速度，可调）
+      var O_=[0,0];                        // 边界圆心
+      var A=[Rc,0];                        // 入射点（边界最右端，所有粒子同点）
+      var N=20;                            // 粒子数
+      var sO=P(O_[0],O_[1]), sA=P(A[0],A[1]);
+      // 磁场区域（圆 + × 磁感线）
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.4;
+      ctx.beginPath();ctx.arc(sO[0],sO[1],Rc*V.sc,0,7);ctx.fill();ctx.stroke();ctx.restore();
+      bfieldMarksCircle(O_,Rc,true,1.0);
+      // B 方向标签（置于磁场圆外下方空白区，不与轨迹重叠）
+      lbl('B ⊙ 垂直纸面向里',P(-1.7,-Rc-0.55)[0],P(-1.7,-Rc-0.55)[1],'rgba(150,200,250,.92)',12,'left','700');
+      // 各粒子：方向覆盖 0°–180°（以向内径向为 90°），紫红家族轨迹
+      for(var i=0;i<N;i++){
+        var dir=(i/(N-1))*180;             // 0°–180° 入射方向
+        var ph=(dir-90)*Math.PI/180;       // 相对向内径向的夹角
+        var vel=[-Math.cos(ph), Math.sin(ph)];   // 向内（x<0）并上下偏
+        var a=makeArc(A,vel,-1,r);
+        var inF=function(pp){return inCircle(pp,O_,Rc);};
+        var sw=findExit(a,A,inF);
+        var B=posAt(a,sw);
+        var sB=P(B[0],B[1]);
+        // 紫红家族：hue 322→282，区分 20 条轨迹
+        var hue=322-40*(i/(N-1));
+        var col='hsl('+hue.toFixed(0)+',78%,60%)';
+        // 初速度矢量（始端在 A，紫红，加长）
+        var L=1.7; var fwd=[A[0]+vel[0]*L, A[1]+vel[1]*L], sF=P(fwd[0],fwd[1]);
+        arrow(sA[0],sA[1],sF[0],sF[1],col,2.2,8);
+        // 轨迹随 p 生长（轻微错峰）
+        var g0=i*0.018, gA=Math.max(0,Math.min(1,(p-g0)/0.45));
+        var sN=sw*ease(gA);
+        arcPath(a,sN,col,1.8);
+        var pp=posAt(a,sN); drawParticle(P(pp[0],pp[1])[0],P(pp[0],pp[1])[1]);
+        // 出射速度矢量（轨迹完成后，沿切线，紫红）
+        if(gA>=1){
+          var tv=tanAt(a,sw);
+          var e0=Math.max(0,(p-0.5-i*0.012)/0.1);
+          if(e0>0){ var e=ease(e0);
+            arrow(sB[0],sB[1], sB[0]+tv[0]*V.sc*0.9*e, sB[1]-tv[1]*V.sc*0.9*e, col,2.0,7);
+          }
+        }
+      }
+      // 入射点标签（纯定位：磁场圆外右侧空白区，无黑底）
+      lbl('A（进）',P(A[0]+0.2,A[1]-0.55)[0],P(A[0]+0.2,A[1]-0.55)[1],'#cfe3ff',12,'left','700');
+      // 右 1/3 打字机板书
+      pTypeBox(p);
+    }};
+  M.push(m);
+  function pTypeBox(p){
+    if(p<0.6)return;
+    var lines=[
+      '圆周运动半径  r = mv / (qB)',
+      '由入射速度 v 决定（v 可调）',
+      '',
+      '所有粒子从同一点 A 入射，',
+      '方向不同 → 轨迹弧不同',
+      '',
+      '洛伦兹力提供向心力，',
+      '轨迹为半径 r 的圆弧',
+      '进 A、出 B 均在磁场边界上'
+    ];
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（圆形·非径向）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-0.64)/0.30);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+})();
+// 5 多解问题：矩形磁场 · 左边界中点水平射入 · 正负粒子 · 三出口
+(function(){
+  function lbl(s,x,y,col,sz,al,wt){ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';ctx.fillText(s,x,y);ctx.restore();}
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=5;ctx.beginPath();var steps=80;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  var m={type:'multi',title:'⑤ 多解问题',short:'多解问题',group:'A',dur:14,
+    view:[-7,-5.5,17,5.5], Binto:true, noCap:true,
+    board:[{t:'k',s:'运动半径 r = mv/(qB)'},
+      {t:'x',s:'矩形磁场：宽 L、半高 b，左边界中点水平射入'},
+      {t:'x',s:'临界 r₁=b/2：r<r₁ → 从左边界射出'},
+      {t:'x',s:'临界 r₂=(L²+b²)/(2b)'},
+      {t:'x',s:'r₁<r<r₂ → 从上/下边界射出'},
+      {t:'x',s:'r>r₂ → 从右边界射出'},
+      {t:'x',s:'±q 偏转相反；速度不同→出射边界不同'}],
+    render:function(p){
+      var L=8, b=4;                         // 磁场矩形：x∈[0,L], y∈[-b,b]
+      var E=[0,0];                          // 左边界中点（入射点）
+      var r0=[0,-b,L,b];                    // 磁场矩形
+      // 磁场矩形绘制
+      var s0=P(r0[0],r0[1]),s1=P(r0[2],r0[1]),s2=P(r0[2],r0[3]),s3=P(r0[0],r0[3]);
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.beginPath();
+      ctx.moveTo(s0[0],s0[1]);ctx.lineTo(s1[0],s1[1]);ctx.lineTo(s2[0],s2[1]);ctx.lineTo(s3[0],s3[1]);ctx.closePath();ctx.fill();ctx.restore();
+      ctx.save();ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.4;ctx.stroke();ctx.restore();
+      bfieldRect(r0[0],r0[1],r0[2],r0[3],true,1.0);
+      // B 方向标签（矩形外下方空白区）
+      lbl('B ⊙ 垂直纸面向里',P(1.2,-b-0.55)[0],P(1.2,-b-0.55)[1],'rgba(150,200,250,.92)',12,'left','700');
+      // 入射（紫红，始端在左边界外，水平射入）
+      var back=[E[0]-1.6,E[1]]; var sb=P(back[0],back[1]), sE=P(E[0],E[1]);
+      arrow(sb[0],sb[1],sE[0],sE[1],'#d23bb0',2.6,10);
+      lbl('v',sb[0]-6,sb[1]-12,'#d23bb0',13,'right','700');
+      // 粒子规格：[qB符号, r, col]  （B向里：+q向上偏转、-q向下偏转）
+      var specs=[
+        [ 1, 1.5, '#ff8a4b'],   // -q 下偏·小 → 左
+        [-1, 1.5, '#ffb347'],   // +q 上偏·小 → 左
+        [ 1, 4.0, '#4bc8ff'],   // -q 下偏·中 → 下
+        [-1, 4.0, '#57e0d8'],   // +q 上偏·中 → 上
+        [ 1,12.0, '#3a8bff'],   // -q 下偏·大 → 右
+        [-1,12.0, '#7c5cff']    // +q 上偏·大 → 右
+      ];
+      var exits=[];
+      // 辅助圆（虚线，淡，裁剪在磁场内）
+      ctx.save();ctx.beginPath();ctx.rect(s0[0],s0[1],s1[0]-s0[0],s3[1]-s0[1]);ctx.clip();
+      for(var i=0;i<specs.length;i++){
+        var qs=specs[i][0], r=specs[i][1];
+        var a=makeArc(E,[1,0],qs,r);
+        var sC=P(a.Cx,a.Cy);
+        ctx.save();ctx.strokeStyle='rgba(150,180,230,.16)';ctx.lineWidth=1;ctx.setLineDash([4,5]);
+        ctx.beginPath();ctx.arc(sC[0],sC[1],r*V.sc,0,7);ctx.stroke();ctx.restore();
+      }
+      ctx.restore();
+      // 轨迹 + 粒子 + 出射速度（错峰生长）
+      for(var i=0;i<specs.length;i++){
+        var qs=specs[i][0], r=specs[i][1], col=specs[i][2];
+        var a=makeArc(E,[1,0],qs,r);
+        var sw=findExit(a,E,function(pp){return inRect(pp,r0[0],r0[1],r0[2],r0[3]);});
+        var Bp=posAt(a,sw); var sB=P(Bp[0],Bp[1]);
+        exits.push({Bp:Bp,sB:sB,col:col});
+        var g0=i*0.05, gA=Math.max(0,Math.min(1,(p-g0)/0.55));
+        var sN=sw*ease(gA);
+        arcPath(a,sN,col,2.6);
+        var pp=posAt(a,sN); drawParticle(P(pp[0],pp[1])[0],P(pp[0],pp[1])[1]);
+        if(gA>=1){
+          var e0=Math.max(0,(p-0.62-i*0.02)/0.12);
+          if(e0>0){var e=ease(e0);var tv=tanAt(a,sw);
+            arrow(sB[0],sB[1], sB[0]+tv[0]*V.sc*0.7*e, sB[1]-tv[1]*V.sc*0.7*e, col,2,8);}
+        }
+      }
+      // 出射点 / 入射点标签（纯定位：空白区，无黑底）
+      var ph=Math.max(0,(p-0.5)/0.3); ctx.save();ctx.globalAlpha=ease(ph);
+      lbl('进（左边界中点）',P(-3.2,-1.5)[0],P(-3.2,-1.5)[1],'#cfe3ff',12,'left','700');
+      lbl('出（左）',P(-1.9, 3.4)[0],P(-1.9, 3.4)[1],'#ffb347',12,'left','700');
+      lbl('出（左）',P(-1.9,-3.4)[0],P(-1.9,-3.4)[1],'#ff8a4b',12,'left','700');
+      lbl('出（上）',P(4, b+0.6)[0],P(4, b+0.6)[1],'#57e0d8',12,'center','700');
+      lbl('出（下）',P(4,-b-0.6)[0],P(4,-b-0.6)[1],'#4bc8ff',12,'center','700');
+      lbl('出（右）',P(5.0, 3.7)[0],P(5.0, 3.7)[1],'#7c5cff',12,'left','700');
+      lbl('出（右）',P(5.0,-3.7)[0],P(5.0,-3.7)[1],'#3a8bff',12,'left','700');
+      lbl('＋q：向上偏转',P(-6.4, 4.5)[0],P(-6.4, 4.5)[1],'#ffb347',12,'left','700');
+      lbl('－q：向下偏转',P(-6.4, 3.7)[0],P(-6.4, 3.7)[1],'#4bc8ff',12,'left','700');
+      ctx.restore();
+      // 右 1/3 打字机板书
+      pTypeBox(p);
+    }};
+  function pTypeBox(p){
+    if(p<0.66)return;
+    var lines=[
+      '运动半径  r = mv/(qB)',
+      '矩形磁场：宽 L、半高 b',
+      '左边界中点水平射入',
+      '临界半径  r₁ = b/2',
+      '  r < r₁  →  从左边界射出',
+      '临界半径  r₂ = (L²+b²)/(2b)',
+      '  r₁<r<r₂  →  从上/下边界射出',
+      '  r > r₂  →  从右边界射出',
+      '±q 偏转相反（轨迹对称）',
+      '速度不同→半径不同→出口不同'
+    ];
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（多解）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-0.70)/0.30);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  m.build=function(){};
+  M.push(m);
+})();
+// 6 平移圆（三角形边界 · 粒子全部垂直底边射入）
+(function(){
+  function lbl(s,x,y,col,sz,al,wt){ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';ctx.fillText(s,x,y);ctx.restore();}
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.beginPath();var steps=100;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function arcDash(a,sN,col,w,dash){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash||[5,5]);ctx.beginPath();var steps=80;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function rr(x,y,w,h,ra){ctx.beginPath();ctx.moveTo(x+ra,y);ctx.arcTo(x+w,y,x+w,y+h,ra);ctx.arcTo(x+w,y+h,x,y+h,ra);ctx.arcTo(x,y+h,x,y,ra);ctx.arcTo(x,y,x+w,y,ra);ctx.closePath();}
+  var BL=8, TH=Math.PI/6, HT=BL*Math.tan(TH), R0=1.8;   // 底边 OQ、顶角 30°、高、圆周运动半径
+  var m={type:'transCirc',title:'⑥ 平移圆 · 三角形边界',short:'平移圆',group:'A',dur:12,
+    view:[-0.6,-1.0,12.4,5.4], Binto:true, noCap:true,
+    board:[
+      {t:'k',s:'同速、同向、入射点不同 → 圆整体平移'},
+      {t:'x',s:'速度⊥底边 → 圆心必在底边所在直线上'},
+      {t:'x',s:'圆心间距 = 入射点间距（平移圆）'},
+      {t:'x',s:'临界：轨迹圆与斜边 OP 相切'},
+      {t:'x',s:'相切时圆心 C 到 OP 的距离 = r'},
+      {t:'x',s:'(OA−r)·sin30° = r  →  OA = 3r'},
+      {t:'x',s:'OA < 3r → 从 OP 斜边射出'},
+      {t:'x',s:'OA > 3r → 回到底边射出'}],
+    render:function(p){
+      var sO=P(0,0), sQ=P(BL,0), sPv=P(BL,HT);
+      // ---- 三角形磁场：半透填充 + 虚线边界 ----
+      ctx.save();ctx.beginPath();
+      ctx.moveTo(sO[0],sO[1]);ctx.lineTo(sQ[0],sQ[1]);ctx.lineTo(sPv[0],sPv[1]);ctx.closePath();
+      ctx.fillStyle='rgba(40,90,160,.10)';ctx.fill();
+      ctx.setLineDash([7,6]);ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.0;ctx.stroke();ctx.restore();
+      bfieldMarks([[0,0],[BL,0],[BL,HT]],true,0.9);
+      // ---- 平移圆族：同半径 r，圆心沿底边平移 ----
+      var fam=[0.4,1.6,2.8,4.4], nF=fam.length;
+      var phF=Math.max(0,Math.min(1,(p-0.02)/0.26));
+      ctx.save();ctx.beginPath();
+      ctx.moveTo(sO[0],sO[1]);ctx.lineTo(sQ[0],sQ[1]);ctx.lineTo(sPv[0],sPv[1]);ctx.closePath();ctx.clip();
+      for(var i=0;i<nF;i++){
+        var cf=fam[i], axf=cf+R0;
+        var ff=Math.max(0,Math.min(1,phF*nF-i));
+        if(ff<=0) continue;
+        var aF=makeArc([axf,0],[0,1],-1,R0);
+        var swF=(cf<2*R0-1e-9)?(TH+Math.asin(Math.max(-1,Math.min(1,cf/(2*R0))))):Math.PI;
+        ctx.save();ctx.globalAlpha=0.42*ff;
+        arcDash(aF,swF,'#8fd6ff',1.2,[5,5]);
+        var sd=P(cf,0);ctx.fillStyle='#8fd6ff';ctx.beginPath();ctx.arc(sd[0],sd[1],2.2,0,7);ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+      // ---- 三条代表轨迹（同 r，三种结果） ----
+      var specs=[{ax:2.1,c:'#7fffd0'},{ax:5.4,c:'#ffd479'},{ax:7.6,c:'#ff9a6a'}];
+      var exits=[];
+      for(var i=0;i<specs.length;i++){
+        var ax=specs[i].ax, cc=ax-R0;
+        var a=makeArc([ax,0],[0,1],-1,R0);
+        var sw=(cc<2*R0-1e-9)?(TH+Math.asin(Math.max(-1,Math.min(1,cc/(2*R0))))):Math.PI;
+        var pe=posAt(a,sw), se=P(pe[0],pe[1]);
+        exits.push(se);
+        var g0=0.14+i*0.10, gA=Math.max(0,Math.min(1,(p-g0)/0.28));
+        if(gA>0){
+          arcPath(a,sw*ease(gA),specs[i].c,2.6);
+          var pn=posAt(a,sw*ease(gA)), sn=P(pn[0],pn[1]);
+          drawParticle(sn[0],sn[1]);
+        }
+        // 初速度矢量（紫红，始端在底边上，垂直底边射入）
+        var s0=P(ax,0), s1=P(ax,1.02);
+        arrow(s0[0],s0[1],s1[0],s1[1],'#d23bb0',2.4,9);
+        // 出射点小环
+        if(gA>=1){
+          ctx.save();ctx.strokeStyle=specs[i].c;ctx.lineWidth=2;
+          ctx.beginPath();ctx.arc(se[0],se[1],4.6,0,7);ctx.stroke();ctx.restore();
+        }
+      }
+      // ---- 临界构造：O—C—T 直角三角形（∠O=30°，∠T=90°） ----
+      var phC=Math.max(0,Math.min(1,(p-0.52)/0.18));
+      if(phC>0){
+        var C2=[2*R0,0], T=[1.5*R0, R0*Math.sqrt(3)/2];
+        var sC2=P(C2[0],C2[1]), sT=P(T[0],T[1]);
+        ctx.save();ctx.globalAlpha=Math.min(1,phC*1.2);
+        // 尺寸线 OC = 2r（底边下方，不压任何线）
+        var d1=P(0,-0.17), d2=P(C2[0],-0.17);
+        ctx.setLineDash([5,4]);ctx.strokeStyle='rgba(255,212,121,.9)';ctx.lineWidth=1.4;
+        ctx.beginPath();ctx.moveTo(d1[0],d1[1]);ctx.lineTo(d2[0],d2[1]);ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();ctx.moveTo(d1[0],d1[1]-5);ctx.lineTo(d1[0],d1[1]+5);
+        ctx.moveTo(d2[0],d2[1]-5);ctx.lineTo(d2[0],d2[1]+5);ctx.stroke();
+        // 半径 C→T（⊥ OP）
+        ctx.setLineDash([5,4]);
+        ctx.beginPath();ctx.moveTo(sC2[0],sC2[1]);ctx.lineTo(sT[0],sT[1]);ctx.stroke();
+        ctx.restore();
+        // 直角标记
+        var u1=[0.5,-Math.sqrt(3)/2], u2=[-Math.sqrt(3)/2,-0.5];
+        var q1=P(T[0]+0.20*u1[0],T[1]+0.20*u1[1]);
+        var q2=P(T[0]+0.20*(u1[0]+u2[0]),T[1]+0.20*(u1[1]+u2[1]));
+        var q3=P(T[0]+0.20*u2[0],T[1]+0.20*u2[1]);
+        line(q1[0],q1[1],q2[0],q2[1],'rgba(255,212,121,.9)',1.3);
+        line(q2[0],q2[1],q3[0],q3[1],'rgba(255,212,121,.9)',1.3);
+        // 切点
+        ctx.save();ctx.strokeStyle='#ffd479';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(sT[0],sT[1],4.6,0,7);ctx.stroke();ctx.restore();
+      }
+      // ---- 文字标注（纯定位：全部避开轨迹与边界线，无底衬） ----
+      lbl('O',P(-0.20,-0.34)[0],P(-0.20,-0.34)[1],'#cfe3ff',14,'right','700');
+      lbl('Q',P(8.12,-0.34)[0],P(8.12,-0.34)[1],'#cfe3ff',14,'left','700');
+      lbl('P',P(8.05,HT+0.28)[0],P(8.05,HT+0.28)[1],'#cfe3ff',14,'left','700');
+      // 30° 角弧（0°→30°，屏幕角取负）
+      ctx.save();ctx.strokeStyle='rgba(150,200,250,.85)';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.arc(sO[0],sO[1],0.85*V.sc,-TH,0,false);ctx.stroke();ctx.restore();
+      lbl('30°',P(1.22,0.20)[0],P(1.22,0.20)[1],'#9fd0ff',12,'left','700');
+      // 初速度 v（标在中间粒子处）
+      lbl('v',P(2.30,1.12)[0],P(2.30,1.12)[1],'#d23bb0',13,'left','700');
+      // 出（OP 边）
+      var phE=Math.max(0,Math.min(1,(p-0.42)/0.16));
+      if(phE>0){ctx.save();ctx.globalAlpha=phE;
+        lbl('出（OP 边）',P(1.60,1.52)[0],P(1.60,1.52)[1],'#7fffd0',12,'right','700');
+      ctx.restore();}
+      // 构造标注
+      if(phC>0){ctx.save();ctx.globalAlpha=Math.min(1,phC*1.2);
+        lbl('2r',P(1.80,-0.42)[0],P(1.80,-0.42)[1],'#ffd479',12,'center','700');
+        lbl('C',P(3.56,-0.42)[0],P(3.56,-0.42)[1],'#ffd479',12,'center','700');
+        lbl('r',P(3.70,0.56)[0],P(3.70,0.56)[1],'#ffd479',12,'left','700');
+        lbl('A',P(5.26,-0.42)[0],P(5.26,-0.42)[1],'#cfe3ff',12,'right','700');
+        lbl('切',P(2.60,1.82)[0],P(2.60,1.82)[1],'#ffd479',12,'left','700');
+      ctx.restore();}
+      // 底边说明（下方空白区）
+      lbl('圆心共线（在底边上）',P(0.20,-0.80)[0],P(0.20,-0.80)[1],'rgba(150,200,250,.88)',11,'left','700');
+      lbl('B ⊙ 垂直纸面向里',P(0.20,-1.16)[0],P(0.20,-1.16)[1],'rgba(150,200,250,.92)',12,'left','700');
+      // 三种情况图例（磁场上方的空白区，不压任何线）
+      var phL=Math.max(0,Math.min(1,(p-0.60)/0.18));
+      if(phL>0){ctx.save();ctx.globalAlpha=phL;
+        lbl('OA < 3r：从 OP 斜边射出',P(0.35,4.02)[0],P(0.35,4.02)[1],'#7fffd0',12.5,'left','700');
+        lbl('OA = 3r：轨迹与 OP 相切',P(0.35,3.55)[0],P(0.35,3.55)[1],'#ffd479',12.5,'left','700');
+        lbl('OA > 3r：回到底边射出',P(0.35,3.08)[0],P(0.35,3.08)[1],'#ff9a6a',12.5,'left','700');
+      ctx.restore();}
+      // 右 1/3 打字机板书
+      pTypeBox(p);
+    }};
+  function pTypeBox(p){
+    if(p<0.66)return;
+    var lines=[
+      '平移圆：同速、同向、入射点不同',
+      '速度⊥底边 → 圆心在底边所在直线',
+      '圆心间距 = 入射点间距',
+      '',
+      '临界：轨迹圆与斜边 OP 相切',
+      '  圆心 C 到 OP 的距离 = r',
+      '  (OA−r)·sin30° = r',
+      '  →  OA = 3r',
+      '',
+      'OA < 3r  →  从 OP 斜边射出',
+      'OA > 3r  →  回到底边射出'
+    ];
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（平移圆·临界）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-0.70)/0.30);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  M.push(m);
+})();
+// 7 旋转圆（水平边界 · 点源 0°-360° 发射 · 极值半圆 · 间距演示）
+(function(){
+  function lbl(s,x,y,col,sz,al,wt){
+    ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+
+      'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';
+      ctx.fillText(s,x,y);ctx.restore();
+  }
+  function arcPath(a,sN,col,w){
+    ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';
+    ctx.shadowColor=col;ctx.shadowBlur=6;
+    ctx.beginPath();var steps=90;
+    for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);
+      if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}
+    ctx.stroke();ctx.restore();
+  }
+  function rr(x,y,w,h,r){
+    ctx.beginPath();ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+  }
+  // 由起点 S 与出界点 P 求"留在磁场内(y>=0)"的圆弧（半径 R）
+  function fanArc(S,Pp,R){
+    var dx=Pp[0]-S[0], dy=Pp[1]-S[1];
+    var d=Math.hypot(dx,dy);
+    if(d>2*R*0.999||d<1e-6)return null;
+    var Mx=(S[0]+Pp[0])/2, My=(S[1]+Pp[1])/2;
+    var h=Math.sqrt(Math.max(0,R*R-(d/2)*(d/2)));
+    var px=-dy, py=dx; var pl=Math.hypot(px,py); px/=pl; py/=pl;
+    var C1x=Mx+h*px, C1y=My+h*py;
+    var C2x=Mx-h*px, C2y=My-h*py;
+    var Cx, Cy;
+    if(C1y>=C2y){ Cx=C1x; Cy=C1y; } else { Cx=C2x; Cy=C2y; }
+    var a0=Math.atan2(S[1]-Cy, S[0]-Cx);
+    var aP=Math.atan2(Pp[1]-Cy, Pp[0]-Cx);
+    var delta=aP-a0;
+    while(delta>Math.PI)delta-=2*Math.PI; while(delta<-Math.PI)delta+=2*Math.PI;
+    var asign=(delta>=0)?1:-1; var sweep=Math.abs(delta);
+    var midA=a0+asign*sweep/2;
+    if(Cy+R*Math.sin(midA)<0){ asign=-asign; }
+    return {Cx:Cx,Cy:Cy,R:R,a0:a0,asign:asign,sweep:sweep};
+  }
+  var m={type:'rotCirc',title:'⑦ 旋转圆 · 水平边界点源',short:'旋转圆',group:'A',dur:12,
+    view:[-6.6,-1.3,9.8,6.7], Binto:true, noCap:true,
+    board:[{t:'k',s:'旋转圆：速率相同、方向不同 → 圆心共圆'},
+      {t:'x',s:'圆心绕源 S 旋转，轨迹圆半径 R'},
+      {t:'x',s:'单一电荷：真实出界范围左右不对称'},
+      {t:'k',s:'几何包络 |SP| ≤ 2R（两偏转方向）'},
+      {t:'x',s:'理论最大间距 d = 2√(4R²−L²)'}],
+    ctl:[{key:'L',label:'源到边界距离 L',min:0.6,max:3.4,step:0.1,unit:''}],
+    L:2.0,
+    render:function(p){
+      var R=2.2;
+      var L=m.L;
+      var S_=[0,L];
+      var x0=Math.sqrt(Math.max(0,4*R*R-L*L));   // 极值横坐标
+      var sS=P(S_[0],S_[1]);
+      // 磁场 × 符号（上方区域）
+      bfieldRect(-6.2,0.3,6.0,6.4,true,0.98);
+      // 边界（水平，贯穿）
+      var bL=P(-6.3,0), bR=P(6.0,0);
+      line(bL[0],bL[1],bR[0],bR[1],'#5fa8e6',2.6);
+      // 标签（纯定位，置于空白/边角，无黑底）
+      lbl('磁场 B ⊙ 垂直纸面向里', P(-6.0,6.25)[0], P(-6.0,6.25)[1], 'rgba(150,200,250,.9)',12,'left','700');
+      lbl('磁场边界 MN', P(-6.0,0.55)[0], P(-6.0,0.55)[1], '#9fd0ff',12,'left','700');
+      lbl('旋转圆（圆心轨迹）', P(-6.0,5.75)[0], P(-6.0,5.75)[1], 'rgba(150,180,230,.78)',11.5,'left');
+      lbl('2R 包络圆（|SP|≤2R · 理论最大范围）', P(-6.0,5.35)[0], P(-6.0,5.35)[1], 'rgba(255,212,121,.85)',11.5,'left');
+      // 旋转圆（圆心轨迹：半径 R 绕 S）
+      ctx.save();ctx.strokeStyle='rgba(150,180,230,.32)';ctx.lineWidth=1.2;ctx.setLineDash([4,5]);
+      ctx.beginPath();ctx.arc(sS[0],sS[1],R*V.sc,0,7);ctx.stroke();ctx.restore();
+      // 2R 圆（极值圆：半径 2R 绕 S）
+      ctx.save();ctx.strokeStyle='rgba(255,212,121,.38)';ctx.lineWidth=1.2;ctx.setLineDash([6,5]);
+      ctx.beginPath();ctx.arc(sS[0],sS[1],2*R*V.sc,0,7);ctx.stroke();ctx.restore();
+      // 放射源 S
+      ctx.save();ctx.fillStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.85)';ctx.shadowBlur=12;
+      ctx.beginPath();ctx.arc(sS[0],sS[1],5,0,7);ctx.fill();ctx.restore();
+      lbl('放射源 S', P(0.35,L+0.34)[0], P(0.35,L+0.34)[1], '#ffd479',12,'left','700');
+      lbl('（距边界 L='+L.toFixed(1)+'）', P(0.35,L-0.30)[0], P(0.35,L-0.30)[1], 'rgba(255,212,121,.85)',10.5,'left');
+      // L 构造线（S 垂直到边界，虚线，置于轨迹之下）
+      line(sS[0],sS[1],P(0,0)[0],P(0,0)[1],'rgba(255,212,121,.33)',1,[3,4]);
+      // 0°-360° 发射方向（淡射线，示意各向同性）
+      for(var k=0;k<36;k++){ var ph=k/36*2*Math.PI;
+        var re=[S_[0]+Math.cos(ph)*0.45, S_[1]+Math.sin(ph)*0.45]; var sre=P(re[0],re[1]);
+        line(sS[0],sS[1],sre[0],sre[1],'rgba(200,220,255,.12)',1); }
+      // ===== 真实轨迹：固定电荷 qB=-1，0°-360° 每 10° 发射 =====
+      var gA=ease(Math.max(0,Math.min(1,(p-0.04)/0.5)));
+      if(m._L!==m.L||!m._ex){ m._ex=[]; for(var d=0; d<360; d+=10){
+        var aa=d*Math.PI/180; var vv=[Math.cos(aa),Math.sin(aa)];
+        var ar=makeArc(S_,vv,-1,R);
+        var se2=findExit(ar,S_,function(pp){return pp[1] >= -1e-6;});
+        if(se2>=2*Math.PI+0.001){ m._ex.push({deg:d,arc:ar,exit:null,s:2*Math.PI}); }
+        else { var pp2=posAt(ar,se2); m._ex.push({deg:d,arc:ar,exit:pp2,s:se2}); } }
+        m._L=m.L; }
+      var minX=1e9,maxX=-1e9,minI=-1,maxI=-1;
+      for(var i=0;i<m._ex.length;i++){ var e0x=m._ex[i]; if(e0x.exit){
+        if(e0x.exit[0]<minX){minX=e0x.exit[0];minI=i;}
+        if(e0x.exit[0]>maxX){maxX=e0x.exit[0];maxI=i;} } }
+      // 画全部轨迹：出界→留场弧（出界即停，不回磁场）；不出界→整圆环绕（始终在磁场内）
+      for(var i=0;i<m._ex.length;i++){ var e=m._ex[i];
+        if(e.exit){ arcPath(e.arc, e.s*gA, 'rgba(120,220,200,.5)', 1.5); }
+        else { arcPath(e.arc, 2*Math.PI*gA, 'rgba(120,200,230,.22)', 1.0); } }
+      if(gA>0.95){ for(var i=0;i<m._ex.length;i++){ var e=m._ex[i]; if(e.exit){
+        var spx=P(e.exit[0],e.exit[1]); ctx.save();ctx.fillStyle='rgba(120,220,200,.7)';
+        ctx.beginPath();ctx.arc(spx[0],spx[1],2.2,0,7);ctx.fill();ctx.restore(); } } }
+      // 实际极值粒子高亮（固定电荷下真实最左/最右出界）
+      if(minI>=0){ var em=m._ex[minI]; arcPath(em.arc, em.s, '#6ab0ff', 3.0);
+        if(p>0.5){ var sp=P(em.exit[0],em.exit[1]); ctx.save();ctx.strokeStyle='#6ab0ff';ctx.lineWidth=2.4;
+          ctx.beginPath();ctx.arc(sp[0],sp[1],5,0,7);ctx.stroke();ctx.restore();
+          lbl('最左出界', sp[0], sp[1]+20, '#8ac4ff',12,'center','700'); } }
+      if(maxI>=0){ var ez=m._ex[maxI]; arcPath(ez.arc, ez.s, '#ff6a6a', 3.0);
+        if(p>0.5){ var sp=P(ez.exit[0],ez.exit[1]); ctx.save();ctx.strokeStyle='#ff6a6a';ctx.lineWidth=2.4;
+          ctx.beginPath();ctx.arc(sp[0],sp[1],5,0,7);ctx.stroke();ctx.restore();
+          lbl('最右出界', sp[0], sp[1]+20, '#ff8a8a',12,'center','700'); } }
+      // 理论极值 ±x0（几何包络，仅作参考标记）
+      { var sxP=P(x0,0), sxN=P(-x0,0);
+        ctx.save();ctx.fillStyle='rgba(255,212,121,.9)';
+        ctx.beginPath();ctx.arc(sxP[0],sxP[1],3.5,0,7);ctx.fill();
+        ctx.beginPath();ctx.arc(sxN[0],sxN[1],3.5,0,7);ctx.fill();ctx.restore();
+        lbl('理论极值 ±x₀', P(0,-1.45)[0], P(0,-1.45)[1],'rgba(255,212,121,.8)',11,'center'); }
+      // 实际出界间距（最左↔最右真实出界点）
+      if(p>0.45 && minI>=0 && maxI>=0){ var gD=Math.min(1,(p-0.45)/0.3);
+        var aLx=P(minX,0), aRx=P(maxX,0);
+        ctx.save();ctx.strokeStyle='#ffd479';ctx.lineWidth=5;ctx.lineCap='butt';
+        ctx.beginPath();ctx.moveTo(aLx[0],aLx[1]);ctx.lineTo(aLx[0]+(aRx[0]-aLx[0])*gD,aLx[1]);ctx.stroke();ctx.restore();
+        if(gD>=1){ var yDim=P(0,-0.5)[1]; var xl=P(minX,-0.5)[0], xr=P(maxX,-0.5)[0];
+          line(xl,yDim,xr,yDim,'rgba(255,212,121,.85)',1.5);
+          line(aLx[0],aLx[1],xl,yDim,'rgba(255,212,121,.6)',1.2);
+          line(aRx[0],aRx[1],xr,yDim,'rgba(255,212,121,.6)',1.2);
+          arrow(xl,yDim,xl+11,yDim,'rgba(255,212,121,.85)',1.5,7);
+          arrow(xr,yDim,xr-11,yDim,'rgba(255,212,121,.85)',1.5,7);
+          lbl('实际出界间距 d ≈ '+((maxX-minX)).toFixed(2), P(0,-0.95)[0], P(0,-0.95)[1],'#ffd479',13,'center','700');
+        } }
+      pTypeBox(p);
+    }};
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（旋转圆）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.32);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '旋转圆（动态圆·二）',
+      '点源 S 距边界 L，向 0°~360° 发射',
+      '速率相同 → 轨迹圆半径 R 相同',
+      '各轨迹圆圆心绕 S 旋转 → 旋转圆',
+      '（圆心轨迹：以 S 为心、R 为半径）',
+      '',
+      '单一电荷：偏转方向固定',
+      '真实出界范围左右不对称',
+      '左极近 −√(4R²−L²)，右极近 R−√(R²−L²)',
+      '几何包络（两偏转方向）：',
+      '   最大间距 d = 2√(4R² − L²)'
+    ], p, 0.5);
+  }
+  m.build=function(){}; M.push(m);
+})();
+// 8 放缩圆
+(function(){
+  var m={type:'scaling',title:'⑧ 放缩圆 · 环形磁场',short:'放缩圆',group:'A',dur:11,
+    view:[-6.2,-6.5,10.2,6.5], Binto:true, noCap:true,
+    board:[{t:'k',s:'放缩圆：入射点固定、方向固定、速率变'},
+      {t:'x',s:'各轨迹圆都过定点 P，半径随 v 放缩'},
+      {t:'x',s:'圆心沿过 P 的直线滑动'},
+      {t:'x',s:'临界：圆恰擦内/外边界'},
+      {t:'x',s:'不能从外边界射出→从内边界出或环内回旋'},
+      {t:'x',s:'出界后离开磁场·做匀速直线（后续轨迹）'}],
+    ctl:[{key:'v',label:'速率 v（→ 轨迹半径 r）',min:0.8,max:4.5,step:0.1,unit:''},
+         {key:'dir',label:'入射方向 β',min:0,max:360,step:5,unit:'°'}],
+    v:2.4, dir:90,
+    render:function(p){
+      var O=[0,0], Rin=2.2, Rout=5.4;
+      var Pp=[0,Rin];                         // 入射点（内边界顶端）
+      var beta=m.dir*Math.PI/180;
+      var vel=[Math.cos(beta),Math.sin(beta)];
+      var r=m.v;
+      // ---- 磁场 × 符号（环形区域 Rin<r<Rout）----
+      ctx.save();ctx.strokeStyle='rgba(120,170,230,.5)';ctx.lineWidth=1.1;
+      var step=0.72;
+      for(var x=-6;x<=6;x+=step)for(var y=-6;y<=6;y+=step){
+        var rr0=Math.hypot(x,y); if(rr0<=Rin+0.18||rr0>=Rout-0.18)continue;
+        var s0=P(x,y);
+        line(s0[0]-3.3,s0[1]-3.3,s0[0]+3.3,s0[1]+3.3,'rgba(120,170,230,.45)',1.1);
+        line(s0[0]-3.3,s0[1]+3.3,s0[0]+3.3,s0[1]-3.3,'rgba(120,170,230,.45)',1.1);
+      }
+      ctx.restore();
+      // ---- 内外边界圆 ----
+      ctx.save();ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.4;
+      ctx.beginPath();ctx.arc(P(O[0],O[1])[0],P(O[1],O[1])[1],Rout*V.sc,0,7);ctx.stroke();
+      ctx.beginPath();ctx.arc(P(O[0],O[1])[0],P(O[1],O[1])[1],Rin*V.sc,0,7);ctx.stroke();ctx.restore();
+      // ---- 圆心轨迹直线（过 P，方向 = 垂直 v）----
+      var d=[vel[1],-vel[0]];                 // makeArc 所用方向
+      var clA=[Pp[0]-d[0]*8, Pp[1]-d[1]*8], clB=[Pp[0]+d[0]*8, Pp[1]+d[1]*8];
+      var scA=P(clA[0],clA[1]), scB=P(clB[0],clB[1]);
+      line(scA[0],scA[1],scB[0],scB[1],'rgba(150,180,230,.26)',1.2,[5,5]);
+      // ---- 放缩圆族（固定方向，不同半径，都过 P）----
+      var fam=[0.9,1.5,2.1,2.7,3.3,3.9,4.5];
+      for(var fi=0;fi<fam.length;fi++){ var rf=fam[fi];
+        var Cf=[Pp[0]-rf*d[0], Pp[1]-rf*d[1]];   // qB=-1: 中心 = P - rf*d
+        var sCf=P(Cf[0],Cf[1]);
+        ctx.save();ctx.strokeStyle='rgba(150,180,230,.16)';ctx.lineWidth=1;ctx.setLineDash([4,5]);
+        ctx.beginPath();ctx.arc(sCf[0],sCf[1],rf*V.sc,0,7);ctx.stroke();ctx.restore();
+      }
+      // ---- 当前轨迹圆（淡全圆，帮助理解放缩）----
+      var C=[Pp[0]-r*d[0], Pp[1]-r*d[1]];
+      var sC=P(C[0],C[1]);
+      ctx.save();ctx.strokeStyle='rgba(255,212,121,.20)';ctx.lineWidth=1;ctx.setLineDash([2,4]);
+      ctx.beginPath();ctx.arc(sC[0],sC[1],r*V.sc,0,7);ctx.stroke();ctx.restore();
+      // ---- 入射点 P ----
+      var sP=P(Pp[0],Pp[1]);
+      ctx.save();ctx.fillStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.85)';ctx.shadowBlur=10;
+      ctx.beginPath();ctx.arc(sP[0],sP[1],5,0,7);ctx.fill();ctx.restore();
+      // ---- 速度矢量（紫红）----
+      var vlen=1.35;
+      var vtip=[Pp[0]+vel[0]*vlen, Pp[1]+vel[1]*vlen];
+      arrow(sP[0],sP[1],P(vtip[0],vtip[1])[0],P(vtip[1],vtip[1])[1],'#d23bb0',2.6,10);
+      // ---- 真实留场弧（出界即停；不能从外边界射出时画“后续轨迹”）----
+      var arc=makeArc(Pp,vel,-1,r);
+      var inF=function(pp){ var rr=Math.hypot(pp[0]-O[0],pp[1]-O[1]);
+        return rr>=Rin-1e-6 && rr<=Rout+1e-6; };
+      var se=findExit(arc,Pp,inF);
+      var trapped=false;
+      if(se>=2*Math.PI-0.04){ trapped=true; se=2*Math.PI; }
+      var gA=ease(Math.max(0,Math.min(1,(p-0.12)/0.72)));
+      var sweep=se*gA;
+      arcPath(arc, sweep, '#7fffd0', 3.0);
+      // 轨迹圆心
+      ctx.save();ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(sC[0],sC[1],3.2,0,7);ctx.fill();ctx.restore();
+      // 粒子
+      if(!trapped){
+        if(sweep>0.02){ var ps=posAt(arc,sweep); var sps=P(ps[0],ps[1]); drawParticle(sps[0],sps[1]); }
+      } else {
+        // 环内持续回旋：末段继续绕圈（展示“后续轨迹”）
+        var ang2 = (gA<1) ? (2*Math.PI*gA) : (2*Math.PI*(1+(p-0.84)/0.16*1.6));
+        var ps2=posAt(arc,ang2); var sps2=P(ps2[0],ps2[1]); drawParticle(sps2[0],sps2[1]);
+      }
+      // 出界点 / 后续轨迹（仅“不能从外边界射出”的场景）
+      var reached = (se - sweep) < 0.03;
+      if(!trapped && reached){
+        var ex=posAt(arc,se); var sex=P(ex[0],ex[1]);
+        var distO=Math.hypot(ex[0],ex[1]);
+        var fromInner = distO <= Rin+0.06;
+        ctx.save();ctx.strokeStyle='#ff6a6a';ctx.lineWidth=2.6;ctx.beginPath();ctx.arc(sex[0],sex[1],6,0,7);ctx.stroke();ctx.restore();
+        if(fromInner){
+          // 后续轨迹：离开磁场后的匀速直线（点画线）
+          var tv=tanAt(arc,se); var Ll=1.7;
+          var ex2=[ex[0]+tv[0]*Ll, ex[1]+tv[1]*Ll]; var sp2=P(ex2[0],ex2[1]);
+          ctx.save();ctx.strokeStyle='rgba(127,255,208,.7)';ctx.lineWidth=2;ctx.setLineDash([6,5]);
+          ctx.beginPath();ctx.moveTo(sex[0],sex[1]);ctx.lineTo(sp2[0],sp2[1]);ctx.stroke();ctx.restore();
+          lbl('从内边界射出', sp2[0]+8, sp2[1], '#ff8a8a',12,'left','700');
+        } else {
+          lbl('从外边界射出', sex[0]+8, sex[1], '#ff8a8a',12,'left','700');
+        }
+      }
+      if(trapped){
+        lbl('环内持续回旋（无法从外边界射出）', P(0,1.5)[0], P(0,1.5)[1], '#ff8a8a',12,'center','700');
+      }
+      // ---- 文字标注（纯定位：置于空洞或环外，无黑底）----
+      lbl('O', P(0,0)[0], P(0,0)[1]+14, '#9fd0ff',13,'center','700');
+      lbl('内边界 R₁', P(-1.2,1.7)[0], P(-1.2,1.7)[1], '#9fd0ff',11,'center');
+      lbl('外边界 R₂', P(0,5.85)[0], P(0,5.85)[1], '#9fd0ff',11,'center');
+      lbl('入射点 P', P(-1.3,0.9)[0], P(-1.3,0.9)[1], '#ffd479',11.5,'center','700');
+      lbl('v', P(1.2,0.9)[0], P(1.2,0.9)[1], '#d23bb0',13,'center','700');
+      lbl('放缩圆：各圆过 P·随 v 放缩', P(0,-1.5)[0], P(0,-1.5)[1], 'rgba(150,200,250,.85)',10.5,'center');
+      lbl('圆心轨迹直线（过 P）', P(-5.6,2.7)[0], P(-5.6,2.7)[1], 'rgba(150,180,230,.85)',10.5,'left');
+      pTypeBox(p);
+    }};
+  function lbl(s,x,y,col,sz,al,wt){ctx.save();ctx.fillStyle=col||'#cfe3ff';ctx.font=(wt||'400')+' '+(sz||13)+'px "Microsoft YaHei",sans-serif';ctx.textAlign=al||'left';ctx.textBaseline='middle';ctx.fillText(s,x,y);ctx.restore();}
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.beginPath();var steps=100;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（放缩圆）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.32);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '放缩圆（动态圆·三）',
+      '入射点 P 固定，方向 β 固定',
+      '速率 v 改变 → 半径 r=mv/qB 变',
+      '各轨迹圆都过定点 P（放缩）',
+      '圆心沿过 P 的直线滑动',
+      '（圆心轨迹：一条定直线）',
+      '',
+      '本例：环形磁场（R内–R外）',
+      '粒子从内边界 P 射入',
+      '改变 v：轨迹圆放缩',
+      '临界：圆恰擦内/外边界',
+      '若不能从外边界射出：',
+      '→ 从内边界射出（后续直线）',
+      '→ 或环内持续回旋（画后续）'
+    ], p, 0.5);
+  }
+  m.build=function(){}; M.push(m);
+})();
+
+// ================= GROUP B: instruments 9-18 =================
+// 9 速度选择器
+(function(){
+  var m={type:'instr',title:'⑨ 速度选择器',short:'速度选择器',group:'B',dur:9,
+    view:[-6,-4.2,11,4.2], k:1.6,
+    ctl:[{key:'k',label:'偏离倍率 k（v大=k·v选，v小=(2−k)·v选）',min:1.0,max:1.9,step:0.05,unit:''}],
+    board:[{t:'k',s:'qvB 与 qE 反向：v=E/B 时二力平衡'},
+      {t:'x',s:'v<E/B：电场力大 → 向下偏，撞下板'},
+      {t:'x',s:'v>E/B：洛伦兹力大 → 向上偏，撞上板'},
+      {t:'x',s:'仅 v=E/B 直线通过（选速度）'},
+      {t:'x',s:'与 q、m 无关：只选速度'}],
+    render:function(p){
+      var yT=2.2,yB=-2.2, xL=-6,xR=6;
+      var v0=1, w=Math.PI/6, TMAX=12;
+      var k=m.k;
+      var vL=k*v0, vS=(2-k)*v0;
+      // 摆线轨迹：x=xL+v0*t+R*sin(wt), y=R*(1-cos(wt)), R=(v-v0)/w
+      function traj(vi){
+        var R=(vi-v0)/w, pts=[], t=0, dt=0.02, endT=0, hit=false;
+        while(t<26){
+          var x=xL+v0*t+R*Math.sin(w*t);
+          var y=R*(1-Math.cos(w*t));
+          pts.push([x,y,t]);
+          if(x>xR){endT=t;hit=false;break;}
+          if(y>yT){endT=t;hit=true;break;}
+          if(y<yB){endT=t;hit=true;break;}
+          t+=dt;
+        }
+        if(t>=26){endT=26;hit=false;}
+        return {pts:pts,endT:endT,hit:hit};
+      }
+      var tA=traj(v0), tL=traj(vL), tS=traj(vS);
+      var tC=TMAX*ease(p);
+      function drawPath(tr,col,wdt){
+        ctx.save();ctx.strokeStyle=col;ctx.lineWidth=wdt;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=5;
+        ctx.beginPath();var started=false,last=null;
+        for(var i=0;i<tr.pts.length;i++){var pt=tr.pts[i];if(pt[2]>tC)break;var sp=P(pt[0],pt[1]);if(!started){ctx.moveTo(sp[0],sp[1]);started=true;}else ctx.lineTo(sp[0],sp[1]);last=sp;}
+        ctx.stroke();ctx.restore();return last;
+      }
+      // 选择器区域虚线框 + 入射/出射平面
+      var sTL=P(xL,yT),sTR=P(xR,yT),sBL=P(xL,yB),sBR=P(xR,yB);
+      ctx.save();ctx.strokeStyle='rgba(90,140,200,.30)';ctx.lineWidth=1.2;ctx.setLineDash([5,5]);
+      ctx.beginPath();ctx.moveTo(sTL[0],sTL[1]);ctx.lineTo(sTR[0],sTR[1]);ctx.lineTo(sBR[0],sBR[1]);ctx.lineTo(sBL[0],sBL[1]);ctx.closePath();ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+      line(P(xL,yB)[0],P(xL,yB)[1],P(xL,yT)[0],P(xL,yT)[1],'rgba(90,140,200,.35)',1.2,[4,4]);
+      line(P(xR,yB)[0],P(xR,yB)[1],P(xR,yT)[0],P(xR,yT)[1],'rgba(90,140,200,.35)',1.2,[4,4]);
+      // 极板
+      ctx.save();ctx.strokeStyle='#5fa8e6';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(sTL[0],sTL[1]);ctx.lineTo(sTR[0],sTR[1]);ctx.moveTo(sBL[0],sBL[1]);ctx.lineTo(sBR[0],sBR[1]);ctx.stroke();ctx.restore();
+      for(var xx=xL+0.4;xx<xR;xx+=1.0){ txt('+',P(xx,yT)[0],P(xx,yT)[1],'#7fd8ff',13,'center','700'); txt('−',P(xx,yB)[0],P(xx,yB)[1],'#7fd8ff',13,'center','700'); }
+      // 电场（向下）箭头
+      for(var x=xL+0.6;x<xR;x+=1.2){var a=P(x,yT-0.12),b=P(x,yB+0.12);arrow(a[0],a[1],b[0],b[1],'rgba(120,210,255,.5)',1.3,7);}
+      txt('E',P(0,yT)[0]+10,P(0,yT)[1]-2,'#7fd8ff',13,'left','700');
+      // 磁场（垂直纸面向里 ×）
+      bfieldRect(xL+0.3,yB+0.3,xR-0.3,yT-0.3,true,1.0);
+      txt('B',P(xR-0.5,yB+0.5)[0],P(xR-0.5,yB+0.5)[1],'rgba(120,170,230,.9)',13,'right','700');
+      // 三条轨迹
+      var hS=drawPath(tS,'#c79bff',2.4);
+      var h0=drawPath(tA,'#7fffd0',2.8);
+      var hL=drawPath(tL,'#ff9a6a',2.4);
+      if(h0)drawParticle(h0[0],h0[1]);
+      if(hL)drawParticle(hL[0],hL[1]);
+      if(hS)drawParticle(hS[0],hS[1]);
+      function hitMark(h,col){ if(h){ ctx.save();ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.arc(h[0],h[1],4,0,7);ctx.stroke();ctx.restore(); } }
+      hitMark(hL,'#ff9a6a');hitMark(hS,'#c79bff');
+      // 轨迹标注（置于空白区，不压线）
+      if(p>0.35){
+        txt('v = E/B：二力平衡，直线通过',P(3.6,0.55)[0],P(3.6,0.55)[1],'#7fffd0',12,'center','700');
+        txt('v > E/B：F洛 > F电，向上偏',P(-3.6,1.9)[0],P(-3.6,1.9)[1],'#ff9a6a',12,'center','700');
+        txt('v < E/B：F电 > F洛，向下偏',P(-3.6,-1.9)[0],P(-3.6,-1.9)[1],'#c79bff',12,'center','700');
+      }
+      // 底部图例
+      if(p>0.5){
+        txt('绿：v=E/B 直线通过　橙：v>E/B 上偏撞上板　紫：v<E/B 下偏撞下板',P(0,-3.4)[0],P(0,-3.4)[1],'#cbd9ee',12,'center');
+      }
+      // 入射端受力分析（顶部空白区）
+      if(p>0.1){
+        var baseY=3.0, Lb=18;
+        drawForceBox(P(-5.0,baseY)[0],P(-5.0,baseY)[1],(2-k),'v < E/B','#c79bff',Lb);
+        drawForceBox(P(-1.7,baseY)[0],P(-1.7,baseY)[1],1.0,'v = E/B','#7fffd0',Lb);
+        drawForceBox(P( 1.6,baseY)[0],P( 1.6,baseY)[1],k,'v > E/B','#ff9a6a',Lb);
+        txt('入射端受力分析（Fe=qE 电场力↓，Fm=qvB 洛伦兹力↑）',P(-5.0,baseY)[0],P(-5.0,baseY)[1]-Lb*1.9-14,'#cfe3ff',12,'left','700');
+      }
+      function drawForceBox(cx,cy,vfac,cap,capCol,Lb){
+        var FeLen=Lb, FmLen=Lb*Math.max(vfac,0.05);
+        ctx.save();ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(cx,cy,3.4,0,7);ctx.fill();ctx.restore();
+        arrow(cx,cy,cx,cy+FeLen,'#7fb0ff',2.3,8);            // Fe 向下（屏幕下 = 世界下）
+        arrow(cx,cy,cx,cy-FmLen,'#ff6a6a',2.3,8);            // Fm 向上
+        if(vfac>1.02){ arrow(cx,cy-FmLen,cx,cy-FmLen-(FmLen-FeLen),'#ffd479',2,7); txt('F',cx+7,cy-FmLen-(FmLen-FeLen)/2,'#ffd479',11,'left'); }
+        else if(vfac<0.98){ arrow(cx,cy+FeLen,cx,cy+FeLen+(FeLen-FmLen),'#ffd479',2,7); txt('F',cx+7,cy+FeLen+(FeLen-FmLen)/2,'#ffd479',11,'left'); }
+        else { txt('平衡',cx,cy+FeLen+11,'#ffd479',11,'center'); }
+        txt('Fe',cx+7,cy+FeLen/2,'#7fb0ff',11,'left');
+        txt('Fm',cx+7,cy-FmLen/2,'#ff6a6a',11,'left');
+        txt(cap,cx,cy-FmLen-12,capCol,12,'center','700');
+      }
+      pTypeBox(p);
+    }};
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（速度选择器）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.32);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '速度选择器（正交电磁场）',
+      '电场力 Fe=qE，洛伦兹力 Fm=qvB',
+      '二力反向：平衡条件 qvB=qE',
+      '即  v选 = E/B',
+      'v < E/B：Fe 大 → 向下偏，撞下板',
+      'v > E/B：Fm 大 → 向上偏，撞上板',
+      '仅 v=E/B 直线通过（选速度）',
+      '与 q、m 无关：只选速度',
+      '本动画：滑块改变偏离倍率 k'
+    ], p, 0.5);
+  }
+  m.build=function(){};M.push(m);
+})();
+
+// 10 质谱仪
+(function(){
+  function arcPath(a,sN,col,w){ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=6;ctx.beginPath();var steps=110;for(var i=0;i<=steps;i++){var s=sN*i/steps;var pp=posAt(a,s);var sp=P(pp[0],pp[1]);if(i===0)ctx.moveTo(sp[0],sp[1]);else ctx.lineTo(sp[0],sp[1]);}ctx.stroke();ctx.restore();}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（质谱仪）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.32);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '质谱仪 · 质量分析',
+      '① 加速（电压 U）：',
+      '   qU = ½mv²  →  v = √(2qU/m)',
+      '② 偏转（磁场 B）：',
+      '   qvB = mv²/r  →  r = mv/(qB)',
+      '③ 消去 v：',
+      '   r = (1/B)√(2mU/q) ∝ √m',
+      '④ 落点距入射缝 d = 2r',
+      '   d = (2/B)√(2mU/q)',
+      '⑤ 同 q、U、B：m 越大',
+      '   → r 越大 → 落点越远',
+      '⑥ 由落点反推质量 → 质谱分析'
+    ], p, 0.5);
+  }
+  var m={type:'instr',title:'⑩ 质谱仪',short:'质谱仪',group:'B',dur:10,
+    view:[-10.5,-5.2,6.5,4.8],
+    board:[{t:'k',s:'加速 qU=½mv² → v=√(2qU/m)'},
+      {t:'x',s:'偏转 r=mv/(qB)'},
+      {t:'x',s:'消去 v：r=(1/B)√(2mU/q) ∝ √m'},
+      {t:'x',s:'落点 d=2r，质量越大落点越远'},
+      {t:'x',s:'由落点反推质量 → 质谱分析'}],
+    render:function(p){
+      var rArr=[2.4,3.2,4.0], colArr=['#7fffd0','#ffd479','#ff9a6a'];
+      var bxL=-9.7, bxR=1.75, byT=-0.25, byB=-4.7;
+      // ---- B 场（⊙ 出纸面，给标签留空）----
+      ctx.save();
+      for(var gx=bxL;gx<=bxR;gx+=0.95)for(var gy=byB;gy<=byT;gy+=0.95){
+        if(Math.hypot(gx-1.35,gy+0.65)<0.62)continue;
+        var sd=P(gx,gy);
+        ctx.fillStyle='rgba(120,170,230,.5)';
+        ctx.beginPath();ctx.arc(sd[0],sd[1],2,0,7);ctx.fill();
+      }
+      ctx.restore();
+      // ---- 边界 / 底片线 ----
+      var sL=P(-9.8,0), sR=P(2.0,0);
+      line(sL[0],sL[1],sR[0],sR[1],'#5fa8e6',2.2);
+      // ---- 照相底片（3 格，落点读数 76/73/70）----
+      var stripL=-8.8, stripR=-4.0, stripH=0.36;
+      var sa=P(stripL,0), sb=P(stripR,stripH);
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.18)';ctx.strokeStyle='#5fa8e6';ctx.lineWidth=1.6;
+      ctx.fillRect(sa[0],sb[1],sb[0]-sa[0],sa[1]-sb[1]);
+      ctx.strokeRect(sa[0],sb[1],sb[0]-sa[0],sa[1]-sb[1]);
+      ctx.restore();
+      for(var dv=0;dv<=3;dv++){
+        var xx=stripL+dv*1.6; var s1=P(xx,0),s2=P(xx,stripH);
+        line(s1[0],s1[1],s2[0],s2[1],'rgba(95,168,230,.7)',1.1);
+      }
+      var lblX=[-8.0,-6.4,-4.8], lblT=['76','73','70'];
+      for(var li=0;li<3;li++){ var sp=P(lblX[li],0.18); txt(lblT[li],sp[0],sp[1],'#ffd479',13,'center','700'); }
+      // ---- 离子源 A + 进样管 ----
+      var pA=P(-0.75,3.55), pB=P(0.75,2.55);
+      ctx.save();ctx.fillStyle='rgba(20,50,90,.55)';ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2;
+      ctx.fillRect(pA[0],pA[1],pB[0]-pA[0],pB[1]-pA[1]);
+      ctx.strokeRect(pA[0],pA[1],pB[0]-pA[0],pB[1]-pA[1]);
+      ctx.restore();
+      txt('A',P(0,3.05)[0],P(0,3.05)[1],'#eaf4ff',17,'center','700');
+      ctx.save();ctx.lineCap='round';
+      ctx.strokeStyle='#4a86c8';ctx.lineWidth=7;
+      ctx.beginPath();ctx.moveTo(0.78,3.3);ctx.lineTo(1.28,3.3);ctx.quadraticCurveTo(1.58,3.3,1.58,3.6);ctx.stroke();
+      ctx.strokeStyle='#0a1628';ctx.lineWidth=3;
+      ctx.beginPath();ctx.moveTo(0.78,3.3);ctx.lineTo(1.28,3.3);ctx.quadraticCurveTo(1.58,3.3,1.58,3.6);ctx.stroke();
+      ctx.restore();
+      // ---- 两块水平极板（中间留缝）----
+      var plateY=[2.15,1.35];
+      for(var pi=0;pi<2;pi++){
+        var yy=plateY[pi];
+        var a1=P(-0.85,yy),a2=P(-0.16,yy),a3=P(0.16,yy),a4=P(0.85,yy);
+        line(a1[0],a1[1],a2[0],a2[1],'#5fa8e6',3.6);
+        line(a3[0],a3[1],a4[0],a4[1],'#5fa8e6',3.6);
+      }
+      // ---- 电压 U（向下箭头）----
+      var u1=P(0.56,2.08),u2=P(0.56,1.42);
+      arrow(u1[0],u1[1],u2[0],u2[1],'#ffd479',2.2,9);
+      txt('U',P(0.72,1.75)[0],P(0.72,1.75)[1],'#ffd479',14,'left','700');
+      // ---- 束流虚线 + 入射点 + 速度 v ----
+      var bTop=P(0,2.55),bBot=P(0,0);
+      line(bTop[0],bTop[1],bBot[0],bBot[1],'rgba(160,200,240,.28)',1.3,[5,5]);
+      ctx.save();ctx.fillStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.8)';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(bBot[0],bBot[1],4.2,0,7);ctx.fill();ctx.restore();
+      var vb1=P(0,0.58),vb2=P(0,0.26);
+      arrow(vb1[0],vb1[1],vb2[0],vb2[1],'rgba(210,59,176,.9)',2,7);
+      txt('v',P(0.13,0.44)[0],P(0.13,0.44)[1],'#d23bb0',13,'left','700');
+      // ---- 加速阶段粒子（p 0~0.18）----
+      var gA0=ease(Math.max(0,Math.min(1,p/0.18)));
+      if(p>0.002 && p<0.2){
+        var yNow=2.55-2.55*gA0;
+        var spv=P(0,yNow);
+        drawParticle(spv[0],spv[1]);
+      }
+      // ---- 三条半圆轨迹（错峰生长）----
+      var starts=[0.18,0.24,0.30], win=0.56;
+      for(var i=0;i<3;i++){
+        var gi=ease(Math.max(0,Math.min(1,(p-starts[i])/win)));
+        var arc=makeArc([0,0],[0,-1],1,rArr[i]);
+        var sN=Math.PI*gi;
+        if(gi>0.002) arcPath(arc,sN,colArr[i],2.9);
+        if(gi>0.01){
+          var pp=posAt(arc,sN); var spp=P(pp[0],pp[1]);
+          drawParticle(spp[0],spp[1]);
+        }
+        if(gi>=0.995){
+          var lpx=-2*rArr[i]; var slp=P(lpx,0);
+          ctx.save();ctx.strokeStyle='#ff6a6a';ctx.lineWidth=2.4;
+          ctx.beginPath();ctx.arc(slp[0],slp[1],5.2,0,7);ctx.stroke();ctx.restore();
+        }
+      }
+      // ---- 文字标注（纯定位留白，无底衬）----
+      txt('l',P(-2.0,0.42)[0],P(-2.0,0.42)[1],'rgba(160,200,240,.9)',13,'center','700');
+      txt('B',P(1.2,-0.65)[0],P(1.2,-0.65)[1],'#7fd8ff',14,'center','700');
+      var so=P(1.56,-0.65);
+      ctx.save();ctx.strokeStyle='#7fd8ff';ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.arc(so[0],so[1],5,0,7);ctx.stroke();
+      ctx.fillStyle='#7fd8ff';ctx.beginPath();ctx.arc(so[0],so[1],1.8,0,7);ctx.fill();ctx.restore();
+      txt('D',P(-8.05,0.66)[0],P(-8.05,0.66)[1],'#ff8a8a',13,'center','700');
+      txt('照相底片',P(-5.6,0.66)[0],P(-5.6,0.66)[1],'#ffd479',13,'center','700');
+      txt('r ∝ √m（示意：差异放大）',P(-4.6,-4.95)[0],P(-4.6,-4.95)[1],'rgba(150,200,250,.85)',13,'center');
+      pTypeBox(p);
+    }};
+  m.build=function(){};M.push(m);
+})();
+
+
+// 11 回旋加速器
+(function(){
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)'; ctx.strokeStyle='rgba(120,170,230,.55)'; ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffd479'; ctx.font='700 14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('物理归纳（回旋加速器）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.32);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '回旋加速器 · 三条结论',
+      '① 原理',
+      '   交流电周期 = 粒子回旋周期',
+      '   T电 = T = 2πm/(qB)',
+      '   粒子每过一次缝隙加速一次',
+      '   ΔEk = qU',
+      '② 最大动能',
+      '   qvmB = mvm²/R  →  vm = qBR/m',
+      '   Ekm = ½mvm² = q²B²R²/(2m)',
+      '   → 由 B 与盒半径 R 决定',
+      '     与加速电压 U 无关',
+      '③ 运动时间',
+      '   每周期加速 2 次：n = Ekm/(qU)',
+      '   t1 = (n/2)T = πBR²/(2U)',
+      '   （T = 2πm/(qB)）',
+      '   缝隙中匀加速：t2 = vm/a = BRd/U',
+      '   （a = qU/(md)）',
+      '   t = t1 + t2',
+      '     = πBR²/(2U) + BRd/U'
+    ], p, 0.40);
+  }
+  // ---- 几何 / 运动学 ----
+  var RB=3.5;                       // D 形盒半径（世界单位）
+  var GAP=0.52, EH=GAP/2;           // 狭缝宽度 d 与半宽
+  var R0=0.34;                      // 起始半径（狭缝边缘）
+  var TH_END=Math.PI/2+6*Math.PI;   // 终点角 6.5π（3.25 圈，正上方）
+  var K=(RB-R0)/TH_END;             // r 随角度的增长率（r = R0 + K·θ）
+  function radAt(t){ return R0+K*t; }
+  function posAtT(t){ var r=radAt(t); return [r*Math.cos(t), r*Math.sin(t)]; }
+  // 极性：+1 表示左盒为正（E 向右），-1 表示右盒为正（E 向左）
+  function polAt(t){ var q=Math.floor((t-Math.PI/2)/Math.PI); return (((q%2)+2)%2)===0?1:-1; }
+  var m={type:'instr',title:'⑪ 回旋加速器',short:'回旋加速器',group:'B',dur:14,
+    view:[-4.13,-5.95,9.72,5.35],
+    board:[{t:'k',s:'交流电周期 = 回旋周期 T=2πm/(qB)，每过一次缝加速一次'},
+      {t:'x',s:'最大动能 Ekm=q²B²R²/(2m)，由 B、R 决定，与 U 无关'},
+      {t:'x',s:'磁场中 t1=(n/2)T=πBR²/(2U)；缝中 t2=BRd/U'},
+      {t:'x',s:'总时间 t = πBR²/(2U) + BRd/U'}],
+    render:function(p){
+      var th=TH_END*Math.max(0,Math.min(1,p));
+      var c0=P(0,0), RW=RB*V.sc;
+      var aA=Math.atan2(Math.sqrt(RB*RB-EH*EH),EH);
+      var lp=polAt(th);                      // 当前极性
+      // ---------- 磁场（× 向里）----------
+      ctx.save();
+      for(var gx=-RB+0.38;gx<=RB-0.30;gx+=0.78){
+        for(var gy=-RB+0.38;gy<=RB-0.30;gy+=0.78){
+          if(Math.hypot(gx,gy)>RB-0.24)continue;
+          if(Math.abs(gx)<GAP*0.92)continue;       // 狭缝内无磁场
+          var sm=P(gx,gy);
+          line(sm[0]-3.1,sm[1]-3.1,sm[0]+3.1,sm[1]+3.1,'rgba(120,170,230,.42)',1.1);
+          line(sm[0]-3.1,sm[1]+3.1,sm[0]+3.1,sm[1]-3.1,'rgba(120,170,230,.42)',1.1);
+        }
+      }
+      ctx.restore();
+      // ---------- 两个 D 形盒 ----------
+      function dPath(side){
+        ctx.beginPath();
+        if(side<0)ctx.arc(c0[0],c0[1],RW,-(Math.PI-aA),-(Math.PI+aA),true);
+        else ctx.arc(c0[0],c0[1],RW,aA,-aA,true);
+        ctx.closePath();
+      }
+      // 左盒
+      ctx.save();
+      dPath(-1);
+      ctx.fillStyle=(lp>0)?'rgba(255,152,74,.12)':'rgba(70,140,235,.10)'; ctx.fill();
+      ctx.strokeStyle='rgba(95,168,230,.92)'; ctx.lineWidth=2.2; ctx.stroke();
+      ctx.restore();
+      // 右盒
+      ctx.save();
+      dPath(1);
+      ctx.fillStyle=(lp>0)?'rgba(70,140,235,.10)':'rgba(255,152,74,.12)'; ctx.fill();
+      ctx.strokeStyle='rgba(95,168,230,.92)'; ctx.lineWidth=2.2; ctx.stroke();
+      ctx.restore();
+      // 正极盒描一圈暖光（表示此刻电势高）
+      ctx.save();
+      dPath(lp>0?-1:1);
+      ctx.strokeStyle='rgba(255,178,96,.95)'; ctx.lineWidth=2.6;
+      ctx.shadowColor='rgba(255,170,90,.75)'; ctx.shadowBlur=14; ctx.stroke();
+      ctx.restore();
+      // ---------- 缝隙中的交变电场 ----------
+      var eDir=(lp>0)?1:-1;
+      var gapYs=[-2.94,2.94];
+      for(var gi=0;gi<gapYs.length;gi++){
+        var yy=gapYs[gi];
+        var ga=P(-EH*0.92,yy), gb=P(EH*0.92,yy);
+        var gs=(eDir>0)?ga:gb, ge=(eDir>0)?gb:ga;
+        arrow(gs[0],gs[1],ge[0],ge[1],'rgba(255,212,121,.95)',2.2,7);
+      }
+      // ---------- 加速轨迹 ----------
+      if(th>0.02){
+        var steps=Math.max(4,Math.ceil(th/0.024));
+        ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.strokeStyle='rgba(127,255,208,.96)';
+        ctx.shadowColor='rgba(80,255,200,.45)';ctx.shadowBlur=8;
+        ctx.lineWidth=2.5;
+        ctx.beginPath();
+        for(var i=0;i<=steps;i++){
+          var tt=th*i/steps, pp=posAtT(tt), sp=P(pp[0],pp[1]);
+          if(i===0)ctx.moveTo(sp[0],sp[1]); else ctx.lineTo(sp[0],sp[1]);
+        }
+        ctx.stroke();ctx.restore();
+      }
+      // ---------- 过缝加速的火花 ----------
+      for(var mi=0;mi<7;mi++){
+        var thc=Math.PI/2+mi*Math.PI;
+        if(th<=thc)break;
+        var age=th-thc;
+        if(age<0.62){
+          var pc=posAtT(thc), spc=P(pc[0],pc[1]);
+          var aa=1-age/0.62;
+          ctx.save();
+          ctx.strokeStyle='rgba(255,226,130,'+aa.toFixed(3)+')';ctx.lineWidth=2;
+          ctx.beginPath();ctx.arc(spc[0],spc[1],5+(1-aa)*15,0,7);ctx.stroke();
+          ctx.restore();
+        }
+      }
+      // ---------- 粒子 ----------
+      var pp=posAtT(th), sp=P(pp[0],pp[1]);
+      drawParticle(sp[0],sp[1]);
+      // ---------- 离子源 S ----------
+      ctx.save();ctx.fillStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.9)';ctx.shadowBlur=9;
+      ctx.beginPath();ctx.arc(c0[0],c0[1],3.4,0,7);ctx.fill();ctx.restore();
+      txt('S',P(0,-0.47)[0],P(0,-0.47)[1],'#ffd479',13,'center','700');
+      // ---------- 导向板与引出 ----------
+      var pl1=P(1.30,4.02), pl2=P(2.18,4.52);
+      ctx.save();ctx.strokeStyle='rgba(255,212,121,.95)';ctx.lineWidth=4.5;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(pl1[0],pl1[1]);ctx.lineTo(pl2[0],pl2[1]);ctx.stroke();ctx.restore();
+      txt('导向板',pl2[0]+8,pl2[1]-10,'#ffd479',13,'left','700');
+      var ex=Math.max(0,Math.min(1,(p-0.935)/0.065));
+      if(ex>0){
+        ctx.save();ctx.globalAlpha=ex;
+        var e0=P(0,RB), e1=P(0.72,4.46), e2=P(0.80,5.06);
+        ctx.strokeStyle='rgba(255,130,95,.96)';ctx.lineWidth=2.8;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(e0[0],e0[1]);ctx.quadraticCurveTo(e1[0],e1[1],e2[0],e2[1]);ctx.stroke();
+        arrow(e2[0],e2[1]-2,e2[0],e2[1]-16,'rgba(255,130,95,.96)',2.4,9);
+        ctx.restore();
+      }
+      // ---------- 电源 ----------
+      var sx0=-1.78,sx1=1.78,sy0=-5.62,sy1=-4.72;
+      var bx=P(sx0,sy1), bw=(sx1-sx0)*V.sc, bh=(sy1-sy0)*V.sc;
+      ctx.save();ctx.fillStyle='rgba(12,28,52,.92)';ctx.strokeStyle='rgba(120,170,230,.82)';ctx.lineWidth=1.8;
+      rr(bx[0],bx[1],bw,bh,7);ctx.fill();ctx.stroke();ctx.restore();
+      txt('高频电源',bx[0]+bw/2,bx[1]+bh*0.34,'#dbe9ff',13,'center','700');
+      txt('~',bx[0]+bw/2,bx[1]+bh*0.70,'#7fd8ff',15,'center','700');
+      // 导线
+      var wx=1.5, wyTop=-Math.sqrt(RB*RB-wx*wx);
+      for(var wi=0;wi<2;wi++){
+        var xx=(wi===0)?wx:-wx;
+        var w1=P(xx,wyTop+0.03), w2=P(xx,sy1);
+        line(w1[0],w1[1],w2[0],w2[1],'rgba(150,190,235,.8)',2.2);
+      }
+      // 极性标记（+ / −）
+      for(var bi=0;bi<2;bi++){
+        var bx2=(bi===0)?-wx:wx;
+        var bsp=P(bx2,-4.08);
+        var isPos=(bi===0)?(lp>0):(lp<0);
+        var bcol=isPos?'#ffb14d':'#7fd8ff';
+        ctx.save();
+        ctx.strokeStyle=bcol;ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(bsp[0],bsp[1],10.5,0,7);ctx.stroke();
+        ctx.strokeStyle=bcol;ctx.lineWidth=2.6;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(bsp[0]-5,bsp[1]);ctx.lineTo(bsp[0]+5,bsp[1]);ctx.stroke();
+        if(isPos){ctx.beginPath();ctx.moveTo(bsp[0],bsp[1]-5);ctx.lineTo(bsp[0],bsp[1]+5);ctx.stroke();}
+        ctx.restore();
+      }
+      // ---------- 缝宽 d ----------
+      var dh=Math.sqrt(RB*RB-EH*EH);
+      line(P(-EH,-dh-0.03)[0],P(-EH,-dh-0.03)[1],P(-EH,-3.82)[0],P(-EH,-3.82)[1],'rgba(160,200,240,.7)',1.2);
+      line(P(EH,-dh-0.03)[0],P(EH,-dh-0.03)[1],P(EH,-3.82)[0],P(EH,-3.82)[1],'rgba(160,200,240,.7)',1.2);
+      var dL=P(-EH,-3.76), dR=P(EH,-3.76);
+      arrow(dL[0],dL[1],dL[0]+7,dL[1],'rgba(160,200,240,.9)',1.3,5);
+      arrow(dR[0],dR[1],dR[0]-7,dR[1],'rgba(160,200,240,.9)',1.3,5);
+      txt('d',dR[0]+6,dR[1],'rgba(190,225,255,.95)',13,'left','700');
+      // ---------- 文字标注 ----------
+      var bm=P(-3.66,2.92);
+      line(bm[0]-4,bm[1]-4,bm[0]+4,bm[1]+4,'rgba(120,190,240,.85)',1.5);
+      line(bm[0]-4,bm[1]+4,bm[0]+4,bm[1]-4,'rgba(120,190,240,.85)',1.5);
+      txt('B',bm[0]+9,bm[1],'#7fd8ff',14,'left','700');
+      // ---------- HUD：交变电压波形 ----------
+      var hx=16,hy=62,hw=250,hh=134;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.72)';ctx.strokeStyle='rgba(90,150,220,.45)';ctx.lineWidth=1.2;
+      rr(hx,hy,hw,hh,10);ctx.fill();ctx.stroke();ctx.restore();
+      txt('交变电压 u(t)',hx+12,hy+17,'#ffd479',13,'left','700');
+      txt('T电 = T回旋',hx+hw-12,hy+17,'#7fd8ff',12.5,'right','700');
+      var px0=hx+14,px1=hx+hw-14, pyc=hy+60, amp=19;
+      line(px0,pyc,px1,pyc,'rgba(120,170,230,.26)',1);
+      ctx.save();ctx.strokeStyle='rgba(127,216,255,.95)';ctx.lineWidth=2;
+      ctx.beginPath();
+      var NP=2, seg=110;
+      for(var si=0;si<=seg;si++){
+        var tp=th-(2*Math.PI*NP)*(1-si/seg);
+        var uu=polAt(tp);
+        var xx2=px0+(px1-px0)*si/seg, yy2=pyc-uu*amp;
+        if(si===0)ctx.moveTo(xx2,yy2); else ctx.lineTo(xx2,yy2);
+      }
+      ctx.stroke();ctx.restore();
+      var uNow=polAt(th);
+      ctx.save();ctx.fillStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.9)';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(px1,pyc-uNow*amp,3.6,0,7);ctx.fill();ctx.restore();
+      txt('过缝即加速：ΔEk = qU',hx+12,hy+92,'#dbe9ff',12.5,'left');
+      var nAcc=(th<Math.PI/2)?0:(Math.floor((th-Math.PI/2)/Math.PI)+1);
+      txt('已加速 '+nAcc+' 次',hx+12,hy+114,'#7fffd0',13,'left','700');
+      txt(uNow>0?'u>0 左盒＋':'u<0 右盒＋',hx+hw-12,hy+114,'#ffb14d',12.5,'right','700');
+      // ---------- 右侧板书 ----------
+      pTypeBox(p);
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 12 磁流体发电机
+(function(){
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function drawCharge(sign,x,y,r,col){
+    ctx.save();
+    ctx.shadowColor=col;ctx.shadowBlur=8;
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+    ctx.shadowBlur=0;ctx.fillStyle='#04121f';ctx.font='700 '+Math.round(r*1.25)+'px "Microsoft YaHei"';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(sign,x,y+0.5);
+    ctx.restore();
+  }
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.82)';ctx.strokeStyle='rgba(120,170,230,.55)';ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd479';ctx.font='700 14px "Microsoft YaHei"';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('物理归纳（磁流体发电机）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.34);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '磁流体发电机 · 动态平衡',
+      '① 偏转与积累',
+      '   高速等离子体（流速 v）进入磁场 B',
+      '   正电荷受 F洛 偏向上极板',
+      '   负电荷偏向下极板',
+      '   两极板积累异号电荷',
+      '② 板间电场增强',
+      '   电荷积累 → 板间电场 E 增强',
+      '   E 方向：上(+) → 下(−)',
+      '③ 达到平衡',
+      '   当 qE = qvB，即 E = vB 时',
+      '   合外力为零，电荷直线通过',
+      '   电压稳定：U = Ed = Bdv',
+      '   （与 v、B、板距 d 有关）'
+    ],p,0.40);
+  }
+  // ---- 几何 ----
+  var xL=-6,xR=1.7,yT=2.0,yB=-2.0,Dmax=1.65;
+  var m={type:'instr',title:'⑫ 磁流体发电机',short:'磁流体发电机',group:'B',dur:9,
+    view:[-8,-5,5,5],
+    board:[
+      {t:'k',s:'平衡时 qE = qvB  ⟹  E = vB'},
+      {t:'x',s:'电动势（路端电压）U = Ed = Bdv'},
+      {t:'x',s:'等离子体受洛伦兹力偏转，使两极板积累异号电荷'},
+      {t:'x',s:'电荷积累→E 增强→偏转减弱，直至 F电=F洛（平衡）'}],
+    render:function(p){
+      var g=1-Math.exp(-4.2*p);              // E / E稳，随动画上升至稳定值 vB
+      // ---------- 外电路（负载） ----------
+      var wL=-7.2;
+      ctx.save();ctx.strokeStyle='rgba(150,190,235,.8)';ctx.lineWidth=2.2;
+      line(P(xL,yT)[0],P(xL,yT)[1],P(wL,yT)[0],P(wL,yT)[1]);
+      line(P(wL,yT)[0],P(wL,yT)[1],P(wL,yB)[0],P(wL,yB)[1]);
+      line(P(wL,yB)[0],P(wL,yB)[1],P(xL,yB)[0],P(xL,yB)[1]);
+      ctx.restore();
+      var r0=P(wL-0.35,0.35), r1=P(wL+0.35,-0.35);
+      ctx.save();ctx.fillStyle='rgba(12,28,52,.92)';ctx.strokeStyle='rgba(120,170,230,.82)';ctx.lineWidth=1.6;
+      rr(r0[0],r1[1],r0[0]-r1[0],r0[1]-r1[1],6);ctx.fill();ctx.stroke();ctx.restore();
+      txt('R 负载',(r0[0]+r1[0])/2,(r0[1]+r1[1])/2,'#dbe9ff',12,'center','700');
+      txt('外电路',P(wL,yT+0.5)[0],P(wL,yT+0.5)[1],'#9fc2ea',11.5,'center');
+      // ---------- 通道与磁场 ----------
+      var sTL=P(xL,yT),sTR=P(xR,yT),sBL=P(xL,yB),sBR=P(xR,yB);
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.fillRect(sTL[0],sTL[1],sTR[0]-sTL[0],sBL[1]-sTL[1]);ctx.restore();
+      ctx.save();ctx.strokeStyle='#5fa8e6';ctx.lineWidth=3;ctx.strokeRect(sTL[0],sTL[1],sTR[0]-sTL[0],sBL[1]-sTL[1]);ctx.restore();
+      bfieldRect(xL+0.25,yB+0.25,xR-0.25,yT-0.25,true,0.95);
+      txt('B',P(xR-0.4,yT-0.4)[0],P(xR-0.4,yT-0.4)[1],'#7fd8ff',14,'right','700');
+      txt('×',P(xR-0.45,yT-0.42)[0],P(xR-0.45,yT-0.42)[1],'#7fd8ff',11,'right');
+      // ---------- 等离子体流速 v ----------
+      var v0=P(xL+0.5,0), v1=P(xR-0.4,0);
+      arrow(v0[0],v0[1],v1[0],v1[1],'rgba(255,154,106,.95)',2.4,10);
+      txt('高速等离子体  v',P(xL+0.5,-0.55)[0],P(xL+0.5,-0.55)[1],'#ffb98a',12.5,'left','700');
+      // ---------- 板间电场 E（随 g 增强） ----------
+      var exs=[-5.2,-3.8,0.3,1.2];
+      for(var ei=0;ei<exs.length;ei++){
+        var ex=exs[ei];
+        var len=0.35+1.6*g;
+        var a0=P(ex,1.55), a1=P(ex,1.55-len);
+        arrow(a0[0],a0[1],a1[0],a1[1],'rgba(127,216,255,'+(0.3+0.7*g).toFixed(3)+')',2.0,8);
+      }
+      txt('板间电场 E（向下，增强）',P(-5.2,1.95)[0],P(-5.2,1.95)[1],'#9fdcff',12,'left','700');
+      // ---------- 极板积累电荷（随 g 增多） ----------
+      var nC=Math.round(9*g);
+      var x0a=xL+0.4, x1a=xR-0.4;
+      for(var q=0;q<nC;q++){
+        var xx=x0a+(x1a-x0a)*(q/(Math.max(1,nC-1)));
+        txt('+',P(xx,yT-0.28)[0],P(xx,yT-0.28)[1],'#ff9a6a',14,'center','700');
+        txt('−',P(xx,yB+0.30)[0],P(xx,yB+0.30)[1],'#7fffd0',14,'center','700');
+      }
+      txt('+ 极板',P(xL+0.5,yT+0.5)[0],P(xL+0.5,yT+0.5)[1],'#ff9a6a',12,'left','700');
+      txt('− 极板',P(xL+0.5,yB-0.5)[0],P(xL+0.5,yB-0.5)[1],'#7fffd0',12,'left','700');
+      // ---------- 流动电荷（动态偏转） ----------
+      var N=7;
+      for(var sgn=0;sgn<2;sgn++){
+        for(var k=0;k<N;k++){
+          var phase=((k/N)+p*0.5)%1;
+          var x=xL+0.3+(xR-xL-0.6)*phase;
+          var defl=(1-g)*Math.pow(phase,1.25)*Dmax;
+          if(sgn===0){ var yp=defl; drawCharge('+',P(x,yp)[0],P(x,yp)[1],4.2,'#ff9a6a'); }
+          else { var yn=-defl; drawCharge('−',P(x,yn)[0],P(x,yn)[1],4.2,'#7fffd0'); }
+        }
+      }
+      // ---------- 平衡过程 示例（上方小框） ----------
+      var ibx=-4.6, iby=2.5, ibw=5.2, ibh=1.7;
+      var sp0=P(ibx,iby), spw=ibw*V.sc, sph=ibh*V.sc;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.80)';ctx.strokeStyle='rgba(120,170,230,.5)';ctx.lineWidth=1.3;
+      rr(sp0[0],sp0[1]-sph,spw,sph,8);ctx.fill();ctx.stroke();ctx.restore();
+      txt('平衡过程（取一正电荷）',P(ibx+0.15,iby+ibh-0.28)[0],P(ibx+0.15,iby+ibh-0.28)[1],'#ffd479',12,'left','700');
+      var scx=-2.0, scy=iby+ibh*0.5;
+      drawCharge('+',P(scx,scy)[0],P(scx,scy)[1],5,'#ff9a6a');
+      var fL=0.62;
+      var aU0=P(scx,scy), aU1=P(scx,scy+fL);
+      arrow(aU0[0],aU0[1],aU1[0],aU1[1],'#ff6a5a',2.4,8);
+      txt('F洛=qvB（恒定）',P(scx+0.4,scy+fL*0.75)[0],P(scx+0.4,scy+fL*0.75)[1],'#ff8a7a',11,'left','700');
+      var fE=0.62*g;
+      var aD0=P(scx,scy), aD1=P(scx,scy-fE);
+      arrow(aD0[0],aD0[1],aD1[0],aD1[1],'#5aa9ff',2.4,8);
+      txt('F电=qE（增强）',P(scx+0.4,scy-fE*0.75)[0],P(scx+0.4,scy-fE*0.75)[1],'#7fb6ff',11,'left','700');
+      if(g>0.9){
+        ctx.save();ctx.fillStyle='#7fffd0';ctx.font='700 11.5px "Microsoft YaHei"';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('⇌ 平衡：F电 = F洛',P(scx,scy-0.95)[0],P(scx,scy-0.95)[1]);ctx.restore();
+      }
+      // ---------- 稳态提示 ----------
+      if(g>0.9){
+        txt('稳态：电荷直线通过，U = Bdv 恒定（对外供电）',P(-5.6,-3.5)[0],P(-5.6,-3.5)[1],'#ffd479',12.5,'left','700');
+      }
+      // ---------- HUD：E(t) 上升曲线 ----------
+      var hx=16,hy=16,hw=250,hh=120;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.74)';ctx.strokeStyle='rgba(90,150,220,.5)';ctx.lineWidth=1.2;
+      rr(hx,hy,hw,hh,9);ctx.fill();ctx.stroke();ctx.restore();
+      txt('板间电场 E(t) → 稳定值 vB',hx+12,hy+15,'#ffd479',12.5,'left','700');
+      var ax0=hx+16, ax1=hx+hw-14, ayb=hy+hh-22, ayt=hy+38, amax=ayb-ayt;
+      line(ax0,ayb,ax1,ayb,'rgba(150,190,235,.5)',1);
+      line(ax0,ayb,ax0,ayt,'rgba(150,190,235,.5)',1);
+      ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(127,255,208,.6)';ctx.lineWidth=1.1;
+      line(ax0,ayt,ax1,ayt);ctx.restore();
+      txt('稳定 vB',ax1,ayt-3,'#7fffd0',10,'right');
+      ctx.save();ctx.strokeStyle='rgba(127,216,255,.95)';ctx.lineWidth=2;ctx.beginPath();
+      for(var ci=0;ci<=60;ci++){
+        var pr=ci/60; var gg=1-Math.exp(-4.2*pr);
+        var xx=ax0+(ax1-ax0)*pr, yy=ayb-gg*amax;
+        if(ci===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);
+      }
+      ctx.stroke();ctx.restore();
+      var cxp=ax0+(ax1-ax0)*p, cyp=ayb-g*amax;
+      ctx.save();ctx.fillStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.9)';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.arc(cxp,cyp,4,0,7);ctx.fill();ctx.restore();
+      txt('E/E稳 = '+g.toFixed(2)+'  （偏转∝'+(1-g).toFixed(2)+'）',hx+12,hy+hh-15,'#dbe9ff',11,'left');
+      // ---------- 右侧板书 ----------
+      pTypeBox(p);
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 13 电磁流量计
+(function(){
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function drawCharge(sign,x,y,r,col){
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=8;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#04121f';ctx.font='700 '+Math.round(r*1.25)+'px "Microsoft YaHei"';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(sign,x,y+0.5);ctx.restore();
+  }
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();ctx.fillStyle='rgba(8,16,32,.82)';ctx.strokeStyle='rgba(120,170,230,.55)';ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd479';ctx.font='700 14px "Microsoft YaHei"';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('物理归纳（电磁流量计）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.34);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '电磁流量计 · 测量原理',
+      '① 建立电动势',
+      '   导电流体以流速 v 流过管道',
+      '   磁场 B 垂直穿过管道',
+      '   离子受 F=qvB 向两侧偏转',
+      '   上电极 a 积(+)，下电极 b 积(−)',
+      '② 平衡与电势差',
+      '   积累电场增强，qE=qvB 时平衡',
+      '   E = vB，U = ED = BvD',
+      '③ 测流速',
+      '   测得 U ⇒ v = U/(BD)',
+      '④ 测流量',
+      '   Q = S·v = (πD²/4)·v = πDU/(4B)',
+      '   Q 与流体密度/粘度/温度无关'
+    ],p,0.40);
+  }
+  // ---- 几何与物理参数（演示取值） ----
+  var xL=-6,xR=3,yT=2,yB=-2;          // 世界坐标管道
+  var Bphys=0.20, Dphys=0.40, vphys=1.50; // B(T) D(m) v(m/s)
+  var Uphys=Bphys*vphys*Dphys;         // = 0.120 V
+  var m={type:'instr',title:'⑬ 电磁流量计',short:'电磁流量计',group:'B',dur:9,
+    view:[-9,-4.5,8,4.5],
+    board:[
+      {t:'k',s:'平衡 qE=qvB ⟹ E=vB，U=ED=BvD'},
+      {t:'x',s:'流速 v = U/(BD)（测得 U 即得 v）'},
+      {t:'x',s:'流量 Q = (πD²/4)·v = πDU/(4B)'},
+      {t:'x',s:'Q 与管径 D、U、B 有关，与流体物性无关'},
+      {t:'x',s:'正电荷偏上电极 a，φa > φb（左手定则）'}],
+    render:function(p){
+      var g=1-Math.exp(-4.2*p);          // 电动势 / 稳定值 之比，随动画上升至 Uphys
+      var U=Uphys*g;
+      // ---------- 管道 ----------
+      var sTL=P(xL,yT),sTR=P(xR,yT),sBL=P(xL,yB),sBR=P(xR,yB);
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.fillRect(sTL[0],sTL[1],sTR[0]-sTL[0],sBL[1]-sTL[1]);ctx.restore();
+      ctx.save();ctx.strokeStyle='#5fa8e6';ctx.lineWidth=3;ctx.strokeRect(sTL[0],sTL[1],sTR[0]-sTL[0],sBL[1]-sTL[1]);ctx.restore();
+      // ---------- 磁场 B（向里 ×） ----------
+      bfieldRect(xL+0.25,yB+0.25,xR-0.25,yT-0.25,true,0.95);
+      txt('B',P(xR-0.4,yT-0.4)[0],P(xR-0.4,yT-0.4)[1],'#7fd8ff',14,'right','700');
+      txt('×',P(xR-0.45,yT-0.42)[0],P(xR-0.45,yT-0.42)[1],'#7fd8ff',11,'right');
+      txt('磁场 B = 0.20 T（向里）',P(xL+0.3,yT+0.55)[0],P(xL+0.3,yT+0.55)[1],'#9fdcff',12,'left','700');
+      // ---------- 流速 v（向右） ----------
+      var v0=P(xL+0.6,0), v1=P(xR-0.4,0);
+      arrow(v0[0],v0[1],v1[0],v1[1],'rgba(255,154,106,.95)',2.6,10);
+      txt('流体流速 v',P(xL+0.6,-0.6)[0],P(xL+0.6,-0.6)[1],'#ffb98a',12.5,'left','700');
+      // ---------- 横向电场 E（上→下，随 g 增强） ----------
+      var exs=[-5.0,-3.0,-1.0,1.5];
+      for(var ei=0;ei<exs.length;ei++){
+        var len=0.3+1.5*g, a0=P(exs[ei],1.5), a1=P(exs[ei],1.5-len);
+        arrow(a0[0],a0[1],a1[0],a1[1],'rgba(127,216,255,'+(0.3+0.7*g).toFixed(3)+')',2.0,8);
+      }
+      txt('横向电场 E（向下，增强）',P(-5.0,1.98)[0],P(-5.0,1.98)[1],'#9fdcff',12,'left','700');
+      // ---------- 电极 a(上) b(下) + 引线 + 电压表 ----------
+      var ea=P(0,yT), eb=P(0,yB);
+      ctx.save();ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(ea[0],ea[1],4.5,0,7);ctx.arc(eb[0],eb[1],4.5,0,7);ctx.fill();ctx.restore();
+      txt('a',ea[0]+8,ea[1],'#ffd479',13,'left','700');
+      txt('b',eb[0]+8,eb[1],'#ffd479',13,'left','700');
+      var scx=ea[0], scy=ea[1]-52;        // 电压表（屏幕固定，电极 a 正上方）
+      line(ea[0],ea[1],scx,scy+16,'#ffd479',1.8);
+      ctx.save();ctx.strokeStyle='#ffd479';ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(scx,scy,15,0,7);ctx.stroke();ctx.restore();
+      txt('V',scx,scy+1,'#ffd479',13,'center','700');
+      txt('测 Uab',scx+22,scy-6,'#ffd479',11,'left');
+      txt('U = '+U.toFixed(3)+' V',scx,scy-30,'#7fffd0',12.5,'center','700');
+      // ---------- 电极积累电荷（随 g 增多） ----------
+      var nC=Math.round(9*g);
+      for(var q=0;q<nC;q++){
+        var xx=xL+0.5+(xR-xL-1)*(q/Math.max(1,nC-1));
+        txt('+',P(xx,yT-0.3)[0],P(xx,yT-0.3)[1],'#ff9a6a',14,'center','700');
+        txt('−',P(xx,yB+0.32)[0],P(xx,yB+0.32)[1],'#7fffd0',14,'center','700');
+      }
+      txt('a：+ 极（φ高）',P(xL+0.3,yT+1.05)[0],P(xL+0.3,yT+1.05)[1],'#ff9a6a',11,'left');
+      txt('b：− 极（φ低）',P(xL+0.3,yB-1.05)[0],P(xL+0.3,yB-1.05)[1],'#7fffd0',11,'left');
+      // ---------- 流动离子（动态偏转） ----------
+      var N=8;
+      for(var sgn=0;sgn<2;sgn++){
+        for(var k=0;k<N;k++){
+          var phase=((k/N)+p*0.5)%1;
+          var x=xL+0.3+(xR-xL-0.6)*phase;
+          var defl=(1-g)*Math.pow(phase,1.2)*1.5;
+          if(sgn===0){ drawCharge('+',P(x,defl)[0],P(x,defl)[1],4,'#ff9a6a'); }
+          else { drawCharge('−',P(x,-defl)[0],P(x,-defl)[1],4,'#7fffd0'); }
+        }
+      }
+      // ---------- 平衡过程示例（左下屏幕固定框） ----------
+      var ibx=16, iby=H-196, ibw=250, ibh=132;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.80)';ctx.strokeStyle='rgba(120,170,230,.5)';ctx.lineWidth=1.3;
+      rr(ibx,iby,ibw,ibh,8);ctx.fill();ctx.stroke();ctx.restore();
+      txt('平衡过程（取一正电荷）',ibx+10,iby+8,'#ffd479',12,'left','700');
+      var cx0=ibx+62, cy0=iby+ibh*0.55;
+      drawCharge('+',cx0,cy0,6,'#ff9a6a');
+      var fL=0.62;
+      arrow(cx0,cy0,cx0,cy0+fL*22,'#ff6a5a',2.4,8);
+      txt('F洛=qvB（恒定）',cx0+12,cy0+fL*12,'#ff8a7a',11,'left','700');
+      var fE=0.62*g;
+      arrow(cx0,cy0,cx0,cy0-fE*22,'#5aa9ff',2.4,8);
+      txt('F电=qE（增强）',cx0+12,cy0-fE*12,'#7fb6ff',11,'left','700');
+      if(g>0.9){
+        ctx.save();ctx.fillStyle='#7fffd0';ctx.font='700 11.5px "Microsoft YaHei"';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('⇌ 平衡：F电 = F洛',cx0,cy0-44);ctx.restore();
+      }
+      // ---------- HUD：测量链路读数（左上屏幕固定） ----------
+      var hx=16,hy=16,hw=274,hh=150;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.74)';ctx.strokeStyle='rgba(90,150,220,.5)';ctx.lineWidth=1.2;
+      rr(hx,hy,hw,hh,9);ctx.fill();ctx.stroke();ctx.restore();
+      txt('测量链路（实时）',hx+12,hy+12,'#ffd479',12.5,'left','700');
+      var vy=hy+36, vstep=20;
+      txt('磁场 B = 0.20 T',hx+12,vy,'#dbe9ff',12,'left');
+      txt('管径 D = 0.40 m',hx+12,vy+vstep,'#dbe9ff',12,'left');
+      txt('电动势 U = BvD = '+U.toFixed(3)+' V',hx+12,vy+2*vstep,'#7fffd0',12,'left','700');
+      txt('反推流速 v = U/(BD) = '+(U/(Bphys*Dphys)).toFixed(2)+' m/s',hx+12,vy+3*vstep,'#ffb98a',12,'left','700');
+      txt('流量 Q = πDU/(4B) = '+(Math.PI*Dphys*U/(4*Bphys)).toFixed(3)+' m³/s',hx+12,vy+4*vstep,'#9fdcff',12,'left','700');
+      txt('U 稳定后读取 → 即得 v、Q',hx+12,hy+hh-16,'#9fc2ea',11,'left');
+      // ---------- 右侧板书 ----------
+      pTypeBox(p);
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 14 霍尔元件
+(function(){
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function pTBox(lines,p,thr){
+    if(p<thr)return;
+    var bw=W*0.285, bx=W*0.70, lh=26, fs=12.5;
+    var bh=46+lines.length*lh+14, by=(H-bh)/2;
+    ctx.save();ctx.fillStyle='rgba(8,16,32,.82)';ctx.strokeStyle='rgba(120,170,230,.55)';ctx.lineWidth=1.4;
+    rr(bx,by,bw,bh,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#ffd479';ctx.font='700 14px "Microsoft YaHei"';ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('物理归纳（霍尔元件）',bx+12,by+10);
+    var x0=bx+12, y0=by+40;
+    var rev=Math.min(1,(p-(thr+0.04))/0.34);
+    var shown=Math.floor(rev*(lines.length+1));
+    var lw=0;
+    for(var k=0;k<lines.length;k++){
+      if(k>=shown) break;
+      var yy=y0+k*lh;
+      lw=fmt(lines[k], x0, yy, '#dbe9ff', fs, 'left', '400');
+    }
+    if(shown<lines.length && (Math.floor(performance.now()/400)%2===0)){
+      var cy=y0+(shown>0?(shown-1)*lh:0);
+      ctx.fillStyle='#7fffd0'; ctx.fillRect(x0+(shown>0?lw:0), cy-12, 6, 16);
+    }
+    ctx.restore();
+  }
+  function pTypeBox(p){
+    pTBox([
+      '霍尔元件 · 霍尔电压推导',
+      '① 载流子偏转',
+      '   I 向右：载流子以 v_d 定向移动',
+      '   左手定则：四指指 I、B 穿手心 → F 沿宽 b',
+      '   两类载流子同侧偏转，电性只定符号',
+      '② 霍尔电场与平衡',
+      '   电荷分离 → E_H（由 + 指向 −）',
+      '   F电 = qE_H 与 F洛 反向',
+      '   qE_H = qvB ⟹ E_H = vB',
+      '③ 霍尔电压',
+      '   U_H = E_H·b = Bvb',
+      '④ 用 I 表示 v',
+      '   I = nqvS = nqv(bc)',
+      '   ⟹ v = I/(nqbc)',
+      '⑤ 结果',
+      '   U_H = BI/(nqc) = k_H·BI/c',
+      '   U_H ∝ B、I；∝1/c、1/n；与 b 无关',
+      '   n 小 → U_H 大 ⟹ 用半导体',
+      '   由 U_H 正负判载流子电性'
+    ],p,0.36);
+  }
+  // ---- 斜投影几何：a 长(x) / b 宽(深度 z) / c 厚(y) ----
+  var S=78, X0=150, ZX=0.44, ZY=0.30, A=5.0, Bw=2.2, C=1.5;
+  var Umax=62.5;                        // mV（示例：B=.5T,I=2mA,c=.1mm,n=1e21）
+  var m={type:'instr',title:'⑭ 霍尔元件',short:'霍尔元件',group:'B',dur:10,
+    view:[-8,-4.5,8,4.5],
+    board:[
+      {t:'k',s:'平衡 qvB = qE_H ⟹ E_H = vB，U_H = Bvb'},
+      {t:'x',s:'微观：I = nqv(bc) ⟹ v = I/(nqbc)'},
+      {t:'x',s:'U_H = BI/(nqc) = k_H·BI/c（k_H = 1/nq）'},
+      {t:'x',s:'∝B、I；∝1/c、1/n；与宽度 b 无关'},
+      {t:'x',s:'U_H 正负 → 判断载流子电性（n 型 / p 型）'}],
+    render:function(p){
+      // ===== 演示分段：0~0.5 电子载流子，0.5~1 空穴载流子 =====
+      var isHole=p>=0.5;
+      var q=p<0.5?p/0.5:(p-0.5)/0.5;
+      var g=(1-Math.exp(-3.2*Math.min(1,q)))/0.9850;   // 霍尔场/稳定值 0→1
+      var U=Umax*g;
+      var fs=isHole?1:-1;                 // 前面(近面)电荷符号
+      var colC=isHole?'#ff9a6a':'#7fffd0'; // 载流子色
+      var colB=isHole?'#7fffd0':'#ff9a6a'; // 背面(异号)色
+
+      // ===== 自适应三维轴测：x 沿电流(右上) · y 竖直(厚度 c) · z 沿宽度 b(右下·朝观察者) =====
+      var KX=0.950, KY=0.260, PZX=0.340, PZY=0.520;
+      var TITLE_H=110, BOT=H-206;
+      var animR=W*0.70-14;                      // 动画区右界（板书框起点 W*0.70 之前）
+      var availW=Math.max(240,animR-34), availH=Math.max(220,BOT-TITLE_H);
+      var SP=Math.min(availW/(A*KX+Bw*PZX), availH/(A*KY+C+Bw*PZY), 108);
+      var bwpx=SP*(A*KX+Bw*PZX), bhpx=SP*(A*KY+C+Bw*PZY);
+      var OX=34+(availW-bwpx)/2;
+      var BY=TITLE_H+(availH-bhpx)/2+SP*(A*KY+C);
+      function P3(x,y,z){return [OX+x*SP*KX+z*SP*PZX, BY-x*SP*KY-y*SP+z*SP*PZY];}
+
+      // ---- 八个角点 ----
+      var N00=P3(0,0,Bw), N10=P3(A,0,Bw), N11=P3(A,C,Bw), N01=P3(0,C,Bw);   // 近面 z=Bw（前面）
+      var F00=P3(0,0,0),  F10=P3(A,0,0),  F11=P3(A,C,0),  F01=P3(0,C,0);    // 远面 z=0（背面）
+
+      // ---- 远面（背面·半透） ----
+      ctx.save();
+      ctx.beginPath();ctx.moveTo(F00[0],F00[1]);ctx.lineTo(F10[0],F10[1]);ctx.lineTo(F11[0],F11[1]);ctx.lineTo(F01[0],F01[1]);ctx.closePath();
+      ctx.fillStyle='rgba(90,125,195,.10)';ctx.fill();ctx.strokeStyle='rgba(150,190,250,.34)';ctx.lineWidth=1.4;ctx.stroke();
+      // ---- 顶面 ----
+      ctx.beginPath();ctx.moveTo(N01[0],N01[1]);ctx.lineTo(N11[0],N11[1]);ctx.lineTo(F11[0],F11[1]);ctx.lineTo(F01[0],F01[1]);ctx.closePath();
+      ctx.fillStyle='rgba(150,178,245,.15)';ctx.fill();ctx.strokeStyle='rgba(160,195,255,.55)';ctx.lineWidth=1.6;ctx.stroke();
+      // ---- 右端面 x=A ----
+      ctx.beginPath();ctx.moveTo(N10[0],N10[1]);ctx.lineTo(N11[0],N11[1]);ctx.lineTo(F11[0],F11[1]);ctx.lineTo(F10[0],F10[1]);ctx.closePath();
+      ctx.fillStyle='rgba(120,152,225,.18)';ctx.fill();ctx.strokeStyle='rgba(150,190,250,.45)';ctx.lineWidth=1.4;ctx.stroke();
+      ctx.restore();
+
+      // ---- 磁场 B（竖直向上，穿出上表面） ----
+      var bPts=[[0.85,1.55],[2.15,1.12],[3.45,0.70]];
+      for(var bi=0;bi<bPts.length;bi++){
+        var bb0=P3(bPts[bi][0],C,bPts[bi][1]), bb1=P3(bPts[bi][0],C+0.50,bPts[bi][1]);
+        arrow(bb0[0],bb0[1],bb1[0],bb1[1],'rgba(127,216,255,.95)',2.4,9);
+      }
+      var blab=P3(2.15,C+0.70,1.12);
+      txtS('B',blab[0],blab[1],'#7fd8ff',17,'center','700');
+
+      // ---- 电荷累积：背面(异号·暗) ----
+      var nCols=5, nRows=3, nMax=nCols*nRows, nS=Math.round(nMax*g);
+      ctx.save();ctx.globalAlpha=0.55;
+      for(var ci=0;ci<nS;ci++){
+        var cc0=ci%nCols, rw0=Math.floor(ci/nCols);
+        var xw0=0.55+(A-1.1)*(cc0/(nCols-1)), yw0=C*(0.18+0.62*(rw0/(nRows-1)));
+        var sBk=P3(xw0,yw0,0.05);
+        txt(isHole?'−':'+',sBk[0],sBk[1],colB,16,'center','700');
+      }
+      ctx.restore();
+
+      // ===== 大量载流子：直行 → 偏转 → 沿直线奔向侧面 =====
+      function rnd(i,k){var v=Math.sin(i*127.1+k*311.7)*43758.5453;return v-Math.floor(v);}
+      function carPath(xs0,z0,xd,r1,r2){
+        var dz=(Bw-0.06)-z0;
+        var L1=A*(0.20+0.40*r1), x1=xs0+xd*L1;
+        var maxL=xd>0?(A-0.05-x1):(x1-0.05);
+        var L2=Math.min(maxL, A*(0.10+0.16*r2));
+        if(L2<A*0.05)L2=A*0.05;
+        var x2=x1+xd*L2;
+        var dd=Math.min(L1*0.22,L2*0.42,A*0.07);
+        var pts=[],k,s;
+        for(k=0;k<=8;k++){s=k/8;pts.push([xs0+(x1-xs0)*s,z0]);}
+        var ax=x1-xd*dd, az=z0, cx2=x1+xd*dd, cz2=z0+dz*(dd/L2);
+        for(k=1;k<=4;k++){s=k/5;
+          pts.push([(1-s)*(1-s)*ax+2*(1-s)*s*x1+s*s*cx2,
+                    (1-s)*(1-s)*az+2*(1-s)*s*z0+s*s*cz2]);}
+        for(k=1;k<=10;k++){s=k/10;pts.push([x1+xd*dd+(x2-x1-xd*dd)*s, z0+dz*(dd/L2)+(dz-dz*(dd/L2))*s]);}
+        var cum=[0],tot=0;
+        for(k=1;k<pts.length;k++){var ddx=pts[k][0]-pts[k-1][0], ddz=pts[k][1]-pts[k-1][1];tot+=Math.sqrt(ddx*ddx+ddz*ddz);cum.push(tot);}
+        return {pts:pts,cum:cum,len:tot};
+      }
+      function posAt(pa,u){
+        var tg=u*pa.len, ii=1;
+        while(ii<pa.cum.length-1&&pa.cum[ii]<tg)ii++;
+        var aa=ii-1, bb=ii, seg=pa.cum[bb]-pa.cum[aa], tt=seg>1e-6?(tg-pa.cum[aa])/seg:0;
+        return [pa.pts[aa][0]+(pa.pts[bb][0]-pa.pts[aa][0])*tt, pa.pts[aa][1]+(pa.pts[bb][1]-pa.pts[aa][1])*tt];
+      }
+      function txtS(st,x,y,col,sz,al,wt){ctx.save();ctx.shadowColor='rgba(3,10,20,.95)';ctx.shadowBlur=5;txt(st,x,y,col,sz,al,wt);ctx.restore();}
+      var NC=160, list=[], ii2, oy, oz, uu, xd, xs0, pa, pz;
+      for(ii2=0;ii2<NC;ii2++){
+        oy=0.15+rnd(ii2,1)*(C-0.30);
+        oz=0.10+rnd(ii2,2)*(Bw-0.20);
+        uu=(q+rnd(ii2,3))%1;
+        xd=isHole?1:-1;
+        xs0=xd>0?0.08:(A-0.08);
+        pa=carPath(xs0,oz,xd,rnd(ii2,4),rnd(ii2,5));
+        pz=posAt(pa,uu);
+        list.push({i:ii2,y:oy,z:pz[1],x:pz[0],u:uu,pa:pa});
+      }
+      list.sort(function(a1,b1){return a1.z-b1.z;});   // 由远及近
+      // ---- 拖尾（每 9 个取一个，看清“直行→偏转→直线”） ----
+      ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+      // A. 全路径（每 5 个取一个，展示“直行→偏转→直线”）
+      ctx.strokeStyle=colC;ctx.lineWidth=1.15;
+      for(ii2=0;ii2<list.length;ii2++){
+        var cA=list[ii2];
+        if(cA.i%8!==0)continue;
+        var nA=Math.round(cA.u*(cA.pa.pts.length-1));
+        ctx.globalAlpha=0.12+0.08*(cA.z/Bw);
+        ctx.beginPath();
+        for(var kA=0;kA<=nA;kA++){var pA=cA.pa.pts[kA], sA=P3(pA[0],cA.y,pA[1]);if(kA===0)ctx.moveTo(sA[0],sA[1]);else ctx.lineTo(sA[0],sA[1]);}
+        ctx.stroke();
+      }
+      // B. 近段亮拖尾（全部，体现瞬时运动方向）
+      ctx.lineWidth=1.5;
+      for(ii2=0;ii2<list.length;ii2++){
+        var cB=list[ii2];
+        var nB=Math.round(cB.u*(cB.pa.pts.length-1));
+        var kB0=Math.max(0,nB-2);
+        ctx.globalAlpha=0.35+0.45*(cB.z/Bw);
+        ctx.beginPath();
+        for(var kB=kB0;kB<=nB;kB++){var pB=cB.pa.pts[kB], sB=P3(pB[0],cB.y,pB[1]);if(kB===kB0)ctx.moveTo(sB[0],sB[1]);else ctx.lineTo(sB[0],sB[1]);}
+        ctx.stroke();
+      }
+      ctx.restore();
+      // ---- 载流子本体 ----
+      for(ii2=0;ii2<list.length;ii2++){
+        var cD=list[ii2], depD=cD.z/Bw, sD=P3(cD.x,cD.y,cD.z), radD=1.7+1.7*depD;
+        ctx.save();
+        ctx.fillStyle=colC;
+        ctx.globalAlpha=0.14+0.20*depD;
+        ctx.beginPath();ctx.arc(sD[0],sD[1],radD*2.7,0,7);ctx.fill();
+        ctx.globalAlpha=0.55+0.45*depD;
+        ctx.beginPath();ctx.arc(sD[0],sD[1],radD,0,7);ctx.fill();
+        if(cD.u>0.90&&cD.z>Bw*0.90){          // 即将抵达侧面：着陆脉冲
+          ctx.globalAlpha=0.55;ctx.strokeStyle=colC;ctx.lineWidth=1.2;
+          ctx.beginPath();ctx.arc(sD[0],sD[1],radD+3.6,0,7);ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // ---- 近面（前面·半透，压在载流子之上形成体积感） ----
+      ctx.save();
+      ctx.beginPath();ctx.moveTo(N00[0],N00[1]);ctx.lineTo(N10[0],N10[1]);ctx.lineTo(N11[0],N11[1]);ctx.lineTo(N01[0],N01[1]);ctx.closePath();
+      ctx.fillStyle=isHole?'rgba(255,150,100,.10)':'rgba(90,180,235,.10)';ctx.fill();
+      ctx.strokeStyle='#8fa6e8';ctx.lineWidth=2.6;ctx.stroke();
+      ctx.restore();
+      // ---- 电荷累积：前面(载流子同号·亮) ----
+      for(var ci3=0;ci3<nS;ci3++){
+        var cc3=ci3%nCols, rw3=Math.floor(ci3/nCols);
+        var xw3=0.55+(A-1.1)*(cc3/(nCols-1)), yw3=C*(0.18+0.62*(rw3/(nRows-1)));
+        var sFr=P3(xw3,yw3,Bw-0.05);
+        ctx.save();ctx.shadowColor=colC;ctx.shadowBlur=9;
+        txt(isHole?'+':'−',sFr[0],sFr[1],colC,19,'center','700');
+        ctx.restore();
+      }
+
+      // ---- F洛 方向标注：取一条路径的偏转折点，示教「I、B 定方向」 ----
+      var f0=P3(A*0.16,C*0.86,0.55);
+      var f1=P3(A*0.16,C*0.86,Math.min(Bw-0.12,0.55+1.05));
+      arrow(f0[0],f0[1],f1[0],f1[1],'#ff6a5a',2.6,10);
+      txtS('F洛',f1[0]+9,f1[1]+3,'#ff8a7a',13,'left','700');
+      // ---- 霍尔电场 E_H（沿宽 b·随 g 增长） ----
+      if(g>0.05){
+        var eyy=C*0.33, exx=A*0.58, e0, e1;
+        if(isHole){e0=P3(exx,eyy,Bw-0.14);e1=P3(exx,eyy,0.14);}
+        else{e0=P3(exx,eyy,0.14);e1=P3(exx,eyy,Bw-0.14);}
+        arrow(e0[0],e0[1],e1[0],e1[1],'rgba(140,255,165,'+(0.35+0.62*g).toFixed(2)+')',3.6,13);
+        var sEm=P3(exx,eyy,Bw*0.5);
+        txtS('E_H',sEm[0]-12,sEm[1]-12,'#7dff9a',14.5,'right','700');
+      }
+
+      // ---- 电流 I（沿 +x） ----
+      var ia=P3(0.30,-0.18,Bw+0.06), ib=P3(3.05,-0.18,Bw+0.06);
+      arrow(ia[0],ia[1],ib[0],ib[1],'#ff5a5a',3,11);
+      txtS('I',ib[0]+10,ib[1]+5,'#ff6a6a',14,'left','700');
+      // ---- 漂移速度 v_d ----
+      var va=P3(isHole?1.05:3.05,0.20,Bw-0.06), vb=P3(isHole?3.05:1.05,0.20,Bw-0.06);
+      line(va[0],va[1],vb[0],vb[1],'rgba(220,238,255,.40)',1.6,[6,5]);
+      arrow(va[0],va[1],vb[0],vb[1],colC,2.4,9);
+      txtS('v_d',(va[0]+vb[0])/2,(va[1]+vb[1])/2+18,colC,13,'center','700');
+
+      // ---- 尺寸标注 a / b / c ----
+      var da0=P3(0,-0.06,Bw+0.30), da1=P3(A,-0.06,Bw+0.30);
+      line(da0[0],da0[1],da1[0],da1[1],'rgba(160,190,235,.45)',1.2);
+      txtS('a',(da0[0]+da1[0])/2,(da0[1]+da1[1])/2+18,'rgba(200,220,250,.95)',13,'center','700');
+      var db0=P3(-0.18,-0.06,0), db1=P3(-0.18,-0.06,Bw);
+      line(db0[0],db0[1],db1[0],db1[1],'rgba(160,190,235,.45)',1.2);
+      txtS('b',(db0[0]+db1[0])/2-10,(db0[1]+db1[1])/2,'rgba(200,220,250,.95)',13,'right','700');
+      var dc0=P3(-0.16,0,0), dc1=P3(-0.16,C,0);
+      line(dc0[0],dc0[1],dc1[0],dc1[1],'rgba(160,190,235,.45)',1.2);
+      txtS('c',dc0[0]-6,(dc0[1]+dc1[1])/2,'rgba(200,220,250,.95)',13,'right','700');
+      // ---- 面标注 ----
+      var fLb=P3(A*0.12,C*0.10,Bw-0.03);
+      txtS('前面',fLb[0],fLb[1],'rgba(215,232,255,.85)',12,'left','700');
+      var bLb=P3(0.10,C*0.97,0.06);
+      txtS('背面',bLb[0],bLb[1],'rgba(215,232,255,.55)',11.5,'left','700');
+      // ---------- 右下 HUD：U_H(t) 建立曲线（原左上载流子框，按需求移至右下） ----------
+      var hx=344,hy=H-196,hw=276,hh=176;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.74)';ctx.strokeStyle='rgba(90,150,220,.5)';ctx.lineWidth=1.2;
+      rr(hx,hy,hw,hh,9);ctx.fill();ctx.stroke();ctx.restore();
+      txt('霍尔电压的建立 U_H — t',hx+12,hy+16,'#ffd479',12.5,'left','700');
+      txt(isHole?'载流子：空穴（+q）· v_d →':'载流子：电子（−q）· v_d ←',hx+12,hy+38,colC,12,'left','700');
+      var cgx0=hx+22, cgx1=hx+hw-16, cgy0=hy+60, cgy1=hy+140;
+      line(cgx0,cgy1,cgx1,cgy1,'rgba(120,160,210,.45)',1.1);
+      line(cgx0,cgy0,cgx0,cgy1,'rgba(120,160,210,.45)',1.1);
+      var yU=function(v){return cgy1-(v/Umax)*(cgy1-cgy0);};
+      line(cgx0,yU(Umax),cgx1,yU(Umax),'rgba(127,255,208,.55)',1.2,[5,4]);
+      ctx.save();ctx.strokeStyle=colC;ctx.lineWidth=2.2;ctx.beginPath();
+      for(var si=0;si<=36;si++){
+        var uu=q*si/36, vv=Umax*(1-Math.exp(-3.2*uu))/0.9850;
+        var px=cgx0+(cgx1-cgx0)*uu, py=yU(vv);
+        if(si===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+      ctx.stroke();ctx.restore();
+      var dotx=cgx0+(cgx1-cgx0)*q, doty=yU(U);
+      ctx.save();ctx.fillStyle='#fff';ctx.shadowColor=colC;ctx.shadowBlur=10;ctx.beginPath();ctx.arc(dotx,doty,3.6,0,7);ctx.fill();ctx.restore();
+      txt('U_H = '+U.toFixed(1)+' mV',hx+12,hy+158,'#dbe9ff',12,'left','700');
+      txt('稳定值 '+Umax.toFixed(1)+' mV',hx+hw-14,hy+158,'#7fffd0',12,'right','700');
+      // ---------- 顶部标题与过程提示 ----------
+      txt('三维霍尔元件 · 载流子偏转仿真',16,26,'#dbe9ff',15,'left','700');
+      txt(isHole?'当前：空穴（+q）· v_d 沿 I 方向 →':'当前：电子（−q）· v_d 逆 I 方向 ←',16,50,colC,12.5,'left','700');
+      txt('直行 → 偏转 → 直线奔向前侧面（F 由 I 按左手定则定，与电性无关）',16,72,'rgba(188,212,246,.95)',11.5,'left');
+      if(q>=0.78)txt('② 电荷分离建立 E_H：qE_H = qvB ⟹ E_H = vB，U_H 不再增大',16,94,'#7fffd0',11.5,'left');
+      else txt('① 载流子持续偏转 → 侧面电荷增多 → E_H 与 U_H 上升',16,94,'#9fc6ef',11.5,'left');
+      if(p>0.45&&p<0.57)txt('⇄ 切换载流子类型',330,30,'#ffd479',14,'center','700');
+      // ---------- 左下：偏转 → 电势 ----------
+      var blx=16, bly=H-196, blw=314, blh=150;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.78)';ctx.strokeStyle='rgba(90,150,220,.45)';ctx.lineWidth=1.2;
+      rr(blx,bly,blw,blh,9);ctx.fill();ctx.stroke();ctx.restore();
+      txt('载流子偏转 → 电势高低',blx+12,bly+16,'#ffd479',13,'left','700');
+      var L1=isHole?'载流子：空穴（+q），v_d 沿 I 方向':'载流子：电子（−q），v_d 逆 I 方向';
+      var L2='左手定则 F=I×B → 同一侧';
+      var L3=isHole?'该侧积 +，另一侧留 −':'该侧积 −，另一侧留 +';
+      var L4=isHole?'⟹ 前面 φ高 > 背面 φ低':'⟹ 背面 φ高 > 前面 φ低';
+      txt(L1,blx+12,bly+42,colC,12,'left','700');
+      txt(L2,blx+12,bly+66,'#dbe9ff',12,'left');
+      txt(L3,blx+12,bly+90,'#dbe9ff',12,'left');
+      txt(L4,blx+12,bly+116,'#ffd479',13,'left','700');
+      txt(isHole?'同一 I、B：U_H 极性相反 → 可判载流子':'试切换：空穴载流子，极性反转',blx+12,bly+138,'rgba(160,195,240,.85)',11,'left');
+      // ---------- 右侧板书 ----------
+      pTypeBox(p);
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 15 磁囚笼 · 环形磁场约束
+(function(){
+  var R1=1.5, R2=4.5;                       // 内 / 外边界半径
+  var RC=(R2*R2-R1*R1)/(2*R2);              // 临界回旋半径 = 2.0
+  var NP=36;                                // 粒子数：每 10° 一枚，共 36 种颜色
+  var LOW=0.72, HIGH=1.28;                  // v / v_c
+  var CAGE_L=null, CAGE_H=null;
+
+  function angMod(a){while(a<0)a+=Math.PI*2;while(a>=Math.PI*2)a-=Math.PI*2;return a;}
+  function rotv(v,a){var c=Math.cos(a),s=Math.sin(a);return [v[0]*c-v[1]*s,v[0]*s+v[1]*c];}
+  // 从 phi0 起、绕 C 逆时针转，第一次碰到 |P|=R 的转角
+  function hitAng(C,rL,R,phi0){
+    var d=Math.hypot(C[0],C[1]);
+    if(d<1e-9)return null;
+    var c=(d*d+rL*rL-R*R)/(2*d*rL);
+    if(c>1.000001||c<-1.000001)return null;
+    c=Math.max(-1,Math.min(1,c));
+    var A=Math.acos(c), thC=Math.atan2(-C[1],-C[0]);
+    var c1=angMod(thC+A-phi0), c2=angMod(thC-A-phi0);
+    if(c1<1e-4)c1+=Math.PI*2;
+    if(c2<1e-4)c2+=Math.PI*2;
+    return Math.min(c1,c2);
+  }
+  // 光色散（可见光谱）取色：红→橙→黄→绿→青→蓝→紫，不含品红
+  var SPEC=[[0.00,255,42,42],[0.12,255,96,26],[0.24,255,158,26],[0.34,255,214,40],
+            [0.44,196,255,52],[0.54,92,255,96],[0.64,56,255,196],[0.74,56,206,255],
+            [0.84,60,132,255],[0.92,96,86,255],[1.00,168,64,255]];
+  function specColor(t){
+    if(t<0)t=0; if(t>1)t=1;
+    for(var q=0;q<SPEC.length-1;q++){
+      if(t<=SPEC[q+1][0]){
+        var a=SPEC[q], b=SPEC[q+1], u=(t-a[0])/Math.max(1e-6,b[0]-a[0]);
+        return 'rgb('+Math.round(a[1]+(b[1]-a[1])*u)+','+Math.round(a[2]+(b[2]-a[2])*u)+','+Math.round(a[3]+(b[3]-a[3])*u)+')';
+      }
+    }
+    return 'rgb(168,64,255)';
+  }
+  // 解析构造一条完整轨迹：圆内直行 → 环内圆弧 → 圆内直行 → ...
+  function buildCage(rL){
+    var paths=[], Lmax=0, k, si;
+    for(k=0;k<NP;k++){
+      var th=k*Math.PI*2/NP + Math.PI/NP*0.22;
+      var dir=[Math.cos(th),Math.sin(th)];
+      var segs=[{t:'L',a:[0,0],b:[R1*dir[0],R1*dir[1]]}];
+      var cur=[R1*dir[0],R1*dir[1]];
+      for(si=0;si<2;si++){
+        var C=[cur[0]+rL*(-dir[1]), cur[1]+rL*dir[0]];
+        var phi0=Math.atan2(cur[1]-C[1], cur[0]-C[0]);
+        var hI=hitAng(C,rL,R1,phi0), hO=hitAng(C,rL,R2,phi0);
+        var out=false, ang=null;
+        if(hO!==null&&(hI===null||hO<hI)){out=true;ang=hO;}
+        else if(hI!==null){ang=hI;}
+        if(ang===null)break;
+        segs.push({t:'A',c:C,r:rL,a0:phi0,a1:phi0+ang});
+        var ex=[C[0]+rL*Math.cos(phi0+ang), C[1]+rL*Math.sin(phi0+ang)];
+        var nd=rotv(dir,ang);
+        if(out){
+          segs.push({t:'L',a:ex,b:[ex[0]+nd[0]*R2*0.45, ex[1]+nd[1]*R2*0.45]});
+          cur=ex; dir=nd; break;
+        }
+        var t=-2*(ex[0]*nd[0]+ex[1]*nd[1]);
+        if(t<=1e-6){cur=ex;dir=nd;break;}
+        var nx=[ex[0]+nd[0]*t, ex[1]+nd[1]*t];
+        segs.push({t:'L',a:ex,b:nx});
+        cur=nx; dir=nd;
+      }
+      var tot=0;
+      for(si=0;si<segs.length;si++){
+        var sg=segs[si];
+        sg.len = sg.t==='L' ? Math.hypot(sg.b[0]-sg.a[0], sg.b[1]-sg.a[1]) : sg.r*Math.abs(sg.a1-sg.a0);
+        sg.s0=tot; tot+=sg.len; sg.s1=tot;
+      }
+      paths.push({segs:segs,len:tot,col:specColor(k/(NP-1))});
+      if(tot>Lmax)Lmax=tot;
+    }
+    return {paths:paths,Lmax:Lmax};
+  }
+
+  var m={type:'instr',title:'⑮ 磁囚笼 · 环形磁场约束',short:'磁囚笼',group:'B',dur:12,
+    view:[-8,-5,8,5],
+    board:[{t:'k',s:'环形磁场中粒子做半径 r = mv/(qB) 的圆周运动'},
+      {t:'x',s:'从圆心沿半径射入：r 小 → 被“囚”在环内'},
+      {t:'x',s:'临界 r_c = (R₂²−R₁²)/(2R₂) ⇒ v_c = qBr_c/m'},
+      {t:'x',s:'v < v_c 周期性囚禁；v > v_c 穿透外边界'}],
+    render:function(p){
+      if(!CAGE_L)CAGE_L=buildCage(RC*LOW);
+      if(!CAGE_H)CAGE_H=buildCage(RC*HIGH);
+      var trapped=p<0.55;
+      var lp=trapped?p/0.55:(p-0.55)/0.45;
+      var cage=trapped?CAGE_L:CAGE_H;
+      var cx=W*0.335, cy=H*0.50;
+      var SC=Math.min(W*0.295,H*0.415)/R2;
+      function Q(x,y){return [cx+x*SC, cy-y*SC];}
+      var c0=Q(0,0), rIn=R1*SC, rOut=R2*SC;
+
+      ctx.save();
+      // (clip test off)
+
+      // ---- 环形磁场底 ----
+      var gr=ctx.createRadialGradient(c0[0],c0[1],rIn*0.55,c0[0],c0[1],rOut);
+      gr.addColorStop(0,'rgba(30,60,120,0.02)');
+      gr.addColorStop(0.55,'rgba(42,88,180,0.11)');
+      gr.addColorStop(1,'rgba(96,160,255,0.035)');
+      ctx.beginPath();ctx.arc(c0[0],c0[1],(rIn+rOut)/2,0,Math.PI*2);
+      ctx.lineWidth=Math.max(1,rOut-rIn);ctx.strokeStyle=gr;ctx.stroke();
+
+      // ---- B ⊗ 符号（两圈） ----
+      var rings=[R1+(R2-R1)*0.30, R1+(R2-R1)*0.72];
+      ctx.save();ctx.strokeStyle='rgba(150,205,255,.42)';ctx.lineWidth=1.1;
+      for(var ri=0;ri<rings.length;ri++){
+        var rr0=rings[ri], cnt=14, off=ri*Math.PI/cnt;
+        for(var q1=0;q1<cnt;q1++){
+          var aa=off+q1*Math.PI*2/cnt;
+          var sp=Q(rr0*Math.cos(aa), rr0*Math.sin(aa));
+          ctx.beginPath();ctx.arc(sp[0],sp[1],5.2,0,7);ctx.stroke();
+          ctx.beginPath();ctx.moveTo(sp[0]-3.4,sp[1]-3.4);ctx.lineTo(sp[0]+3.4,sp[1]+3.4);
+          ctx.moveTo(sp[0]+3.4,sp[1]-3.4);ctx.lineTo(sp[0]-3.4,sp[1]+3.4);ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // ---- 内外边界 ----
+      function glowCircle(rr1,w1,cA,cB){
+        ctx.save();
+        ctx.strokeStyle=cA;
+        ctx.beginPath();ctx.arc(c0[0],c0[1],rr1,0,Math.PI*2);ctx.lineWidth=w1*3.4;ctx.globalAlpha=0.16;ctx.stroke();
+        ctx.beginPath();ctx.arc(c0[0],c0[1],rr1,0,Math.PI*2);ctx.lineWidth=w1*1.9;ctx.globalAlpha=0.34;ctx.stroke();
+        ctx.globalAlpha=1;ctx.strokeStyle=cB;
+        ctx.beginPath();ctx.arc(c0[0],c0[1],rr1,0,Math.PI*2);ctx.lineWidth=w1;ctx.stroke();
+        ctx.restore();
+      }
+      glowCircle(rOut,2.4,'rgba(90,180,255,.9)','rgba(150,215,255,.95)');
+      glowCircle(rIn,1.8,'rgba(110,195,255,.8)','rgba(180,235,255,.9)');
+
+      // ---- 轨迹（直接描圆弧/线段，不做折线采样） ----
+      var sHead=lp*cage.Lmax;
+      for(var i=0;i<cage.paths.length;i++){
+        var pa=cage.paths[i], si2;
+        // 淡底：Path2D 缓存
+        if(!pa.p2d||pa.p2dSC!==SC){
+          var p2=new Path2D();
+          for(si2=0;si2<pa.segs.length;si2++){
+            var g2=pa.segs[si2];
+            if(g2.t==='L'){
+              var A2=Q(g2.a[0],g2.a[1]), B2=Q(g2.b[0],g2.b[1]);
+              p2.moveTo(A2[0],A2[1]);p2.lineTo(B2[0],B2[1]);
+            }else{
+              var C2=Q(g2.c[0],g2.c[1]), rr2=g2.r*SC;
+              p2.moveTo(C2[0]+rr2*Math.cos(-g2.a0), C2[1]+rr2*Math.sin(-g2.a0));
+              p2.arc(C2[0],C2[1],rr2,-g2.a0,-g2.a1,true);
+            }
+          }
+          pa.p2d=p2;pa.p2dSC=SC;
+        }
+        ctx.save();ctx.strokeStyle=pa.col;ctx.globalAlpha=0.055;ctx.lineWidth=0.9;
+        ctx.stroke(pa.p2d);ctx.restore();
+
+        // 已走过部分
+        ctx.save();ctx.strokeStyle=pa.col;ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.beginPath();
+        var hx=0, hy=0;
+        for(si2=0;si2<pa.segs.length;si2++){
+          var g3=pa.segs[si2];
+          if(sHead<=g3.s0)break;
+          var dP=Math.min(sHead,g3.s1)-g3.s0;
+          if(g3.t==='L'){
+            var A3=Q(g3.a[0],g3.a[1]);
+            ctx.moveTo(A3[0],A3[1]);
+            var fr=dP/g3.len;
+            hx=g3.a[0]+(g3.b[0]-g3.a[0])*fr; hy=g3.a[1]+(g3.b[1]-g3.a[1])*fr;
+            var B3=Q(hx,hy); ctx.lineTo(B3[0],B3[1]);
+          }else{
+            var C3=Q(g3.c[0],g3.c[1]), rr3=g3.r*SC;
+            var eA=g3.a0+dP/g3.r;
+            ctx.moveTo(C3[0]+rr3*Math.cos(-g3.a0), C3[1]+rr3*Math.sin(-g3.a0));
+            ctx.arc(C3[0],C3[1],rr3,-g3.a0,-eA,true);
+            hx=g3.c[0]+g3.r*Math.cos(eA); hy=g3.c[1]+g3.r*Math.sin(eA);
+          }
+        }
+        ctx.globalAlpha=0.11;ctx.lineWidth=4.2;ctx.stroke();
+        ctx.globalAlpha=0.92;ctx.lineWidth=1.5;ctx.stroke();
+        ctx.restore();
+
+        // 粒子头
+        var hp=Q(hx,hy);
+        ctx.save();
+        ctx.fillStyle=pa.col;ctx.globalAlpha=0.28;
+        ctx.beginPath();ctx.arc(hp[0],hp[1],7,0,7);ctx.fill();
+        ctx.globalAlpha=1;ctx.fillStyle='#ffffff';
+        ctx.beginPath();ctx.arc(hp[0],hp[1],3.0,0,7);ctx.fill();
+        ctx.restore();
+      }
+
+      // ---- 圆心 ----
+      ctx.save();ctx.fillStyle='#dbe9ff';ctx.beginPath();ctx.arc(c0[0],c0[1],2.4,0,7);ctx.fill();ctx.restore();
+      ctx.restore();   // clip end
+
+      // ---- 标注 ----
+      function tS(st,x,y,c,sz,al,wt){ctx.save();ctx.shadowColor='rgba(3,10,20,.95)';ctx.shadowBlur=6;txt(st,x,y,c,sz,al,wt);ctx.restore();}
+      var pR1=Q(0,R1), pR2=Q(0,R2);
+      tS('R₁', pR1[0]+7, pR1[1]+4, 'rgba(190,230,255,.95)', 12, 'left', '700');
+      tS('R₂', pR2[0]+7, pR2[1]+4, 'rgba(170,220,255,.98)', 12.5, 'left', '700');
+      tS('O', c0[0]-16, c0[1]+5, 'rgba(210,232,255,.9)', 12, 'right', '700');
+      tS('环形磁场 B ⊗', c0[0], c0[1]-rOut-26, 'rgba(160,215,255,.95)', 12, 'center', '700');
+      var capT='所有粒子同时从圆心 O 沿半径射出', capY=Math.min(H-16, c0[1]+rOut+28);
+      ctx.save();ctx.font='11.5px "Microsoft YaHei"';var cwT=ctx.measureText(capT).width;
+      ctx.globalAlpha=0.8;ctx.fillStyle='rgba(4,12,24,.88)';
+      ctx.beginPath();ctx.rect(c0[0]-cwT/2-9,capY-13,cwT+18,20);ctx.fill();ctx.restore();
+      tS(capT, c0[0], capY, 'rgba(184,214,250,.95)', 11.5, 'center');
+
+      // ---- 顶部状态 ----
+
+      // ---- 右侧判据框 ----
+      var bx=W*0.70+10, bw=Math.max(176,W*0.285), by=112, bh=254;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.74)';ctx.strokeStyle='rgba(90,150,220,.45)';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.rect(bx,by,bw,bh);ctx.fill();ctx.stroke();ctx.restore();
+      txt('磁囚笼 · 临界判据',bx+12,by+22,'#ffd479',13,'left','700');
+      fmt('r = \\frac{mv}{qB}', bx+14, by+58, '#dbe9ff', 13, 'left');
+      fmt('r_c = \\frac{R_2² − R_1²}{2R_2}', bx+14, by+96, '#7fffd0', 13, 'left');
+      txt('本例 R₁=1.5, R₂=4.5 ⟹ r_c = 2.0', bx+12, by+124, 'rgba(160,210,240,.9)', 11, 'left');
+      fmt('v_c = \\frac{qB\\,r_c}{m}', bx+14, by+158, '#7fffd0', 13, 'left');
+      txt((trapped?'▶ ':'   ')+'v < v_c → 囚禁（周期运动）', bx+12, by+194, trapped?'#7fffd0':'rgba(150,180,210,.55)', 12, 'left', trapped?'700':'400');
+      txt((trapped?'   ':'▶ ')+'v > v_c → 逃逸（穿出 R₂）', bx+12, by+216, trapped?'rgba(200,170,150,.55)':'#ffb08a', 12, 'left', trapped?'400':'700');
+      txt('当前 v = '+(trapped?LOW.toFixed(2):HIGH.toFixed(2))+' v_c', bx+12, by+238, 'rgba(190,215,245,.95)', 11.5, 'left', '700');
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 16 圆形边界 · 平行束会聚（磁聚焦）· 时间驱动（符合物理先后顺序）
+// 几何：圆形磁场半径 R，粒子轨道半径 r=R。所有粒子从同一竖直线(源)等速(+x)出发，
+// 按到边界的远近先后进入磁场；各轨道圆(半径=R)均过会聚点 Q(0,R)，轨迹在此相交（几何会聚）。
+// 到 Q 后速度反向——左手定则得新圆心 C′≠C，沿另一段圆弧抵达对径点 P′=-E 出射，
+// 出磁场后再平行(+x)运动。进入/出射时刻由真实弧长(=v·t)决定：中心粒子先入先出，边缘后入后出。
+(function(){
+  var RF=4.0, N=9, AMAX=70*Math.PI/180, XS=-(RF+2.5); // 粒子源竖直线 x
+  var m={type:'beam',title:'⑯ 圆形边界 · 平行束会聚（磁聚焦）',short:'平行束会聚',group:'B',dur:12,
+    view:[-7.5,-5,17,10],Binto:true,capPos:'rightmid',
+    board:[{t:'k',s:'r = R：同一竖直线出发的等速平行束，轨迹必过边界上同一点 Q'},
+      {t:'x',s:'磁场外先平行(+x)运动；按到边界远近，各粒子先后进入磁场（先入先出）'},
+      {t:'x',s:'过 Q 速度反向(左手定则)→另一段圆弧到对侧 P′；出磁场后再次平行(+x)'}],
+    build:function(){
+      var A=[]; var Smax=0;
+      for(var i=0;i<N;i++){
+        var al=-AMAX + (N===1?0:2*AMAX*i/(N-1));
+        var Ex=-RF*Math.cos(al), Ey=RF*Math.sin(al);     // 入射点 E（左半圆）
+        var Cx=Ex, Cy=Ey+RF;                              // 轨道1圆心 C(B 向里,+q 力向上)
+        var a0=-Math.PI/2, aQ=-al;                        // 入射点(轨道底) → Q
+        var Cpx=RF*Math.cos(al), Cpy=RF*(1-Math.sin(al)); // 轨道2圆心 C′（反向后）
+        var t0=Math.PI-al, span=Math.PI/2+al;              // Q → 对侧点 P′
+        var Ppx=RF*Math.cos(al), Ppy=-RF*Math.sin(al);     // 出射点 P′ = -E
+        var sEnter=Ex - XS;                                // 磁场外平行段长（到边界的远近不同）
+        var insideLen=Math.PI*RF;                           // 磁场内总弧长（恒定）
+        var sExit=sEnter+insideLen;
+        A.push({al:al,y0:Ey,E:[Ex,Ey],C:[Cx,Cy],a0:a0,aQ:aQ,
+                Cp:[Cpx,Cpy],t0:t0,span:span,Pp:[Ppx,Ppy],
+                x_src:XS,sEnter:sEnter,sExit:sExit});
+        Smax=Math.max(Smax,sExit);
+      }
+      m._S=Smax+2.5;   // 出磁场后平行段长度
+      m._Smax=Smax;    // 最后出射时刻
+      m._A=A;
+    },
+    render:function(p){
+      var A=m._A, S=m._S, O=[0,0];
+      var PMOVE=0.80;                                    // 前 80% 播放粒子运动，后 20% 做几何分析
+      var s=(p<PMOVE)? p/PMOVE*S : S;                    // 全局"路程"(=v·t)；粒子出磁场停止后冻结在末位
+      var ana=(p<=PMOVE)? 0 : (p-PMOVE)/(1-PMOVE);       // 分析阶段进度(0→1)：粒子停止后才开始
+      // ---- 圆形磁场区域 ----
+      var sO=P(O[0],O[1]);
+      ctx.save();ctx.fillStyle='rgba(40,90,160,.10)';ctx.strokeStyle='#5fa8e6';ctx.lineWidth=2.2;
+      ctx.beginPath();ctx.arc(sO[0],sO[1],RF*V.sc,0,7);ctx.fill();ctx.stroke();ctx.restore();
+      bfieldMarksCircle(O,RF,true,1.0);
+
+      // ---- 路径采样（按弧长）：用于“随粒子运动长出的轨迹” ----
+      function pathPt(Pp,d){
+        var a_in=Pp.sEnter, len1=RF*(Math.PI/2-Pp.al), len2=RF*(Math.PI/2+Pp.al), a_out=S-Pp.sExit;
+        if(d<=a_in){ var u=a_in>1e-6?d/a_in:0; return [Pp.x_src+u*(Pp.E[0]-Pp.x_src),Pp.y0]; }
+        d-=a_in;
+        if(d<=len1){ var f=len1>1e-9?d/len1:0, ang=Pp.a0+f*(Pp.aQ-Pp.a0); return [Pp.C[0]+RF*Math.cos(ang),Pp.C[1]+RF*Math.sin(ang)]; }
+        d-=len1;
+        if(d<=len2){ var g=len2>1e-9?d/len2:0, th=Pp.t0+g*Pp.span; return [Pp.Cp[0]+RF*Math.cos(th),Pp.Cp[1]+RF*Math.sin(th)]; }
+        d-=len2; var u2=a_out>1e-6?Math.min(d/a_out,1):0; return [Pp.Pp[0]+u2*(S-Pp.sExit),Pp.Pp[1]];
+      }
+      function drawTrail(Pp,d,col,lw){
+        ctx.save();ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';ctx.beginPath();
+        var steps=Math.max(2,Math.ceil(d*6));
+        for(var k=0;k<=steps;k++){ var dd=d*k/steps, pt=pathPt(Pp,dd), sp=P(pt[0],pt[1]); if(k===0)ctx.moveTo(sp[0],sp[1]); else ctx.lineTo(sp[0],sp[1]); }
+        ctx.stroke();ctx.restore();
+      }
+      // ---- 各粒子轨迹：只画已走过的路径，随粒子运动“长出”（亮绿 #42f401）----
+      for(var i=0;i<A.length;i++){ drawTrail(A[i], s, 'rgba(66,244,1,.95)', 2.0); }
+
+      // ---- 粒子源竖直线（仅几何标记，不加文字）----
+      var yMin=A[0].y0, yMax=A[A.length-1].y0;
+      var sSA=P(XS,yMin-0.4), sSB=P(XS,yMax+0.4);
+      ctx.save();ctx.strokeStyle='rgba(159,208,255,.40)';ctx.lineWidth=2;ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.moveTo(sSA[0],sSA[1]);ctx.lineTo(sSB[0],sSB[1]);ctx.stroke();ctx.restore();
+
+      // ---- 会聚点 Q（仅实心点，无外圈；标注置于上方避免与轨迹重叠）----
+      var sQ=P(0,RF);
+      ctx.save();ctx.fillStyle='#ffd479';ctx.strokeStyle='#ffd479';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(sQ[0],sQ[1],5,0,7);ctx.fill();
+      ctx.restore();
+      txt('Q 会聚点',sQ[0],sQ[1]-16,'#ffd479',13,'center','700');
+
+      // ---- 位置/速度（时间驱动） ----
+      function stateAt(Pp,ss){
+        if(ss < Pp.sEnter){ var u=Pp.sEnter>1e-6? ss/Pp.sEnter:0;          // 磁场外：平行 +x
+          return {pos:[Pp.x_src+u*(Pp.E[0]-Pp.x_src), Pp.y0], vel:[1,0], ph:0}; }
+        var sIn=ss-Pp.sEnter, len1=RF*(Math.PI/2-Pp.al), len2=RF*(Math.PI/2+Pp.al);
+        if(sIn <= len1){ var f=len1>1e-9? sIn/len1:0; var ang=Pp.a0+f*(Pp.aQ-Pp.a0); // 弧1 E→Q
+          return {pos:[Pp.C[0]+RF*Math.cos(ang),Pp.C[1]+RF*Math.sin(ang)], vel:[-Math.sin(ang),Math.cos(ang)], ph:1}; }
+        var g=len2>1e-9? (sIn-len1)/len2:0; var th=Pp.t0+g*Pp.span;        // 弧2 Q→P′
+        return {pos:[Pp.Cp[0]+RF*Math.cos(th),Pp.Cp[1]+RF*Math.sin(th)], vel:[-Math.sin(th),Math.cos(th)], ph:2};
+      }
+      var rep0=null; for(var i=0;i<A.length;i++){ if(Math.abs(A[i].al)<1e-3) rep0=A[i]; }
+
+      // ---- 粒子 + 速度箭头（相位着色） ----
+      for(var i=0;i<A.length;i++){ var Pp=A[i];
+        var st=(s>Pp.sExit)? {pos:[Pp.Pp[0]+(s-Pp.sExit),Pp.Pp[1]], vel:[1,0], ph:3} : stateAt(Pp,s);
+        var sp=P(st.pos[0],st.pos[1]);
+        var col=(st.ph===1)?'#ff7a4d':(st.ph===2?'#7fffd0':'#9fd0ff');
+        ctx.save();ctx.shadowColor=(st.ph===1?'rgba(255,140,90,.6)':(st.ph===2?'rgba(80,255,200,.6)':'rgba(120,180,255,.55)'));ctx.shadowBlur=9;
+        ctx.fillStyle=col; ctx.beginPath();ctx.arc(sp[0],sp[1],5.2,0,7);ctx.fill();ctx.restore();
+        var vl=0.9;
+        if(st.ph===0||st.ph===3){ var va=P(st.pos[0]-vl,st.pos[1]), vb=P(st.pos[0]+vl,st.pos[1]);
+          ctx.save();ctx.globalAlpha=0.85; arrow(va[0],va[1],vb[0],vb[1],col,1.5,7); ctx.restore(); }
+        else if(Pp===rep0){ var vx=st.vel[0]*vl, vy=st.vel[1]*vl; var va=P(st.pos[0]-vx,st.pos[1]-vy), vb=P(st.pos[0]+vx,st.pos[1]+vy);
+          ctx.save();ctx.globalAlpha=0.85; arrow(va[0],va[1],vb[0],vb[1],col,1.5,7); ctx.restore(); }
+      }
+
+      // ---- 几何分析：粒子出磁场停止后，取“上区”某粒子连线成菱形 O·E·C·Q ----
+      // 菱形四顶点：O 磁场边界圆心(0,0)、E 粒子进磁场点、C 轨迹圆心、Q 汇聚点；四边均 = R(r=R)
+      if(ana>0){
+        var repU=null; for(var i=0;i<A.length;i++){ if(A[i].al>0.20){ repU=A[i]; break; } }
+        if(repU){
+          var E=repU.E, C=repU.C;
+          var VV=[[0,0],[E[0],E[1]],[C[0],C[1]],[0,RF]];   // O → E → C → Q（闭合）
+          // 逐边动画绘制（连线要求完成）
+          var per=4*RF, len=ana*per;
+          ctx.save();ctx.lineWidth=2.4;ctx.lineCap='round';ctx.lineJoin='round';
+          ctx.strokeStyle='#ffd479';ctx.shadowColor='rgba(255,212,121,.65)';ctx.shadowBlur=10;
+          var acc=0;
+          for(var k=0;k<4;k++){
+            var a=VV[k], b=VV[(k+1)%4];
+            var sa2=P(a[0],a[1]), sb2=P(b[0],b[1]);
+            var seg=Math.hypot(b[0]-a[0],b[1]-a[1]);         // = R
+            var draw=Math.min(seg,len-acc);
+            if(draw>0){ var tt=draw/seg;
+              ctx.beginPath();ctx.moveTo(sa2[0],sa2[1]);
+              ctx.lineTo(sa2[0]+(sb2[0]-sa2[0])*tt, sa2[1]+(sb2[1]-sa2[1])*tt);ctx.stroke(); }
+            acc+=seg;
+          }
+          ctx.restore();
+          // 顶点标注（菱形接近完成时显示）
+          if(ana>0.90){
+            var pl=[['O 磁场圆心',[0,0],'#9fd0ff',6,14],
+                    ['E 进磁场点',E,'#7fffd0',8,0],
+                    ['C 轨迹圆心',C,'#ffd479',8,-2]];
+            ctx.save();ctx.font='700 12px "Microsoft YaHei",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+            for(var q=0;q<pl.length;q++){ var sp2=P(pl[q][1][0],pl[q][1][1]);
+              ctx.fillStyle=pl[q][2];ctx.beginPath();ctx.arc(sp2[0],sp2[1],3.6,0,7);ctx.fill();
+              ctx.shadowColor=pl[q][2];ctx.shadowBlur=6;ctx.fillText(pl[q][0],sp2[0]+pl[q][3],sp2[1]+pl[q][4]);ctx.shadowBlur=0; }
+            ctx.restore();
+            // 结论由菱形顶点标注体现，不再叠加文字，避免与轨迹/菱形重叠
+          }
+        }
+      }
+
+      // ---- 阶段字幕已移至右侧面板 #note（避免与左上标题重叠）----
+    }};
+  M.push(m);
+})();
+
+// 17 螺旋运动（真 3D · 可调 θ 与视角）
+(function(){
+  var m={type:'instr',title:'⑰ 螺旋运动（3D · 可调 θ 与视角）',short:'螺旋运动',group:'B',dur:9,
+    view:[-10,-5.5,10.5,5.5],
+    theta:55, az:34, el:18,            // 可调参数（右侧滑块 / 拖动画面写入）
+    ctl:[
+      {key:'theta',label:'θ（速度与 X 轴夹角）',min:0,max:90,step:1,unit:'°'},
+      {key:'az',label:'方位角（绕竖轴旋转）',min:-70,max:70,step:1,unit:'°'},
+      {key:'el',label:'俯仰角（上下俯视）',min:-82,max:82,step:1,unit:'°'}],
+    board:[
+      {t:'k',s:'回旋半径 R = m·v⊥/(qB)'},
+      {t:'x',s:'运动周期 T = 2πm/(qB)（与速率、半径无关）'},
+      {t:'x',s:'螺距 h = v∥·T = 2πm·v∥/(qB)'},
+      {t:'x',s:'速度分解：v⊥=v·sinθ，v∥=v·cosθ'}],
+    render:function(p){
+      var th=this.theta*Math.PI/180, az=this.az*Math.PI/180, el=this.el*Math.PI/180;
+      var v=1, w=1;                         // 取 v=1，(qB/m)=1（仅用于几何比例）
+      var R=2*v*Math.sin(th), vpar=v*Math.cos(th);   // 运动半径放大一倍（可视化放大；公式 R=mv⊥/qB 关系不变）
+      var RC=2.1;                                    // 圆柱筒固定半径（不随 θ / 轨迹伸缩）
+      var xL=-6.5, xR=6.5, x0=-5.0, T=2*Math.PI, tMax=2.2*T;
+      var tNow=tMax*p;
+      // ---- 真 3D 投影：先绕 Y 轴(az) 再绕 X 轴(el)，叠加弱透视（近大远小，强化立体）----
+      var ca=Math.cos(az), sa=Math.sin(az), ce=Math.cos(el), se=Math.sin(el);
+      var focal=30;   // 透视焦距（世界单位）：越大越接近正交，越小透视越强
+      function proj(x,y,z){
+        var x1=x*ca+z*sa, z1=-x*sa+z*ca, y1=y;
+        var y2=y1*ce-z1*se, z2=y1*se+z1*ce, x2=x1;
+        var persp=focal/(focal - z2);          // 近(z2大)→persp>1 放大；远→persp<1 缩小
+        return [V.ox+V.sc*x2*persp, V.oy-V.sc*y2*persp, z2, persp];
+      }
+      function fz(z2){ return Math.max(0,Math.min(1,(z2/7+1)/2)); } // 前(亮)→后(暗)
+      function depthShade(z2){ var f=fz(z2);
+        var r=Math.round(70+165*f), g=Math.round(200+55*f), b=Math.round(120+125*f);
+        return 'rgba('+r+','+g+','+b+','+(0.42+0.53*f).toFixed(2)+')'; }  // 远端淡、近端实
+
+      // ---- 匀强磁场 B：沿 +X（自左向右）平行磁感线 ----
+      var FY=[-3,0,3], FZ=[-3,0,3];
+      ctx.save();ctx.strokeStyle='rgba(110,165,225,.28)';ctx.lineWidth=1;ctx.setLineDash([5,5]);
+      for(var a=0;a<FY.length;a++)for(var b=0;b<FZ.length;b++){
+        var A0=proj(xL,FY[a],FZ[b]), B0=proj(xR,FY[a],FZ[b]);
+        ctx.beginPath();ctx.moveTo(A0[0],A0[1]);ctx.lineTo(B0[0],B0[1]);ctx.stroke();
+      }
+      ctx.restore();
+      // 磁感线箭头（沿 +X）
+      ctx.save();ctx.strokeStyle='rgba(130,185,240,.6)';ctx.fillStyle='rgba(130,185,240,.6)';ctx.lineWidth=1.2;
+      for(var a=0;a<FY.length;a++)for(var b=0;b<FZ.length;b++){
+        if((a+b)%2)continue;
+        var A0=proj(xR-3.4,FY[a],FZ[b]), B0=proj(xR-0.4,FY[a],FZ[b]);
+        ctx.beginPath();ctx.moveTo(A0[0],A0[1]);ctx.lineTo(B0[0],B0[1]);ctx.stroke();
+        var ang=Math.atan2(B0[1]-A0[1],B0[0]-A0[0]), h=7;
+        ctx.beginPath();ctx.moveTo(B0[0],B0[1]);
+        ctx.lineTo(B0[0]-h*Math.cos(ang-0.4),B0[1]-h*Math.sin(ang-0.4));
+        ctx.lineTo(B0[0]-h*Math.cos(ang+0.4),B0[1]-h*Math.sin(ang+0.4));
+        ctx.closePath();ctx.fill();
+      }
+      ctx.restore();
+      txt('匀强磁场 B（沿 +X 轴 · 自左向右）', proj(xR-1,4.3,0)[0], proj(xR-1,4.3,0)[1], 'rgba(130,185,240,.95)',12,'right','700');
+
+      // ---- 轴线（X 轴 = 螺旋中心轴 / B 方向）----
+      var oL=proj(xL+0.5,0,0), oR=proj(xR-0.5,0,0);
+      line(oL[0],oL[1],oR[0],oR[1],'rgba(160,190,235,.55)',1.5,[7,6]);
+      txt('轴线 X', oR[0]+4, oR[1], 'rgba(160,190,235,.9)',12,'left');
+
+      // ---- 透视圆柱（固定半径的管道，强化立体感；不随轨迹/θ 伸缩）----
+      if(RC>0.05){
+        var xA=xL+0.5, xB=xR-0.5, NX=46;   // 固定长度=磁场区域，不随 v∥/轨迹伸缩
+        var topP=[], botP=[], capA=[], capB=[];
+        for(var s2=0;s2<=NX;s2++){
+          var xx=xA+(xB-xA)*s2/NX, minY=1e9, maxY=-1e9, topPt=null, botPt=null, ell=[];
+          for(var k=0;k<=46;k++){var ph=k/46*2*Math.PI; var pp=proj(xx,RC*Math.cos(ph),RC*Math.sin(ph)); ell.push(pp);
+            if(pp[1]<minY){minY=pp[1];topPt=pp;} if(pp[1]>maxY){maxY=pp[1];botPt=pp;}}
+          topP.push(topPt); botP.push(botPt); if(s2===0)capA=ell; if(s2===NX)capB=ell;
+        }
+        ctx.save();
+        // 圆柱面渐变：上下缘暗、中部亮 → 呈现圆管体积感
+        var mI=Math.round(NX/2), gyT=topP[mI][1], gyB=botP[mI][1];
+        var grad=ctx.createLinearGradient(0,gyT,0,gyB);
+        grad.addColorStop(0,'rgba(55,100,160,.15)');
+        grad.addColorStop(0.40,'rgba(135,185,240,.29)');
+        grad.addColorStop(0.60,'rgba(135,185,240,.29)');
+        grad.addColorStop(1,'rgba(42,78,132,.14)');
+        ctx.fillStyle=grad;
+        ctx.beginPath(); ctx.moveTo(topP[0][0],topP[0][1]);
+        for(var s2=1;s2<=NX;s2++)ctx.lineTo(topP[s2][0],topP[s2][1]);
+        for(var s2=NX;s2>=0;s2--)ctx.lineTo(botP[s2][0],botP[s2][1]);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle='rgba(150,195,242,.40)'; ctx.lineWidth=1.1;
+        ctx.beginPath(); ctx.moveTo(topP[0][0],topP[0][1]); for(var s2=1;s2<=NX;s2++)ctx.lineTo(topP[s2][0],topP[s2][1]); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(botP[0][0],botP[0][1]); for(var s2=1;s2<=NX;s2++)ctx.lineTo(botP[s2][0],botP[s2][1]); ctx.stroke();
+        ctx.strokeStyle='rgba(150,195,240,.35)';
+        [capA,capB].forEach(function(cap){ ctx.beginPath(); for(var k=0;k<cap.length;k++){ if(k===0)ctx.moveTo(cap[k][0],cap[k][1]); else ctx.lineTo(cap[k][0],cap[k][1]); } ctx.closePath(); ctx.stroke(); });
+        ctx.restore();
+      }
+      // ---- YZ 平面参考轴（展示三维取向）----
+      var o0=proj(x0,0,0);
+      var oyv=proj(x0,1.7,0), ozv=proj(x0,0,1.7);
+      arrow(o0[0],o0[1],oyv[0],oyv[1],'rgba(120,235,150,.65)',1.3,6);
+      arrow(o0[0],o0[1],ozv[0],ozv[1],'rgba(120,180,240,.65)',1.3,6);
+      txt('Y',oyv[0]+2,oyv[1],'rgba(120,235,150,.9)',11,'left');
+      txt('Z',ozv[0]+2,ozv[1],'rgba(120,180,240,.9)',11,'left');
+
+      // ---- 运动学：沿 X 匀速 + YZ 平面匀速圆周 ----
+      var xNow=x0+vpar*tNow, yNow=R*Math.cos(w*tNow), zNow=R*Math.sin(w*tNow);
+      // ---- 螺旋轨迹（随 t 长出）----
+      var steps=270;
+      for(var i=1;i<=steps;i++){
+        var tA=tNow*(i-1)/steps, tB=tNow*i/steps;
+        var xA=x0+vpar*tA, xB=x0+vpar*tB;
+        var yA=R*Math.cos(w*tA), zA=R*Math.sin(w*tA);
+        var yB=R*Math.cos(w*tB), zB=R*Math.sin(w*tB);
+        var A0=proj(xA,yA,zA), B0=proj(xB,yB,zB);
+        var zc=(A0[2]+B0[2])/2;
+        var perspAB=(A0[3]+B0[3])/2;
+        ctx.strokeStyle=depthShade(zc);
+        ctx.lineWidth=(1.1+2.0*fz(zc))*perspAB;
+        ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(A0[0],A0[1]);ctx.lineTo(B0[0],B0[1]);ctx.stroke();
+      }
+      // ---- 当前截面圆（YZ 平面圆周，强调垂直分量）----
+      if(R>0.03){
+        ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(255,180,120,.6)';ctx.lineWidth=1.4;
+        ctx.beginPath();
+        for(var k=0;k<=48;k++){var ph=k/48*2*Math.PI; var pp=proj(xNow,R*Math.cos(ph),R*Math.sin(ph)); if(k===0)ctx.moveTo(pp[0],pp[1]);else ctx.lineTo(pp[0],pp[1]);}
+        ctx.stroke();ctx.restore();
+      }
+      // ---- 粒子 ----
+      var sp=proj(xNow,yNow,zNow); drawParticle(sp[0],sp[1]);
+
+      // ---- 速度分解：v∥ 沿 +X（=v·cosθ）；v⊥ 在 YZ 切向（=v·sinθ）----
+      var Lv=1.8;    // 速度矢量显示长度（世界单位），避免过长伸出画面
+      var vp=proj(xNow+Lv*Math.cos(th), yNow, zNow);                       // v∥
+      arrow(sp[0],sp[1],vp[0],vp[1],'#ff9a6a',2.2,7);
+      txt('v∥',vp[0]+3,vp[1]-2,'#ff9a6a',12,'left','700');
+      var vperp=proj(xNow, yNow - Lv*Math.sin(th)*Math.sin(w*tNow), zNow + Lv*Math.sin(th)*Math.cos(w*tNow)); // v⊥
+      arrow(sp[0],sp[1],vperp[0],vperp[1],'#7fffd0',2.2,7);
+      txt('v⊥',vperp[0]+3,vperp[1],'#7fffd0',12,'left','700');
+
+      // ---- θ 角（速度 v 与 X 轴夹角）：屏幕上量 v 投影与 +X 投影夹角 ----
+      var vt=proj(xNow+Math.cos(th)*Lv, yNow - Math.sin(th)*Math.sin(w*tNow)*Lv, zNow + Math.sin(th)*Math.cos(w*tNow)*Lv);
+      var axp=proj(xNow+Lv,yNow,zNow);
+      var a1=Math.atan2(axp[1]-sp[1],axp[0]-sp[0]);
+      var a2=Math.atan2(vt[1]-sp[1],vt[0]-sp[0]);
+      var dAng=a2-a1; while(dAng>Math.PI)dAng-=2*Math.PI; while(dAng<-Math.PI)dAng+=2*Math.PI;
+      ctx.save();ctx.strokeStyle='#ffd479';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.arc(sp[0],sp[1],22,a1,a1+dAng,dAng<0);ctx.stroke();ctx.restore();
+      var am=a1+dAng/2; txt('θ', sp[0]+29*Math.cos(am), sp[1]+29*Math.sin(am), '#ffd479',13,'center','700');
+
+      // ---- 操作提示（置于底部上方，保持左上标题区干净）----
+      txt('拖动鼠标可旋转 3D 视角 · 右侧滑块调 θ 与视角', 18, H-48, 'rgba(160,200,245,.8)',12.5,'left','600');
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 18 组合场（三力平衡匀速 → 磁场圆周 → 只受重力平抛）
+(function(){
+  // ---- 原题：P(−3L,L)，v0=√(gL) 沿 PO；O 第一次过 x 轴，Q(2L,0) 第二次 ----
+  var L=1.3;
+  var PX=-3*L, PY=L;
+  var QX=2*L;
+  var CX=L, CY=3*L, RL=Math.sqrt(10)*L;      // 圆心 C=(L,3L)，r=√10·L
+  var DL=Math.hypot(PX,PY);                   // = √10·L
+  var DX=-PX/DL, DY=-PY/DL;                   // PO 单位方向 (3,−1)/√10
+  var AL=Math.asin(-DY);                      // α = arctan(1/3) = 18.43°
+  var A0=Math.atan2(-CY,-CX), A1=Math.atan2(-CY,QX-CX);
+  var L1=DL, L2=RL*(A1-A0), LT=L1+L2;         // 直线长 / 弧长
+  var TANA=-DY/DX;                            // tanα = 1/3
+  var COS2=1/(1+TANA*TANA);                   // cos²α
+  var TP=2*TANA*L*COS2;                       // 平抛射程 = 0.6L
+
+  var m={type:'instr',title:'⑱ 组合场 · 匀速 + 圆周 + 平抛',short:'组合场',group:'B',dur:10,
+    view:[-6,-4.5,6.5,4.5],
+    board:[{t:'k',s:'第二象限：mg + qE₁ + qv₀B = 0 ⇒ 匀速直线（v₀ = √(gL)）'},
+      {t:'x',s:'第四象限：qE = mg ⇒ 等效只受洛伦兹力，r = mv₀/(qB) = √10·L'},
+      {t:'x',s:'第一象限：只受重力 ⇒ 平抛，射程 0.6L、最大高度 0.05L'}],
+    render:function(p){
+      // 纵向放大 YS：内容 y 仅 [-0.21,1.3] 且偏扁，须宽适配+YS 放大才看得见 Q4 圆弧下探与 Q1 升幅
+      var YS=3.2;
+      var XMIN=-4.1, XMAX=3.6, YMIN=-0.30, YMAX=1.45;
+      var SC=Math.min((W*0.70-26)/(XMAX-XMIN), (H-50)/((YMAX-YMIN)*YS), 92);
+      var cx=(13+W*0.70)/2 - ((XMIN+XMAX)/2)*SC;
+      var cy=H/2 + ((YMIN+YMAX)/2)*SC*YS;
+      function Q2(x,y){return [cx+x*SC, cy-y*SC*YS];}
+      function xm(px,py,col,rr){
+        ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.3;
+        ctx.beginPath();ctx.moveTo(px-rr,py-rr);ctx.lineTo(px+rr,py+rr);
+        ctx.moveTo(px+rr,py-rr);ctx.lineTo(px-rr,py+rr);ctx.stroke();ctx.restore();
+      }
+      function tS(st,x,y,c,sz,al,wt){ctx.save();ctx.shadowColor='rgba(3,10,20,.95)';ctx.shadowBlur=5;txt(st,x,y,c,sz,al,wt);ctx.restore();}
+
+      // ---------- 坐标轴 ----------
+      var o0=Q2(0,0);
+      var axE=Q2(3.6,0), axW=Q2(-4.1,0), ayN=Q2(0,1.45), ayS=Q2(0,-0.30);
+      arrow(axW[0],axW[1],axE[0],axE[1],'rgba(160,190,230,.6)',1.3,9);
+      arrow(ayS[0],ayS[1],ayN[0],ayN[1],'rgba(160,190,230,.6)',1.3,9);
+      txt('x',axE[0]-4,axE[1]+20,'rgba(190,215,245,.9)',13,'left','700');
+      txt('y',ayN[0]+10,ayN[1]+4,'rgba(190,215,245,.9)',13,'left','700');
+      tS('O',o0[0]-13,o0[1]+18,'rgba(200,225,255,.9)',13,'right','700');
+
+      // ---------- 第二象限：E₁(向左) + B(⊗)，三力平衡 ----------
+      for(var i=0;i<3;i++){
+        var yy=0.28+i*0.42;
+        var ea=Q2(-0.35,yy), eb=Q2(-3.95,yy);
+        arrow(ea[0],ea[1],eb[0],eb[1],'rgba(255,150,110,.9)',1.7,9);
+      }
+      tS('E₁',Q2(-3.55,1.18)[0],Q2(-3.55,1.18)[1],'#ff9a6a',15,'left','700');
+      ctx.save();ctx.globalAlpha=0.22;
+      for(var gx=-3.7;gx<=-0.6;gx+=0.85){
+        for(var gy=0.25;gy<=1.20;gy+=0.45){
+          var sp=Q2(gx,gy); xm(sp[0],sp[1],'#8fd0ff',4.0);
+        }
+      }
+      ctx.restore();
+      var q2lab='B ⊗ + E₁：三力平衡 → 匀速直线';
+      var q2p=Q2(-2.10,0.26);
+      ctx.save();ctx.font='11.5px "Microsoft YaHei"';var wq=ctx.measureText(q2lab).width;
+      ctx.globalAlpha=.72;ctx.fillStyle='rgba(4,12,24,.9)';
+      ctx.beginPath();ctx.rect(q2p[0]-wq/2-7,q2p[1]-13,wq+14,19);ctx.fill();ctx.restore();
+      tS(q2lab,q2p[0],q2p[1],'rgba(175,212,246,.95)',11.5,'center','700');
+
+      // ---------- 第四象限：B(⊗) + E(竖直向上) ----------
+      for(var gx2=0.55;gx2<=2.75;gx2+=0.73){
+        for(var gy2=-0.12;gy2>=-0.27;gy2-=0.15){
+          var sp2=Q2(gx2,gy2); xm(sp2[0],sp2[1],'rgba(120,190,255,.72)',4.2);
+        }
+      }
+      for(var ex2=0.85;ex2<=2.55;ex2+=0.85){
+        var e0=Q2(ex2,-0.30), e1=Q2(ex2,-0.12);
+        arrow(e0[0],e0[1],e1[0],e1[1],'rgba(150,255,190,.62)',1.4,6);
+      }
+      tS('B ⊗ ｜ E↑（qE = mg）',Q2(0.35,-0.26)[0],Q2(0.35,-0.26)[1],'#8fd8ff',11,'left','700');
+
+      // ---------- 轨迹：① 匀速直线 ② 圆周 ③ 平抛 ----------
+      var T1=0.34, T2=0.72;
+      var sTotal, p3=0, inQ1=false;
+      if(p<T1){ sTotal=(p/T1)*L1; }
+      else if(p<T2){ sTotal=L1+((p-T1)/(T2-T1))*L2; }
+      else { sTotal=LT; p3=(p-T2)/(1-T2); inQ1=true; }
+      function posAt(s){
+        if(s<=L1) return [PX+DX*s, PY+DY*s];
+        var a=A0+(s-L1)/RL;
+        return [CX+RL*Math.cos(a), CY+RL*Math.sin(a)];
+      }
+      function parab(t){ return [QX+t, TANA*t - t*t/(2*L*COS2)]; }
+      var pP=Q2(PX,PY), pO=Q2(0,0), sC=Q2(CX,CY), rPx=RL*SC;
+
+      // 全程淡底
+      ctx.save();ctx.globalAlpha=0.10;ctx.lineWidth=1.2;
+      ctx.strokeStyle='#ffd479';
+      ctx.beginPath();ctx.moveTo(pP[0],pP[1]);ctx.lineTo(pO[0],pO[1]);ctx.stroke();
+      ctx.strokeStyle='#5ef2ff';
+      ctx.beginPath();ctx.moveTo(pO[0],pO[1]);ctx.ellipse(sC[0],sC[1],rPx,rPx*YS,0,-A0,-A1,true);ctx.stroke();
+      ctx.strokeStyle='#ff9f5a';ctx.beginPath();
+      for(var kq=0;kq<=16;kq++){
+        var tq=TP*kq/16, pq=parab(tq), sq=Q2(pq[0],pq[1]);
+        if(kq===0)ctx.moveTo(sq[0],sq[1]);else ctx.lineTo(sq[0],sq[1]);
+      }
+      ctx.stroke();ctx.restore();
+
+      // ① 直段
+      var s1=Math.min(sTotal,L1);
+      if(s1>0.01){
+        var pe=posAt(s1), se=Q2(pe[0],pe[1]);
+        ctx.save();ctx.lineCap='round';ctx.strokeStyle='#ffd479';
+        ctx.beginPath();ctx.moveTo(pP[0],pP[1]);ctx.lineTo(se[0],se[1]);
+        ctx.globalAlpha=0.16;ctx.lineWidth=7;ctx.stroke();
+        ctx.globalAlpha=0.95;ctx.lineWidth=2.6;ctx.stroke();ctx.restore();
+      }
+      // ② 弧段
+      if(sTotal>L1){
+        var aCur=A0+(sTotal-L1)/RL;
+        ctx.save();ctx.lineCap='round';ctx.strokeStyle='#5ef2ff';
+        ctx.beginPath();ctx.moveTo(pO[0],pO[1]);ctx.ellipse(sC[0],sC[1],rPx,rPx*YS,0,-A0,-aCur,true);
+        ctx.globalAlpha=0.16;ctx.lineWidth=7;ctx.stroke();
+        ctx.globalAlpha=0.98;ctx.lineWidth=2.6;ctx.stroke();ctx.restore();
+      }
+      // ③ 平抛
+      if(inQ1&&p3>0){
+        var tCur=p3*TP, nSeg=Math.max(4,Math.ceil(20*p3));
+        ctx.save();ctx.lineCap='round';ctx.strokeStyle='#ff9f5a';
+        ctx.beginPath();
+        for(var k2=0;k2<=nSeg;k2++){
+          var t2=tCur*k2/nSeg, p2=parab(t2), s2=Q2(p2[0],p2[1]);
+          if(k2===0)ctx.moveTo(s2[0],s2[1]);else ctx.lineTo(s2[0],s2[1]);
+        }
+        ctx.globalAlpha=0.20;ctx.lineWidth=6;ctx.stroke();
+        ctx.globalAlpha=0.95;ctx.lineWidth=2.4;ctx.stroke();ctx.restore();
+      }
+
+      // 平抛落点（第三次通过 x 轴）
+      var pL=Q2(QX+TP,0);
+      ctx.save();ctx.fillStyle='rgba(255,178,122,.95)';ctx.beginPath();ctx.arc(pL[0],pL[1],3.2,0,7);ctx.fill();ctx.restore();
+      tS('第三次过 x 轴',pL[0]+2,pL[1]+40,'rgba(255,190,140,.95)',11,'center','700');
+
+      // 圆心 / 半径 / Q
+      ctx.save();ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(140,200,255,.5)';ctx.lineWidth=1.1;
+      var sQ=Q2(QX,0);
+      ctx.beginPath();ctx.moveTo(sC[0],sC[1]);ctx.lineTo(sQ[0],sQ[1]);ctx.stroke();ctx.restore();
+      ctx.save();ctx.fillStyle='rgba(160,210,255,.85)';ctx.beginPath();ctx.arc(sC[0],sC[1],2.4,0,7);ctx.fill();ctx.restore();
+      tS('C',sC[0]+7,sC[1]-6,'rgba(170,215,255,.9)',11.5,'left','700');
+      tS('r = √10 L',(sC[0]+sQ[0])/2+8,(sC[1]+sQ[1])/2,'rgba(170,215,255,.95)',11.5,'left','700');
+      ctx.save();ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(sQ[0],sQ[1],4.2,0,7);ctx.fill();ctx.restore();
+      tS('Q(2L,0)',sQ[0]-7,sQ[1]+24,'#ffd479',13,'right','700');
+
+      // P / v0 / α
+      ctx.save();ctx.fillStyle='#ffd479';ctx.beginPath();ctx.arc(pP[0],pP[1],4.2,0,7);ctx.fill();ctx.restore();
+      tS('P(−3L,L)',pP[0]-9,pP[1]-10,'#ffd479',13,'right','700');
+      var vEnd=Q2(PX+DX*1.25,PY+DY*1.25);
+      arrow(pP[0],pP[1],vEnd[0],vEnd[1],'#ffd479',2.2,9);
+      var vLab=Q2(PX+DX*1.02-DY*0.42, PY+DY*1.02+DX*0.42);
+      tS('v₀=√(gL)',vLab[0]+4,vLab[1]+4,'#ffd479',13,'left','700');
+      ctx.save();ctx.strokeStyle='rgba(255,212,120,.8)';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.ellipse(o0[0],o0[1],0.62*SC,0.62*SC*YS,0,0,AL,false);ctx.stroke();ctx.restore();
+      tS('α',o0[0]+1.12*SC*Math.cos(AL/2)+2,o0[1]+1.12*SC*Math.sin(AL/2)+6,'rgba(255,220,150,.95)',12,'left','700');
+
+      // 粒子
+      ctx.save();ctx.globalAlpha=0.6;
+      txt('纵向比例已放大 3.2×（便于观察 Q4 圆弧下探与 Q1 平抛升幅）',16,H-18,'rgba(150,185,225,.9)',10.5,'left');
+      ctx.restore();
+      var hp = inQ1 ? parab(p3*TP) : posAt(sTotal), shp=Q2(hp[0],hp[1]);
+      drawParticle(shp[0],shp[1]);
+      // 第三段重力箭头
+      if(inQ1){
+        var gTop=Q2(hp[0],hp[1]-0.02), gBot=Q2(hp[0],hp[1]-0.52);
+        arrow(gTop[0],gTop[1],gBot[0],gBot[1],'rgba(255,180,120,.9)',1.8,7);
+        tS('mg',gTop[0]-7,gBot[1]+4,'rgba(255,190,140,.95)',11,'right','700');
+      }
+
+      // ---------- 右侧说明框 ----------
+      var bx=W*0.70+10, bw=Math.max(180,W*0.285), by=110, bh=246;
+      ctx.save();ctx.fillStyle='rgba(8,16,32,.74)';ctx.strokeStyle='rgba(90,150,220,.45)';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.rect(bx,by,bw,bh);ctx.fill();ctx.stroke();ctx.restore();
+      txt('组合场 · 三段运动',bx+12,by+22,'#ffd479',13,'left','700');
+      txt('① 第二象限：三力平衡',bx+12,by+48,'#9fe8ff',11.5,'left','700');
+      txt('   mg + qE₁ + qv₀B = 0 → 匀速',bx+12,by+67,'rgba(175,212,246,.85)',10.5,'left');
+      txt('② 第四象限：qE = mg',bx+12,by+94,'#7fffd0',11.5,'left','700');
+      txt('   等效只受洛伦兹力 → 圆周',bx+12,by+113,'rgba(155,236,212,.85)',10.5,'left');
+      fmt('r = \\frac{mv₀}{qB} = √10 L', bx+24, by+143, '#7fffd0', 11.5, 'left');
+      txt('③ 第一象限：只受重力',bx+12,by+178,'#ffb27a',11.5,'left','700');
+      txt('   平抛：射程 0.6L，最大高度 0.05L',bx+12,by+197,'rgba(255,205,170,.85)',10.5,'left');
+      var stg=(p<T1?0:(p<T2?1:2));
+      txt(['▶ ① 匀速','▶ ② 圆周','▶ ③ 平抛'][stg],bx+12,by+226,['#ffd479','#5ef2ff','#ff9f5a'][stg],12,'left','700');
+    }};
+  m.build=function(){};M.push(m);
+})();
+// 19 配速法 · 复合场中的摆线/旋轮线
+(function(){
+  function cl(x){ return x<0?0:(x>1?1:x); }
+  var m={type:'instr',title:'⑲ 配速法 · 复合场中的摆线/旋轮线',short:'配速法',group:'B',dur:11,
+    view:[-1.4,-2.4,11.0,3.2],Binto:true, k:0,
+    ctl:[{key:'k',label:'初速比 v₀/v_配',min:0,max:2.5,step:0.05,unit:''}],
+    board:[
+      {t:'k',s:'配速法：v = v_配 + v₁，且 q v_配 B = F_恒'},
+      {t:'x',s:'v_配 = E/B（匀速直线，抵消电场力）'},
+      {t:'x',s:'余速 v₁ = v₀ − v_配，做圆周：r = m v1/(qB)'},
+      {t:'x',s:'T = 2πm/(qB) 与 v₁ 无关；轨迹 = 直线 ⊕ 圆周'},
+      {t:'x',s:'v_max = v_配 + v1；v_min = |v_配 − v1|（k=0 尖点 v=0）'}
+    ],
+    render:function(p){
+      var r0=0.85, omega=1.0, vPei=0.85, k=m.k;
+      var T=2*Math.PI/omega, tMax=2*T, t=p*tMax;
+      var S0x=-0.6, S0y=0.0;
+      function trj(tt){ return [S0x + vPei*tt + (k-1)*r0*Math.sin(omega*tt),
+                                S0y + (k-1)*r0*(1-Math.cos(omega*tt))]; }
+      // ---- 复合场区域 + 场线 ----
+      var rx0=-0.9, ry0=-2.15, rx1=10.6, ry1=2.8;
+      var sa=P(rx0,ry0), sb=P(rx1,ry0), sc=P(rx1,ry1), sd=P(rx0,ry1);
+      ctx.save();
+      ctx.fillStyle='rgba(40,90,160,.09)';
+      ctx.beginPath(); ctx.moveTo(sa[0],sa[1]); ctx.lineTo(sb[0],sb[1]); ctx.lineTo(sc[0],sc[1]); ctx.lineTo(sd[0],sd[1]); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle='#5fa8e6'; ctx.lineWidth=2.0; ctx.stroke();
+      ctx.restore();
+      bfieldRect(rx0,ry0,rx1,ry1,true,0.9);
+      // 电场 E↓（左侧一列向下箭头）
+      ctx.save();
+      for(var ey=2.05; ey>=-1.7; ey-=0.95){
+        var ep=P(-0.62, ey+0.42), eq=P(-0.62, ey-0.42);
+        arrow(ep[0],ep[1],eq[0],eq[1],'rgba(120,255,170,.6)',1.5,7);
+      }
+      ctx.restore();
+      txt('E ↓',P(-0.62,2.62)[0],P(-0.62,2.62)[1],'rgba(150,255,190,.95)',13,'center','700');
+      txt('B ⊗',P(0.25,2.62)[0],P(0.25,2.62)[1],'rgba(150,190,255,.95)',13,'center','700');
+      txt('复合场 E↓ + B⊗（+q）',(P(rx0,ry1)[0]+P(rx1,ry1)[0])/2,P(rx1,ry1)[1]-9,'rgba(180,210,255,.5)',11,'center','700');
+      // ---- 实际轨迹（橙，合成运动 = 摆线/旋轮线）----
+      ctx.save(); ctx.strokeStyle='#59ff00'; ctx.lineWidth=3.0; ctx.lineCap='round';
+      ctx.shadowColor='rgba(89,255,0,.5)'; ctx.shadowBlur=8;
+      ctx.beginPath();
+      var N=260;
+      for(var i=0;i<=N;i++){ var tt=t*i/N; var q=trj(tt); var s=P(q[0],q[1]); if(i===0)ctx.moveTo(s[0],s[1]); else ctx.lineTo(s[0],s[1]); }
+      ctx.stroke(); ctx.restore();
+      // ---- 速度分解（起步，矢量）---- 提前到开头，与复合场一并呈现
+      var phA=cl((p-0.10)/0.18);
+      if(phA>0){
+        ctx.save(); ctx.globalAlpha=phA;
+        var sO=P(S0x,S0y), VS=58;
+        arrow(sO[0],sO[1], sO[0]+vPei*VS, sO[1], '#7dffa0', 2.4, 10);
+        txt('v_配=E/B', sO[0]+vPei*VS+6, sO[1]-7, '#7dffa0', 12, 'left','700');
+        if(Math.abs(k-1)>0.02){
+          arrow(sO[0],sO[1], sO[0]+(k-1)*VS, sO[1], '#f40bc9', 2.4, 10);
+          txt('v₁', sO[0]+(k-1)*VS*0.5, sO[1]-12, '#ff5ad6', 12, 'center','700');
+        }
+        if(k>0.02){
+          arrow(sO[0],sO[1], sO[0]+k*vPei*VS, sO[1], '#9fe0ff', 2.0, 9);
+          txt('v₀', sO[0]+k*vPei*VS+6, sO[1]+14, '#9fe0ff', 12, 'left','700');
+        }
+        ctx.restore();
+      }
+      // ---- 漂移中心 + 圆周轨道（运动分解）---- 提前到开头，立刻体现"直线 ⊕ 圆周"
+      var phB=cl((p-0.10)/0.22);
+      if(phB>0){
+        ctx.save(); ctx.globalAlpha=phB;
+        var Cx=S0x+vPei*t, Cy=S0y, Cs=P(Cx,Cy);
+        var Ccx=Cx, Ccy=Cy+(k-1)*r0, Ccs=P(Ccx,Ccy), Rc=Math.abs(k-1)*r0;
+        // 分量①：直线运动（漂移）路径 —— 绿色虚线横贯区域
+        var gL=P(rx0,Cy), gR=P(rx1,Cy);
+        line(gL[0],gL[1],gR[0],gR[1],'rgba(125,255,160,.40)',1.6,[7,6]);
+        // 分量②：圆周运动轨道 —— 红色虚线圆（圆心随漂移中心平移）
+        if(Rc>0.03){
+          ctx.strokeStyle='rgba(244,11,201,.60)'; ctx.lineWidth=1.6; ctx.setLineDash([5,5]);
+          ctx.beginPath(); ctx.arc(Ccs[0],Ccs[1],Rc*V.sc,0,7); ctx.stroke(); ctx.setLineDash([]);
+        }
+        // 漂移中心（直线运动代表点）+ 速度箭头
+        ctx.fillStyle='#7dffa0'; ctx.beginPath(); ctx.arc(Cs[0],Cs[1],4.5,0,7); ctx.fill();
+        arrow(Cs[0],Cs[1], Cs[0]+vPei*52, Cs[1], 'rgba(125,255,160,.9)',2.0,8);
+        // 圆心（圆周运动代表点）+ 半径臂
+        if(Rc>0.03){
+          ctx.fillStyle='#f40bc9'; ctx.beginPath(); ctx.arc(Ccs[0],Ccs[1],4,0,7); ctx.fill();
+          var qp=trj(t), ps=P(qp[0],qp[1]);
+          line(Ccs[0],Ccs[1],ps[0],ps[1],'rgba(244,11,201,.9)',1.6);
+        }
+        // 两分量标签
+        txt('① 直线运动 v_配（漂移）', Cs[0]+6, Cs[1]+16, 'rgba(125,255,160,.98)',11,'left','700');
+        if(Rc>0.03) txt('② 圆周运动 v₁', Ccs[0]+6, Ccs[1]-9, 'rgba(244,11,201,.98)',11,'left','700');
+        ctx.restore();
+      }
+      // ---- 粒子 + 起点 ----
+      var qq=trj(t), pps=P(qq[0],qq[1]);
+      drawParticle(pps[0],pps[1]);
+      var ms=P(S0x,S0y); ctx.fillStyle='#ffd479'; ctx.beginPath(); ctx.arc(ms[0],ms[1],3,0,7); ctx.fill();
+      txt('起点', ms[0]-6, ms[1]-12, '#ffd479', 11, 'right','700');
+      // ---- 阶段提示 ----
+      var cap = p<0.10 ? '复合场 E↓+B⊗：+q 粒子从起点出发（拖动滑块调 v₀/v_配）'
+              : '分解演示：直线运动(漂移 v_配) ⊕ 圆周运动(v₁) → 合成摆线/旋轮线';
+      txt(cap, 16, 22, '#cfe3ff', 13, 'left','700');
+      // ---- 颜色图例（与分解同步出现）----
+      if(p>0.10){
+        ctx.save(); ctx.font='700 11px "Microsoft YaHei",sans-serif'; ctx.textBaseline='middle';
+        var lx=Math.round(W*0.42), ly=18, gap=Math.round((W*0.70-lx-12)/3);
+        // ① 合成（橙实线）
+        ctx.strokeStyle='#59ff00'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx+22,ly); ctx.stroke();
+        ctx.fillStyle='#aaff7a'; ctx.textAlign='left'; ctx.fillText('合成摆线', lx+26, ly);
+        // ② 直线（绿虚线）
+        var lx2=lx+gap; ctx.strokeStyle='rgba(125,255,160,.95)'; ctx.lineWidth=2.4; ctx.setLineDash([6,4]);
+        ctx.beginPath(); ctx.moveTo(lx2,ly); ctx.lineTo(lx2+22,ly); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle='#a8ffc4'; ctx.fillText('直线运动', lx2+26, ly);
+        // ③ 圆周（红虚圆）
+        var lx3=lx+gap*2; ctx.strokeStyle='rgba(244,11,201,.95)'; ctx.lineWidth=2.4; ctx.setLineDash([5,4]);
+        ctx.beginPath(); ctx.arc(lx3+11,ly,8,0,7); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle='#ff5ad6'; ctx.fillText('圆周运动', lx3+24, ly);
+        ctx.restore();
+      }
+      // ---- 关键标注 ----
+      if(k<0.06){
+        var bq=trj(Math.PI), bps=P(bq[0],bq[1]);
+        txt('尖点 v=0', bps[0]+6, bps[1]+15, '#ffd479', 11, 'left','700');
+      }
+      if(Math.abs(k-1)<0.04){
+        txt('v₀=v_配 → 匀速直线（速度选择器）', P(S0x,S0y)[0]+8, P(S0x,S0y)[1]-22, '#9fe0ff', 12, 'left','700');
+      }
+    }};
+  m.build=function(){};M.push(m);
+})();
+
+// 20 组合场② · 分界磁场中的"拱+环"轨迹（参考试题：2026 合肥一模）
+(function(){
+  function cl(x){ return x<0?0:(x>1?1:x); }
+
+  // ---- 轨迹：Q1(y>0, r1) / Q4(y<0, r2=r1/4)；两区 B 均垂直纸面向外 ⊙、+q → 顺时针 ----
+  function buildTraj(r1){
+    var r2=r1*0.25, x=0, y=0, th=Math.PI/4, s=0, ds=0.006, guard=0;
+    var pts=[{x:0,y:0,s:0,th:th}], cross=[];
+    while(x<3.9995 && guard<400000){
+      var r=(y>=0)?r1:r2;
+      var xn=x+Math.cos(th)*ds, yn=y+Math.sin(th)*ds;
+      if((y>=0)!==(yn>=0)){
+        var lo=0, hi=ds, ax=x, ay=y, at=th, it, mid, my;
+        for(it=0;it<26;it++){
+          mid=(lo+hi)*0.5; my=ay+Math.sin(at)*mid;
+          if((ay>=0)===(my>=0)) lo=mid; else hi=mid;
+        }
+        var cr=(lo+hi)*0.5;
+        x=ax+Math.cos(at)*cr; y=ay+Math.sin(at)*cr; th=at-cr/r; s+=cr;
+        pts.push({x:x,y:y,s:s,th:th}); cross.push({x:x,y:y,s:s});
+      } else {
+        x=xn; y=yn; th=th-ds/r; s+=ds;
+        pts.push({x:x,y:y,s:s,th:th});
+      }
+      guard++;
+    }
+    var last=pts[pts.length-1], pre=pts[pts.length-2];
+    if(last.x>4 && pre){
+      var f=(4-pre.x)/((last.x-pre.x)||1);
+      last.x=4; last.y=pre.y+(last.y-pre.y)*f; last.s=pre.s+(last.s-pre.s)*f;
+    }
+    return {pts:pts, sTot:last.s, r1:r1, r2:r2, cross:cross, ex:last.x, ey:last.y};
+  }
+  function posAtS(tr,s){
+    var pts=tr.pts, lo=0, hi=pts.length-1, mid;
+    if(s<=0) return pts[0];
+    if(s>=tr.sTot) return pts[pts.length-1];
+    while(hi-lo>1){ mid=(lo+hi)>>1; if(pts[mid].s<=s) lo=mid; else hi=mid; }
+    var a=pts[lo], b=pts[hi], f=(s-a.s)/((b.s-a.s)||1);
+    return {x:a.x+(b.x-a.x)*f, y:a.y+(b.y-a.y)*f, th:a.th+(b.th-a.th)*f};
+  }
+
+  var m={type:'instr',title:'⑳ 组合场② · 分界磁场中的“拱+环”轨迹',
+    short:'组合场2',group:'B',dur:12,
+    view:[-2.55,-1.42,4.95,2.10],Binto:false, n:0,
+    ctl:[{key:'n',label:'Q4 小环数 n',min:0,max:3,step:1,unit:''}],
+    board:[
+      {t:'k',s:'P→O 类平抛：v_O = √2 v₀，与 +x 成 45°'},
+      {t:'x',s:'磁场中洛伦兹力不做功，速率恒为 √2 v₀'},
+      {t:'x',s:'Q1：r₁ = \\frac{m√2v₀}{qB₁}；B₂ = 4B₁ → r₂ = \\frac{r₁}{4}'},
+      {t:'x',s:'轨迹 = Q1 大拱 + Q4 小环，末速沿 +x 从 x=4L 射出'},
+      {t:'x',s:'B₁ = \\frac{(3n+2)mv₀}{8qL}，n=0,1,2,3；n=0 时 t_B 最短 = \\frac{πL}{v₀}'}
+    ],
+    render:function(p){
+      var n=Math.round(m.n); if(n<0)n=0; if(n>3)n=3;
+      if(!m._tr || m._n!==n){ m._n=n; m._tr=buildTraj(8*Math.SQRT2/(3*n+2)); }
+      var tr=m._tr, r1=tr.r1, r2=tr.r2, pts=tr.pts, i, sp, so, cs;
+
+      var XR=4.0, YT=1.95, YB=-1.18;
+      // ---------- 区域底色 ----------
+      ctx.save();
+      var b0=P(0,YB), b1=P(XR,YT);
+      ctx.fillStyle='rgba(40,90,160,.10)';
+      ctx.fillRect(b0[0],b1[1], b1[0]-b0[0], b0[1]-b1[1]);
+      var e0=P(-2.15,YB), e1=P(0,YT);
+      ctx.fillStyle='rgba(50,200,140,.06)';
+      ctx.fillRect(e0[0],e1[1], e1[0]-e0[0], e0[1]-e1[1]);
+      ctx.restore();
+      // ---------- 磁场点 ⊙ ----------
+      bfieldRect(0.15,0.15,3.85,1.85,false,0.5);
+      bfieldRect(0.15,-1.15,3.85,-0.05,false,0.5);
+      // ---------- 电场箭头（向上） ----------
+      ctx.save();
+      for(var ex=-1.75; ex<=-0.45; ex+=0.6){
+        var ea=P(ex,-0.5), eb=P(ex,1.0);
+        arrow(ea[0],ea[1],eb[0],eb[1],'rgba(120,255,190,.55)',1.6,8);
+      }
+      ctx.restore();
+      txt('E', P(-1.15,1.18)[0], P(-1.15,1.18)[1], 'rgba(150,255,205,.95)',13,'center','700');
+      // ---------- 坐标轴 ----------
+      var yA=P(0,YB), yT=P(0,YT), xA=P(-2.15,0), xB=P(4.62,0);
+      line(yA[0],yA[1],yT[0],yT[1],'rgba(170,200,235,.5)',1.4);
+      line(xA[0],xA[1],xB[0],xB[1],'rgba(170,200,235,.5)',1.4);
+      arrow(xB[0]-7,xB[1],xB[0],xB[1],'rgba(170,200,235,.65)',1.4,7);
+      txt('x',P(4.72,0)[0],P(4.72,0)[1],'rgba(190,215,245,.9)',12,'right','700');
+      txt('y',P(0,2.00)[0]+9,P(0,2.00)[1],'rgba(190,215,245,.9)',12,'left','700');
+      txt('O',P(-0.10,-0.21)[0],P(-0.10,-0.21)[1],'rgba(190,215,245,.95)',12,'right','700');
+      // ---------- 右边界 x=4L ----------
+      line(P(XR,YB)[0],P(XR,YB)[1],P(XR,YT)[0],P(XR,YT)[1],'rgba(120,205,255,.7)',2.0,[7,6]);
+      txt('x = 4L', P(4.06,-1.10)[0], P(4.06,-1.10)[1], 'rgba(140,215,255,.95)',12,'left','700');
+      // ---------- B 区标注 ----------
+      txt('B₁ ⊙', P(1.15,1.90)[0], P(1.15,1.90)[1], 'rgba(150,190,255,.95)',13,'center','700');
+      txt('B₂ = 4B₁ ⊙', P(1.15,-1.34)[0], P(1.15,-1.34)[1], 'rgba(150,190,255,.95)',13,'center','700');
+
+      // ---------- ① 电场段 P→O（类平抛） ----------
+      var pA=cl(p/0.26), t0, x0, y0;
+      ctx.save(); ctx.strokeStyle='rgba(120,255,190,.28)'; ctx.lineWidth=1.5; ctx.setLineDash([6,5]);
+      ctx.beginPath();
+      for(i=0;i<=40;i++){ t0=2*i/40; x0=-2+t0; y0=-1+0.25*t0*t0; sp=P(x0,y0); if(i===0)ctx.moveTo(sp[0],sp[1]); else ctx.lineTo(sp[0],sp[1]); }
+      ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+      if(pA>0){
+        ctx.save(); ctx.strokeStyle='#7dffc4'; ctx.lineWidth=2.8; ctx.lineCap='round';
+        ctx.shadowColor='rgba(125,255,196,.5)'; ctx.shadowBlur=7; ctx.beginPath();
+        for(i=0;i<=40;i++){ var t1=2*pA*(i/40), x1=-2+t1, y1=-1+0.25*t1*t1; sp=P(x1,y1); if(i===0)ctx.moveTo(sp[0],sp[1]); else ctx.lineTo(sp[0],sp[1]); }
+        ctx.stroke(); ctx.restore();
+      }
+      var pP=P(-2,-1);
+      ctx.save(); ctx.fillStyle='#ffd479'; ctx.beginPath(); ctx.arc(pP[0],pP[1],4,0,7); ctx.fill(); ctx.restore();
+      txt('P', P(-2.04,-1.16)[0], P(-2.04,-1.16)[1], '#ffd479', 13, 'right','700');
+      arrow(pP[0],pP[1], pP[0]+0.70*V.sc, pP[1], 'rgba(159,232,255,.95)', 2.2, 9);
+      txt('v₀', P(-1.62,-0.80)[0], P(-1.62,-0.80)[1], 'rgba(180,235,255,.98)', 12, 'center','700');
+
+      // ---------- ② 磁场段：淡影全轨迹 + 已走部分（Q1金 / Q4品红） ----------
+      var pB=cl((p-0.26)/0.74), sNow=pB*tr.sTot;
+      ctx.save(); ctx.strokeStyle='rgba(255,212,121,.14)'; ctx.lineWidth=1.4;
+      ctx.beginPath();
+      for(i=1;i<pts.length;i++){ var ga=P(pts[i-1].x,pts[i-1].y), gb=P(pts[i].x,pts[i].y); if(i===1)ctx.moveTo(ga[0],ga[1]); ctx.lineTo(gb[0],gb[1]); }
+      ctx.stroke(); ctx.restore();
+      var strokeRegion=function(wantUpper){
+        var started=false; ctx.beginPath();
+        for(var k=1;k<pts.length;k++){
+          if(pts[k].s>sNow) break;
+          var A=pts[k-1], Bq=pts[k], up=((A.y+Bq.y)*0.5>=0);
+          if(up===wantUpper){
+            var s1=P(A.x,A.y), s2=P(Bq.x,Bq.y);
+            if(!started){ ctx.moveTo(s1[0],s1[1]); started=true; }
+            ctx.lineTo(s2[0],s2[1]);
+          } else started=false;
+        }
+        ctx.stroke();
+      };
+      ctx.save(); ctx.lineWidth=2.7; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.shadowBlur=7;
+      ctx.strokeStyle='#ffd479'; ctx.shadowColor='rgba(255,200,120,.45)'; strokeRegion(true);
+      ctx.strokeStyle='#ff5ad6'; ctx.shadowColor='rgba(255,90,214,.45)'; strokeRegion(false);
+      ctx.restore();
+      // 换场点（过 y=0）
+      ctx.save(); ctx.fillStyle='#ffe066';
+      for(i=0;i<tr.cross.length;i++){ if(tr.cross[i].s>sNow) break; cs=P(tr.cross[i].x,tr.cross[i].y);
+        ctx.beginPath(); ctx.arc(cs[0],cs[1],3,0,7); ctx.fill(); }
+      ctx.restore();
+
+      // ---------- O 点入射速度 v=√2v₀（45°） ----------
+      if(p>0.18){
+        so=P(0,0); var L45=0.80*V.sc;
+        arrow(so[0],so[1], so[0]+L45*Math.cos(Math.PI/4), so[1]-L45*Math.sin(Math.PI/4), 'rgba(255,224,102,.9)',2.4,9);
+        txt('v=√2v₀', P(0.08,0.92)[0], P(0.08,0.92)[1], '#ffe066', 12, 'left','700');
+        txt('45°', P(0.36,0.10)[0], P(0.36,0.10)[1], 'rgba(255,224,102,.95)', 11, 'left','700');
+      }
+      // ---------- 粒子 + 速度 ----------
+      var px,py,vth,q;
+      if(p<0.26){ var tt=2*pA; px=-2+tt; py=-1+0.25*tt*tt; vth=Math.atan2(0.5*tt,1); }
+      else { q=posAtS(tr,sNow); px=q.x; py=q.y; vth=q.th; }
+      sp=P(px,py); var rl=0.46*V.sc;
+      arrow(sp[0],sp[1], sp[0]+Math.cos(vth)*rl, sp[1]-Math.sin(vth)*rl, '#ffe066', 2.2, 8);
+      drawParticle(sp[0],sp[1]);
+      // 出射标注
+      if(pB>0.45){
+        txt('沿 +x 射出', P(4.06,tr.ey+0.22)[0], P(4.06,tr.ey+0.22)[1], '#ffe066', 11, 'left','700');
+      }
+
+      // ---------- 字幕 + 读数 ----------
+      var cap = p<0.26
+        ? '① 电场区 x<0：+q 受向上电场力，P 点以 v₀ 平抛 → O 点 v=√2v₀、45°'
+        : '② 磁场区 0<x≤4L：上 B₁⊙／下 B₂=4B₁⊙，过 y=0 半径突变 → 大拱 r₁ + 小环 r₂';
+      txt(cap, 16, 64, '#cfe3ff', 13, 'left','700');
+      var tB=tr.sTot/Math.SQRT2, coef=(3*n+2)/8;
+      txt('n = '+n+'　r₁ = '+r1.toFixed(2)+'L　r₂ = '+r2.toFixed(2)+'L　B₁ = '+coef.toFixed(2)+'·mv₀/(qL)　t_B = '+tB.toFixed(2)+' L/v₀'+(n===0?'（最短）':''),
+        16, H-60, 'rgba(150,185,225,.95)', 11, 'left','700');
+    }};
+  m.build=function(){}; M.push(m);
+})();
+
+// ============================================================
+// ENGINE / UI
+// ============================================================
+var S={idx:0,playing:true,t:0,speed:1};
+function loadModel(i){
+  S.idx=(i+M.length)%M.length; var m=M[S.idx];
+  setView(m.view); if(m.build)m.build();
+  S.t=0; updateNote(m); updateNav(); setupCtl(m);
+}
+// 模型专属滑块（如 ⑰ 的 θ / 视角）
+function setupCtl(m){
+  var box=document.getElementById('extraCtl');
+  if(!m || !m.ctl){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='block'; box.innerHTML='';
+  var hint=document.createElement('div'); hint.className='hint';
+  hint.textContent='下方滑块调参数（部分模型可在动画区拖动旋转视角）'; box.appendChild(hint);
+  for(var i=0;i<m.ctl.length;i++){
+    (function(c){
+      var lab=document.createElement('label');
+      var sp1=document.createElement('span'); sp1.textContent=c.label;
+      var sp2=document.createElement('span'); sp2.textContent=(m[c.key]!==undefined?m[c.key]:c.min)+(c.unit||'');
+      lab.appendChild(sp1); lab.appendChild(sp2);
+      var inp=document.createElement('input'); inp.type='range';
+      inp.min=c.min; inp.max=c.max; inp.step=c.step||1; inp.value=(m[c.key]!==undefined?m[c.key]:c.min);
+      inp.oninput=function(){ var nv=parseFloat(inp.value); m[c.key]=nv; sp2.textContent=nv+(c.unit||''); };
+      var wrap=document.createElement('div'); wrap.className='ctl';
+      wrap.appendChild(lab); wrap.appendChild(inp); box.appendChild(wrap);
+    })(m.ctl[i]);
+  }
+}
+function updateNote(m){
+  var el=document.getElementById('note');
+  var h='<span class="h">'+m.title+'</span>';
+  for(var i=0;i<m.board.length;i++){
+    var b=m.board[i];
+    h+='<div class="'+(b.t==='k'?'k':'')+'">• '+fmtHTML(b.s)+'</div>';
+  }
+  el.innerHTML=h;
+}
+function buildNav(){
+  var na=document.getElementById('navA'), nb=document.getElementById('navB');
+  for(var i=0;i<M.length;i++){ (function(i){
+    var b=document.createElement('button'); b.innerHTML='<b>'+(i+1)+'</b>'+M[i].short;
+    b.onclick=function(){ loadModel(i); S.playing=true; syncPlay(); };
+    M[i]._btn=b; if(M[i].group==='A')na.appendChild(b); else nb.appendChild(b);
+  })(i); }
+}
+function updateNav(){ for(var i=0;i<M.length;i++) M[i]._btn.className=(i===S.idx)?'on':''; }
+function syncPlay(){ document.getElementById('play').textContent=S.playing?'⏸ 暂停':'▶ 播放'; }
+// 控制按钮事件（此前缺失 → 点击播放/重置无效）
+document.getElementById('play').onclick=function(){
+  if(S.playing){ S.playing=false; }
+  else { if(S.t>=((M[S.idx].dur)||8)-1e-6) S.t=0; S.playing=true; }
+  syncPlay();
+};
+document.getElementById('reset').onclick=function(){ S.t=0; S.playing=true; syncPlay(); };
+document.getElementById('speed').onchange=function(){ S.speed=parseFloat(this.value)||1; };
+
+// draw board captions on canvas (板书式 key line)
+function drawBoardCaption(m){
+  if(m.noCap)return;
+  if(m.capPos==='rightmid'){
+    // 右中 HUD 面板（仅模型⑯：其右侧为空白区，不与动画重叠；窄面板+贴右缘→与动画间距更大）
+    var key='◆ '+m.board[0].s;
+    ctx.save();
+    ctx.font='700 15px "Microsoft YaHei",sans-serif';
+    var maxW=210, chars=key.split(''), lines=[], cur='';
+    for(var i=0;i<chars.length;i++){
+      var t=cur+chars[i];
+      if(cur && ctx.measureText(t).width>maxW){ lines.push(cur); cur=chars[i]; } else cur=t;
+    }
+    if(cur)lines.push(cur);
+    var lh=21, padX=12, padY=9;
+    var pw=0; for(var i=0;i<lines.length;i++) pw=Math.max(pw,ctx.measureText(lines[i]).width);
+    pw+=padX*2; var ph=lines.length*lh+padY*2;
+    var px=W-pw-6, py=Math.round(H/2-ph/2);
+    ctx.fillStyle='rgba(8,16,32,.74)'; ctx.fillRect(px,py,pw,ph);
+    ctx.fillStyle='#ffd479'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], px+padX, py+padY+lh/2+i*lh);
+    ctx.restore();
+  } else {
+    // 默认：底部条（竖式分式需要更高条高）
+    var key='◆ '+m.board[0].s;
+    ctx.save();
+    ctx.fillStyle='rgba(8,16,32,.72)';
+    var bh=46; ctx.fillRect(0,H-bh,W,bh);
+    ctx.fillStyle='#ffd479';ctx.textBaseline='alphabetic';ctx.textAlign='left';
+    fmt(key, 18, H-bh/2+5, '#ffd479', 15, 'left', '700');
+    ctx.restore();
+  }
+}
+function drawWaterMark(){
+  var txts='force99'; var t=Date.now()/900;
+  ctx.save();ctx.font='700 13px "Microsoft YaHei"';ctx.textAlign='right';ctx.textBaseline='bottom';
+  var baseCol='rgba(176,216,255,.30)';
+  ctx.fillStyle=baseCol; ctx.fillText(txts,W-12,H-4);
+  var idx=(t%(txts.length+3));
+  for(var k=0;k<txts.length;k++){
+    var ch=txts[k]; var x=W-12-(txts.length-k)*8;
+    var d=Math.abs(idx-k);
+    var b=Math.exp(-d*d*1.6);
+    if(b>0.05){ var g=b; ctx.fillStyle='rgba(255,244,255,'+(g*0.9)+')';
+      // light halo
+      ctx.shadowColor='rgba(120,200,255,'+g+')';ctx.shadowBlur=8*g;
+      ctx.fillText(ch,x,H-4); ctx.shadowBlur=0; }
+  }
+  ctx.restore();
+}
+
+function frame(ts){
+  if(!frame._last)frame._last=ts; var dt=(ts-frame._last)/1000; frame._last=ts; if(dt>0.05)dt=0.05;
+  var m=M[S.idx]; var dur=m.dur||8;
+  if(S.playing){ S.t+=dt*S.speed; if(S.t>=dur){S.t=dur; S.playing=false; syncPlay();} }
+  document.getElementById('progI').style.width=(S.t/dur*100)+'%';
+  try{
+    ctx.clearRect(0,0,W,H);
+    m.render(S.t/dur);
+    drawBoardCaption(m);
+    drawWaterMark();
+  }catch(e){ if(!window.__drawErr)window.__drawErr=String(e); }
+  requestAnimationFrame(frame);
+}
+
+// init
+window.addEventListener('resize',function(){ hidpi(); if(M[S.idx])setView(M[S.idx].view); });
+buildNav(); hidpi(); loadModel(0); syncPlay(); requestAnimationFrame(frame);
+// test hook (harmless)
+window.__seek=function(i,p){ loadModel(i); S.playing=false; syncPlay();
+  S.t=(p==null?0:p)*(M[i].dur||8);
+  var mm=M[S.idx], dur=mm.dur||8;
+  ctx.clearRect(0,0,W,H); mm.render(S.t/dur); drawBoardCaption(mm); drawWaterMark(); };
+window.__MODELS=M; window.__S=S;
+// ⑰ 等：在动画区拖动鼠标旋转 3D 视角（同步右侧滑块）
+(function(){
+  var dragging=false, lx=0, ly=0;
+  cv.addEventListener('pointerdown',function(e){
+    var m=M[S.idx];
+    if(m && m.ctl && m.az!==undefined && m.el!==undefined){
+      dragging=true; lx=e.clientX; ly=e.clientY;
+      try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+    }
+  });
+  cv.addEventListener('pointermove',function(e){
+    if(!dragging)return; var m=M[S.idx];
+    var dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY;
+    m.az=Math.max(-70,Math.min(70,m.az+dx*0.35));
+    m.el=Math.max(-82,Math.min(82,m.el-dy*0.35));
+    var box=document.getElementById('extraCtl');
+    var ins=box.querySelectorAll('input');
+    if(ins[1])ins[1].value=Math.round(m.az);
+    if(ins[2])ins[2].value=Math.round(m.el);
+    var vs=box.querySelectorAll('label span:last-child');
+    if(vs[1])vs[1].textContent=Math.round(m.az)+'°';
+    if(vs[2])vs[2].textContent=Math.round(m.el)+'°';
+  });
+  window.addEventListener('pointerup',function(){ dragging=false; });
+})();
+})();
+</script>
+</body>
+</html>
