@@ -3944,6 +3944,12 @@ const WORKS = [
       desc:"动量守恒八大经典模型总览：流体、碰撞、子弹打木块、滑块木板、滑块曲面、滑块弹簧、人船、爆炸，点击卡片进入对应交互动画。",
       icon:"🎬", cover:"assets/img/momentum-8models-overview-cover.png", link:"animations/momentum-8models-overview.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"流体模型",
+      desc:"微元法处理连续流体冲击（风轮机 / 水流打板、ρSv²），交互动画 + 知识归纳 + 典型例题。",
+      icon:"🎬", cover:"assets/img/momentum-fluid-cover.png", link:"animations/momentum-fluid.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
