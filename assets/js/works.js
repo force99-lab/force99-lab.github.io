@@ -3956,6 +3956,12 @@ const WORKS = [
       desc:"弹性 / 非弹性碰撞、一动碰一静、恢复系数 e，含交互动画与例题。",
       icon:"🎬", cover:"assets/img/momentum-collision-cover.png", link:"animations/momentum-collision.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"子弹打木块",
+      desc:"嵌入与穿透判据、相对位移生热 ΔE = f·d，交互动画 + 例题。",
+      icon:"🎬", cover:"assets/img/momentum-bullet-cover.png", link:"animations/momentum-bullet.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
