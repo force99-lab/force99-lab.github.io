@@ -3944,54 +3944,14 @@ const WORKS = [
       desc:"动量守恒八大经典模型总览：流体、碰撞、子弹打木块、滑块木板、滑块曲面、滑块弹簧、人船、爆炸，点击卡片进入对应交互动画。",
       icon:"🎬", cover:"assets/img/momentum-8models-overview-cover.png", link:"animations/momentum-8models-overview.html", date:"2026-11-03", tag:"动量守恒"
     }
-,
-      {
-      type:"animation", title:"流体模型",
-      desc:"微元法处理连续流体冲击（风轮机 / 水流打板、ρSv²），交互动画 + 知识归纳 + 典型例题。",
-      icon:"🎬", cover:"assets/img/momentum-fluid-cover.png", link:"animations/momentum-fluid.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"碰撞模型",
-      desc:"弹性 / 非弹性碰撞、一动碰一静、恢复系数 e，含交互动画与例题。",
-      icon:"🎬", cover:"assets/img/momentum-collision-cover.png", link:"animations/momentum-collision.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"子弹打木块",
-      desc:"嵌入与穿透判据、相对位移生热 ΔE = f·d，交互动画 + 例题。",
-      icon:"🎬", cover:"assets/img/momentum-bullet-cover.png", link:"animations/momentum-bullet.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"滑块木板",
-      desc:"相对滑动、共速判据与摩擦生热，交互动画 + 例题。",
-      icon:"🎬", cover:"assets/img/momentum-blockplank-cover.png", link:"animations/momentum-blockplank.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"滑块斜（曲）面",
-      desc:"水平动量守恒 + 机械能守恒（圆弧曲面），含脱轨腾空回轨，交互动画 + 例题。",
-      icon:"🎬", cover:"assets/img/momentum-curved-cover.png", link:"animations/momentum-curved.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"滑块弹簧",
-      desc:"共速瞬间弹性势能最大、原长时动能最大，交互动画 + 例题。",
-      icon:"🎬", cover:"assets/img/momentum-spring-cover.png", link:"animations/momentum-spring.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"人船模型",
-      desc:"系统动量为零、两位移之和等于船长，交互动画 + 例题。",
-      icon:"🎬", cover:"assets/img/momentum-manboat-cover.png", link:"animations/momentum-manboat.html", date:"2026-11-03", tag:"动量守恒"
-    }
-,
-      {
-      type:"animation", title:"爆炸模型",
-      desc:"斜抛至最高点炸裂为两块平抛，动量守恒、机械能增加，交互动画 + 例题。",
-      icon:"🎬", cover:"assets/img/momentum-explosion-cover.png", link:"animations/momentum-explosion.html", date:"2026-11-03", tag:"动量守恒"
-    }
+
+
+
+
+
+
+
+
 ];
 
 
