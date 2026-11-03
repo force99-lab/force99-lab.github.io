@@ -3986,6 +3986,12 @@ const WORKS = [
       desc:"系统动量为零、两位移之和等于船长，交互动画 + 例题。",
       icon:"🎬", cover:"assets/img/momentum-manboat-cover.png", link:"animations/momentum-manboat.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"爆炸模型",
+      desc:"斜抛至最高点炸裂为两块平抛，动量守恒、机械能增加，交互动画 + 例题。",
+      icon:"🎬", cover:"assets/img/momentum-explosion-cover.png", link:"animations/momentum-explosion.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
