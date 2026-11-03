@@ -3980,6 +3980,12 @@ const WORKS = [
       desc:"共速瞬间弹性势能最大、原长时动能最大，交互动画 + 例题。",
       icon:"🎬", cover:"assets/img/momentum-spring-cover.png", link:"animations/momentum-spring.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"人船模型",
+      desc:"系统动量为零、两位移之和等于船长，交互动画 + 例题。",
+      icon:"🎬", cover:"assets/img/momentum-manboat-cover.png", link:"animations/momentum-manboat.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
