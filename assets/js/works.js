@@ -3950,6 +3950,12 @@ const WORKS = [
       desc:"微元法处理连续流体冲击（风轮机 / 水流打板、ρSv²），交互动画 + 知识归纳 + 典型例题。",
       icon:"🎬", cover:"assets/img/momentum-fluid-cover.png", link:"animations/momentum-fluid.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"碰撞模型",
+      desc:"弹性 / 非弹性碰撞、一动碰一静、恢复系数 e，含交互动画与例题。",
+      icon:"🎬", cover:"assets/img/momentum-collision-cover.png", link:"animations/momentum-collision.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
