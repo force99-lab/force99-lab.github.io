@@ -3962,6 +3962,12 @@ const WORKS = [
       desc:"嵌入与穿透判据、相对位移生热 ΔE = f·d，交互动画 + 例题。",
       icon:"🎬", cover:"assets/img/momentum-bullet-cover.png", link:"animations/momentum-bullet.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"滑块木板",
+      desc:"相对滑动、共速判据与摩擦生热，交互动画 + 例题。",
+      icon:"🎬", cover:"assets/img/momentum-blockplank-cover.png", link:"animations/momentum-blockplank.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
