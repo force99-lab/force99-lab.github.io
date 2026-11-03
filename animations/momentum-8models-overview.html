@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>动量守恒 · 8 大模型</title>
+<style>
+  :root{
+    --tx:#eef3ff; --dim:#9fb4d4; --dim2:#6f86a8;
+    --panel:rgba(255,255,255,.045);
+    --bd:rgba(96,170,255,.16);
+    --bdh:rgba(120,200,255,.55);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; color:var(--tx);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+    background:
+      radial-gradient(1200px 720px at 50% -12%, #16365f 0%, #0b1a2f 42%, #060a13 100%);
+    min-height:100vh; position:relative; overflow-x:hidden;
+  }
+  /* 细网格 + 顶部光晕 */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(96,170,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(96,170,255,.05) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(circle at 50% 30%, #000 0%, transparent 78%);
+    -webkit-mask-image:radial-gradient(circle at 50% 30%, #000 0%, transparent 78%);
+  }
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:radial-gradient(circle at 50% 0%, rgba(94,190,255,.16), transparent 55%);
+  }
+  .wrap{ position:relative; z-index:1; max-width:1240px; margin:0 auto; padding:56px 26px 40px; }
+
+  header{ margin-bottom:42px; text-align:center; }
+  h1{
+    font-size:clamp(32px,5vw,58px); line-height:1.1; margin:0;
+    font-weight:900; letter-spacing:.02em;
+    color:#02c6f7;
+    text-shadow:0 0 16px rgba(2,198,247,.55), 0 0 44px rgba(2,198,247,.22), 0 2px 0 rgba(0,0,0,.45);
+  }
+  h1 .grad{ color:#02c6f7; }
+
+  .grid{
+    display:grid; gap:24px;
+    grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+    perspective:1500px;
+  }
+
+  .card{
+    position:relative; display:block; text-decoration:none; color:inherit;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.015) 46%, rgba(255,255,255,0)),
+      linear-gradient(165deg, color-mix(in srgb, var(--ac,#4ea3ff) 16%, #0c1626), #0a1322 78%);
+    border:1px solid color-mix(in srgb, var(--ac,#4ea3ff) 40%, rgba(255,255,255,.12));
+    border-radius:18px; padding:22px 20px 24px;
+    overflow:hidden; min-height:190px;
+    transform-style:preserve-3d;
+    transition:transform .25s cubic-bezier(.2,.7,.3,1), box-shadow .25s, border-color .25s;
+    box-shadow:
+      0 12px 26px -14px rgba(0,0,0,.85),
+      0 3px 0 0 color-mix(in srgb, var(--ac,#4ea3ff) 26%, #0a1322) inset,
+      0 0 0 1px rgba(255,255,255,.05) inset,
+      0 -10px 30px -22px color-mix(in srgb, var(--ac,#4ea3ff) 60%, transparent) inset;
+  }
+  /* 左侧强调光条 */
+  .card::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg, color-mix(in srgb,var(--ac,#4ea3ff) 85%,#fff 15%), var(--ac,#4ea3ff));
+    box-shadow:0 0 16px var(--ac,#4ea3ff); opacity:.9; z-index:3;
+  }
+  /* 右上角氛围辉光（AI 呼吸感） */
+  .card::after{
+    content:""; position:absolute; right:-34px; top:-34px; width:170px; height:170px;
+    background:radial-gradient(circle, color-mix(in srgb,var(--ac,#4ea3ff) 60%, transparent), transparent 70%);
+    opacity:.32; pointer-events:none; filter:blur(7px); z-index:0;
+    animation:acglow 4.5s ease-in-out infinite;
+  }
+  @keyframes acglow{ 0%,100%{ opacity:.26 } 50%{ opacity:.5 } }
+  /* 顶部玻璃高光 */
+  .card > .top, .card > h3, .card > p, .card > .fx{ position:relative; z-index:2; }
+
+  .card:hover{
+    border-color:color-mix(in srgb, var(--ac,#4ea3ff) 72%, #fff 10%);
+    box-shadow:
+      0 32px 60px -20px color-mix(in srgb, var(--ac,#4ea3ff) 55%, transparent),
+      0 0 42px -8px color-mix(in srgb, var(--ac,#4ea3ff) 55%, transparent),
+      0 3px 0 0 color-mix(in srgb, var(--ac,#4ea3ff) 50%, #0a1322) inset,
+      0 0 0 1px rgba(255,255,255,.07) inset;
+  }
+  .card:hover::after{ opacity:.62; }
+  .card:hover .arrow{ color:var(--ac,#4ea3ff); transform:translateX(4px); }
+  .card:hover .bigno{ color:color-mix(in srgb, var(--ac,#4ea3ff) 26%, transparent); transform:translateZ(36px); }
+
+  .top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:13px; }
+  .no{
+    font-size:12px; font-weight:800; letter-spacing:.06em;
+    color:color-mix(in srgb, var(--ac,#4ea3ff) 88%, #fff 12%);
+    background:color-mix(in srgb, var(--ac,#4ea3ff) 18%, transparent);
+    border:1px solid color-mix(in srgb, var(--ac,#4ea3ff) 46%, transparent);
+    padding:3px 10px; border-radius:20px;
+    box-shadow:0 0 12px -4px var(--ac,#4ea3ff);
+  }
+  .arrow{ font-size:12.5px; color:var(--dim2); transition:color .2s, transform .2s; font-weight:700; }
+  .badge{
+    font-size:11.5px; font-weight:700; color:#1a1206;
+    background:linear-gradient(180deg,#ffd66b,#f0b429);
+    padding:3px 9px; border-radius:20px;
+  }
+  .card h3{ margin:0 0 8px; font-size:20px; font-weight:800; letter-spacing:.01em;
+    text-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .card p{ margin:0 0 15px; font-size:13px; line-height:1.65; color:var(--dim); }
+  .fx{
+    font-size:13.5px; letter-spacing:.01em;
+    color:color-mix(in srgb, var(--ac,#4ea3ff) 78%, #fff 22%);
+    font-family:"Cambria Math","Times New Roman",Georgia,serif;
+    background:rgba(0,0,0,.28); border:1px solid color-mix(in srgb, var(--ac,#4ea3ff) 30%, rgba(255,255,255,.1));
+    border-radius:9px; padding:8px 11px; display:inline-block; max-width:100%;
+    box-shadow:0 0 14px -6px var(--ac,#4ea3ff) inset;
+  }
+  .bigno{
+    position:absolute; right:12px; bottom:-14px; font-size:88px; font-weight:900;
+    color:rgba(255,255,255,.05); letter-spacing:-.04em; pointer-events:none; line-height:1;
+    font-family:"Arial Black",Arial,sans-serif;
+    transition:color .25s, transform .25s;
+  }
+
+  /* 右下角水印 */
+  .watermark{
+    position:fixed; right:22px; bottom:16px; z-index:5; pointer-events:none;
+    font-family:"Arial Black",Arial,sans-serif; font-weight:900; font-size:15px;
+    letter-spacing:.18em; user-select:none;
+    /* 文字渐变本身即完整光色散色谱，流动时可见红橙黄绿青蓝紫 */
+    background:linear-gradient(90deg,#ff4d4d,#ff9d4d,#ffe14d,#3ee08a,#36e0e0,#4ea3ff,#9d7bff,#ff4d4d);
+    background-size:300% 100%;
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:transparent;
+    animation:wmFlow 6s linear infinite, wmGlow 4.2s linear infinite;
+  }
+  @keyframes wmFlow{ 0%{ background-position:0% 50% } 100%{ background-position:300% 50% } }
+  /* 呼吸辉光依次走光色散：红→橙→黄→绿→青→蓝→紫→红（双 drop-shadow 增强可见度） */
+  @keyframes wmGlow{
+    0%   { filter:drop-shadow(0 0 10px #ff4d4d) drop-shadow(0 0 3px #ff4d4d); }
+    14%  { filter:drop-shadow(0 0 10px #ff9d4d) drop-shadow(0 0 3px #ff9d4d); }
+    28%  { filter:drop-shadow(0 0 10px #ffe14d) drop-shadow(0 0 3px #ffe14d); }
+    42%  { filter:drop-shadow(0 0 10px #3ee08a) drop-shadow(0 0 3px #3ee08a); }
+    57%  { filter:drop-shadow(0 0 10px #36e0e0) drop-shadow(0 0 3px #36e0e0); }
+    71%  { filter:drop-shadow(0 0 10px #4ea3ff) drop-shadow(0 0 3px #4ea3ff); }
+    85%  { filter:drop-shadow(0 0 10px #9d7bff) drop-shadow(0 0 3px #9d7bff); }
+    100% { filter:drop-shadow(0 0 10px #ff4d4d) drop-shadow(0 0 3px #ff4d4d); }
+  }
+
+  @media (max-width:560px){
+    .wrap{ padding:38px 16px 30px; }
+    .grid{ grid-template-columns:1fr; }
+    .watermark{ font-size:12px; right:14px; bottom:10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>动量守恒 <span class="grad">8 大模型</span></h1>
+  </header>
+
+  <div class="grid">
+
+    <!-- 模型一 流体 -->
+    <a class="card" style="--ac:#36e0e0" href="动量模型_流体.html">
+      <div class="top"><span class="no">模型一</span><span class="arrow">进入 →</span></div>
+      <h3>流体模型</h3>
+      <p>微元法处理连续流体冲击（风轮机 / 水流打板、ρSv²）</p>
+      <div class="fx">F = Δp/Δt = ρSv²</div>
+      <span class="bigno">01</span>
+    </a>
+
+    <!-- 模型二 碰撞 -->
+    <a class="card" style="--ac:#4ea3ff" href="动量模型_碰撞.html">
+      <div class="top"><span class="no">模型二</span><span class="arrow">进入 →</span></div>
+      <h3>碰撞模型</h3>
+      <p>弹性 / 非弹性碰撞 · 一动碰一静 · 恢复系数</p>
+      <div class="fx">m₁v₁ + m₂v₂ = m₁v₁′ + m₂v₂′</div>
+      <span class="bigno">02</span>
+    </a>
+
+    <!-- 模型三 子弹打木块 -->
+    <a class="card" style="--ac:#ff9d4d" href="动量模型_子弹打木块.html">
+      <div class="top"><span class="no">模型三</span><span class="arrow">进入 →</span></div>
+      <h3>子弹打木块</h3>
+      <p>嵌入与穿透判据 · 相对位移生热</p>
+      <div class="fx">mv₀ = (M+m)v　ΔE = f·d</div>
+      <span class="bigno">03</span>
+    </a>
+
+    <!-- 模型四 滑块木板 -->
+    <a class="card" style="--ac:#ffd24d" href="动量模型_滑块木板.html">
+      <div class="top"><span class="no">模型四</span><span class="arrow">进入 →</span></div>
+      <h3>滑块木板</h3>
+      <p>相对滑动 · 共速判据 · 摩擦生热</p>
+      <div class="fx">v共 = mv₀/(M+m)　Q = f·Δs</div>
+      <span class="bigno">04</span>
+    </a>
+
+    <!-- 模型五 滑块斜（曲）面 -->
+    <a class="card" style="--ac:#9d7bff" href="动量模型_滑块斜面.html">
+      <div class="top"><span class="no">模型五</span><span class="arrow">进入 →</span></div>
+      <h3>滑块斜（曲）面</h3>
+      <p>水平动量守恒 + 机械能守恒 · 圆弧曲面</p>
+      <div class="fx">mv₀ = (M+m)v共　½mv₀² = ½(M+m)v共² + mgh</div>
+      <span class="bigno">05</span>
+    </a>
+
+    <!-- 模型六 滑块弹簧 -->
+    <a class="card" style="--ac:#36e0e0" href="动量模型_滑块弹簧.html">
+      <div class="top"><span class="no">模型六</span><span class="arrow">进入 →</span></div>
+      <h3>滑块弹簧</h3>
+      <p>共速瞬间弹性势能最大 · 原长时动能最大</p>
+      <div class="fx">Eₚₘₐₓ = m₁m₂(v₁−v₂)² / 2(m₁+m₂)</div>
+      <span class="bigno">06</span>
+    </a>
+
+    <!-- 模型七 人船 -->
+    <a class="card" style="--ac:#3ee08a" href="动量模型_人船.html">
+      <div class="top"><span class="no">模型七</span><span class="arrow">进入 →</span></div>
+      <h3>人船模型</h3>
+      <p>系统动量为零 · 两位移之和等于船长</p>
+      <div class="fx">m·s人 = M·s船　s人 + s船 = L</div>
+      <span class="bigno">07</span>
+    </a>
+
+    <!-- 模型八 爆炸 -->
+    <a class="card" style="--ac:#ff5d6c" href="动量模型_爆炸.html">
+      <div class="top"><span class="no">模型八</span><span class="arrow">进入 →</span></div>
+      <h3>爆炸模型</h3>
+      <p>斜抛至最高点炸裂 → 两块平抛 · 动量守恒、机械能增加</p>
+      <div class="fx">Σp = Σp′　Eₖ′ &gt; Eₖ</div>
+      <span class="bigno">08</span>
+    </a>
+
+  </div>
+
+</div>
+
+<div class="watermark">force99</div>
+
+<script>
+(function(){
+  try{
+    var cards=document.querySelectorAll('.grid .card');
+    cards.forEach(function(c){
+      c.addEventListener('pointermove', function(e){
+        var r=c.getBoundingClientRect();
+        var px=(e.clientX-r.left)/r.width-0.5;
+        var py=(e.clientY-r.top)/r.height-0.5;
+        c.style.transform='translateY(-12px) rotateX('+(-py*9).toFixed(2)+'deg) rotateY('+(px*12).toFixed(2)+'deg) scale(1.03)';
+      });
+      c.addEventListener('pointerleave', function(){ c.style.transform=''; });
+    });
+  }catch(err){}
+})();
+</script>
+</body>
+</html>
