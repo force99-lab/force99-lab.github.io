@@ -3968,6 +3968,12 @@ const WORKS = [
       desc:"相对滑动、共速判据与摩擦生热，交互动画 + 例题。",
       icon:"🎬", cover:"assets/img/momentum-blockplank-cover.png", link:"animations/momentum-blockplank.html", date:"2026-11-03", tag:"动量守恒"
     }
+,
+      {
+      type:"animation", title:"滑块斜（曲）面",
+      desc:"水平动量守恒 + 机械能守恒（圆弧曲面），含脱轨腾空回轨，交互动画 + 例题。",
+      icon:"🎬", cover:"assets/img/momentum-curved-cover.png", link:"animations/momentum-curved.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
