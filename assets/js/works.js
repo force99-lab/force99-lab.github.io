@@ -3938,6 +3938,12 @@ const WORKS = [
       desc:"从有界磁场的动态圆、圆形边界，到组合场、质谱仪与回旋加速器等 20 个经典模型；含配速法旋轮线与分界磁场「拱+环」轨迹的交互演示，右侧同步归纳物理规律与实时物理量。",
       icon:"🧲", cover:"assets/img/magnetic-particle-cover.png", link:"animations/magnetic-particle-18.html", date:"2026-11-02", tag:"磁场"
     }
+,
+      {
+      type:"animation", title:"动量守恒 8 大模型",
+      desc:"动量守恒八大经典模型总览：流体、碰撞、子弹打木块、滑块木板、滑块曲面、滑块弹簧、人船、爆炸，点击卡片进入对应交互动画。",
+      icon:"🎬", cover:"assets/img/momentum-8models-overview-cover.png", link:"animations/momentum-8models-overview.html", date:"2026-11-03", tag:"动量守恒"
+    }
 ];
 
 
