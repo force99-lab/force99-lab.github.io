@@ -163,7 +163,7 @@
   /* 页内模型播放器 */
   .player{position:fixed; inset:0; z-index:60; background:#060a13; display:none; flex-direction:column;}
   .player.show{ display:flex; }
-  .player .bar{ display:flex; align-items:center; gap:14px; padding:13px 20px;
+  .player .bar{ position:relative; z-index:4; display:flex; align-items:center; gap:14px; padding:13px 20px;
     background:rgba(10,19,34,.97); border-bottom:1px solid rgba(96,170,255,.22); }
   .player .back{ cursor:pointer; color:#bfe9ff; font-weight:800; font-size:14.5px;
     background:rgba(78,163,255,.14); border:1px solid rgba(78,163,255,.4); border-radius:20px; padding:7px 16px;
@@ -171,6 +171,12 @@
   .player .back:hover{ background:rgba(78,163,255,.3); }
   .player .ptitle{ color:#eef3ff; font-weight:800; font-size:18px; letter-spacing:.02em; }
   .player iframe{ flex:1; width:100%; border:0; background:#060a13; }
+  /* 永远浮在最上层的关闭按钮，确保任何模型页下都能返回 */
+  .player .xclose{ position:absolute; top:12px; right:16px; z-index:5; cursor:pointer;
+    width:42px; height:42px; line-height:42px; text-align:center; font-size:22px; font-weight:900;
+    color:#eaf6ff; background:rgba(255,77,77,.16); border:1.5px solid rgba(255,120,120,.55);
+    border-radius:50%; box-shadow:0 0 14px rgba(255,90,90,.35); transition:transform .15s, background .2s; }
+  .player .xclose:hover{ transform:scale(1.1) rotate(90deg); background:rgba(255,77,77,.34); }
 
 </style>
 </head>
@@ -260,7 +266,8 @@
 
 <div class="player" id="player">
   <div class="bar"><span class="back" id="pback">← 返回总览</span><span class="ptitle" id="ptitle"></span></div>
-  <iframe id="pframe"></iframe></iframe>
+  <iframe id="pframe"></iframe>
+  <span class="xclose" id="pclose" title="返回总览">✕</span>
 </div>
 
 <div class="watermark">force99</div>
@@ -327,6 +334,10 @@ var MODELS_B64=[
     });
   });
   document.getElementById('pback').addEventListener('click', function(){
+    player.classList.remove('show');
+    frame.src = 'about:blank';
+  });
+  document.getElementById('pclose').addEventListener('click', function(){
     player.classList.remove('show');
     frame.src = 'about:blank';
   });
