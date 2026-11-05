@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>浏览器环境诊断</title>
+<style>
+body{background:#0b1220;color:#e8f0ff;font:16px/1.75 "Microsoft YaHei",sans-serif;padding:18px;margin:0}
+h1{font-size:20px;color:#02c6f7;margin:0 0 12px}
+.row{padding:9px 12px;border-radius:8px;background:#121c2e;margin:7px 0;font-size:15px;word-break:break-all}
+.ok{color:#3ee08a}.bad{color:#ff5d6c;font-weight:800}
+#cv{border:1px solid #2a3a55;margin-top:10px;border-radius:6px}
+</style></head><body>
+<h1>浏览器环境诊断</h1>
+<div class="row" id="r-ua">UA: 读取中…</div>
+<div class="row" id="r-canvas"><span class="bad">canvas：未执行</span></div>
+<div class="row" id="r-arrow"><span class="bad">箭头函数 =&gt;：不支持 / 报错</span></div>
+<div class="row" id="r-tpl"><span class="bad">模板字符串：不支持 / 报错</span></div>
+<div class="row" id="r-let"><span class="bad">let / const：不支持 / 报错</span></div>
+<div class="row" id="r-ro"><span class="bad">ResizeObserver：不支持 / 报错</span></div>
+<div class="row" id="r-err"><span class="ok">页面错误：无</span></div>
+<canvas id="cv" width="200" height="60"></canvas>
+<script>
+document.getElementById('r-ua').textContent = 'UA: ' + navigator.userAgent;
+window.onerror = function (m, s, l) {
+  document.getElementById('r-err').innerHTML = '<span class="bad">页面错误：' + m + '（行 ' + l + '）</span>';
+};
+try {
+  var c = document.getElementById('cv'), x = c.getContext('2d');
+  x.fillStyle = '#3ee08a'; x.fillRect(0, 0, 200, 60);
+  x.fillStyle = '#04121f'; x.font = 'bold 18px sans-serif'; x.fillText('canvas OK', 52, 38);
+  var d = x.getImageData(0, 0, 200, 60).data, n = 0, i;
+  for (i = 0; i < d.length; i += 4) { if (d[i + 3]) n++; }
+  document.getElementById('r-canvas').innerHTML = n > 0
+    ? '<span class="ok">canvas 绘制正常（' + n + ' 像素）</span>'
+    : '<span class="bad">canvas 空白（0 像素）</span>';
+} catch (er) {
+  document.getElementById('r-canvas').innerHTML = '<span class="bad">canvas 异常：' + er.message + '</span>';
+}
+</script>
+<script>
+var f = (v) => v * 2;
+document.getElementById('r-arrow').innerHTML = '<span class="ok">箭头函数 =&gt;：支持（f(21)=' + f(21) + '）</span>';
+</script>
+<script>
+var t = `模板${1 + 1}`;
+document.getElementById('r-tpl').innerHTML = '<span class="ok">模板字符串：支持（' + t + '）</span>';
+</script>
+<script>
+let la = 1; const lb = 2;
+document.getElementById('r-let').innerHTML = '<span class="ok">let / const：支持</span>';
+</script>
+<script>
+try {
+  if (typeof ResizeObserver === 'undefined') { throw new Error('undefined'); }
+  new ResizeObserver(function () {});
+  document.getElementById('r-ro').innerHTML = '<span class="ok">ResizeObserver：支持</span>';
+} catch (e) {
+  document.getElementById('r-ro').innerHTML = '<span class="bad">ResizeObserver：不支持（' + e.message + '）</span>';
+}
+</script>
+</body></html>
