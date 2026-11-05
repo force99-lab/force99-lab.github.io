@@ -7560,7 +7560,7 @@ const WORKS = [
       {
       type:"animation", title:"动量守恒 8 大模型",
       desc:"动量守恒八大经典模型总览：流体、碰撞、子弹打木块、滑块木板、滑块曲面、滑块弹簧、人船、爆炸，点击卡片进入对应交互动画。",
-      icon:"🎬", cover:"assets/img/momentum-8models-overview-cover.png", link:"animations/momentum-8models-overview.html?v=20261105b", date:"2026-11-03", tag:"动量守恒"
+      icon:"🎬", cover:"assets/img/momentum-8models-overview-cover.png", link:"animations/momentum-8models-one.html", date:"2026-11-03", tag:"动量守恒"
     }
 
 
