@@ -316,14 +316,11 @@ var MODELS_B64=[
     for (var k=0;k<bin.length;k++) bytes[k] = bin.charCodeAt(k);
     return new TextDecoder('utf-8').decode(bytes);
   }
-  var curUrl = null;
   function openModel(i, card){
     if (!M[i]) return;
-    if (curUrl) { try { URL.revokeObjectURL(curUrl); } catch(e){} curUrl = null; }
-    // Blob URL：同源、无长度限制，比 srcdoc/dataURL 更稳，父页可读 contentDocument
-    var blob = new Blob([b64ToUtf8(M[i])], { type: 'text/html;charset=utf-8' });
-    curUrl = URL.createObjectURL(blob);
-    frame.src = curUrl;
+    // 用 srcdoc 内联渲染：规避站点 CSP 对 frame-src:'self' 下 blob:/data: 的拦截
+    frame.removeAttribute('src');
+    frame.srcdoc = b64ToUtf8(M[i]);
     var t = card.querySelector('h3');
     titleEl.textContent = t ? t.textContent : '';
     player.classList.add('show');
@@ -331,8 +328,8 @@ var MODELS_B64=[
   }
   function closeModel(){
     player.classList.remove('show');
-    frame.src = 'about:blank';
-    if (curUrl) { try { URL.revokeObjectURL(curUrl); } catch(e){} curUrl = null; }
+    frame.removeAttribute('src');
+    frame.srcdoc = '';
   }
   document.querySelectorAll('.grid .card').forEach(function(c){
     c.style.cursor = 'pointer';
