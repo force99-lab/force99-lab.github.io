@@ -7576,6 +7576,12 @@ const WORKS = [
       desc:"2026 学年第一学期杭州一模 第16题（11分）：倾斜半圆弧槽空间轨迹，沿母线匀加速与垂直母线截面内圆弧及上抛运动的正交分解，求速度、时间、槽长与末动能，含可切换视角的3D动画",
       icon:"📐", cover:"assets/img/hz16-cover.png", link:"solutions/hz16_threepage.html", date:"2026-11-06", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"半圆凹槽与小球 · 两种参考系",
+      desc:"同一段运动，地面参考系看到打圈、轨道参考系只是往复滚；含实体凹槽三面板同步动画、质量比三档切换与逐帧闭合的速度矢量平行四边形。",
+      icon:"📐", cover:"assets/img/glx-cover.png", link:"solutions/glx_threepage.html", date:"2026-11-08", tag:"力学"
+    }
 ];
 
 
