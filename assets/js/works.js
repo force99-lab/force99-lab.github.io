@@ -7582,6 +7582,12 @@ const WORKS = [
       desc:"同一段运动，地面参考系看到打圈、轨道参考系只是往复滚；含实体凹槽三面板同步动画、质量比三档切换与逐帧闭合的速度矢量平行四边形。",
       icon:"📐", cover:"assets/img/glx-cover.png", link:"solutions/glx_threepage.html", date:"2026-11-08", tag:"力学"
     }
+,
+      {
+      type:"solve", title:"2026江西省九校联考T15 · 带电粒子在复合场中的三维运动",
+      desc:"以原题装置图为基础，三页式拆解初速度、最大动能与叠加电场后的空间落点，第三问提供可切换五视角的三维仿真。",
+      icon:"📐", cover:"assets/img/composite-field-3d-motion-cover.png", link:"solutions/composite-field-3d-motion-threepage.html", date:"2026-11-22", tag:"电磁学"
+    }
 ];
 
 
