@@ -7588,6 +7588,12 @@ const WORKS = [
       desc:"以原题装置图为基础，三页式拆解初速度、最大动能与叠加电场后的空间落点，第三问提供可切换五视角的三维仿真。",
       icon:"📐", cover:"assets/img/composite-field-3d-motion-cover.png", link:"solutions/composite-field-3d-motion-threepage.html", date:"2026-11-22", tag:"电磁学"
     }
+,
+      {
+      type:"animation", title:"高中物理器具读数九类交互版",
+      desc:"九类高中物理测量器具读数交互课件：游标卡尺、螺旋测微器、机械秒表、电流表与电阻箱等，读数默认隐藏、点击揭晓，支持拖动仿真与放大读数，适配86寸白板。",
+      icon:"📏", cover:"assets/img/reading9-cover.png", link:"animations/physics-reading-9-instruments.html", date:"2026-11-25", tag:"物理"
+    }
 ];
 
 
