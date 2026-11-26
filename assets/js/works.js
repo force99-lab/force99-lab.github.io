@@ -7594,6 +7594,12 @@ const WORKS = [
       desc:"九类高中物理测量器具读数交互课件：游标卡尺、螺旋测微器、机械秒表、电流表与电阻箱等，读数默认隐藏、点击揭晓，支持拖动仿真与放大读数，适配86寸白板。",
       icon:"📏", cover:"assets/img/reading9-cover.png", link:"animations/physics-reading-9-instruments.html", date:"2026-11-25", tag:"物理"
     }
+,
+      {
+      type:"solve", title:"2025湖州二模 · 通电圆筒的磁场与受力",
+      desc:"以原题甲乙丙三图为基础，三页式拆解通电圆筒的磁场矢量合成原理：16根电流丝dB首尾相接闭合、左右半筒等大反向、平均场求受力、环向平行判据，答案BD。",
+      icon:"📐", cover:"assets/img/cylinder-magnetism-cover.png", link:"solutions/cylinder-magnetism-threepage.html", date:"2026-11-26", tag:"电磁学"
+    }
 ];
 
 
