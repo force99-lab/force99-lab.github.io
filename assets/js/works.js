@@ -7603,7 +7603,7 @@ const WORKS = [
 ,
       {
       type:"work", title:"共板课堂 · 在线物理辅导白板",
-      desc:"师生共用一块白板实时书写，支持 PDF/网页/视频导入、双向语音与屏幕共享，链接分享跨 WiFi 即可开课。",
+      desc:"师生共用一块白板实时书写，小方格网格背景可换色，支持 PDF/网页/视频导入、双向语音与屏幕共享，链接分享跨 WiFi 即可开课。",
       icon:"🛠", cover:"assets/img/tutorboard-cover.png", link:"works/tutorboard-whiteboard.html", date:"2026-11-27", tag:"教学工具"
     }
 ];
