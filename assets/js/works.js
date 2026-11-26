@@ -7600,6 +7600,12 @@ const WORKS = [
       desc:"以原题甲乙丙三图为基础，三页式拆解通电圆筒的磁场矢量合成原理：16根电流丝dB首尾相接闭合、左右半筒等大反向、平均场求受力、环向平行判据，答案BD。",
       icon:"📐", cover:"assets/img/cylinder-magnetism-cover.png", link:"solutions/cylinder-magnetism-threepage.html", date:"2026-11-26", tag:"电磁学"
     }
+,
+      {
+      type:"work", title:"共板课堂 · 在线物理辅导白板",
+      desc:"师生共用一块白板实时书写，支持 PDF/网页/视频导入、双向语音与屏幕共享，链接分享跨 WiFi 即可开课。",
+      icon:"🛠", cover:"assets/img/tutorboard-cover.png", link:"works/tutorboard-whiteboard.html", date:"2026-11-27", tag:"教学工具"
+    }
 ];
 
 
