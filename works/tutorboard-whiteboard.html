@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b3d3a">
 <title>physics-room · 在线物理辅导白板</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><defs><linearGradient id=%22b%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop stop-color=%22%2312564f%22/><stop offset=%221%22 stop-color=%22%2306201f%22/></linearGradient><linearGradient id=%22s%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop stop-color=%22%23ff5b5b%22/><stop offset=%22.18%22 stop-color=%22%23ff9f43%22/><stop offset=%22.36%22 stop-color=%22%23ffd23f%22/><stop offset=%22.55%22 stop-color=%22%2326d3a7%22/><stop offset=%22.74%22 stop-color=%22%234fc3f7%22/><stop offset=%221%22 stop-color=%22%23c792ea%22/></linearGradient></defs><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23b)%22/><circle cx=%2230%22 cy=%2230%22 r=%2216%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%228%22/><path d=%22M39 38 L49 49%22 stroke=%22url(%23s)%22 stroke-width=%227%22 stroke-linecap=%22round%22/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><defs><linearGradient id=%22b%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop stop-color=%22%2312564f%22/><stop offset=%221%22 stop-color=%22%2306201f%22/></linearGradient></defs><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23b)%22/><g fill=%22none%22 stroke-width=%228%22 stroke-linecap=%22round%22><path d=%22M30.28 14.0 A16 16 0 0 1 42.33 19.81%22 stroke=%22%23ff3b3b%22/><path d=%22M42.68 20.24 A16 16 0 0 1 45.66 33.29%22 stroke=%22%23ff8c42%22/><path d=%22M45.53 33.83 A16 16 0 0 1 37.19 44.29%22 stroke=%22%23ffd93d%22/><path d=%22M36.69 44.53 A16 16 0 0 1 23.31 44.53%22 stroke=%22%234ade3a%22/><path d=%22M22.81 44.29 A16 16 0 0 1 14.47 33.83%22 stroke=%22%2322d3ee%22/><path d=%22M14.34 33.29 A16 16 0 0 1 17.32 20.24%22 stroke=%22%234f7cff%22/><path d=%22M17.67 19.81 A16 16 0 0 1 29.72 14.0%22 stroke=%22%23b06bff%22/></g><g fill=%22none%22 stroke=%22%23b06bff%22 stroke-linecap=%22round%22><path d=%22M39 41 Q44 48 50 54%22 stroke-width=%229%22/><path d=%22M44 45 L49 41%22 stroke-width=%223%22/><path d=%22M46 47 L53 44%22 stroke-width=%222.8%22/><path d=%22M48 49 L56 47%22 stroke-width=%222.8%22/><path d=%22M50 53 L56 54%22 stroke-width=%222.8%22/><path d=%22M50 54 L54 59%22 stroke-width=%222.6%22/><path d=%22M52 55 L58 58%22 stroke-width=%223.4%22/></g></svg>">
 <style>
 :root{
   --ink:#eaf5f2; --ink-dim:#a8c6bf; --bg:#0a2f2d; --bg2:#0d3f3b;
@@ -244,25 +244,41 @@ textarea{width:100%;height:110px;padding:10px;border-radius:9px;background:rgba(
   <div class="login-card">
     <div class="brand">
       <div class="brand-mark">
-        <!-- Q = 电荷 + 圆周运动轨道；圆边用光谱渐变渲染，圆润粗线条带卡通喜感；无多余元素 -->
+        <!-- Q = 电荷 + 圆周运动轨道；环严格按光谱顺序红橙黄绿青蓝紫分段染边；尾巴蓬松毛刺感 -->
         <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="physics-room Q 电荷轨道图标">
           <defs>
             <linearGradient id="qBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12564f"/><stop offset="1" stop-color="#06201f"/></linearGradient>
-            <!-- 光谱：红→橙→黄→绿→青→紫，渲染 Q 的圆边 -->
-            <linearGradient id="qSpec" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff5b5b"/><stop offset=".18" stop-color="#ff9f43"/>
-              <stop offset=".36" stop-color="#ffd23f"/><stop offset=".55" stop-color="#26d3a7"/>
-              <stop offset=".74" stop-color="#4fc3f7"/><stop offset="1" stop-color="#c792ea"/>
-            </linearGradient>
           </defs>
           <rect x="1" y="1" width="62" height="62" rx="17" fill="url(#qBg)" stroke="#26d3a7" stroke-opacity=".5" stroke-width="1.5"/>
-          <!-- 圆润的 Q：粗描边光谱圆环（电荷 + 圆周轨道） -->
-          <circle cx="30" cy="30" r="16" fill="none" stroke="url(#qSpec)" stroke-width="8"/>
-          <!-- 俏皮上翘的 Q 尾巴 -->
-          <path d="M39 38 L49 49" stroke="url(#qSpec)" stroke-width="7" stroke-linecap="round"/>
+          <!-- 严格光谱顺序：红→橙→黄→绿→青→蓝→紫，沿圆周顺时针环绕（从顶部起） -->
+          <g fill="none" stroke-width="8" stroke-linecap="round">
+            <path d="M30.28 14.0 A16 16 0 0 1 42.33 19.81" stroke="#ff3b3b"/>
+            <path d="M42.68 20.24 A16 16 0 0 1 45.66 33.29" stroke="#ff8c42"/>
+            <path d="M45.53 33.83 A16 16 0 0 1 37.19 44.29" stroke="#ffd93d"/>
+            <path d="M36.69 44.53 A16 16 0 0 1 23.31 44.53" stroke="#4ade3a"/>
+            <path d="M22.81 44.29 A16 16 0 0 1 14.47 33.83" stroke="#22d3ee"/>
+            <path d="M14.34 33.29 A16 16 0 0 1 17.32 20.24" stroke="#4f7cff"/>
+            <path d="M17.67 19.81 A16 16 0 0 1 29.72 14.0" stroke="#b06bff"/>
+          </g>
+          <!-- 蓬松毛刺尾巴：主柄 + 分叉绒毛，从圆环右下伸出 -->
+          <g fill="none" stroke="#b06bff" stroke-linecap="round" stroke-linejoin="round">
+            <!-- 蓬松主体：粗细两层叠出绒感 -->
+            <path d="M39 41 Q44 48 50 54" stroke-width="9"/>
+            <path d="M41 43 Q46 49 51 54" stroke-width="5" stroke="#d4a8ff" stroke-opacity=".8"/>
+            <!-- 毛刺绒毛：向四周炸开 -->
+            <path d="M44 45 L49 41" stroke-width="3"/>
+            <path d="M46 47 L53 44" stroke-width="2.8"/>
+            <path d="M48 49 L56 47" stroke-width="2.8"/>
+            <path d="M49 51 L57 50" stroke-width="2.8"/>
+            <path d="M50 53 L56 54" stroke-width="2.8"/>
+            <path d="M50 54 L54 59" stroke-width="2.6"/>
+            <path d="M47 51 L50 57" stroke-width="2.4"/>
+            <!-- 尾尖一撮毛 -->
+            <path d="M52 55 L58 58" stroke-width="3.4"/>
+          </g>
         </svg>
       </div>
-      <div><h1><span class="phy">physics</span><span class="room">-room</span></h1><p>老师学生同一块白板 · 一边写一边讲</p></div>
+      <div><h1><span class="phy">physics</span><span class="room">-room</span></h1></div>
     </div>
     <div id="fileWarn" class="file-warn" style="display:none">
       <b>⚠ 你正在用本地文件打开，异地学生无法访问</b>
