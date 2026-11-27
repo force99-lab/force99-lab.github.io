@@ -57,7 +57,9 @@ header{height:56px;flex:0 0 56px;display:flex;align-items:center;gap:10px;paddin
 .h-title{font-weight:800;font-size:17px;white-space:nowrap}
 .h-title span{color:var(--brand)}
 .room-pill{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:9px;
-  background:rgba(38,211,167,.1);border:1px solid rgba(38,211,167,.3);font-size:13px;cursor:pointer}
+  background:rgba(38,211,167,.1);border:1px solid rgba(38,211,167,.3);font-size:13px;cursor:pointer;
+  white-space:nowrap;flex:0 0 auto}   /* 房间号必须单行显示，窄屏不被挤成竖排 */
+.room-pill:hover{background:rgba(38,211,167,.22)}
 .room-pill b{letter-spacing:1px;font-variant-numeric:tabular-nums}
 .spacer{flex:1}
 .h-btn{padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.05);
@@ -207,6 +209,19 @@ textarea{width:100%;height:110px;padding:10px;border-radius:9px;background:rgba(
   #tools{top:8px;left:8px;width:54px;padding:6px 4px}
   .tool{width:44px;height:38px;font-size:17px}
   #importPanel{left:10px;right:10px;width:auto}
+  /* 窄屏：优先保证「房间 XXXXXX」单行清晰可见，压缩其余顶部按钮 */
+  header{gap:6px;padding:0 8px}
+  .room-pill{font-size:12px;padding:5px 8px;gap:4px;order:-1}
+  .h-btn{padding:6px 8px;font-size:12px}
+  #members{display:none}
+}
+@media(max-width:430px){
+  header{gap:4px;padding:0 6px}
+  .room-pill b{font-size:11px;letter-spacing:.5px}
+  .room-pill{font-size:11px;padding:5px 6px;gap:3px}
+  .h-title{font-size:13px}
+  .h-btn{padding:5px 6px;font-size:11px;gap:3px}
+  #btnCam{display:none}   /* 极窄屏隐藏共享屏幕，保留全屏/退出 */
 }
 /* 屏幕偏矮时压缩左栏，保证翻页/缩放控件不溢出底部 */
 @media(max-height:720px){
