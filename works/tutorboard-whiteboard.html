@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b3d3a">
 <title>physics-room · 在线物理辅导白板</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><defs><linearGradient id=%22b%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop stop-color=%22%2312564f%22/><stop offset=%221%22 stop-color=%22%2306201f%22/></linearGradient></defs><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23b)%22/><path d=%22M7 33 L25 33%22 stroke=%22%23eaf5f2%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/><path d=%22M27 15 L44 46 L12 46 Z%22 fill=%22%2326d3a7%22 fill-opacity=%22.16%22 stroke=%22%234fc3f7%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22/><path d=%22M38 33 L59 18%22 stroke=%22%23ff6b6b%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/><path d=%22M40 35 L59 29%22 stroke=%22%23ffd23f%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/><path d=%22M41 37 L59 40%22 stroke=%22%2326d3a7%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/><path d=%22M40 39 L59 51%22 stroke=%22%23c792ea%22 stroke-width=%222.6%22 stroke-linecap=%22round%22/><circle cx=%2259%22 cy=%2218%22 r=%223%22 fill=%22%23ff6b6b%22/><circle cx=%2259%22 cy=%2229%22 r=%223%22 fill=%22%23ffd23f%22/><circle cx=%2259%22 cy=%2240%22 r=%223%22 fill=%22%2326d3a7%22/><circle cx=%2259%22 cy=%2251%22 r=%223%22 fill=%22%23c792ea%22/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><defs><linearGradient id=%22b%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop stop-color=%22%2312564f%22/><stop offset=%221%22 stop-color=%22%2306201f%22/></linearGradient><linearGradient id=%22s%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22><stop stop-color=%22%23ff5b5b%22/><stop offset=%22.18%22 stop-color=%22%23ff9f43%22/><stop offset=%22.36%22 stop-color=%22%23ffd23f%22/><stop offset=%22.55%22 stop-color=%22%2326d3a7%22/><stop offset=%22.74%22 stop-color=%22%234fc3f7%22/><stop offset=%221%22 stop-color=%22%23c792ea%22/></linearGradient></defs><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22url(%23b)%22/><circle cx=%2230%22 cy=%2230%22 r=%2216%22 fill=%22none%22 stroke=%22url(%23s)%22 stroke-width=%228%22/><path d=%22M39 38 L49 49%22 stroke=%22url(%23s)%22 stroke-width=%227%22 stroke-linecap=%22round%22/></svg>">
 <style>
 :root{
   --ink:#eaf5f2; --ink-dim:#a8c6bf; --bg:#0a2f2d; --bg2:#0d3f3b;
@@ -244,27 +244,22 @@ textarea{width:100%;height:110px;padding:10px;border-radius:9px;background:rgba(
   <div class="login-card">
     <div class="brand">
       <div class="brand-mark">
-        <!-- 物理 + 科技 + AI：三棱镜色散出彩虹光束，光束末端为 AI 神经网络节点 -->
-        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="physics-room 物理科技图标">
+        <!-- Q = 电荷 + 圆周运动轨道；圆边用光谱渐变渲染，圆润粗线条带卡通喜感；无多余元素 -->
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="physics-room Q 电荷轨道图标">
           <defs>
-            <linearGradient id="phyBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12564f"/><stop offset="1" stop-color="#06201f"/></linearGradient>
-            <linearGradient id="phyFace" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#26d3a7" stop-opacity=".42"/><stop offset="1" stop-color="#4fc3f7" stop-opacity=".06"/></linearGradient>
+            <linearGradient id="qBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12564f"/><stop offset="1" stop-color="#06201f"/></linearGradient>
+            <!-- 光谱：红→橙→黄→绿→青→紫，渲染 Q 的圆边 -->
+            <linearGradient id="qSpec" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ff5b5b"/><stop offset=".18" stop-color="#ff9f43"/>
+              <stop offset=".36" stop-color="#ffd23f"/><stop offset=".55" stop-color="#26d3a7"/>
+              <stop offset=".74" stop-color="#4fc3f7"/><stop offset="1" stop-color="#c792ea"/>
+            </linearGradient>
           </defs>
-          <rect x="1" y="1" width="62" height="62" rx="17" fill="url(#phyBg)" stroke="#26d3a7" stroke-opacity=".55" stroke-width="1.5"/>
-          <!-- 入射白光 -->
-          <path d="M6 33 L25 33" stroke="#eaf5f2" stroke-width="2.4" stroke-linecap="round" opacity=".95"/>
-          <!-- 三棱镜：物理元素 -->
-          <path d="M28 14 L46 47 L12 47 Z" fill="url(#phyFace)" stroke="#4fc3f7" stroke-width="2.2" stroke-linejoin="round"/>
-          <path d="M28 14 L46 47 L12 47 Z" fill="none" stroke="#26d3a7" stroke-opacity=".45" stroke-width="5" stroke-linejoin="round"/>
-          <!-- 色散彩虹光束 -->
-          <path d="M38 33 L58 16" stroke="#ff6b6b" stroke-width="2.3" stroke-linecap="round"/>
-          <path d="M40 35 L58 27" stroke="#ffd23f" stroke-width="2.3" stroke-linecap="round"/>
-          <path d="M41 37 L58 38" stroke="#26d3a7" stroke-width="2.3" stroke-linecap="round"/>
-          <path d="M40 39 L58 49" stroke="#c792ea" stroke-width="2.3" stroke-linecap="round"/>
-          <!-- AI 神经网络：末端节点 + 互联链路 -->
-          <path d="M58 16 L58 27 L58 38 L58 49" stroke="#eaf5f2" stroke-opacity=".28" stroke-width="1" stroke-dasharray="2 3"/>
-          <circle cx="58" cy="16" r="3" fill="#ff6b6b"/><circle cx="58" cy="27" r="3" fill="#ffd23f"/>
-          <circle cx="58" cy="38" r="3" fill="#26d3a7"/><circle cx="58" cy="49" r="3" fill="#c792ea"/>
+          <rect x="1" y="1" width="62" height="62" rx="17" fill="url(#qBg)" stroke="#26d3a7" stroke-opacity=".5" stroke-width="1.5"/>
+          <!-- 圆润的 Q：粗描边光谱圆环（电荷 + 圆周轨道） -->
+          <circle cx="30" cy="30" r="16" fill="none" stroke="url(#qSpec)" stroke-width="8"/>
+          <!-- 俏皮上翘的 Q 尾巴 -->
+          <path d="M39 38 L49 49" stroke="url(#qSpec)" stroke-width="7" stroke-linecap="round"/>
         </svg>
       </div>
       <div><h1><span class="phy">physics</span><span class="room">-room</span></h1><p>老师学生同一块白板 · 一边写一边讲</p></div>
