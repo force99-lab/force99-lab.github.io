@@ -2760,7 +2760,7 @@ async function importPDF(file) {
       importMask(`正在渲染第 ${i} / ${total} 页…`, '试卷页会作为白板背景，可直接批注');
       const page = await doc.getPage(i);
       const vp0 = page.getViewport({ scale: 1 });
-      const scale = 1080 / vp0.width;
+      const scale = 960 / vp0.width;
       const vp = page.getViewport({ scale });
       const cv2 = document.createElement('canvas');
       cv2.width = Math.round(vp.width);
@@ -2769,7 +2769,7 @@ async function importPDF(file) {
       g.fillStyle = '#ffffff';
       g.fillRect(0, 0, cv2.width, cv2.height);
       await page.render({ canvasContext: g, viewport: vp }).promise;
-      const url = await uploadDataUrl(cv2.toDataURL('image/jpeg', 0.88));
+      const url = await uploadDataUrl(cv2.toDataURL('image/jpeg', 0.8));
       pages.push([{
         id: uid(), type: 'image', src: url,
         x: 0, y: 0, w: cv2.width, h: cv2.height, color: '#2c333f',
