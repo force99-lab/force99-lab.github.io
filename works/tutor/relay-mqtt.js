@@ -113,10 +113,11 @@
         if (m.t === 'hello') {
           const known = peers.get(m.cid);
           peers.set(m.cid, { name: m.name, role: m.role, at: Date.now() });
-          if (!known) emit({ t: 'peer-joined', name: m.name, role: m.role });
+          if (!known) emit({ t: 'peer-joined', cid: m.cid, name: m.name, role: m.role });
+          else emit({ t: 'peer-active', cid: m.cid, name: m.name, role: m.role });
           return;
         }
-        if (m.t === 'bye') { peers.delete(m.cid); emit({ t: 'peer-left' }); return; }
+        if (m.t === 'bye') { peers.delete(m.cid); emit({ t: 'peer-left', cid: m.cid }); return; }
         emit(m);
       }
 
