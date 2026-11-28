@@ -37,6 +37,9 @@ const S = {
   peerLaser: null,
   myLaser: null,
   peer: null,
+  peers: new Map(),        // 多人教室：cid -> {cid,name,role,color,canDraw,handUp,at}
+  cursors: new Map(),      // cid -> {x,y,t}，多人光标
+  MAX_STUDENTS: 6,
   dragEl: null,
   dragging: null,
   boxSel: null,
@@ -281,7 +284,7 @@ function inkPredict(el, e) {
 
 function render() {
   // 老师端：视角（平移/缩放）变了就广播给学生，让大屏投影始终对着老师正在写的区域
-  if (S.role === 'teacher' && S.peer) {
+  if (S.role === 'teacher' && S.peers.size > 0) {
     const now0 = performance.now();
     const lv = S.viewSent;
     if (!lv || Math.abs(lv.x - S.view.x) > 0.6 || Math.abs(lv.y - S.view.y) > 0.6 || Math.abs(lv.scale - S.view.scale) > 0.004) {
@@ -685,16 +688,17 @@ function drawLaser() {
 }
 
 function drawCursors() {
-  if (!S.showCursor || !S.peerCursor) return;
+  if (!S.showCursor || !S.cursors.size) return;
   const now = performance.now();
-  if (now - S.peerCursor.t > 5000) return;
-  const c = S.peerCursor;
   ctx.save();
-  ctx.fillStyle = '#b83a2e';
-  ctx.globalAlpha = 0.85;
-  ctx.beginPath();
-  ctx.arc(c.x, c.y, 3 / S.view.scale + 0.5, 0, Math.PI * 2);
-  ctx.fill();
+  S.cursors.forEach((c, cid) => {
+    if (now - c.t > 5000) return;
+    ctx.fillStyle = peerColor(cid) || '#b83a2e';
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, 3 / S.view.scale + 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
   ctx.globalAlpha = 1;
   ctx.restore();
 }
@@ -795,6 +799,8 @@ function connectMqtt() {
 }
 
 function send(obj) {
+  // 每条业务消息带上自己的身份号，多人房间里才能分清是谁的笔迹/光标/举手
+  if (obj && typeof obj === 'object' && !obj.cid) obj.cid = CLIENT_ID;
   // 直连通了就走点对点（同城约 20ms），没通或掉线时照旧走中继
   if (S.rtc && S.rtc.send(obj)) return;
   if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.stringify(obj));
@@ -876,26 +882,54 @@ function handleMsg(m) {
     return;
   }
   if (m.t === 'peer-joined') {
-    S.peer = { name: m.name, role: m.role };
-    setPeer(true);
-    toast(`${m.name} 已进入教室`);
+    const p = { cid: m.cid, name: m.name, role: m.role, at: Date.now(), canDraw: false, handUp: false };
     if (S.role === 'teacher') {
-      // 把当前白板全量推给新进来的学生
+      if (m.role === 'student') {
+        if (studentCount() >= S.MAX_STUDENTS) {
+          send({ t: 'reject', cid: m.cid, msg: `本房间为 ${S.MAX_STUDENTS} 人小班，已满员，请联系老师` });
+          toast('房间已满，新同学被挡在门外');
+          return;
+        }
+        p.color = STUDENT_COLORS[studentCount() % STUDENT_COLORS.length];
+      }
+      S.peers.set(m.cid, p);
+      S.peer = fallbackPeer();
+      setPeer(true);
+      toast(`${m.name} 已进入教室`);
+      broadcastRoster();
+      // 把当前白板全量推给新进来的学生；课件窗口也补推一次
       setTimeout(() => pushSync(), 120);
-      relay({ type: 'perm', canDraw: $('#swDraw').checked });
-      // 如果课件窗口正开着，也补推一次，学生进来就能看到同一页课件
       if (COURSE.on) {
         setTimeout(() => relay({
           type: 'course', action: 'open', url: COURSE.url, name: COURSE.name,
           rx: COURSE.rx, ry: COURSE.ry, rw: COURSE.rw, rh: COURSE.rh,
         }), 260);
       }
+    } else {
+      S.peers.set(m.cid, p);
+      S.peer = fallbackPeer();
+      setPeer(true);
+      renderPeerList();
     }
     return;
   }
+  if (m.t === 'peer-active') {
+    const p = S.peers.get(m.cid);
+    if (p) { p.at = Date.now(); p.name = m.name; p.role = m.role; }
+    renderPeerList();
+    return;
+  }
   if (m.t === 'peer-left') {
-    S.peer = null;
-    setPeer(false);
+    S.peers.delete(m.cid);
+    S.peer = fallbackPeer();
+    setPeer(S.peers.size > 0);
+    if (S.role === 'teacher') broadcastRoster();
+    renderPeerList();
+    return;
+  }
+  if (m.t === 'roster') { applyRoster(m.list); return; }
+  if (m.t === 'reject') {
+    if (m.cid === CLIENT_ID) toast(m.msg || '房间已满', 4000);
     return;
   }
   if (m.t === 'error') {
@@ -977,6 +1011,9 @@ function handlePeerData(d) {
     }
     case 'live': {
       if (!d.el) break;
+      const col = peerColor(d.cid);
+      if (col) d.el.color = col;
+      d.el.cid = d.cid;
       S.live.set(d.el.id, d.el);
       S.liveVer++;
       clearTimeout(S.liveTimers[d.el.id]);
@@ -990,12 +1027,15 @@ function handlePeerData(d) {
     }
     case 'perm': {
       if (S.role !== 'student') return;
+      if (d.target && d.target !== CLIENT_ID) return;
       S.canDraw = !!d.canDraw;
       updateStudentPerm();
       break;
     }
     case 'cursor': {
-      S.peerCursor = { x: d.x, y: d.y, t: performance.now() };
+      const c = { x: d.x, y: d.y, t: performance.now() };
+      S.cursors.set(d.cid, c);
+      S.peerCursor = c;
       requestRender();
       break;
     }
@@ -1018,10 +1058,13 @@ function handlePeerData(d) {
     }
     case 'raise': {
       if (S.role !== 'teacher') return;
-      toast('🙋 ' + (S.peer && S.peer.name ? S.peer.name : '学生') + ' 举手了', 4000);
+      const p = S.peers.get(d.cid);
+      if (p) { p.handUp = true; broadcastRoster(); renderPeerList(); }
+      toast('🙋 ' + (p ? p.name : '学生') + ' 举手了', 4000);
       beep();
       break;
     }
+    case 'roster': { applyRoster(d.list); break; }
   }
 }
 
@@ -1039,6 +1082,9 @@ function pushSync() {
 
 function applyOp(d) {
   const pages = S.pages;
+  const col = peerColor(d.cid);
+  if (d.el && col) d.el.color = col;
+  if (d.el) d.el.cid = d.cid;
   const pi = d.page == null ? S.page : d.page;
   const target = pages[pi];
   if (!target) return;
@@ -2083,15 +2129,83 @@ function updateConn(on) {
 function setPeer(on) {
   S.peerOnline = on;
   const chip = $('#peerChip');
-  if (on && S.peer) {
-    chip.className = 'peer-chip on';
-    chip.textContent = `${S.peer.name} 在线`;
-    $('#mPeer').textContent = S.peer.name;
+  if (S.role === 'teacher') {
+    const n = studentCount();
+    if (on && n > 0) { chip.className = 'peer-chip on'; chip.textContent = `${n} 名学生在线`; }
+    else { chip.className = 'peer-chip'; chip.textContent = '等待学生进入'; }
   } else {
-    chip.className = 'peer-chip';
-    chip.textContent = S.role === 'teacher' ? '等待学生进入' : '等待老师';
-    $('#mPeer').textContent = '等待中';
+    if (on && S.peer) { chip.className = 'peer-chip on'; chip.textContent = `${S.peer.name} 在线`; }
+    else { chip.className = 'peer-chip'; chip.textContent = '等待老师'; }
   }
+  $('#mPeer').textContent = on ? (S.role === 'teacher' ? `${studentCount()} 人` : (S.peer ? S.peer.name : '等待中')) : '等待中';
+}
+
+/* ---------------- 多人房间：名单 / 权限 / 举手 ---------------- */
+const STUDENT_COLORS = ['#1d63c9', '#1a9e6e', '#8a5fc4', '#e08a1e', '#0e97a6', '#c24b8f'];
+function studentCount() { let n = 0; S.peers.forEach((p) => { if (p.role === 'student') n++; }); return n; }
+function fallbackPeer() { for (const p of S.peers.values()) return p; return null; }
+function peerColor(cid) { const p = S.peers.get(cid); return p ? p.color : null; }
+
+function rosterList() {
+  return [...S.peers.values()].map((p) => ({ cid: p.cid, name: p.name, role: p.role, color: p.color, canDraw: !!p.canDraw, handUp: !!p.handUp }));
+}
+function broadcastRoster() { relay({ type: 'roster', list: rosterList() }); }
+
+/* 放行某位学生书写；一次只放一人，同时收回其他人 */
+function grantStudent(cid, on) {
+  const p = S.peers.get(cid);
+  if (!p) return;
+  p.canDraw = on;
+  if (on) S.peers.forEach((q, k) => { if (k !== cid) q.canDraw = false; });
+  broadcastRoster();
+  relay({ type: 'perm', target: cid, canDraw: on });
+  renderPeerList();
+}
+
+function applyRoster(list) {
+  if (!Array.isArray(list)) return;
+  S.peers.clear();
+  list.forEach((p) => { if (p.cid && p.cid !== CLIENT_ID) S.peers.set(p.cid, Object.assign({}, p, { at: Date.now() })); });
+  S.peer = fallbackPeer();
+  setPeer(S.peers.size > 0);
+  if (S.role === 'student') {
+    const me = list.find((p) => p.cid === CLIENT_ID);
+    if (me) { S.canDraw = !!me.canDraw; updateStudentPerm(); }
+  }
+  renderPeerList();
+}
+
+function renderPeerList() {
+  const wrap = $('#peerList');
+  if (!wrap) return;
+  const pc = $('#peerCount');
+  if (pc) pc.textContent = S.role === 'teacher' ? studentCount() : S.peers.size + 1;
+  wrap.innerHTML = '';
+  const list = [...S.peers.values()];
+  if (!list.length) { wrap.innerHTML = '<div class="peer-empty">暂无其他成员</div>'; return; }
+  list.forEach((p) => {
+    const row = document.createElement('div');
+    row.className = 'peer-row';
+    const dot = document.createElement('span');
+    dot.className = 'peer-dot';
+    dot.style.background = p.color || '#5b6474';
+    const nm = document.createElement('span');
+    nm.className = 'peer-name';
+    nm.textContent = p.name || '同学';
+    const badge = document.createElement('span');
+    badge.className = 'peer-badge';
+    badge.textContent = p.role === 'teacher' ? '老师' : '学生';
+    row.appendChild(dot); row.appendChild(nm); row.appendChild(badge);
+    if (p.handUp) { const h = document.createElement('span'); h.className = 'peer-hand'; h.textContent = '🙋'; row.appendChild(h); }
+    if (S.role === 'teacher' && p.role === 'student') {
+      const t = document.createElement('button');
+      t.className = 'p-btn ghost peer-toggle' + (p.canDraw ? ' on' : '');
+      t.textContent = p.canDraw ? '收回书写' : '放行书写';
+      t.onclick = () => grantStudent(p.cid, !p.canDraw);
+      row.appendChild(t);
+    }
+    wrap.appendChild(row);
+  });
 }
 
 function updateMeta() {
@@ -2203,9 +2317,13 @@ $('#btnNewPage').onclick = () => {
   bumpContent();
   setPage(S.pages.length - 1, true);
 };
-$('#swDraw').onchange = (e) => {
-  relay({ type: 'perm', canDraw: e.target.checked });
-  toast(e.target.checked ? '已允许学生书写' : '已关闭学生书写');
+$('#swDraw').onchange = () => {
+  // 多人教室：书写权限按人放行（右侧名单逐人控制）；总闸关闭时收回所有学生
+  const on = $('#swDraw').checked;
+  S.peers.forEach((p) => { p.canDraw = on; });
+  broadcastRoster();
+  S.peers.forEach((p, k) => relay({ type: 'perm', target: k, canDraw: on }));
+  toast(on ? '已开放学生书写' : '已收回学生书写');
 };
 $('#swCursor').onchange = (e) => { S.showCursor = e.target.checked; requestRender(); };
 $('#swLaser').onchange = (e) => { S.laserShare = e.target.checked; };
@@ -2617,7 +2735,7 @@ function joinRoom(role, name, room) {
   S.role = role;
   S.name = name;
   S.room = room;
-  S.canDraw = true;      // 双方都能写，才叫"共用同一块白板"；老师可用开关随时收回
+  S.canDraw = role === 'teacher';   // 学生默认无书写权，由老师在名单里逐人放行
 
   $('#gate').hidden = true;
   $('#app').hidden = false;
