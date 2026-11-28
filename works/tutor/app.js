@@ -2196,7 +2196,12 @@ function renderPeerList() {
     badge.className = 'peer-badge';
     badge.textContent = p.role === 'teacher' ? '老师' : '学生';
     row.appendChild(dot); row.appendChild(nm); row.appendChild(badge);
-    if (p.handUp) { const h = document.createElement('span'); h.className = 'peer-hand'; h.textContent = '🙋'; row.appendChild(h); }
+    if (p.handUp) {
+      const h = document.createElement('span');
+      h.className = 'peer-hand'; h.textContent = '🙋'; h.title = '点击消号';
+      h.onclick = () => { p.handUp = false; broadcastRoster(); renderPeerList(); };
+      row.appendChild(h);
+    }
     if (S.role === 'teacher' && p.role === 'student') {
       const t = document.createElement('button');
       t.className = 'p-btn ghost peer-toggle' + (p.canDraw ? ' on' : '');
