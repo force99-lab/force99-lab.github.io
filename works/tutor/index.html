@@ -9,7 +9,7 @@
 <meta name="format-detection" content="telephone=no">
 <meta name="theme-color" content="#f7f8fa">
 <title>物理一对一 · 异地同板教室</title>
-<link rel="stylesheet" href="style.css?v=1126z">
+<link rel="stylesheet" href="style.css?v=1128d">
 </head>
 <body>
 <div id="warnBar" hidden>⚠ 你现在是<b>双击 html 文件</b>打开的（地址栏以 file:// 开头）——这样连不上学生、也导不进讲义。<br>请关掉本页，回到程序文件夹，<b>双击「启动教室.bat」</b>，浏览器会自动打开正确的上课地址。</div>
@@ -237,6 +237,11 @@
         <div>笔迹数：<b id="mCount">0</b></div>
       </div>
     </div>
+
+    <div class="p-block">
+      <div class="p-title">课堂成员（<span id="peerCount">0</span>/<span id="peerMax">6</span>）</div>
+      <div id="peerList"></div>
+    </div>
   </aside>
 
   <div class="zoom-hud">
@@ -278,8 +283,8 @@
 <script src="vendor/pdf.min.js"></script>
 <script src="vendor/mammoth.browser.min.js"></script>
 <script src="vendor/jspdf.umd.min.js"></script>
-<script src="relay-mqtt.js?v=1128c"></script>
-<script src="rtclink.js?v=1128c"></script>
-<script src="app.js?v=1128c"></script>
+<script src="relay-mqtt.js?v=1128d"></script>
+<script src="rtclink.js?v=1128d"></script>
+<script src="app.js?v=1128d"></script>
 </body>
 </html>
