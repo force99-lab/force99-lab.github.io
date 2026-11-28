@@ -7606,6 +7606,12 @@ const WORKS = [
       desc:"师生共用白板实时书写，小方格网格与背景色可换、PDF 可缩放平移、双向语音与屏幕共享，链接分享跨 WiFi 即可开课。",
       icon:"🛠", cover:"assets/img/tutorboard-cover.png", link:"works/tutorboard-whiteboard.html", date:"2026-11-27", tag:"教学工具"
     }
+,
+      {
+      type:"work", title:"共板课堂 · 一对一线上辅导教室",
+      desc:"纯静态托管、无需本机开服务，师生走公共中继实时同板书写、导入讲义课件、双向语音与举手；老师房号固定，链接发给学生点开即进。",
+      icon:"🛠", cover:"assets/img/tutorboard-cover.png", link:"works/tutor/", date:"2026-11-28", tag:"教学工具"
+    }
 ];
 
 
