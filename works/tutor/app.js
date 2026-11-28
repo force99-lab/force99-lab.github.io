@@ -742,6 +742,7 @@ function restoreLocal() {
 
 /* 静态模式：房间号由浏览器生成，加入房间=订阅 topic，其余消息格式与本机服务完全一致 */
 function connectMqtt() {
+  if (S.rtc) { try { S.rtc.close(); } catch (_) {} S.rtc = null; }   // 重连时直连一起重建
   if (!S.room) {                      // 老师的房间号存本机，刷新后还是同一个，链接永久有效
     let saved = null;
     try { saved = localStorage.getItem('pt_myroom'); } catch (_) {}
@@ -756,9 +757,11 @@ function connectMqtt() {
     S.connected = true;
     updateConn(true);
     handleMsg({ t: 'joined', room: S.room });
+    setupRtc(net);
   };
   net.onmessage = (e) => {
     let m; try { m = JSON.parse(e.data); } catch (_) { return; }
+    if (S.rtc && S.rtc.signalIn(m)) return;
     handleMsg(m);
   };
   net.onclose = () => {
@@ -773,7 +776,24 @@ function connectMqtt() {
 }
 
 function send(obj) {
+  // 直连通了就走点对点（同城约 20ms），没通或掉线时照旧走中继
+  if (S.rtc && S.rtc.send(obj)) return;
   if (S.ws && S.ws.readyState === 1) S.ws.send(JSON.stringify(obj));
+}
+
+/* 端到端直连：用中继传 SDP/ICE，通了以后书写和 PDF 都走 P2P，延迟从 ~200ms 掉到 ~20ms */
+function setupRtc(net) {
+  if (S.rtc || !window.RTCLink || !RTCLink.supported) return;
+  S.rtc = RTCLink.create({
+    role: S.role,
+    hasPeer: () => !!S.peer,
+    signal: (o) => { try { net.send(JSON.stringify(o)); } catch (_) {} },
+    onStream: (m) => { if (m) handleMsg(m); },
+    onOpen: () => {
+      updateConn(true);
+      toast('已切到端到端直连，书写更跟手');
+    },
+  });
 }
 function relay(d) { send({ t: 'relay', d }); }
 
