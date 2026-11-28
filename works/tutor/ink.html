@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>书写内核 · 纯墨迹板</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#f7f8fa;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
+  #cv{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+  .bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));
+    display:flex;gap:10px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,.92);
+    box-shadow:0 6px 22px rgba(16,24,40,.14);backdrop-filter:blur(8px);z-index:5}
+  .bar button{border:0;background:transparent;padding:8px 10px;border-radius:10px;font:600 14px/1 -apple-system,system-ui,sans-serif;
+    color:#2c333f;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:46px}
+  .bar button.on{background:#b83a2e;color:#fff}
+  .bar button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+  #hud{position:fixed;left:10px;top:calc(8px + env(safe-area-inset-top));z-index:6;
+    font:12px/1.5 ui-monospace,Menlo,monospace;color:#2c333f;background:rgba(255,255,255,.86);
+    padding:6px 9px;border-radius:8px;white-space:pre;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="hud">ver=ink1</div>
+<div class="bar">
+  <button data-tool="pen" class="on"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 10-10-3-3-10 10-1 4z"/></svg>笔</button>
+  <button data-tool="hl"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 14l9-9 4 4-9 9z"/></svg>荧光</button>
+  <button data-tool="eraser"><svg viewBox="0 0 24 24"><path d="M4 16l7-7 6 6-7 7H4zM14 6l4 4"/></svg>擦</button>
+  <button id="bUndo"><svg viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h9a6 6 0 010 12"/></svg>撤销</button>
+  <button id="bClear"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5l-14 14"/></svg>清屏</button>
+</div>
+<script src="ink.js?v=ink2y"></script>
+</body>
+</html>
