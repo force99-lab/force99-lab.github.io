@@ -822,6 +822,10 @@ function stopWaitRetry() {
 }
 
 function handleMsg(m) {
+  if (m.t === 'need') {                       // 学生没收到板书：请老师重发一次全量
+    if (S.role === 'teacher') setTimeout(() => pushSync(), 60);
+    return;
+  }
   if (m.t === 'joined') {
     stopWaitRetry();
     $('#waitCard').hidden = true;
@@ -840,6 +844,11 @@ function handleMsg(m) {
         S.inviteHinted = true;
         setTimeout(() => toast('房间 ' + m.room + '：点右上角【学生链接】复制地址发给学生，点开即进同一块白板', 6500), 900);
       }
+    }
+    if (STATIC_RELAY && S.role === 'student') {
+      // 进来几秒还没收到板书（多半是那条大包在中继上丢了），直接让老师补发
+      setTimeout(() => { if (!S.gotSync) send({ t: 'need' }); }, 3500);
+      setTimeout(() => { if (!S.gotSync) send({ t: 'need' }); }, 7000);
     }
     if (m.role === 'student' && m.peer) {
       S.peer = { name: m.peer.name, role: 'teacher' };
@@ -892,6 +901,7 @@ function handlePeerData(d) {
   switch (d.type) {
     case 'sync': {
       if (S.role !== 'student') return;
+      S.gotSync = true;
       S.pages = d.pages && d.pages.length ? d.pages : [[]];
       S.page = d.page || 0;
       bumpContent();
