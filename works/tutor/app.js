@@ -115,6 +115,21 @@ window.addEventListener('resize', () => {
   courseLayout();
   resize();
 });
+/* iOS Safari 的工具栏收起/页面回弹只改"视觉视口"，不一定触发 window resize：
+   画布 CSS 尺寸变了而像素尺寸没跟上，墨迹就会相对笔尖整体错位。这里补一道。 */
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => { ensureCanvasSize(); });
+  window.visualViewport.addEventListener('scroll', () => { ensureCanvasSize(); });
+}
+
+/* 落笔前核对画布像素尺寸：和 CSS 尺寸不一致就立刻重建，
+   保证"笔尖在哪、墨就画在哪" */
+function ensureCanvasSize() {
+  const d = dpr();
+  const w = Math.max(1, Math.round(stage.clientWidth * d));
+  const h = Math.max(1, Math.round(stage.clientHeight * d));
+  if (cv.width !== w || cv.height !== h || cvInk.width !== w || cvPred.width !== w) resize();
+}
 
 /* ---------------- 渲染 ---------------- */
 /* 两层画布：
@@ -248,7 +263,11 @@ function inkPredict(el, e) {
   let list = [];
   try { list = e.getPredictedEvents() || []; } catch (_) { return; }
   if (!list.length) return;
-  inkSetup(pkctx);
+  /* 预测笔迹必须用和底板同一套 视图+dpr 变换再画，否则视角一缩放/平移，
+     这一小段"预测墨"就会落到别的地方（表现是笔尖和墨迹竖向错开一大截） */
+  const _d = dpr();
+  const _sc = S.view.scale * _d;
+  pkctx.setTransform(_sc, 0, 0, _sc, S.view.x * _d, S.view.y * _d);
   pkctx.strokeStyle = el.color || '#2c333f';
   pkctx.globalAlpha = 0.92;
   pkctx.lineWidth = (el.w || 3);
@@ -1350,6 +1369,7 @@ function onDown(e) {
      此时手指还能点、笔却一条事件都到不了，正是"写不出、点不涨"的样子。落笔一律夺焦。 */
   const ae = document.activeElement;
   if (ae && /^(INPUT|TEXTAREA)$/.test(ae.tagName)) { try { ae.blur(); } catch (_) {} }
+  ensureCanvasSize();          // 画布像素尺寸和屏幕上不一致时先纠正，避免墨迹整体错位
   plog('onDown', 'p=' + e.pointerType + '/' + e.pointerId + ' tool=' + S.tool + ' pr=' + (e.pressure || 0).toFixed(2));
   if (e.pointerType === 'pen') {
     // 笔永远优先：把之前被手掌占着的"当前指针"让出来
