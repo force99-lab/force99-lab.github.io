@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="物理白板">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#f7f8fa">
+<title>物理一对一 · 异地同板教室</title>
+<link rel="stylesheet" href="style.css?v=1126y">
+</head>
+<body>
+<div id="warnBar" hidden>⚠ 你现在是<b>双击 html 文件</b>打开的（地址栏以 file:// 开头）——这样连不上学生、也导不进讲义。<br>请关掉本页，回到程序文件夹，<b>双击「启动教室.bat」</b>，浏览器会自动打开正确的上课地址。</div>
+
+<!-- ========== 进入页 ========== -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-badge">物 理 · 一 对 一</div>
+    <h1>异地同板教室</h1>
+    <p class="gate-sub">老师和学生在不同地点，共用同一块白板，笔迹实时同步</p>
+
+    <div class="role-tabs">
+      <button class="role-btn active" data-role="teacher">我是老师</button>
+      <button class="role-btn" data-role="student">我是学生</button>
+    </div>
+
+    <div class="field">
+      <span>你的名字</span>
+      <input id="gName" maxlength="10" placeholder="如：李老师 / 张同学" autocomplete="off">
+    </div>
+    <div class="field" id="fieldRoom">
+      <span>房间号</span>
+      <input id="gRoom" maxlength="6" placeholder="老师留空自动创建；学生填老师给的 5 位码" autocomplete="off">
+    </div>
+
+    <button id="gGo" class="primary">进入教室</button>
+    <p class="gate-tip" id="gateTip">老师进入后自动生成房间号，把房间号发给学生，学生输入即可同板。</p>
+    <p class="gate-err" id="gateErr"></p>
+  </div>
+</div>
+
+<!-- ========== 主界面 ========== -->
+<div id="app" hidden>
+  <header>
+    <div class="brand"><span class="b1">物理</span><span class="b2">一对一</span></div>
+    <div class="room-tag" id="roomTag" title="点击复制房间号">房间 <b>----</b></div>
+    <div class="conn"><i id="dot"></i><span id="connText">连接中…</span></div>
+    <div class="head-right">
+      <div class="color-block">
+        <div class="swatches" id="swatches"></div>
+        <div class="sizes" id="sizes">
+          <button data-size="2" class="size active"><i style="width:3px;height:3px"></i></button>
+          <button data-size="4" class="size"><i style="width:6px;height:6px"></i></button>
+          <button data-size="8" class="size"><i style="width:10px;height:10px"></i></button>
+          <button data-size="14" class="size"><i style="width:16px;height:16px"></i></button>
+        </div>
+      </div>
+      <span class="peer-chip" id="peerChip">等待学生进入</span>
+      <button class="hbtn mic" id="btnMic" title="开启话筒，面对面讲课">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/><path d="M8.5 21h7"/></svg>
+        <span id="micText">话筒</span>
+      </button>
+      <button class="hbtn" id="btnImg" title="导入讲义 / 贴图">导入</button>
+      <div id="importMenu" hidden>
+        <button data-k="img">题目截图 / 图片</button>
+        <button data-k="pdf">PDF 讲义、试卷</button>
+        <button data-k="docx">Word 讲义（.docx）</button>
+        <button data-k="txt">纯文本文件</button>
+        <button data-k="html">HTML 课件（动画 / 交互完整）</button>
+        <button data-k="htmlimg">HTML 课件 · 静态版（放到白板上批注）</button>
+        <div class="sep"></div>
+        <button data-k="json">板书存档（.json，课后复习）</button>
+      </div>
+      <button class="hbtn" id="btnFull" title="全屏上课（Esc 退出）">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 9V5a1 1 0 0 1 1-1h4"/><path d="M20 9V5a1 1 0 0 0-1-1h-4"/><path d="M4 15v4a1 1 0 0 0 1 1h4"/><path d="M20 15v4a1 1 0 0 1-1 1h-4"/></svg>
+        <span id="fullText">全屏</span>
+      </button>
+      <button class="hbtn" id="btnProj" title="投影模式：隐藏所有工具栏，只留白板给大屏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/></svg>
+        <span id="projText">投影</span>
+      </button>
+      <button class="hbtn" id="btnInvite" title="复制学生链接，直接发给学生">学生链接</button>
+      <button class="hbtn" id="btnSave" title="保存 / 导出板书">保存</button>
+      <div id="saveMenu" hidden>
+        <button data-k="png">保存当前页 PNG</button>
+        <button data-k="pdf">导出整份板书 PDF</button>
+        <div class="sep"></div>
+        <button data-k="json">保存板书存档（可再导入）</button>
+      </div>
+      <button class="hbtn round" id="btnHelp" title="使用说明">?</button>
+    </div>
+  </header>
+
+  <!-- 左侧工具栏 -->
+  <aside id="tools">
+    <div class="tool-group" id="penGroup">
+      <button class="tool active" data-tool="pen" title="钢笔 (P)">
+        <svg viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/><path d="M14 7l3 3"/></svg>
+      </button>
+      <button class="tool" data-tool="hl" title="荧光笔 (H)">
+        <svg viewBox="0 0 24 24"><path d="M6 18h12"/><path d="M9 15l6-9 4 3-6 9H9z"/></svg>
+      </button>
+      <button class="tool" data-tool="line" title="直线 (L)">
+        <svg viewBox="0 0 24 24"><path d="M4 18L20 6"/></svg>
+      </button>
+      <button class="tool" data-tool="dash" title="虚线 (D)">
+        <svg viewBox="0 0 24 24"><path d="M4 18L9 14M12 12l2-1.5M16 9l2-1.5M20 6.5"/></svg>
+      </button>
+      <button class="tool" data-tool="arrow" title="力矢量 F (V)">
+        <svg viewBox="0 0 24 24"><path d="M3 20L20 5"/><path d="M20 5l-5 0.6M20 5l-0.6 5"/></svg>
+      </button>
+      <button class="tool" data-tool="vecsum" title="平行四边形力合成 (S)">
+        <svg viewBox="0 0 24 24"><path d="M4 18L18 18M4 18L10 6"/><path d="M18 18l6-12M10 6l8 0"/><path d="M4 18l14-12"/></svg>
+      </button>
+      <button class="tool" data-tool="circle" title="圆 / 弧 (C)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+      </button>
+      <button class="tool" data-tool="angle" title="角度标注 (A)">
+        <svg viewBox="0 0 24 24"><path d="M4 18h16M4 18L16 6"/><path d="M9.5 18a7 7 0 0 1 2-4"/></svg>
+      </button>
+      <button class="tool" data-tool="sym" title="电路符号 (E)">
+        <svg viewBox="0 0 24 24"><path d="M3 12h5M16 12h5"/><rect x="8" y="8.5" width="8" height="7"/></svg>
+      </button>
+      <button class="tool" data-tool="text" title="文字 / 上下标 (T)">
+        <svg viewBox="0 0 24 24"><path d="M5 19L11 5l6 14"/><path d="M7.5 13h7"/></svg>
+      </button>
+      <button class="tool" data-tool="eraser" title="点擦 (X)">
+        <svg viewBox="0 0 24 24"><path d="M7 17l7-7 4 4-4 4H8z"/><path d="M14 10l3-3"/></svg>
+      </button>
+      <button class="tool" data-tool="eraserBox" title="框选擦除 (B)">
+        <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="13" stroke-dasharray="4 3"/></svg>
+      </button>
+      <button class="tool" data-tool="select" title="选择 / 移动 (M)">
+        <svg viewBox="0 0 24 24"><path d="M5 3l7 17 2-6 6-2z"/></svg>
+      </button>
+      <button class="tool" data-tool="laser" title="激光笔 (R)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+      </button>
+      <button class="tool" data-tool="ghost" title="幻影笔（笔迹自动淡出）">
+        <svg viewBox="0 0 24 24"><path d="M6 16c0-5 3-8 6-8s6 3 6 8"/><path d="M4 19h16"/></svg>
+      </button>
+      <button class="tool" data-tool="pan" title="移动画布（上下左右拖动）">
+        <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><path d="M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg>
+      </button>
+    </div>
+
+    <div class="tool-sep"></div>
+
+    <div class="tool-group">
+      <button class="tool" id="btnUndo" title="撤销 (Ctrl+Z)">
+        <svg viewBox="0 0 24 24"><path d="M9 7l-5 5 5 5"/><path d="M4 12h9a5 5 0 0 1 0 10"/></svg>
+      </button>
+      <button class="tool" id="btnRedo" title="重做 (Ctrl+Y)">
+        <svg viewBox="0 0 24 24"><path d="M15 7l5 5-5 5"/><path d="M20 12h-9a5 5 0 0 0 0 10"/></svg>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- 画板 -->
+  <section id="stage">
+    <canvas id="cvBase"></canvas>
+    <canvas id="cv"></canvas>
+    <canvas id="cvInk"></canvas>
+    <canvas id="cvPred"></canvas>
+    <div id="stageHint"></div>
+    <div id="symMenu" hidden></div>
+    <div id="raiseToast" hidden></div>
+
+    <!-- HTML 课件窗口（动画与交互都保留，一动就是真跑） -->
+    <canvas id="anno" hidden></canvas>
+    <div id="annoBar" hidden>
+      <span class="anno-tip">标注中（笔画直接叠在动画上）</span>
+      <button data-anno="pen" class="active">钢笔</button>
+      <button data-anno="eraser">橡皮</button>
+      <button data-anno="clear">清空</button>
+      <button data-anno="undo">撤销</button>
+      <button data-anno="exit" class="danger">退出标注</button>
+    </div>
+    <div id="courseLayer" hidden>
+      <div id="courseCard">
+        <div id="courseBar">
+          <span id="courseName">课件</span>
+          <button id="courseReload" title="重新载入">重载</button>
+          <button id="courseAnno" title="在动画上直接写字画圈（不动课件）">标注</button>
+          <button id="courseSnap" title="把这一屏变成白板图片，用来长期批注">抓图</button>
+          <button id="courseZoom" title="铺满">放大</button>
+          <button id="courseClose" title="关闭课件窗口">关闭</button>
+        </div>
+        <iframe id="courseFrame" title="HTML 课件" allow="fullscreen; autoplay; microphone" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-downloads allow-popups allow-modals allow-forms"></iframe>
+        <div id="courseGrip" title="拖动右下角调整大小"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右侧面板 -->
+  <aside id="panel">
+    <div class="p-block">
+      <div class="p-title">授课控制</div>
+      <div class="switch-row">
+        <span>允许学生书写</span>
+        <label class="switch"><input type="checkbox" id="swDraw" checked><i></i></label>
+      </div>
+      <div class="switch-row">
+        <span>显示对方光标</span>
+        <label class="switch"><input type="checkbox" id="swCursor" checked><i></i></label>
+      </div>
+      <div class="switch-row" id="rowLaserShare">
+        <span>激光同步显示</span>
+        <label class="switch"><input type="checkbox" id="swLaser" checked><i></i></label>
+      </div>
+      <button class="p-btn" id="btnClearPage">清空本页</button>
+    </div>
+
+    <div class="p-block">
+      <div class="p-title">页面</div>
+      <div class="pages" id="pages"></div>
+      <button class="p-btn ghost" id="btnNewPage">＋ 新建一页</button>
+    </div>
+
+    <div class="p-block" id="blkFollow" hidden>
+      <div class="p-title">学生视图</div>
+      <div class="switch-row">
+        <span>跟随老师视角</span>
+        <label class="switch"><input type="checkbox" id="swFollow" checked><i></i></label>
+      </div>
+    </div>
+
+    <div class="p-block">
+      <div class="p-title">课堂信息</div>
+      <div class="meta" id="meta">
+        <div>角色：<b id="mRole">—</b></div>
+        <div>房间：<b id="mRoom">—</b></div>
+        <div>在座：<b id="mPeer">等待中</b></div>
+        <div>笔迹数：<b id="mCount">0</b></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="zoom-hud">
+    <button id="zoomOut">－</button>
+    <span id="zoomVal">100%</span>
+    <button id="zoomIn">＋</button>
+    <button id="zoomFit" title="回到左上角">适配</button>
+  </div>
+
+  <div id="projExit" hidden>退出投影</div>
+</div>
+
+<!-- 学生进不去时的等候卡：老师一开课自动进 -->
+<div id="waitCard" hidden>
+  <div class="wc-dot"></div>
+  <div class="wc-title">正在等待老师开始</div>
+  <div class="wc-sub">房间 <b id="wcRoom">-----</b></div>
+  <div class="wc-sub">保持这一页开着就行，老师一进教室，你会自动进到同一块白板。</div>
+  <button id="wcRetry">立即重试</button>
+</div>
+
+<div id="help" hidden>
+  <div class="help-card">
+    <h2>怎么上课</h2>
+    <ol>
+      <li><b>老师</b>打开页面 → 选「我是老师」→ 留空房间号 → 自动生成 5 位房间号。</li>
+      <li>把房间号（或网址）发给学生，<b>学生</b>选「我是学生」→ 输入房间号即进入同一块白板。</li>
+      <li>双方笔迹实时同步：你画一笔，对方屏幕上立刻出现，看得见笔尖游走。</li>
+      <li>老师右侧可开关「允许学生书写」，需要学生自己画受力图时打开。</li>
+      <li>讲题用 <b>力矢量 / 平行四边形合成 / 电路符号</b> 工具，比手画快得多。</li>
+      <li>点「贴图」发题目截图，直接出现在双方白板上。</li>
+    </ol>
+    <h3>快捷键</h3>
+    <p>P 钢笔 · H 荧光笔 · L 直线 · V 力矢量 · S 力合成 · C 圆 · T 文字 · X 点擦 · B 框擦 · R 激光 · Ctrl+Z 撤销 · 滚轮缩放 · 空格拖动平移</p>
+    <button class="primary" id="helpClose">知道了</button>
+  </div>
+</div>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/mammoth.browser.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script src="relay-mqtt.js?v=1126y"></script>
+<script src="app.js?v=1126y"></script>
+</body>
+</html>
